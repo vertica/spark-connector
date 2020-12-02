@@ -1,2 +1,4 @@
 *.class
 *.log
+connector/target/
+connector/project/target/
