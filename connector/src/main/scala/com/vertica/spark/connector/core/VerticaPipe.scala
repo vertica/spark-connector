@@ -4,7 +4,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import org.apache.spark.sql.catalyst.InternalRow
 
-case class DataBlock(val data : List[InternalRow])
+case class DataBlock(data : List[InternalRow])
 
 case class VerticaMetadata()
 
