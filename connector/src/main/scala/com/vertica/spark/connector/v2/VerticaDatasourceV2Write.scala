@@ -4,8 +4,10 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
 
-class VerticaWriteBuilder extends WriteBuilder {
-  override def buildForBatch() : BatchWrite =  new VerticaBatchWrite()
+class VerticaWriteBuilder() extends WriteBuilder {
+  override def buildForBatch() : BatchWrite = {
+    new VerticaBatchWrite()
+  }
 }
 
 class VerticaBatchWrite extends BatchWrite {

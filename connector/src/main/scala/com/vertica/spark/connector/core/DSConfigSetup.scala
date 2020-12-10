@@ -5,9 +5,7 @@ import org.apache.spark.sql.types.StructType
 
 
 trait DSConfigSetupInterface[T] {
-  def init(options : Map[String, String]) // Takes the options map the user passed into the datasource
+  def validateAndGetConfig() : Either[ConnectorError, T]
 
-  def ValidateAndGetConfig() : Either[ConnectorError, T]
-
-  def GetTableSchema() : Either[ConnectorError, StructType]
+  def getTableSchema() : Either[ConnectorError, StructType]
 }
