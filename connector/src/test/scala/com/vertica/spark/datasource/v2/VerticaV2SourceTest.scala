@@ -4,11 +4,20 @@ import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource._
 
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
+import org.apache.spark.sql.connector.catalog._
+import org.apache.spark.sql.connector.read._
+import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import com.vertica.spark.datasource.v2._
+import org.scalamock.scalatest.MockFactory
 
 import java.util
 
-class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll {
+import scala.collection.JavaConversions._
+
+
+class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory{
 
   override def beforeAll(): Unit = {
   }
@@ -16,11 +25,35 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll {
   override def afterAll(): Unit = {
   }
 
-  it should "Return a Vertica Table" in {
+  it should "return a Vertica Table" in {
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), new util.HashMap[String, String]())
 
-    assert(table.name == "VerticaTable")
+    assert(table.isInstanceOf[VerticaTable])
   }
+
+  it should "return a Scan Builder" in {
+    val opts = Map("logging_level" -> "ERROR")
+    val source = new VerticaSource()
+    val table = source.getTable(new StructType(), Array[Transform](), opts )
+    val readTable = table.asInstanceOf[SupportsRead]
+    val scanBuilder = readTable.newScanBuilder(new CaseInsensitiveStringMap(opts))
+
+    assert(scanBuilder.isInstanceOf[VerticaScanBuilder])
+  }
+
+  it should "return a Write Builder" in {
+    val mockLogicalWriteInfo = mock[LogicalWriteInfo]
+
+    val opts = Map("logging_level" -> "ERROR")
+    val source = new VerticaSource()
+    val table = source.getTable(new StructType(), Array[Transform](), opts )
+    val writeTable = table.asInstanceOf[SupportsWrite]
+    val writeBuilder = writeTable.newWriteBuilder(mockLogicalWriteInfo)
+
+
+    assert(writeBuilder.isInstanceOf[VerticaWriteBuilder])
+  }
+
 
 }

@@ -1,7 +1,10 @@
 package com.vertica.spark.config
 
 import com.typesafe.scalalogging.Logger
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic
 
-sealed trait ReadConfig
+trait ReadConfig extends GenericConfig
 
-case class HDFSMethodReadConfig(logger: Logger) extends ReadConfig
+case class DistributedFilestoreReadConfig(override val logLevel : Level) extends ReadConfig {
+}

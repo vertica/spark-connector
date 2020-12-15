@@ -9,14 +9,15 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import com.typesafe.scalalogging.Logger
-import ch.qos.logback.classic
-import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{HDFSMethodReadConfig, ReadConfig, WriteConfig}
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.config.{DistributedFilestoreReadConfig, ReadConfig, WriteConfig}
 import com.vertica.spark.util.error.ConnectorError
 
+import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+import com.vertica.spark.datasource.core.DSWriteConfigSetup
+
 import collection.JavaConverters._
+import com.vertica.spark.config._
 
 
 /**
@@ -51,43 +52,20 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
     val dsConfigSetup: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup(configOptions)
+    val config = dsConfigSetup.validateAndGetConfig() match
+    {
+      case Left(err) => throw new Exception(err.msg)
+      case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
+    }
+
+    config.GetLogger(classOf[VerticaTable]).debug("Config loaded")
     new VerticaScanBuilder()
   }
 
-  def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
+  override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
     val dsConfigSetup: DSConfigSetupInterface[WriteConfig] = new DSWriteConfigSetup(configOptions)
     new VerticaWriteBuilder()
   }
-
 }
 
-class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[ReadConfig] {
-  override def validateAndGetConfig(): Either[ConnectorError, ReadConfig] = {
-    val logLevel: Option[Level] = this.config.get("logging_level").map {
-      case "ERROR" => Some(Level.ERROR)
-      case "DEBUG" => Some(Level.DEBUG)
-      case "WARNING" => Some(Level.WARN)
-      case "INFO" => Some(Level.INFO)
-      case _ => None
-    }.getOrElse(Some(Level.ERROR))
-
-    logLevel match {
-      case Some(level) =>
-        val logger = Logger("logback")
-        logger.underlying.asInstanceOf[classic.Logger].setLevel(level)
-
-        // Always return HDFSMethodReadConfig since we don't support direct yet
-        Right(HDFSMethodReadConfig(logger))
-      case None => Left(ConnectorError("logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead."))
-    }
-  }
-
-  override def getTableSchema(): Either[ConnectorError, StructType] = ???
-}
-
-class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[WriteConfig] {
-  override def validateAndGetConfig(): Either[ConnectorError, WriteConfig] = ???
-
-  override def getTableSchema(): Either[ConnectorError, StructType] = ???
-}
