@@ -64,6 +64,9 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
 
   it should "default to ERROR logging level" in {
+    var opts = Map[String, String]()
+    var config = parseCorrectInitConfig(opts)
+    assert(config.logLevel == Level.ERROR)
   }
 
   it should "error given incorrect logging_level param" in {
