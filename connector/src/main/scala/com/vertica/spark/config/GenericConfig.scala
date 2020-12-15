@@ -4,6 +4,9 @@ import com.typesafe.scalalogging.Logger
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic
 
+/**
+  * Generic config that all operations (read and write) share
+  */
 trait GenericConfig {
   val logLevel : Level = Level.ERROR
 

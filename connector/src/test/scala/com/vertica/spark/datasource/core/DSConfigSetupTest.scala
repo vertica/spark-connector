@@ -18,6 +18,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   override def afterAll(): Unit = {
   }
 
+  // Parses config expecting success
+  // Calling test with fail if an error is returned
   def parseCorrectInitConfig(opts : Map[String, String]) : ReadConfig = {
     val dsConfigSetup = new DSReadConfigSetup(opts)
     val readConfig : ReadConfig = dsConfigSetup.validateAndGetConfig() match {
@@ -25,11 +27,15 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(false)
         mock[ReadConfig]
       }
-      case Right(config) => config
+      case Right(config) => {
+        config
+      }
     }
     readConfig
   }
 
+  // Parses config expecting an error
+  // Calling test will fail if the config is parsed without error
   def parseErrorInitConfig(opts : Map[String, String]) : ConnectorError = {
     val dsConfigSetup = new DSReadConfigSetup(opts)
     val error : ConnectorError = dsConfigSetup.validateAndGetConfig() match {
