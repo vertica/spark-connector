@@ -59,12 +59,16 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
     }
 
     config.GetLogger(classOf[VerticaTable]).debug("Config loaded")
+
+    // TODO: Use config for scan builder
     new VerticaScanBuilder()
   }
 
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
     val dsConfigSetup: DSConfigSetupInterface[WriteConfig] = new DSWriteConfigSetup(configOptions)
+
+    // TODO: Use config for write builder
     new VerticaWriteBuilder()
   }
 }
