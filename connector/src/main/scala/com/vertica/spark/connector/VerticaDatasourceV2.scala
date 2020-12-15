@@ -55,16 +55,22 @@ class VerticaSource extends TableProvider {
 class VerticaTable extends Table with SupportsRead with SupportsWrite {
 /**
   * A name to differentiate this table from other tables
+  *
+  * @return A string representing a unique name for the table.
   */
   override def name(): String = "VerticaTable" // TODO: change this to db.tablename
 
 /**
-  * Should reach out to SQL layer and return schema of the table
+  * Should reach out to SQL layer and return schema of the table.
+  *
+  * @return Spark struct type representing a table schema.
   */
   override def schema(): StructType = new StructType()
 
 /**
   * Returns a list of capabilities that the table supports.
+  *
+  * @return Set of [[TableCapability]] representing the functions this source supports.
   */
   override def capabilities(): util.Set[TableCapability] =
     Set(TableCapability.BATCH_READ).asJava  // Update this set with any capabilities this table supports

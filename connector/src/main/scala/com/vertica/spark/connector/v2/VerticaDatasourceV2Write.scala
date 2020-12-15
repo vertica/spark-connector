@@ -26,6 +26,7 @@ class VerticaBatchWrite extends BatchWrite {
 /**
   * Creates the writer factory which will be serialized and sent to workers
   *
+  * @param physicalWriteInfo Structure containing partition information.
   * @return [[VerticaWriterFactory]]
   */
   override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory()
@@ -33,6 +34,7 @@ class VerticaBatchWrite extends BatchWrite {
 /**
   * Responsible for commiting the write operation.
   *
+  * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
@@ -40,6 +42,7 @@ class VerticaBatchWrite extends BatchWrite {
 /**
   * Responsible for cleaning up a failed write operation.
   *
+  * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after one or more worker nodes report that they have failed.
   */
   override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
@@ -70,6 +73,8 @@ class VerticaBatchWriter extends DataWriter[InternalRow] {
 
 /**
   * Writes the row to datasource. Not permanent until a commit from the driver happens
+  *
+  * @param record The row to be written to the source.
   */
   override def write(record: InternalRow): Unit = {}
 
