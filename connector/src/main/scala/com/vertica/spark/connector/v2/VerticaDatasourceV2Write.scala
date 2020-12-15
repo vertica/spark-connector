@@ -13,7 +13,9 @@ class VerticaWriteBuilder extends WriteBuilder {
   *
   * @return [[VerticaBatchWrite]]
   */
-  override def buildForBatch() : BatchWrite =  new VerticaBatchWrite()
+  override def buildForBatch() : BatchWrite = {
+    new VerticaBatchWrite()
+  }
 }
 
 /**

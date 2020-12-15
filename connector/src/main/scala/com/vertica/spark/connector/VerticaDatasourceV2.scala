@@ -1,16 +1,23 @@
 package com.vertica.spark.datasource
 
 import com.vertica.spark.datasource.v2._
-
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
-
 import java.util
+
+import com.vertica.spark.config.{DistributedFilestoreReadConfig, ReadConfig, WriteConfig}
+import com.vertica.spark.util.error.ConnectorError
+
+import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+import com.vertica.spark.datasource.core.DSWriteConfigSetup
+
 import collection.JavaConverters._
+import com.vertica.spark.config._
 
 
 /**
@@ -42,8 +49,9 @@ class VerticaSource extends TableProvider {
   */
   override def getTable(schema: StructType,
                         partitioning: Array[Transform],
-                        properties: util.Map[String, String]): Table =
-    new VerticaTable()
+                        properties: util.Map[String, String]): Table = {
+    new VerticaTable(properties.asScala.toMap)
+  }
 
 }
 
@@ -52,7 +60,7 @@ class VerticaSource extends TableProvider {
   *
   * Supports Read and Write functionality.
   */
-class VerticaTable extends Table with SupportsRead with SupportsWrite {
+class VerticaTable(val configOptions: Map[String, String]) extends Table with SupportsRead with SupportsWrite {
 /**
   * A name to differentiate this table from other tables
   *
@@ -82,6 +90,16 @@ class VerticaTable extends Table with SupportsRead with SupportsWrite {
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
+    val dsConfigSetup: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup(configOptions)
+    val config = dsConfigSetup.validateAndGetConfig() match
+    {
+      case Left(err) => throw new Exception(err.msg)
+      case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
+    }
+
+    config.GetLogger(classOf[VerticaTable]).debug("Config loaded")
+
+    // TODO: Use config for scan builder
     new VerticaScanBuilder()
   }
 
@@ -92,8 +110,10 @@ class VerticaTable extends Table with SupportsRead with SupportsWrite {
   */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
+    val dsConfigSetup: DSConfigSetupInterface[WriteConfig] = new DSWriteConfigSetup(configOptions)
+
+    // TODO: Use config for write builder
     new VerticaWriteBuilder()
   }
-
 }
 
