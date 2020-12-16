@@ -6,6 +6,6 @@ import ch.qos.logback.classic
 
 trait WriteConfig extends GenericConfig
 
-case class DistributedFilestoreWriteConfig(override val logLevel : Level) extends WriteConfig {
+case class DistributedFilestoreWriteConfig(override val logLevel: Level) extends WriteConfig {
 }
 

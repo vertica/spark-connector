@@ -6,5 +6,5 @@ import ch.qos.logback.classic
 
 trait ReadConfig extends GenericConfig
 
-case class DistributedFilestoreReadConfig(override val logLevel : Level) extends ReadConfig {
+case class DistributedFilestoreReadConfig(override val logLevel: Level) extends ReadConfig {
 }

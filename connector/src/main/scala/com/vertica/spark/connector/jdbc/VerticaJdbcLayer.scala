@@ -12,7 +12,7 @@ trait VerticaJdbcLayerInterface {
 /**
   * Runs a query that should return a ResultSet
   */
-  def Query(query : String) : Either[JDBCLayerError, ResultSet]
+  def query(query: String): Either[JDBCLayerError, ResultSet]
 
 
 /**
@@ -20,5 +20,5 @@ trait VerticaJdbcLayerInterface {
   *
   * Used for ddl or dml statements.
   */
-  def Execute(statement : String) : Boolean
+  def execute(statement: String): Boolean
 }

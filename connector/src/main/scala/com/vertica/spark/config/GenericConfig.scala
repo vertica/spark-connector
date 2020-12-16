@@ -8,9 +8,9 @@ import ch.qos.logback.classic
   * Generic config that all operations (read and write) share
   */
 trait GenericConfig {
-  val logLevel : Level = Level.ERROR
+  val logLevel: Level = Level.ERROR
 
-  def GetLogger(c: Class[_]) : Logger = {
+  def getLogger(c: Class[_]): Logger = {
     val logger = Logger(c)
     logger.underlying.asInstanceOf[classic.Logger].setLevel(logLevel)
 

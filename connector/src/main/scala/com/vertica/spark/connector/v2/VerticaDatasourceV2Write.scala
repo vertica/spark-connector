@@ -13,7 +13,7 @@ class VerticaWriteBuilder extends WriteBuilder {
   *
   * @return [[VerticaBatchWrite]]
   */
-  override def buildForBatch() : BatchWrite = {
+  override def buildForBatch(): BatchWrite = {
     new VerticaBatchWrite()
   }
 }
@@ -64,7 +64,7 @@ class VerticaWriterFactory extends DataWriterFactory {
   * @param taskId A unique identifier for the specific task, which there may be multiple of for a partition due to retries or speculative execution
   * @return [[VerticaBatchWriter]]
   */
-  override def createWriter(partitionId: Int, taskId:Long): DataWriter[InternalRow] = new VerticaBatchWriter()
+  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = new VerticaBatchWriter()
 }
 
 /**

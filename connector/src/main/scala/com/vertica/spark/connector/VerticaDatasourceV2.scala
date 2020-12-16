@@ -37,7 +37,7 @@ class VerticaSource extends TableProvider {
   */
   override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap):
       StructType =
-        getTable(null, Array.empty[Transform], caseInsensitiveStringMap.asCaseSensitiveMap()).schema()
+        getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap.asCaseSensitiveMap()).schema()
 
 /**
   * Gets the structure representing a Vertica table
@@ -97,7 +97,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
       case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
     }
 
-    config.GetLogger(classOf[VerticaTable]).debug("Config loaded")
+    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
 
     // TODO: Use config for scan builder
     new VerticaScanBuilder()
