@@ -4,9 +4,9 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import org.apache.spark.sql.catalyst.InternalRow
 
-case class DataBlock(data: List[InternalRow])
+final case class DataBlock(data: List[InternalRow])
 
-case class VerticaMetadata()
+final case class VerticaMetadata()
 
 /**
   * Interface for the pipe that connects us to Vertica. Agnostic to the method used to transfer the data.

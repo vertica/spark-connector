@@ -1,3 +1,3 @@
 package com.vertica.spark.config
 
-case class JDBCConfig()
+final case class JDBCConfig()
