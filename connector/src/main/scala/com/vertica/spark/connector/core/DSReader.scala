@@ -13,15 +13,15 @@ trait DSReaderInterface {
 /**
   * Called before reading to perform any needed setup with the given configuration.
   */
-  def openRead(config : ReadConfig) : Either[ConnectorError, Unit]
+  def openRead(config: ReadConfig): Either[ConnectorError, Unit]
 
 /**
   * Called by spark to read an individual row
   */
-  def readRow() : Either[ConnectorError, Option[InternalRow]]
+  def readRow(): Either[ConnectorError, Option[InternalRow]]
 
 /**
   * Called when all reading is done, to perform any needed cleanup operations.
   */
-  def closeRead() : Either[ConnectorError, Unit]
+  def closeRead(): Either[ConnectorError, Unit]
 }

@@ -22,4 +22,14 @@ assemblyMergeStrategy in assembly := {
   case x => MergeStrategy.first
 }
 
+import sbtsonar.SonarPlugin.autoImport.sonarProperties
+
+sonarProperties ++= Map(
+  "sonar.host.url" -> "http://localhost:80"
+)
+
+scapegoatVersion in ThisBuild := "1.3.3"
+scapegoatReports := Seq("xml")
+scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
+
 
