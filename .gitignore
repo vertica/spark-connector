@@ -1,5 +1,15 @@
 *.class
 *.log
+project/
 connector/target/
 connector/project/target/
 connector/project/project/
+connector/.DS_Store
+connector/.idea
+connector/.scannerwork/
+functional-tests/lib/
+functional-tests/project/build.properties
+functional-tests/project/project/
+functional-tests/project/target/
+functional-tests/target/
+.DS_Store
