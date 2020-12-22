@@ -6,7 +6,7 @@ package com.vertica.spark.util.error
 object ConnectorErrorType extends Enumeration {
   type ConnectorErrorType = Value
 
-  val LOGGING_LEVEL_PARSE_ERR = Value("logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead.")
+  val InvalidLoggingLevel = Value("logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead.")
 }
 import ConnectorErrorType._
 
