@@ -4,9 +4,9 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import org.apache.spark.sql.catalyst.InternalRow
 
-case class DataBlock(data : List[InternalRow])
+final case class DataBlock(data: List[InternalRow])
 
-case class VerticaMetadata()
+final case class VerticaMetadata()
 
 /**
   * Interface for the pipe that connects us to Vertica. Agnostic to the method used to transfer the data.
@@ -19,12 +19,12 @@ trait VerticaPipeInterface {
     *
     * Can include schema and things like node information / segmentation -- should have caching mechanism
     */
-  def getMetadata() : Either[ConnectorError, VerticaMetadata]
+  def getMetadata(): Either[ConnectorError, VerticaMetadata]
 
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  def getDataBlockSize() : Either[ConnectorError, Long]
+  def getDataBlockSize(): Either[ConnectorError, Long]
 }
 
 /**
@@ -34,43 +34,43 @@ trait VerticaPipeWriteInterface {
   /**
     * Initial setup for the whole write operation. Called by driver.
     */
-  def doPreWriteSteps() : Either[ConnectorError, Unit]
+  def doPreWriteSteps(): Either[ConnectorError, Unit]
 
   /**
     * Initial setup for the write of an individual partition. Called by executor.
     */
-  def startPartitionWrite() : Either[ConnectorError, Unit]
+  def startPartitionWrite(): Either[ConnectorError, Unit]
 
   /**
     * Write a block of data to the underlying source. Called by executor.
     */
-  def writeData(data : DataBlock) : Either[ConnectorError, Unit]
+  def writeData(data: DataBlock): Either[ConnectorError, Unit]
 
   /**
     * Ends the write, doing any necessary cleanup. Called by executor once writing of the given partition is done.
     */
-  def endPartitionWrite() : Either[ConnectorError, Unit]
+  def endPartitionWrite(): Either[ConnectorError, Unit]
 
   /**
     * Commits the data being written. Called by the driver once all executors have succeeded writing.
     */
-  def commit() : Either[ConnectorError, Unit]
+  def commit(): Either[ConnectorError, Unit]
 }
 
 /**
  * Mixin for [[VerticaPipeInterface]] for reading from Vertica
  */
-trait VerticaPipeReadInterface { 
+trait VerticaPipeReadInterface {
 
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
-  def doPreReadSteps() : Either[ConnectorError, Unit]
+  def doPreReadSteps(): Either[ConnectorError, Unit]
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead() : Either[ConnectorError, Unit]  
+  def startPartitionRead(): Either[ConnectorError, Unit]
 
 
   /**
@@ -82,5 +82,5 @@ trait VerticaPipeReadInterface {
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead() : Either[ConnectorError, Unit]   // Called from executor
+  def endPartitionRead(): Either[ConnectorError, Unit]   // Called from executor
 }

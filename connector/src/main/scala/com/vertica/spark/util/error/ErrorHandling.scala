@@ -14,7 +14,7 @@ import ConnectorErrorType._
 /**
   * General connector error returned when something goes wrong.
   */
-case class ConnectorError(err : ConnectorErrorType) {
+case class ConnectorError(err: ConnectorErrorType) {
   def msg = err.toString
 }
 

@@ -18,14 +18,14 @@ trait DSConfigSetupInterface[T] {
   /**
     * Validates and returns the configuration structure for the specific read/write operation.
     *
-    * Will return a error if validation of the user options failed, otherwise will return the configuration structure expected by the writer/reader.
+    * @return Will return an error if validation of the user options failed, otherwise will return the configuration structure expected by the writer/reader.
     */
-  def validateAndGetConfig() : Either[ConnectorError, T]
+  def validateAndGetConfig(): Either[ConnectorError, T]
 
   /**
     * Returns the schema for the table as required by Spark.
     */
-  def getTableSchema() : Either[ConnectorError, StructType]
+  def getTableSchema(): Either[ConnectorError, StructType]
 }
 
 
@@ -37,7 +37,7 @@ object DSConfigSetupUtils {
   /**
     * Parses the log level from options.
     */
-  def getLogLevel(config: Map[String, String]) : Option[Level] = {
+  def getLogLevel(config: Map[String, String]): Option[Level] = {
     config.get("logging_level").map {
       case "ERROR" => Some(Level.ERROR)
       case "DEBUG" => Some(Level.DEBUG)

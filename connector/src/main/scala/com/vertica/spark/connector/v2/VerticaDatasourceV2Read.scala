@@ -75,7 +75,7 @@ class VerticaReaderFactory extends PartitionReaderFactory {
   *
   * @return [[VerticaBatchReader]]
   */
-  override def createReader(partition: InputPartition) : PartitionReader[InternalRow] =
+  override def createReader(partition: InputPartition): PartitionReader[InternalRow] =
   {
     new VerticaBatchReader()
   }
@@ -91,7 +91,7 @@ class VerticaBatchReader extends PartitionReader[InternalRow] {
 /**
   * Returns true if there are more rows to read
   */
-  def next =
+  override def next: Boolean =
   {
     false
   }
@@ -99,9 +99,9 @@ class VerticaBatchReader extends PartitionReader[InternalRow] {
 /**
   * Return the current row
   */
-  def get = {
-    val v1 : Integer = 1
-    val v2 : Float = 2
+  override def get: InternalRow = {
+    val v1: Integer = 1
+    val v2: Float = 2
     val row = InternalRow(v1, v2)
     row
   }
@@ -109,5 +109,5 @@ class VerticaBatchReader extends PartitionReader[InternalRow] {
 /**
   * Calls underlying datasource to do any needed cleanup
   */
-  def close() = Unit
+  def close(): Unit = Unit
 }
