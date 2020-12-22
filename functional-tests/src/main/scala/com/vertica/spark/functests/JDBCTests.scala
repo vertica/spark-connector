@@ -7,29 +7,20 @@ import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.util.error.JdbcErrorType._
 
 import com.vertica.spark.jdbc._
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.JDBCConfig
-
-object jdbcCfg {
-  val host = "eng-g9-105"
-  val port = 5433
-  val db = "testdb"
-  val user = "release"
-  val password = ""
-}
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
   *
   * Should ensure that the component correctly passes on queries / other statements to vertica and correctly returns results. It should also confirm that error handling works as expected.
   */
-class JDBCTests extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   var jdbcLayer : JdbcLayerInterface = _
 
   val tablename = "test_table"
 
   override def beforeAll(): Unit = {
-    jdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db, username = jdbcCfg.user, password = jdbcCfg.password, logLevel=Level.OFF))
+    jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
   }
 
   override def beforeEach(): Unit = {
@@ -132,7 +123,7 @@ class JDBCTests extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEa
   }
 
   it should "Fail to connect to the wrong database" in {
-    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", username = jdbcCfg.user, password = jdbcCfg.password, logLevel=Level.OFF))
+    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", username = jdbcCfg.username, password = jdbcCfg.password, logLevel=jdbcCfg.logLevel))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
