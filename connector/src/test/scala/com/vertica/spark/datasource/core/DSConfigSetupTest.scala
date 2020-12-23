@@ -79,6 +79,6 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val opts = Map("logging_level" -> "OTHER")
     val err = parseErrorInitConfig(opts)
     println(err.msg)
-    assert(err.err == LOGGING_LEVEL_PARSE_ERR)
+    assert(err.err == InvalidLoggingLevel)
   }
 }
