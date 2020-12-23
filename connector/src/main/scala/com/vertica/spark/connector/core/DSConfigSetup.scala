@@ -62,7 +62,7 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
     val logLevel = DSConfigSetupUtils.getLogLevel(config)
     logLevel match {
       case Some(level) => Right(DistributedFilestoreReadConfig(level))
-      case None => return Left(ConnectorError(InvalidLoggingLevel))
+      case None => Left(ConnectorError(InvalidLoggingLevel))
     }
   }
 
@@ -83,7 +83,7 @@ class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupI
     val logLevel = DSConfigSetupUtils.getLogLevel(config)
     logLevel match {
       case Some(level) => Right(DistributedFilestoreWriteConfig(level))
-      case None => return Left(ConnectorError(InvalidLoggingLevel))
+      case None => Left(ConnectorError(InvalidLoggingLevel))
     }
   }
 
