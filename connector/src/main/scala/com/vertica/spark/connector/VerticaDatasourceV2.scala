@@ -93,7 +93,11 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
     val dsConfigSetup: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup(configOptions)
     val config = dsConfigSetup.validateAndGetConfig() match
     {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(errList) => {
+        val errMsgList = for (err <- errList) yield err.msg
+        val msg: String = errMsgList.mkString(",\n")
+        throw new Exception(msg)
+      }
       case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
     }
 

@@ -7,6 +7,11 @@ object ConnectorErrorType extends Enumeration {
   type ConnectorErrorType = Value
 
   val InvalidLoggingLevel = Value("logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead.")
+  val ConfigBuilderError = Value("There was an unexpected problem building the configuration object. Mandatory value missing.")
+  val HostMissingError = Value("The 'host' param is missing. Please specify the IP address or hostname of the Vertica server to connect to.")
+  val DbMissingError = Value("The 'db' param is missing. Please specify the name of the Vertica database to connect to..")
+  val UserMissingError = Value("The 'user' param is missing. Please specify the username to use for authenticating with Vertica.")
+  val PasswordMissingError = Value("The 'user' param is missing. Please specify the username to use for authenticating with Vertica.")
 }
 import ConnectorErrorType._
 
