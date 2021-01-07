@@ -16,6 +16,12 @@ import java.util
 
 import scala.collection.JavaConversions._
 
+import com.vertica.spark.datasource.core.VerticaPipeFactory
+import com.vertica.spark.datasource.core.VerticaPipeInterface
+import com.vertica.spark.datasource.core.VerticaPipeReadInterface
+import com.vertica.spark.config.VerticaMetadata
+
+trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
 class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory{
 
@@ -33,7 +39,19 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "return a Scan Builder" in {
-    val opts = Map("logging_level" -> "ERROR")
+    val opts = Map("logging_level" -> "ERROR",
+                   "host" -> "1.1.1.1",
+                   "port" -> "1234",
+                   "db" -> "testdb",
+                   "user" -> "user",
+                   "password" -> "password",
+                   "tablename" -> "tbl"
+                   )
+    // Set mock pipe
+    val mockPipe = mock[DummyReadPipe]
+    (mockPipe.getMetadata _).expects().returning(Right(mock[VerticaMetadata])).once()
+    VerticaPipeFactory.readPipeOverride = Some(mockPipe)
+
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), opts )
     val readTable = table.asInstanceOf[SupportsRead]

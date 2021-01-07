@@ -6,8 +6,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 
 final case class DataBlock(data: List[InternalRow])
 
-final case class VerticaMetadata()
-
 /**
   * Interface for the pipe that connects us to Vertica. Agnostic to the method used to transfer the data.
   *
@@ -82,5 +80,5 @@ trait VerticaPipeReadInterface {
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit]   // Called from executor
+  def endPartitionRead(): Either[ConnectorError, Unit] 
 }

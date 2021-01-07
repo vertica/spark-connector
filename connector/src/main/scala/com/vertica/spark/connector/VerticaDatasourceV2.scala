@@ -9,7 +9,6 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import com.vertica.spark.config.{DistributedFilestoreReadConfig, ReadConfig, WriteConfig}
 import com.vertica.spark.util.error.ConnectorError
 
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
@@ -98,7 +97,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
         val msg: String = errMsgList.mkString(",\n")
         throw new Exception(msg)
       }
-      case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
+      case Right(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
     }
 
     config.getLogger(classOf[VerticaTable]).debug("Config loaded")

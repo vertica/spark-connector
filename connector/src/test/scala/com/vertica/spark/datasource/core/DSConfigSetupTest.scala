@@ -39,8 +39,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   def parseErrorInitConfig(opts : Map[String, String]) : ConnectorError = {
     val dsConfigSetup = new DSReadConfigSetup(opts)
     val error : ConnectorError = dsConfigSetup.validateAndGetConfig() match {
-      case Left(err) =>  {
-        err
+      case Left(errList) =>  {
+        errList(0)
       }
       case Right(config) => {
         assert(false)
@@ -50,35 +50,4 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     error
   }
 
-  it should "parse the logging level" in {
-    var opts = Map("logging_level" -> "ERROR")
-    var config = parseCorrectInitConfig(opts)
-    assert(config.logLevel == Level.ERROR)
-
-    opts = Map("logging_level" -> "DEBUG")
-    config = parseCorrectInitConfig(opts)
-    assert(config.logLevel == Level.DEBUG)
-
-    opts = Map("logging_level" -> "WARNING")
-    config = parseCorrectInitConfig(opts)
-    assert(config.logLevel == Level.WARN)
-
-    opts = Map("logging_level" -> "INFO")
-    config = parseCorrectInitConfig(opts)
-    assert(config.logLevel == Level.INFO)
-  }
-
-
-  it should "default to ERROR logging level" in {
-    var opts = Map[String, String]()
-    var config = parseCorrectInitConfig(opts)
-    assert(config.logLevel == Level.ERROR)
-  }
-
-  it should "error given incorrect logging_level param" in {
-    val opts = Map("logging_level" -> "OTHER")
-    val err = parseErrorInitConfig(opts)
-    println(err.msg)
-    assert(err.err == InvalidLoggingLevel)
-  }
 }

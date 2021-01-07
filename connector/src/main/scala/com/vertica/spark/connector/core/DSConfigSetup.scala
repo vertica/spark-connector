@@ -9,6 +9,9 @@ import ch.qos.logback.classic.Level
 
 import com.vertica.spark.config._
 
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
 
 /**
@@ -37,14 +40,14 @@ object DSConfigSetupUtils {
   /**
     * Parses the log level from options.
     */
-  def getLogLevel(config: Map[String, String]): Option[Level] = {
+  def getLogLevel(config: Map[String, String]): Either[ConnectorError, Level] = {
     config.get("logging_level").map {
-      case "ERROR" => Some(Level.ERROR)
-      case "DEBUG" => Some(Level.DEBUG)
-      case "WARNING" => Some(Level.WARN)
-      case "INFO" => Some(Level.INFO)
-      case _ => None
-    }.getOrElse(Some(Level.ERROR))
+      case "ERROR" => Right(Level.ERROR)
+      case "DEBUG" => Right(Level.DEBUG)
+      case "WARNING" => Right(Level.WARN)
+      case "INFO" => Right(Level.INFO)
+      case _ => Left(ConnectorError(InvalidLoggingLevel))
+    }.getOrElse(Right(Level.ERROR))
   }
 
   def getHost(config: Map[String, String]): Either[ConnectorError, String] = {
@@ -52,8 +55,12 @@ object DSConfigSetupUtils {
   }
 
   def getPort(config: Map[String, String]): Either[ConnectorError, Integer] = {
-    Right(config.get("port").getOrElse("5543").toInt) // default value
-    // TODO: check if number
+    Try {config.get("port").getOrElse("5543").toInt} match {
+      case Success(i) => {
+        if(i >= 1 && i <= 65535) Right(i) else Left(ConnectorError(InvalidPortError))
+      }
+      case Failure(ex) => Left(ConnectorError(InvalidPortError))
+    }
   }
 
   def getDb(config: Map[String, String]): Either[ConnectorError, String] = {
@@ -65,54 +72,86 @@ object DSConfigSetupUtils {
     //TODO: make option once kerberos support is introduced
   }
 
+  def getTablename(config: Map[String, String]): Either[ConnectorError, String] = {
+    if(config.contains("tablename")) Right(config.get("tablename").getOrElse("")) else Left(ConnectorError(TablenameMissingError))
+  }
+
   def getPassword(config: Map[String, String]): Either[ConnectorError, String] = {
     if(config.contains("password")) Right(config.get("password").getOrElse("")) else Left(ConnectorError(PasswordMissingError))
     //TODO: make option once kerberos support is introduced
   }
 
-  def validateAndGetJDBCConfig(config: Map[String, String], logLevelOption: Option[Level]): Either[Seq[ConnectorError], JDBCConfig] = {
-    var errorList : List[ConnectorError] = List()
+}
 
-    // A little much duplication here. Tried to factor it out with a function to make it cleaner, but the issue with that is that you can't assign a tuple to mutable state in one line
-    // val (x,y) = func() works,
-    // (x,y) = func() does not
-    // Where x,y are the parsed value and the error list
-    // Open to suggestion here
-    var hostOption: Option[String] = getHost(config) match {
-      case Right(host) => Some(host)
+/**
+  * Trait to be inhereted for parser classes. Allows for pattern of parsing several options and storing any errors encountered in a list.
+  */
+trait ConfigParser[ErrorType] {
+
+  /**
+   * List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
+   */
+  var errorList : List[ErrorType] = List()
+
+  /**
+    * Takes an Either between a result and error type. Returns an option for the result type and adds any errors to the error list
+    */
+  def checkEitherError[DataType](either: Either[ErrorType, DataType]): Option[DataType] = {
+    either match {
+      case Right(value) => {
+        Some(value)
+      }
       case Left(err) => {
         errorList = errorList :+ err
         None
       }
     }
-    var portOption: Option[Integer] = getPort(config) match {
-      case Right(port) => Some(port)
-      case Left(err) => {
-        errorList = errorList :+ err
+  }
+
+  /**
+    * Version of checkEitherError where a sequence of errors is an option rather than a single error. This sequence of errors is merged into the existing list of errors.
+    */
+  def checkEitherErrorList[DataType](either: Either[Seq[ErrorType], DataType]): Option[DataType] = {
+    either match {
+      case Right(value) => {
+        Some(value)
+      }
+      case Left(errList) => {
+        errorList = errorList ++ errList
         None
       }
     }
-    var dbOption: Option[String] = getDb(config) match {
-      case Right(db) => Some(db)
-      case Left(err) => {
-        errorList = errorList :+ err
-        None
-      }
-    }
-    var userOption: Option[String] = getUser(config) match {
-      case Right(user) => Some(user)
-      case Left(err) => {
-        errorList = errorList :+ err
-        None
-      }
-    }
-    var passwordOption: Option[String] = getPassword(config) match {
-      case Right(user) => Some(user)
-      case Left(err) => {
-        errorList = errorList :+ err
-        None
-      }
-    }
+  }
+
+
+  /**
+    *
+    */
+  def resetErrList: Unit = {
+    errorList = List()
+  }
+}
+
+/**
+  * Parser for JDBC configuration
+  */
+class JDBCConfigParser() extends ConfigParser[ConnectorError] {
+
+  /**
+    * Parses the config map for JDBC config params, collecting any errors.
+    */
+  def validateAndGetJDBCConfig(config: Map[String, String], logLevelOption: Option[Level]): Either[Seq[ConnectorError], JDBCConfig] = {
+    resetErrList
+
+    var hostOption = checkEitherError[String](DSConfigSetupUtils.getHost(config))
+
+    var portOption = checkEitherError[Integer](DSConfigSetupUtils.getPort(config))
+
+    var dbOption = checkEitherError[String](DSConfigSetupUtils.getDb(config))
+
+    var userOption = checkEitherError[String](DSConfigSetupUtils.getUser(config))
+
+    var passwordOption = checkEitherError[String](DSConfigSetupUtils.getPassword(config))
 
     if(errorList.size > 0) {
       Left(errorList)
@@ -124,13 +163,15 @@ object DSConfigSetupUtils {
         case (Some(host), Some(port), Some(db), Some(user), Some(password), Some(loggingLevel)) => {
           Right(JDBCConfig(host=host, port=port, db=db, username=user, password=password, logLevel = loggingLevel))
         }
+        case (Some(host), Some(port), Some(db), Some(user), Some(password), None) => {
+          Left(List())
+        }
         case _ => {
           Left(List(ConnectorError(ConfigBuilderError)))
         }
       }
     }
   }
-
 }
 
 /**
@@ -138,12 +179,14 @@ object DSConfigSetupUtils {
   *
   * Contains mutable state for building out the configuration from the user map, which it then turns into immutable state when validateAndGetConfig() is called.
   */
-class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[ReadConfig] with ConfigParser[ConnectorError] {
 
 
   // Configuration parameters (mandatory for config)
   var loggingLevelOption: Option[Level] = None
   var jdbcConfigOption: Option[JDBCConfig] = None
+  var tablenameOption: Option[String] = None
+  var verticaMetadata: Option[VerticaMetadata] = None
 
   /**
     * Validates the user option map and parses read config
@@ -151,25 +194,13 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
     * @return Either [[ReadConfig]] or sequence of [[ConnectorError]]
     */
   override def validateAndGetConfig(): Either[Seq[ConnectorError], ReadConfig] = {
-    // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
-    var errorList : List[ConnectorError] = List()
+    resetErrList
 
-    loggingLevelOption = DSConfigSetupUtils.getLogLevel(config) match {
-      case Some(level) => Some(level)
-      case None => {
-        errorList = errorList :+ ConnectorError(InvalidLoggingLevel)
-        None
-      }
-    }
+    loggingLevelOption = checkEitherError[Level](DSConfigSetupUtils.getLogLevel(config))
 
-    jdbcConfigOption = DSConfigSetupUtils.validateAndGetJDBCConfig(config, loggingLevelOption) match {
-      case Right(jdbcConfig) => Some(jdbcConfig)
-      case Left(errList) => {
-        errorList = errorList ++ errList
-        None
-      }
-    }
+    jdbcConfigOption = checkEitherErrorList[JDBCConfig](new JDBCConfigParser().validateAndGetJDBCConfig(config, loggingLevelOption))
 
+    tablenameOption = checkEitherError[String](DSConfigSetupUtils.getTablename(config))
 
     if(errorList.size > 0) {
       Left(errorList)
@@ -177,21 +208,37 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
     else
     {
       // Sanity check: make sure required values exist
-      (loggingLevelOption) match {
-        case (Some(loggingLevel)) => Right(DistributedFilestoreReadConfig(logLevel = loggingLevel))
+      (loggingLevelOption, jdbcConfigOption, tablenameOption) match {
+        case (Some(loggingLevel), Some(jdbcConfig), Some(tablename)) => {
+          // First, create initial config without metadata
+          val initialConfig = DistributedFilesystemReadConfig(logLevel = loggingLevel, jdbcConfig = jdbcConfig, tablename = tablename, metadata=None)
+
+          // Get pipe
+          val pipe = VerticaPipeFactory.getReadPipe(initialConfig)
+
+          // Then, retrieve metadata
+          pipe.getMetadata() match {
+            case Left(err) => Left(List(err))
+            case Right(metadata) => Right(initialConfig.copy(metadata=Some(metadata)))
+          }
+        }
         case _ => Left(List(ConnectorError(ConfigBuilderError)))
       }
     }
   }
 
-  override def getTableSchema(): Either[ConnectorError, StructType] = ???
-    // readConfig.metada.schema
+  override def getTableSchema(): Either[ConnectorError, StructType] =  {
+    verticaMetadata match {
+      case None => Left(ConnectorError(SchemaDiscoveryError))
+      case Some(metadata) => Right(metadata.schema)
+    }
+  }
 }
 
 /**
   * Implementation for parsing user option map and getting write config
   */
-class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[WriteConfig] {
+class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[WriteConfig] with ConfigParser[ConnectorError]{
 
   // Configuration parameters (mandatory for config)
   var loggingLevelOption: Option[Level] = None
@@ -203,15 +250,9 @@ class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupI
     */
   override def validateAndGetConfig(): Either[Seq[ConnectorError], WriteConfig] = {
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
-    var errorList : List[ConnectorError] = List()
+    resetErrList
 
-    loggingLevelOption = DSConfigSetupUtils.getLogLevel(config) match {
-      case Some(level) => Some(level)
-      case None => {
-        errorList = errorList :+ ConnectorError(InvalidLoggingLevel)
-        None
-      }
-    }
+    loggingLevelOption = checkEitherError[Level](DSConfigSetupUtils.getLogLevel(config))
 
     if(errorList.size > 0) {
       Left(errorList)
@@ -220,7 +261,7 @@ class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupI
     {
       // Sanity check: make sure required values exist
       (loggingLevelOption) match {
-        case (Some(loggingLevel)) => Right(DistributedFilestoreWriteConfig(logLevel = loggingLevel))
+        case (Some(loggingLevel)) => Right(DistributedFilesystemWriteConfig(logLevel = loggingLevel))
         case _ => Left(List(ConnectorError(ConfigBuilderError)))
       }
     }
