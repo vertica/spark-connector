@@ -2,16 +2,13 @@ package com.vertica.spark.util.schema
 
 import com.vertica.spark.jdbc._
 import org.apache.spark.sql.types._
-import java.sql.SQLException
 import java.sql.ResultSetMetaData
 
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
 
-import com.vertica.spark.config._
-
 trait SchemaToolsImpl {
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[Seq[SchemaError], StructType]
+  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
 }
 
 class SchemaToolsDefaultImpl extends SchemaToolsImpl {
@@ -73,10 +70,9 @@ class SchemaToolsDefaultImpl extends SchemaToolsImpl {
   var schema : Option[StructType] = None
 
     jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0") match {
-      case Left(err) => {
+      case Left(err) =>
         errList = errList :+ SchemaError(JdbcError, err.msg)
-      }
-      case Right(rs) => {
+      case Right(rs) =>
         try {
           val rsmd = rs.getMetaData
           val ncols = rsmd.getColumnCount
@@ -95,29 +91,24 @@ class SchemaToolsDefaultImpl extends SchemaToolsImpl {
 
             getCatalystType(dataType, fieldSize, fieldScale, isSigned, typeName) match {
 
-              case Right(columnType) => {
+              case Right(columnType) =>
                 fields(i) = StructField(columnName, columnType, nullable, metadata.build())
-              }
-              case Left(err) => {
+              case Left(err) =>
                 errList = errList :+ err
-              }
             }
             i = i + 1
           }
-          if(errList.size == 0) {
+          if(errList.isEmpty) {
             schema = Some(new StructType(fields))
           }
         }
         catch {
-          case e: Throwable => {
-            errList = errList :+ SchemaError(UnexpectedExceptionError, e.getMessage())
-          }
+          case e: Throwable =>
+            errList = errList :+ SchemaError(UnexpectedExceptionError, e.getMessage)
         }
         finally {
-          rs.close();
+          rs.close()
         }
-      }
-
     }
 
     schema match {

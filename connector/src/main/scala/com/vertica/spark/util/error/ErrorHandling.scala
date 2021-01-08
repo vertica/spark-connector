@@ -22,8 +22,8 @@ import ConnectorErrorType._
 /**
   * General connector error returned when something goes wrong.
   */
-case class ConnectorError(err: ConnectorErrorType) {
-  def msg = err.toString
+final case class ConnectorError(err: ConnectorErrorType) {
+  def msg: String = err.toString
 }
 
 /**
@@ -44,8 +44,8 @@ import JdbcErrorType._
 /**
   * Specific jdbc connector error returned when an operation with the JDBC interface goes wrong.
   */
-case class JDBCLayerError(err: JdbcErrorType, value: String = "") {
-  def msg = {
+final case class JDBCLayerError(err: JdbcErrorType, value: String = "") {
+  def msg: String = {
     err match {
       case SyntaxError | DataTypeError | GenericError => err.toString + ": " + value
       case _ => err.toString
@@ -71,8 +71,8 @@ import SchemaErrorType._
 /**
   * Specific jdbc connector error returned when an operation with the JDBC interface goes wrong.
   */
-case class SchemaError(err: SchemaErrorType, value: String = "") {
-  def msg = {
+final case class SchemaError(err: SchemaErrorType, value: String = "") {
+  def msg: String = {
     err match {
       case MissingConversionError | UnexpectedExceptionError => err.toString + ": " + value
       case JdbcError => err.toString + ", JDBC Error: \n " + value

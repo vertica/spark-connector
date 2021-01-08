@@ -88,7 +88,7 @@ trait ConfigParser[ErrorType] {
   /**
    * List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
    */
-  var errorList : List[ErrorType] = List()
+  var errorList: List[ErrorType] = List()
 
   /**
     * Takes an Either between a result and error type. Returns an option for the result type and adds any errors to the error list
