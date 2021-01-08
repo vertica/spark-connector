@@ -17,7 +17,7 @@ trait GenericConfig {
   def getLogger(c: Class[_]): Logger = {
     val logger = Logger(c)
     Try{logger.underlying.asInstanceOf[classic.Logger].setLevel(logLevel) } match {
-      case Failure(ex) => logger.error("Could not set log level based on configuration.")
+      case Failure(_) => logger.error("Could not set log level based on configuration.")
       case Success(_) => 
     }
 

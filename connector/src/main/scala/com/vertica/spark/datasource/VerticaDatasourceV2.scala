@@ -9,8 +9,6 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import com.vertica.spark.util.error.ConnectorError
-
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
 import com.vertica.spark.datasource.core.DSReadConfigSetup
 import com.vertica.spark.datasource.core.DSWriteConfigSetup
@@ -92,11 +90,10 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
     val dsConfigSetup: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup(configOptions)
     val config = dsConfigSetup.validateAndGetConfig() match
     {
-      case Left(errList) => {
+      case Left(errList) =>
         val errMsgList = for (err <- errList) yield err.msg
         val msg: String = errMsgList.mkString(",\n")
         throw new Exception(msg)
-      }
       case Right(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
     }
 

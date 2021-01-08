@@ -4,7 +4,6 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import org.apache.spark.sql.types.StructType
 
-import com.typesafe.scalalogging.Logger
 import ch.qos.logback.classic.Level
 
 import com.vertica.spark.config._
@@ -28,7 +27,7 @@ trait DSConfigSetupInterface[T] {
   /**
     * Returns the schema for the table as required by Spark.
     */
-  def getTableSchema(): Either[ConnectorError, StructType]
+  def getTableSchema: Either[ConnectorError, StructType]
 }
 
 
@@ -51,33 +50,31 @@ object DSConfigSetupUtils {
   }
 
   def getHost(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("host")) Right(config.get("host").getOrElse("")) else Left(ConnectorError(HostMissingError))
+    if(config.contains("host")) Right(config.getOrElse("host", "")) else Left(ConnectorError(HostMissingError))
   }
 
   def getPort(config: Map[String, String]): Either[ConnectorError, Integer] = {
-    Try {config.get("port").getOrElse("5543").toInt} match {
-      case Success(i) => {
-        if(i >= 1 && i <= 65535) Right(i) else Left(ConnectorError(InvalidPortError))
-      }
-      case Failure(ex) => Left(ConnectorError(InvalidPortError))
+    Try {config.getOrElse("port","5543").toInt} match {
+      case Success(i) => if(i >= 1 && i <= 65535) Right(i) else Left(ConnectorError(InvalidPortError))
+      case Failure(_) => Left(ConnectorError(InvalidPortError))
     }
   }
 
   def getDb(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("db")) Right(config.get("db").getOrElse("")) else Left(ConnectorError(DbMissingError))
+    if(config.contains("db")) Right(config.getOrElse("db","")) else Left(ConnectorError(DbMissingError))
   }
 
   def getUser(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("user")) Right(config.get("user").getOrElse("")) else Left(ConnectorError(UserMissingError))
+    if(config.contains("user")) Right(config.getOrElse("user","")) else Left(ConnectorError(UserMissingError))
     //TODO: make option once kerberos support is introduced
   }
 
   def getTablename(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("tablename")) Right(config.get("tablename").getOrElse("")) else Left(ConnectorError(TablenameMissingError))
+    if(config.contains("tablename")) Right(config.getOrElse("tablename","")) else Left(ConnectorError(TablenameMissingError))
   }
 
   def getPassword(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("password")) Right(config.get("password").getOrElse("")) else Left(ConnectorError(PasswordMissingError))
+    if(config.contains("password")) Right(config.getOrElse("password","")) else Left(ConnectorError(PasswordMissingError))
     //TODO: make option once kerberos support is introduced
   }
 
@@ -98,13 +95,11 @@ trait ConfigParser[ErrorType] {
     */
   def checkEitherError[DataType](either: Either[ErrorType, DataType]): Option[DataType] = {
     either match {
-      case Right(value) => {
+      case Right(value) =>
         Some(value)
-      }
-      case Left(err) => {
+      case Left(err) =>
         errorList = errorList :+ err
         None
-      }
     }
   }
 
@@ -113,20 +108,14 @@ trait ConfigParser[ErrorType] {
     */
   def checkEitherErrorList[DataType](either: Either[Seq[ErrorType], DataType]): Option[DataType] = {
     either match {
-      case Right(value) => {
+      case Right(value) =>
         Some(value)
-      }
-      case Left(errList) => {
+      case Left(errList) =>
         errorList = errorList ++ errList
         None
-      }
     }
   }
 
-
-  /**
-    *
-    */
   def resetErrList: Unit = {
     errorList = List()
   }
@@ -143,32 +132,29 @@ class JDBCConfigParser() extends ConfigParser[ConnectorError] {
   def validateAndGetJDBCConfig(config: Map[String, String], logLevelOption: Option[Level]): Either[Seq[ConnectorError], JDBCConfig] = {
     resetErrList
 
-    var hostOption = checkEitherError[String](DSConfigSetupUtils.getHost(config))
+    val hostOption = checkEitherError[String](DSConfigSetupUtils.getHost(config))
 
-    var portOption = checkEitherError[Integer](DSConfigSetupUtils.getPort(config))
+    val portOption = checkEitherError[Integer](DSConfigSetupUtils.getPort(config))
 
-    var dbOption = checkEitherError[String](DSConfigSetupUtils.getDb(config))
+    val dbOption = checkEitherError[String](DSConfigSetupUtils.getDb(config))
 
-    var userOption = checkEitherError[String](DSConfigSetupUtils.getUser(config))
+    val userOption = checkEitherError[String](DSConfigSetupUtils.getUser(config))
 
-    var passwordOption = checkEitherError[String](DSConfigSetupUtils.getPassword(config))
+    val passwordOption = checkEitherError[String](DSConfigSetupUtils.getPassword(config))
 
-    if(errorList.size > 0) {
+    if(errorList.nonEmpty) {
       Left(errorList)
     }
     else
     {
       // Sanity check: make sure required values exist
       (hostOption, portOption, dbOption, userOption, passwordOption, logLevelOption) match {
-        case (Some(host), Some(port), Some(db), Some(user), Some(password), Some(loggingLevel)) => {
+        case (Some(host), Some(port), Some(db), Some(user), Some(password), Some(loggingLevel)) =>
           Right(JDBCConfig(host=host, port=port, db=db, username=user, password=password, logLevel = loggingLevel))
-        }
-        case (Some(host), Some(port), Some(db), Some(user), Some(password), None) => {
+        case (Some(host), Some(port), Some(db), Some(user), Some(password), None) =>
           Left(List())
-        }
-        case _ => {
+        case _ =>
           Left(List(ConnectorError(ConfigBuilderError)))
-        }
       }
     }
   }
@@ -202,14 +188,14 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
 
     tablenameOption = checkEitherError[String](DSConfigSetupUtils.getTablename(config))
 
-    if(errorList.size > 0) {
+    if(errorList.nonEmpty) {
       Left(errorList)
     }
     else
     {
       // Sanity check: make sure required values exist
       (loggingLevelOption, jdbcConfigOption, tablenameOption) match {
-        case (Some(loggingLevel), Some(jdbcConfig), Some(tablename)) => {
+        case (Some(loggingLevel), Some(jdbcConfig), Some(tablename)) =>
           // First, create initial config without metadata
           val initialConfig = DistributedFilesystemReadConfig(logLevel = loggingLevel, jdbcConfig = jdbcConfig, tablename = tablename, metadata=None)
 
@@ -217,17 +203,16 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
           val pipe = VerticaPipeFactory.getReadPipe(initialConfig)
 
           // Then, retrieve metadata
-          pipe.getMetadata() match {
+          pipe.getMetadata match {
             case Left(err) => Left(List(err))
             case Right(metadata) => Right(initialConfig.copy(metadata=Some(metadata)))
           }
-        }
         case _ => Left(List(ConnectorError(ConfigBuilderError)))
       }
     }
   }
 
-  override def getTableSchema(): Either[ConnectorError, StructType] =  {
+  override def getTableSchema: Either[ConnectorError, StructType] =  {
     verticaMetadata match {
       case None => Left(ConnectorError(SchemaDiscoveryError))
       case Some(metadata) => Right(metadata.schema)
@@ -254,19 +239,19 @@ class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupI
 
     loggingLevelOption = checkEitherError[Level](DSConfigSetupUtils.getLogLevel(config))
 
-    if(errorList.size > 0) {
+    if(errorList.nonEmpty) {
       Left(errorList)
     }
     else
     {
       // Sanity check: make sure required values exist
-      (loggingLevelOption) match {
-        case (Some(loggingLevel)) => Right(DistributedFilesystemWriteConfig(logLevel = loggingLevel))
+      loggingLevelOption match {
+        case Some(loggingLevel) => Right(DistributedFilesystemWriteConfig(logLevel = loggingLevel))
         case _ => Left(List(ConnectorError(ConfigBuilderError)))
       }
     }
   }
 
-  override def getTableSchema(): Either[ConnectorError, StructType] = ???
+  override def getTableSchema: Either[ConnectorError, StructType] = ???
 }
 

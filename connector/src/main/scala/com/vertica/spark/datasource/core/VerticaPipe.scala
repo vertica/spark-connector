@@ -17,12 +17,12 @@ trait VerticaPipeInterface {
     *
     * Can include schema and things like node information / segmentation -- should have caching mechanism
     */
-  def getMetadata(): Either[ConnectorError, VerticaMetadata]
+  def getMetadata: Either[ConnectorError, VerticaMetadata]
 
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  def getDataBlockSize(): Either[ConnectorError, Long]
+  def getDataBlockSize: Either[ConnectorError, Long]
 }
 
 /**
