@@ -16,9 +16,7 @@ import java.util
 
 import scala.collection.JavaConversions._
 
-import com.vertica.spark.datasource.core.VerticaPipeFactory
-import com.vertica.spark.datasource.core.VerticaPipeInterface
-import com.vertica.spark.datasource.core.VerticaPipeReadInterface
+import com.vertica.spark.datasource.core._
 import com.vertica.spark.config.VerticaMetadata
 
 trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
@@ -29,6 +27,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   override def afterAll(): Unit = {
+    VerticaPipeFactory.impl = new VerticaPipeFactoryDefaultImpl()
   }
 
   it should "return a Vertica Table" in {
@@ -50,7 +49,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(mock[VerticaMetadata])).once()
-    VerticaPipeFactory.readPipeOverride = Some(mockPipe)
+    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
 
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), opts )

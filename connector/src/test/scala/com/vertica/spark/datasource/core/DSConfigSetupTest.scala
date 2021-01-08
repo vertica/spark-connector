@@ -10,12 +10,15 @@ import org.scalamock.scalatest.MockFactory
 
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
+import com.vertica.spark.datasource.core._
+import org.apache.spark.sql.types._
 
 class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   override def beforeAll(): Unit = {
   }
 
   override def afterAll(): Unit = {
+    VerticaPipeFactory.impl = new VerticaPipeFactoryDefaultImpl()
   }
 
   // Parses config expecting success
@@ -36,18 +39,90 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
   // Parses config expecting an error
   // Calling test will fail if the config is parsed without error
-  def parseErrorInitConfig(opts : Map[String, String]) : ConnectorError = {
+  def parseErrorInitConfig(opts : Map[String, String]) : Seq[ConnectorError] = {
     val dsConfigSetup = new DSReadConfigSetup(opts)
-    val error : ConnectorError = dsConfigSetup.validateAndGetConfig() match {
+    dsConfigSetup.validateAndGetConfig() match {
       case Left(errList) =>  {
-        errList(0)
+        errList
       }
       case Right(config) => {
         assert(false)
-        mock[ConnectorError]
+        List[ConnectorError]()
       }
     }
-    error
   }
 
+
+  it should "parse a valid read config" in {
+    val opts = Map("logging_level" -> "ERROR",
+                   "host" -> "1.1.1.1",
+                   "port" -> "1234",
+                   "db" -> "testdb",
+                   "user" -> "user",
+                   "password" -> "password",
+                   "tablename" -> "tbl"
+    )
+
+    // Set mock pipe
+    val mockPipe = mock[DummyReadPipe]
+    (mockPipe.getMetadata _).expects().returning(Right(new VerticaMetadata(new StructType))).once()
+    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+
+    parseCorrectInitConfig(opts) match {
+      case config: DistributedFilesystemReadConfig => {
+        assert(config.jdbcConfig.host == "1.1.1.1")
+        assert(config.jdbcConfig.port == 1234)
+        assert(config.jdbcConfig.db == "testdb")
+        assert(config.jdbcConfig.username == "user")
+        assert(config.jdbcConfig.password == "password")
+        assert(config.tablename == "tbl")
+        assert(config.logLevel == Level.ERROR)
+        config.metadata match {
+          case Some(metadata) => assert(metadata.schema == new StructType())
+          case None => assert(false)
+        }
+      }
+    }
+  }
+
+  it should "Return several parsing errors" in {
+    // Should be one error from the jdbc parser for the port and one for the missing log level
+    val opts = Map("logging_level" -> "invalid",
+                   "host" -> "1.1.1.1",
+                   "db" -> "testdb",
+                   "port" -> "asdf",
+                   "user" -> "user",
+                   "password" -> "password",
+                   "tablename" -> "tbl"
+    )
+
+    val errSeq = parseErrorInitConfig(opts)
+    assert(errSeq.size == 2)
+    assert(!errSeq.filter(err => err.err == InvalidPortError).isEmpty)
+    assert(!errSeq.filter(err => err.err == InvalidLoggingLevel).isEmpty)
+  }
+
+  it should "Return error when there's a problem retrieving metadata" in {
+
+    val opts = Map("logging_level" -> "ERROR",
+                   "host" -> "1.1.1.1",
+                   "port" -> "1234",
+                   "db" -> "testdb",
+                   "user" -> "user",
+                   "password" -> "password",
+                   "tablename" -> "tbl"
+    )
+
+    // Set mock pipe
+
+    val mockPipe = mock[DummyReadPipe]
+    (mockPipe.getMetadata _).expects().returning(Left(ConnectorError(SchemaDiscoveryError)))
+    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+
+    val errSeq = parseErrorInitConfig(opts)
+    assert(errSeq.size == 1)
+    assert(!errSeq.filter(err => err.err == SchemaDiscoveryError).isEmpty)
+  }
 }

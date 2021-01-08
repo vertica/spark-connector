@@ -26,7 +26,7 @@ class SchemaToolsDefaultImpl extends SchemaToolsImpl {
       case java.sql.Types.ARRAY => null
       case java.sql.Types.BIGINT =>  if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION,0)} //spark 2.x
       case java.sql.Types.BINARY => BinaryType
-      case java.sql.Types.BIT => BooleanType // @see JdbcDialect for quirks
+      case java.sql.Types.BIT => BooleanType
       case java.sql.Types.BLOB => BinaryType
       case java.sql.Types.BOOLEAN => BooleanType
       case java.sql.Types.CHAR => StringType
@@ -97,17 +97,19 @@ class SchemaToolsDefaultImpl extends SchemaToolsImpl {
 
               case Right(columnType) => {
                 fields(i) = StructField(columnName, columnType, nullable, metadata.build())
-                i = i + 1
               }
               case Left(err) => {
                 errList = errList :+ err
               }
             }
+            i = i + 1
           }
-          schema = Some(new StructType(fields))
+          if(errList.size == 0) {
+            schema = Some(new StructType(fields))
+          }
         }
         catch {
-          case e: SQLException => {
+          case e: Throwable => {
             errList = errList :+ SchemaError(UnexpectedExceptionError, e.getMessage())
           }
         }
