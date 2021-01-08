@@ -50,7 +50,10 @@ object DSConfigSetupUtils {
   }
 
   def getHost(config: Map[String, String]): Either[ConnectorError, String] = {
-    if(config.contains("host")) Right(config.getOrElse("host", "")) else Left(ConnectorError(HostMissingError))
+    config.get("host") match {
+      case Some(host) => Right(host)
+      case None => Left(ConnectorError(HostMissingError))
+    }
   }
 
   def getPort(config: Map[String, String]): Either[ConnectorError, Integer] = {
