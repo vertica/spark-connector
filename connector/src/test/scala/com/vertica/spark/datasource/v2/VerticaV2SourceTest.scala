@@ -48,7 +48,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
                    )
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Right(mock[VerticaMetadata])).once()
+    (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
     VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
     (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
 
