@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config._
 
 trait VerticaPipeFactoryImpl {
-  def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface 
+  def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
 }
 
 class VerticaPipeFactoryDefaultImpl extends VerticaPipeFactoryImpl{
@@ -18,7 +18,7 @@ class VerticaPipeFactoryDefaultImpl extends VerticaPipeFactoryImpl{
  * Factory that creates the correct pipe given the configuration specified by the user.
  */
 object VerticaPipeFactory {
-  var impl : VerticaPipeFactoryImpl = new VerticaPipeFactoryDefaultImpl()
+  var impl: VerticaPipeFactoryImpl = new VerticaPipeFactoryDefaultImpl()
 
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     impl.getReadPipe(config)

@@ -74,11 +74,11 @@ trait VerticaPipeReadInterface {
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData : Either[ConnectorError, DataBlock]
+  def readData: Either[ConnectorError, DataBlock]
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit] 
+  def endPartitionRead(): Either[ConnectorError, Unit]
 }

@@ -1,3 +1,3 @@
 package com.vertica.spark.config
 
-case class HDFSConfig(address: String) extends GenericConfig
+final case class HDFSConfig(address: String) extends GenericConfig
