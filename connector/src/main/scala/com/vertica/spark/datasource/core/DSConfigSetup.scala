@@ -25,12 +25,12 @@ trait DSConfigSetupInterface[T] {
     *
     * @return Will return an error if validation of the user options failed, otherwise will return the configuration structure expected by the writer/reader.
     */
-  def validateAndGetConfig(): DSConfigSetupUtils.ValidationResult[T]
+  def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[T]
 
   /**
     * Returns the schema for the table as required by Spark.
     */
-  def getTableSchema: Either[ConnectorError, StructType]
+  def getTableSchema(config: T): Either[ConnectorError, StructType]
 }
 
 
@@ -99,41 +99,31 @@ object DSConfigSetupUtils {
   /**
    * Parses the config map for JDBC config params, collecting any errors.
    */
-  def validateAndGetJDBCConfig(config: Map[String, String], logLevel: Level): DSConfigSetupUtils.ValidationResult[JDBCConfig] = {
+  def validateAndGetJDBCConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JDBCConfig] = {
     (DSConfigSetupUtils.getHost(config),
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
     DSConfigSetupUtils.getUser(config),
     DSConfigSetupUtils.getPassword(config),
-    logLevel.validNec).mapN(JDBCConfig)
+    DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
 }
 
 /**
   * Implementation for parsing user option map and getting read config
-  *
-  * Contains mutable state for building out the configuration from the user map, which it then turns into immutable state when validateAndGetConfig() is called.
   */
-class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[ReadConfig] {
-
-
-  // Configuration parameters (mandatory for config)
-  var loggingLevelOption: Option[Level] = None
-  var jdbcConfigOption: Option[JDBCConfig] = None
-  var tablenameOption: Option[String] = None
-  var verticaMetadata: Option[VerticaMetadata] = None
-
+object DSReadConfigSetup extends DSConfigSetupInterface[ReadConfig] {
   /**
     * Validates the user option map and parses read config
     *
     * @return Either [[ReadConfig]] or sequence of [[ConnectorError]]
     */
-  override def validateAndGetConfig(): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
-    DSConfigSetupUtils.getLogLevel(config).andThen{ logLevel: Level =>
-      (DSConfigSetupUtils.getLogLevel(config),
-      DSConfigSetupUtils.validateAndGetJDBCConfig(config, logLevel),
+  override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
+    DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
+      (jdbcConfig.logLevel.validNec,
+      jdbcConfig.validNec,
       DSConfigSetupUtils.getTablename(config),
-      None.validNec).mapN(DistributedFilesystemReadConfig).andThen{ initialConfig =>
+      None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
         val pipe = VerticaPipeFactory.getReadPipe(initialConfig)
 
         // Then, retrieve metadata
@@ -142,10 +132,13 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
     }
   }
 
-  override def getTableSchema: Either[ConnectorError, StructType] =  {
-    verticaMetadata match {
-      case None => Left(ConnectorError(SchemaDiscoveryError))
-      case Some(metadata) => Right(metadata.schema)
+  override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
+    config match {
+      case DistributedFilesystemReadConfig(_, _, _, verticaMetadata) =>
+        verticaMetadata match {
+          case None => Left(ConnectorError(SchemaDiscoveryError))
+          case Some(metadata) => Right(metadata.schema)
+        }
     }
   }
 }
@@ -153,16 +146,16 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
 /**
   * Implementation for parsing user option map and getting write config
   */
-class DSWriteConfigSetup(val config: Map[String, String]) extends DSConfigSetupInterface[WriteConfig] {
+object DSWriteConfigSetup extends DSConfigSetupInterface[WriteConfig] {
   /**
     * Validates the user option map and parses read config
     *
-    * @return Either [[ReadConfig]] or [[ConnectorError]]
+    * @return Either [[WriteConfig]] or [[ConnectorError]]
     */
-  override def validateAndGetConfig(): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
+  override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
     DSConfigSetupUtils.getLogLevel(config).map(DistributedFilesystemWriteConfig)
   }
 
-  override def getTableSchema: Either[ConnectorError, StructType] = ???
+  override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = ???
 }
