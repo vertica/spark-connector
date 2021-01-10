@@ -18,6 +18,8 @@ import scala.collection.JavaConversions._
 
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.config.VerticaMetadata
+import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ConnectorErrorType._
 
 trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
@@ -49,8 +51,9 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
+    (mockPipe.doPreReadSteps _).expects().returning(Right(()))
     VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe).anyNumberOfTimes()
 
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), opts )

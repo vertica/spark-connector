@@ -6,13 +6,15 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
+import com.vertica.spark.connector.fs._
+
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val jdbcLayerInsert: Option[JdbcLayerInterface] = None) extends VerticaPipeInterface with VerticaPipeReadInterface {
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayerInsert: Option[JdbcLayerInterface] = None) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   val jdbcLayer: JdbcLayerInterface = jdbcLayerInsert match {
@@ -49,7 +51,33 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
-  def doPreReadSteps(): Either[ConnectorError, Unit] = ???
+  def doPreReadSteps(): Either[ConnectorError, Unit] = {
+    val hadoopConf : Configuration = new Configuration()
+    val metadata = getMetadata()
+    val schema = metadata.schema
+
+    // TODO: get hdfs config from main config
+    val hdfsConfig = new HDFSConfig("hdfs://eng-g9-081.verticacorp.com:8020/tmp/test/")
+
+    val delimiter = if(hdfsConfig.takeRight(1) == "/" || hdfsConfig.takeRight(1) "\\") "" else "/"
+    val hdfsPath = hdfsConfig.address + delimiter + config.tablename
+
+    fileStoreLayer.removeDir(hdfsPath) match {
+      case Left(err) => return Left(err)
+      case Right(_) =>
+    }
+
+    // TODO: Where to get this file size from
+    val maxFileSize = 512
+    val maxRowGroupSize = 64
+    // TODO: File permissions
+
+    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", fileMode = '777', dirMode = '777', rowGroupSizeMB = " + maxRowGroupSize + ") AS SELECT * FROM " + config.tablename"
+    jdbcLayer.execute(exportStatement)
+
+
+    Right(())
+  }
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.

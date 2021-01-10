@@ -199,13 +199,18 @@ class DSReadConfigSetup(val config: Map[String, String]) extends DSConfigSetupIn
           // First, create initial config without metadata
           val initialConfig = DistributedFilesystemReadConfig(logLevel = loggingLevel, jdbcConfig = jdbcConfig, tablename = tablename, metadata=None)
 
-          // Get pipe
-          val pipe = VerticaPipeFactory.getReadPipe(initialConfig)
-
-          // Then, retrieve metadata
-          pipe.getMetadata match {
+          // Retrieve metadata from pipe
+          VerticaPipeFactory.getReadPipe(initialConfig).getMetadata match {
             case Left(err) => Left(List(err))
-            case Right(metadata) => Right(initialConfig.copy(metadata=Some(metadata)))
+            case Right(metadata) =>
+              // Final config that will be sent down to worker nodes
+              val finalConfig = initialConfig.copy(metadata=Some(metadata))
+
+              // Perform any initial setup required
+              VerticaPipeFactory.getReadPipe(finalConfig).doPreReadSteps() match {
+                case Right(_) => Right(finalConfig)
+                case Left(err) => Left(List(err))
+              }
           }
         case _ => Left(List(ConnectorError(ConfigBuilderError)))
       }

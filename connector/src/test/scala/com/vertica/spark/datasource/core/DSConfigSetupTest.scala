@@ -66,8 +66,9 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(new VerticaMetadata(new StructType))).once()
+    (mockPipe.doPreReadSteps _).expects().returning(Right(()))
     VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe).twice()
 
     parseCorrectInitConfig(opts) match {
       case config: DistributedFilesystemReadConfig => {
