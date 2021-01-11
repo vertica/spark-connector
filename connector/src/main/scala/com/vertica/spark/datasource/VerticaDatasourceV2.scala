@@ -9,13 +9,7 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
-import com.vertica.spark.datasource.core.DSReadConfigSetup
-import com.vertica.spark.datasource.core.DSWriteConfigSetup
-
 import collection.JavaConverters._
-import com.vertica.spark.config._
 
 
 /**

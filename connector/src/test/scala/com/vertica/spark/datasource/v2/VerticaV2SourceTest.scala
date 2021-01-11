@@ -18,6 +18,8 @@ import scala.collection.JavaConversions._
 
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.config.VerticaMetadata
+import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ConnectorErrorType._
 
 trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
@@ -43,8 +45,10 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
                    )
+
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), opts )
     val readTable = table.asInstanceOf[SupportsRead]

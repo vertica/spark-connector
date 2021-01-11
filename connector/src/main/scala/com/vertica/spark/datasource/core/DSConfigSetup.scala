@@ -28,6 +28,11 @@ trait DSConfigSetupInterface[T] {
   def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[T]
 
   /**
+    * Performs any necessary initial steps required for the given configuration
+    */
+  def performInitialSetup(config: T): Either[ConnectorError, Unit]
+
+  /**
     * Returns the schema for the table as required by Spark.
     */
   def getTableSchema(config: T): Either[ConnectorError, StructType]
@@ -56,6 +61,13 @@ object DSConfigSetupUtils {
     config.get("host") match {
       case Some(host) => host.validNec
       case None => ConnectorError(HostMissingError).invalidNec
+    }
+  }
+
+  def getStagingFsUrl(config: Map[String, String]): ValidationResult[String] = {
+    config.get("staging_fs_url") match {
+      case Some(address) => address.validNec
+      case None => ConnectorError(StagingFsUrlMissingError).invalidNec
     }
   }
 
@@ -107,6 +119,11 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getPassword(config),
     DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
+
+  def validateAndGetFilestoreConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+    DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address))
+  }
+
 }
 
 /**
@@ -120,21 +137,31 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      (jdbcConfig.logLevel.validNec,
-      jdbcConfig.validNec,
-      DSConfigSetupUtils.getTablename(config),
-      None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-        val pipe = pipeFactory.getReadPipe(initialConfig)
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config).andThen { fileStoreConfig =>
+        (jdbcConfig.logLevel.validNec,
+        jdbcConfig.validNec,
+        fileStoreConfig.validNec,
+        DSConfigSetupUtils.getTablename(config),
+        None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+          val pipe = pipeFactory.getReadPipe(initialConfig)
 
-        // Then, retrieve metadata
-        pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+          // Then, retrieve metadata
+          pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+        }
       }
+    }
+  }
+
+  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Unit] = {
+    pipeFactory.getReadPipe(config).doPreReadSteps() match {
+      case Right(_) => Right(())
+      case Left(err) => Left(err)
     }
   }
 
   override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, verticaMetadata) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata) =>
         verticaMetadata match {
           case None => Left(ConnectorError(SchemaDiscoveryError))
           case Some(metadata) => Right(metadata.schema)
@@ -156,6 +183,8 @@ object DSWriteConfigSetup extends DSConfigSetupInterface[WriteConfig] {
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
     DSConfigSetupUtils.getLogLevel(config).map(DistributedFilesystemWriteConfig)
   }
+
+  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Unit] = Right(())
 
   override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = ???
 }
