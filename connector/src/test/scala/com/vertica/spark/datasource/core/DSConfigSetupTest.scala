@@ -1,13 +1,10 @@
+import cats.data.Validated.{Invalid, Valid}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
 import com.vertica.spark.datasource.core.DSReadConfigSetup
-
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
-
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.datasource.core._
@@ -24,13 +21,12 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   // Parses config expecting success
   // Calling test with fail if an error is returned
   def parseCorrectInitConfig(opts : Map[String, String]) : ReadConfig = {
-    val dsConfigSetup = new DSReadConfigSetup(opts)
-    val readConfig : ReadConfig = dsConfigSetup.validateAndGetConfig() match {
-      case Left(err) =>  {
+    val readConfig : ReadConfig = DSReadConfigSetup.validateAndGetConfig(opts) match {
+      case Invalid(err) =>  {
         assert(false)
         mock[ReadConfig]
       }
-      case Right(config) => {
+      case Valid(config) => {
         config
       }
     }
@@ -40,12 +36,9 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   // Parses config expecting an error
   // Calling test will fail if the config is parsed without error
   def parseErrorInitConfig(opts : Map[String, String]) : Seq[ConnectorError] = {
-    val dsConfigSetup = new DSReadConfigSetup(opts)
-    dsConfigSetup.validateAndGetConfig() match {
-      case Left(errList) =>  {
-        errList
-      }
-      case Right(config) => {
+    DSReadConfigSetup.validateAndGetConfig(opts) match {
+      case Invalid(errList) => errList.toNonEmptyList.toList
+      case Valid(config) => {
         assert(false)
         List[ConnectorError]()
       }
@@ -60,15 +53,15 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(new VerticaMetadata(new StructType))).once()
-    (mockPipe.doPreReadSteps _).expects().returning(Right(()))
     VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe).twice()
+    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
 
     parseCorrectInitConfig(opts) match {
       case config: DistributedFilesystemReadConfig => {
@@ -95,7 +88,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "port" -> "asdf",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     val errSeq = parseErrorInitConfig(opts)
@@ -112,7 +106,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     // Set mock pipe

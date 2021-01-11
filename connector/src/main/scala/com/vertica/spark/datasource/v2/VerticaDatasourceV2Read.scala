@@ -5,7 +5,6 @@ import java.util
 import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.connector.expressions.Transform
-
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
@@ -15,16 +14,19 @@ import collection.JavaConverters._
 import java.sql.DriverManager
 import java.sql.Connection
 
+import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder extends ScanBuilder {
+class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder {
 /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
   */
-  override def build(): Scan = new VerticaScan()
+  override def build(): Scan = new VerticaScan(config)
 }
 
 /**
@@ -39,11 +41,19 @@ class VerticaPartition extends InputPartition
   *
   * Extends mixin class to represent type of read. Options are Batch or Stream, we are doing a batch read.
   */
-class VerticaScan extends Scan with Batch {
-/**
+class VerticaScan(config: ReadConfig) extends Scan with Batch {
+
+
+
+  /**
   * Schema of scan (can be different than full table schema)
   */
-  override def readSchema(): StructType = StructType(Array(StructField("a", IntegerType), StructField("b", FloatType)))
+  override def readSchema(): StructType = {
+    DSReadConfigSetup.getTableSchema(config) match {
+      case Right(schema) => schema
+      case Left(err) => throw new Exception(err.msg)
+    }
+  }
 
 /**
   * Returns this object as an instance of the Batch interface
@@ -54,7 +64,15 @@ class VerticaScan extends Scan with Batch {
 /**
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
-  override def planInputPartitions(): Array[InputPartition] = Array(new VerticaPartition())
+  override def planInputPartitions(): Array[InputPartition] = {
+    DSReadConfigSetup.performInitialSetup(config) match {
+      case Right(_) =>
+      case Left(err) => throw new Exception(err.msg)
+    }
+
+    Array(new VerticaPartition())
+  }
+
 
 /**
   * Creates the reader factory which will be serialized and sent to workers

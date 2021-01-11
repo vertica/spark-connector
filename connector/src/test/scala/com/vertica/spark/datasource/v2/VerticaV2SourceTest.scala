@@ -46,12 +46,12 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
                    )
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
-    (mockPipe.doPreReadSteps _).expects().returning(Right(()))
     VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
     (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe).anyNumberOfTimes()
 

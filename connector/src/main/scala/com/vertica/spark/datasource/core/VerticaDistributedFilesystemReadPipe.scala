@@ -7,6 +7,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.connector.fs._
+import org.apache.hadoop.conf.Configuration
 
 
 /**
@@ -14,15 +15,8 @@ import com.vertica.spark.connector.fs._
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayerInsert: Option[JdbcLayerInterface] = None) extends VerticaPipeInterface with VerticaPipeReadInterface {
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
-
-  val jdbcLayer: JdbcLayerInterface = jdbcLayerInsert match {
-      case Some(layer) =>
-        layer
-      case None =>
-        new VerticaJdbcLayer(config.jdbcConfig)
-  }
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     SchemaTools.readSchema(jdbcLayer, config.tablename) match {
@@ -53,28 +47,42 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     */
   def doPreReadSteps(): Either[ConnectorError, Unit] = {
     val hadoopConf : Configuration = new Configuration()
-    val metadata = getMetadata()
-    val schema = metadata.schema
+    val schema = getMetadata() match {
+      case Left(err) => return Left(err)
+      case Right(metadata) => metadata.schema
+    }
 
-    // TODO: get hdfs config from main config
-    val hdfsConfig = new HDFSConfig("hdfs://eng-g9-081.verticacorp.com:8020/tmp/test/")
+    val fileStoreConfig = config.fileStoreConfig
 
-    val delimiter = if(hdfsConfig.takeRight(1) == "/" || hdfsConfig.takeRight(1) "\\") "" else "/"
-    val hdfsPath = hdfsConfig.address + delimiter + config.tablename
+    val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename
 
     fileStoreLayer.removeDir(hdfsPath) match {
       case Left(err) => return Left(err)
       case Right(_) =>
     }
 
-    // TODO: Where to get this file size from
+    fileStoreLayer.createDir(hdfsPath) match {
+      case Left(err) => return Left(err)
+      case Right(_) =>
+    }
+
+    // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
+    // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
     val maxFileSize = 512
     val maxRowGroupSize = 64
-    // TODO: File permissions
 
-    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", fileMode = '777', dirMode = '777', rowGroupSizeMB = " + maxRowGroupSize + ") AS SELECT * FROM " + config.tablename"
-    jdbcLayer.execute(exportStatement)
+    // File permissions.
+    // TODO: Add file permission option w/ default value '700'
+    val filePermissions = "777"
 
+    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS SELECT * FROM " + config.tablename + ";"
+    jdbcLayer.execute(exportStatement) match {
+      case Right(_) =>
+      case Left(err) =>
+        logger.error(err.msg)
+        return Left(ConnectorError(ExportFromVerticaError))
+    }
 
     Right(())
   }
