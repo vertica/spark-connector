@@ -14,8 +14,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
 import com.vertica.spark.util.error.JdbcErrorType._
 
-case class ColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean){
-}
+case class ColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
 /**
   * Tests functionality of schema tools: converting schema between JDBC and Spark types.
@@ -62,7 +61,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 1)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(schema) => {
         val field = schema.fields(0)
         assert(field.name == "col1")
@@ -82,7 +81,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 3)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(schema) => {
         val fields = schema.fields
         assert(fields(0).name == "col1")
@@ -110,7 +109,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 2)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(schema) => {
         val fields = schema.fields
         assert(fields(0).name == "col1")
@@ -130,7 +129,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 2)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(schema) => {
         val fields = schema.fields
         assert(fields(0).name == "col1")
@@ -155,7 +154,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         assert(errList(0).err == MissingConversionError)
         assert(errList(1).err == MissingConversionError)
       }
-      case Right(schema) => assert(false)
+      case Right(schema) => fail
     }
   }
 
@@ -169,7 +168,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         assert(errList.size == 1)
         assert(errList(0).err == JdbcError)
       }
-      case Right(schema) => assert(false)
+      case Right(schema) => fail
     }
   }
 }

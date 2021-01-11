@@ -43,7 +43,7 @@ class VerticaScan extends Scan with Batch {
 /**
   * Schema of scan (can be different than full table schema)
   */
-  override def readSchema(): StructType = StructType(Array(StructField("a", IntType), StructField("b", FloatType)))
+  override def readSchema(): StructType = StructType(Array(StructField("a", IntegerType), StructField("b", FloatType)))
 
 /**
   * Returns this object as an instance of the Batch interface

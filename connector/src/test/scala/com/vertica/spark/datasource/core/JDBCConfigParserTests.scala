@@ -23,7 +23,7 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(_) => {
-        assert(false)
+        fail
       }
       case Valid(jdbcConfig) => {
         assert(jdbcConfig.host == "1.1.1.1")
@@ -52,7 +52,7 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(!errSeq.filter(err => err.err == DbMissingError).isEmpty)
       }
       case Valid(jdbcConfig) => {
-        assert(false) // should not succeed
+        fail // should not succeed
       }
     }
   }
@@ -67,7 +67,7 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(errSeq.toNonEmptyList.size == 4)
       }
       case Valid(jdbcConfig) => {
-        assert(false) // should not succeed
+        fail // should not succeed
       }
     }
   }

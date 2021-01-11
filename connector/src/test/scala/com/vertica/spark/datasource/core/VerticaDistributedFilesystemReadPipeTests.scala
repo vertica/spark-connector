@@ -35,7 +35,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[JdbcLayerInterface], mockSchemaTools)
 
     pipe.getMetadata() match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(metadata) => assert(metadata.schema == new StructType())
     }
   }
@@ -46,7 +46,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[JdbcLayerInterface], mock[SchemaToolsInterface])
 
     pipe.getMetadata() match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(metadata) => assert(metadata.schema == new StructType())
     }
   }
@@ -61,7 +61,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     pipe.getMetadata() match {
       case Left(err) => assert(err.err == SchemaDiscoveryError)
-      case Right(metadata) => assert(false)
+      case Right(metadata) => fail
     }
   }
 

@@ -32,7 +32,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
     config.metadata match {
       case Some(data) => Right(data)
-      case None => retrieveMetadata()
+      case None => this.retrieveMetadata()
     }
   }
 
