@@ -89,7 +89,7 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "user" -> "user",
                    "password" -> "password",
                    "tablename" -> "tbl",
-                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     val errSeq = parseErrorInitConfig(opts)
