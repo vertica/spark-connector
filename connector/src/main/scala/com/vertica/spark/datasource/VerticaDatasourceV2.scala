@@ -9,15 +9,7 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import com.vertica.spark.config.{DistributedFilestoreReadConfig, ReadConfig, WriteConfig}
-import com.vertica.spark.util.error.ConnectorError
-
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
-import com.vertica.spark.datasource.core.DSReadConfigSetup
-import com.vertica.spark.datasource.core.DSWriteConfigSetup
-
 import collection.JavaConverters._
-import com.vertica.spark.config._
 
 
 /**
@@ -90,17 +82,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
-    val dsConfigSetup: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup(configOptions)
-    val config = dsConfigSetup.validateAndGetConfig() match
-    {
-      case Left(err) => throw new Exception(err.msg)
-      case Right(cfg) => cfg.asInstanceOf[DistributedFilestoreReadConfig]
-    }
-
-    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
-
-    // TODO: Use config for scan builder
-    new VerticaScanBuilder()
+    new VerticaScanBuilder(options)
   }
 
 /**
@@ -110,8 +92,6 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    val dsConfigSetup: DSConfigSetupInterface[WriteConfig] = new DSWriteConfigSetup(configOptions)
-
     // TODO: Use config for write builder
     new VerticaWriteBuilder()
   }

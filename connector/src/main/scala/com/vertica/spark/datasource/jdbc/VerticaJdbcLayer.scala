@@ -1,8 +1,6 @@
 package com.vertica.spark.jdbc
 
-import com.vertica.spark.config._
 import com.vertica.spark.util.error._
-import com.vertica.jdbc.VerticaCopyStream;
 
 import java.sql.Connection
 import java.sql.Statement
@@ -41,16 +39,16 @@ trait JdbcLayerInterface {
   * Implementation of layer for communicating with Vertica JDBC
   */
 class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
-  val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
+  private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
 
-  val prop = new util.Properties()
+  private val prop = new util.Properties()
   prop.put("user", cfg.username)
   prop.put("password", cfg.password)
 
   // Load driver
-  Class.forName("com.vertica.jdbc.Driver");
+  Class.forName("com.vertica.jdbc.Driver")
 
-  val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
+  private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
   var connection: Option[Connection] = None
@@ -70,9 +68,9 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
     * Gets a statement object or connection error if something is wrong.
     */
-  private def getStatement(): Either[JDBCLayerError, Statement] = {
+  private def getStatement: Either[JDBCLayerError, Statement] = {
     connection match {
-      case Some(conn) => {
+      case Some(conn) =>
         if(conn.isValid(0))
         {
           val stmt = conn.createStatement()
@@ -83,31 +81,26 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           logger.error("Can't connect to Vertica: connection down.")
           Left(JDBCLayerError(ConnectionError))
         }
-      }
-      case None => {
+      case None =>
         logger.error("Can't connect to Vertica: initial connection failed.")
         Left(JDBCLayerError(ConnectionError))
-      }
     }
   }
 
   /**
     * Turns exception from driver into error and logs.
     */
-  private def handleJDBCException(e: Throwable) : JDBCLayerError = {
+  private def handleJDBCException(e: Throwable): JDBCLayerError = {
     e match {
-      case ex: java.sql.SQLSyntaxErrorException => {
+      case ex: java.sql.SQLSyntaxErrorException =>
         logger.error("Syntax Error.", ex)
-        JDBCLayerError(SyntaxError, ex.getMessage())
-      }
-      case ex: java.sql.SQLDataException => {
+        JDBCLayerError(SyntaxError, ex.getMessage)
+      case ex: java.sql.SQLDataException =>
         logger.error("Data Type Error.", ex)
-        JDBCLayerError(DataTypeError, ex.getMessage())
-      }
-      case _: Throwable => {
+        JDBCLayerError(DataTypeError, ex.getMessage)
+      case _: Throwable =>
         logger.error("Unexpected SQL Error.", e)
-        JDBCLayerError(GenericError, e.getMessage())
-      }
+        JDBCLayerError(GenericError, e.getMessage)
     }
   }
 
@@ -116,8 +109,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     */
   def query(query: String): Either[JDBCLayerError, ResultSet] = {
     logger.debug("Attempting to send query: " + query)
-    getStatement() match {
-      case Right(stmt) => {
+    getStatement match {
+      case Right(stmt) =>
         try{
           val rs = stmt.executeQuery(query)
           Right(rs)
@@ -125,7 +118,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         catch{
           case e: Throwable => Left(handleJDBCException(e))
         }
-      }
       case Left(err) => Left(err)
     }
   }
@@ -135,16 +127,15 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     */
   def execute(statement: String): Either[JDBCLayerError, Unit]= {
     logger.debug("Attempting to execute statement: " + statement)
-    getStatement() match {
-      case Right(stmt) => {
+    getStatement match {
+      case Right(stmt) =>
         try {
-          val rs = stmt.execute(statement)
+          stmt.execute(statement)
           Right()
         }
         catch{
           case e: Throwable => Left(handleJDBCException(e))
         }
-      }
       case Left(err) => Left(err)
     }
   }
@@ -155,13 +146,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   def close(): Unit = {
     logger.debug("Closing connection.")
     connection match {
-      case Some(conn) => {
-        if(conn.isValid(0))
-        {
+      case Some(conn) =>
+        if(conn.isValid(0)){
           conn.close()
         }
-      }
-      case None => Unit
+      case None => ()
     }
   }
 }

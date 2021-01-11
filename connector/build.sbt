@@ -16,6 +16,9 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
+
+parallelExecution in Test := false
 
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
@@ -31,5 +34,7 @@ sonarProperties ++= Map(
 scapegoatVersion in ThisBuild := "1.3.3"
 scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
+scalacOptions += "-Ypartial-unification"
+
 
 
