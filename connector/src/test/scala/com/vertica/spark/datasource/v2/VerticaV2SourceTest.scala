@@ -27,7 +27,6 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   override def afterAll(): Unit = {
-    VerticaPipeFactory.impl = new VerticaPipeFactoryDefaultImpl()
   }
 
   it should "return a Vertica Table" in {
@@ -46,12 +45,6 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
                    "password" -> "password",
                    "tablename" -> "tbl"
                    )
-    // Set mock pipe
-    val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
-    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
-
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), opts )
     val readTable = table.asInstanceOf[SupportsRead]

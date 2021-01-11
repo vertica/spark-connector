@@ -112,7 +112,7 @@ object DSConfigSetupUtils {
 /**
   * Implementation for parsing user option map and getting read config
   */
-object DSReadConfigSetup extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = new VerticaPipeFactory) extends DSConfigSetupInterface[ReadConfig] {
   /**
     * Validates the user option map and parses read config
     *
@@ -124,7 +124,7 @@ object DSReadConfigSetup extends DSConfigSetupInterface[ReadConfig] {
       jdbcConfig.validNec,
       DSConfigSetupUtils.getTablename(config),
       None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-        val pipe = VerticaPipeFactory.getReadPipe(initialConfig)
+        val pipe = pipeFactory.getReadPipe(initialConfig)
 
         // Then, retrieve metadata
         pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))

@@ -150,7 +150,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         if(conn.isValid(0)){
           conn.close()
         }
-      case None => Unit
+      case None => ()
     }
   }
 }

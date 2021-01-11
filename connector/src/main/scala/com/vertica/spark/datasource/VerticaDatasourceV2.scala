@@ -88,19 +88,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
-    val config = DSReadConfigSetup.validateAndGetConfig(options.asScala.toMap) match
-    {
-      case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
-      case Valid(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
-    }
-
-    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
-
-    // TODO: Use config for scan builder
-    new VerticaScanBuilder()
+    new VerticaScanBuilder(options)
   }
 
 /**

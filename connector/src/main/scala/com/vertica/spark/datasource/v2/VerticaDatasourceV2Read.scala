@@ -5,7 +5,6 @@ import java.util
 import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.connector.expressions.Transform
-
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
@@ -15,16 +14,33 @@ import collection.JavaConverters._
 import java.sql.DriverManager
 import java.sql.Connection
 
+import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.config.DistributedFilesystemReadConfig
+import com.vertica.spark.datasource.VerticaTable
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder extends ScanBuilder {
+class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder {
 /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
   */
-  override def build(): Scan = new VerticaScan()
+  override def build(): Scan = {
+    val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match
+    {
+      case Invalid(errList) =>
+        val errMsgList = for (err <- errList) yield err.msg
+        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
+        throw new Exception(msg)
+      case Valid(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
+    }
+
+    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+    new VerticaScan()
+  }
 }
 
 /**
