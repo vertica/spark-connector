@@ -10,7 +10,7 @@ trait VerticaPipeFactoryInterface {
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = ???
 }
 
-class VerticaPipeFactory extends VerticaPipeFactoryInterface{
+object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig => new VerticaDistributedFilesystemReadPipe(cfg, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools())

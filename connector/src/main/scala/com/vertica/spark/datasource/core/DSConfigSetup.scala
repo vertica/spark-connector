@@ -112,7 +112,7 @@ object DSConfigSetupUtils {
 /**
   * Implementation for parsing user option map and getting read config
   */
-class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = new VerticaPipeFactory) extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSConfigSetupInterface[ReadConfig] {
   /**
     * Validates the user option map and parses read config
     *

@@ -29,7 +29,7 @@ class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder 
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
-    val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match
+    val config = (new DSReadConfigSetup).validateAndGetConfig(this.options.asScala.toMap) match
     {
       case Invalid(errList) =>
         val errMsgList = for (err <- errList) yield err.msg
