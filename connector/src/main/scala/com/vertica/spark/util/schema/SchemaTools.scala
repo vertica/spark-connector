@@ -66,9 +66,12 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[Seq[SchemaError], StructType] = {
-  var errList = List[SchemaError]()
-  var schema : Option[StructType] = None
+    var errList = List[SchemaError]()
+    var schema : Option[StructType] = None
 
+    // Query for an empty result set from Vertica.
+    // This is simply so we can load the metadata of the result set
+    // and use this to retrieve the name and type information of each column
     jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0") match {
       case Left(err) =>
         errList = errList :+ SchemaError(JdbcError, err.msg)

@@ -18,7 +18,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    schemaTools.readSchema(jdbcLayer, config.tablename) match {
+    schemaTools.readSchema(this.jdbcLayer, this.config.tablename) match {
       case Right(schema) => Right(VerticaMetadata(schema))
       case Left(errList) =>
         for(err <- errList) logger.error(err.msg)
@@ -30,7 +30,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
   def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    config.metadata match {
+    this.config.metadata match {
       case Some(data) => Right(data)
       case None => this.retrieveMetadata()
     }
