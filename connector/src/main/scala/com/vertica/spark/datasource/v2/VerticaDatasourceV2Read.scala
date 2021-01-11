@@ -118,7 +118,7 @@ class VerticaBatchReader extends PartitionReader[InternalRow] {
   * Return the current row
   */
   override def get: InternalRow = {
-    val v1: Integer = 1
+    val v1: Int = 1
     val v2: Float = 2
     val row = InternalRow(v1, v2)
     row

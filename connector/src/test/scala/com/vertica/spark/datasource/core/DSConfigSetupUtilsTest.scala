@@ -13,7 +13,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   def getResultOrAssert[ResultType](validation : ValidatedNec[_,ResultType]): ResultType = {
     validation match {
       case Invalid(_) => {
-        assert(false)
+        fail
         throw new Exception()
       }
       case Valid(result) => result
@@ -24,7 +24,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
     validation match {
       case Invalid(errors) => errors
       case Valid(result) => {
-        assert(false)
+        fail
         throw new Exception()
       }
     }

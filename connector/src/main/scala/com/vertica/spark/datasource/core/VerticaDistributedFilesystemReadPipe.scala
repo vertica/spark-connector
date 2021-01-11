@@ -9,17 +9,19 @@ import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.connector.fs._
 import org.apache.hadoop.conf.Configuration
 
+import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
+import com.vertica.spark.connector.fs._
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    SchemaTools.readSchema(jdbcLayer, config.tablename) match {
+    schemaTools.readSchema(this.jdbcLayer, this.config.tablename) match {
       case Right(schema) => Right(VerticaMetadata(schema))
       case Left(errList) =>
         for(err <- errList) logger.error(err.msg)
@@ -31,9 +33,9 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
   def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    config.metadata match {
+    this.config.metadata match {
       case Some(data) => Right(data)
-      case None => retrieveMetadata()
+      case None => this.retrieveMetadata()
     }
   }
 

@@ -23,20 +23,18 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
 
   override def afterAll() = {
-    SchemaTools.impl = new SchemaToolsDefaultImpl
   }
 
   it should "retrieve metadata when not provided" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, metadata = None)
 
-    val mockSchemaTools = mock[SchemaToolsImpl]
+    val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
-    SchemaTools.impl = mockSchemaTools
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools)
 
     pipe.getMetadata() match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(metadata) => assert(metadata.schema == new StructType())
     }
   }
@@ -44,10 +42,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "return cached metadata" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface])
 
     pipe.getMetadata() match {
-      case Left(err) => assert(false)
+      case Left(err) => fail
       case Right(metadata) => assert(metadata.schema == new StructType())
     }
   }
@@ -55,15 +53,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "return an error when there's an issue parsing schema" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = None)
 
-    val mockSchemaTools = mock[SchemaToolsImpl]
+    val mockSchemaTools = mock[SchemaToolsInterface]
       (mockSchemaTools.readSchema _).expects(*,tablename).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
-    SchemaTools.impl = mockSchemaTools
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools)
 
     pipe.getMetadata() match {
       case Left(err) => assert(err.err == SchemaDiscoveryError)
-      case Right(metadata) => assert(false)
+      case Right(metadata) => fail
     }
   }
 
@@ -79,7 +76,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT * FROM dummy;"
     (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(false)
@@ -95,7 +92,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.err == FileSystemError)
@@ -113,7 +110,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.err == ExportFromVerticaError)
