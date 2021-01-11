@@ -54,7 +54,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     // Set mock pipe
@@ -90,7 +91,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "port" -> "asdf",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     var dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
@@ -109,7 +111,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl"
+                   "tablename" -> "tbl",
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     // Set mock pipe

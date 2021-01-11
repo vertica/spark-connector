@@ -139,4 +139,16 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPassword(opts))
     assert(err.toNonEmptyList.head.err == PasswordMissingError)
   }
+
+  it should "parse the staging filesystem url" in {
+    val opts = Map[String, String]("staging_fs_url" -> "hdfs://test:8020/tmp/test")
+    val url = getResultOrAssert [String](DSConfigSetupUtils.getStagingFsUrl(opts))
+    assert(url == "hdfs://test:8020/tmp/test")
+  }
+
+  it should "fail with missing staging filesystem url" in {
+    val opts = Map[String, String]()
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStagingFsUrl(opts))
+    assert(err.toNonEmptyList.head.err == StagingFsUrlMissingError)
+  }
 }
