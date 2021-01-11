@@ -7,11 +7,11 @@ import java.sql.ResultSetMetaData
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
 
-trait SchemaToolsImpl {
+trait SchemaToolsInterface {
   def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
 }
 
-class SchemaToolsDefaultImpl extends SchemaToolsImpl {
+class SchemaTools extends SchemaToolsInterface {
   private def getCatalystType(
     sqlType: Int,
     precision: Int,
@@ -118,10 +118,3 @@ class SchemaToolsDefaultImpl extends SchemaToolsImpl {
   }
 }
 
-object SchemaTools {
-  var impl : SchemaToolsImpl = new SchemaToolsDefaultImpl
-
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[Seq[SchemaError], StructType] = {
-    impl.readSchema(jdbcLayer, tablename)
-  }
-}

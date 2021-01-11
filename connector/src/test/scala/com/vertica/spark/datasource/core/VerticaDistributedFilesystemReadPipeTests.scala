@@ -24,17 +24,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
 
   override def afterAll() = {
-    SchemaTools.impl = new SchemaToolsDefaultImpl
   }
 
   it should "retrieve metadata when not provided" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, tablename = tablename, metadata = None)
 
-    val mockSchemaTools = mock[SchemaToolsImpl]
+    val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
-    SchemaTools.impl = mockSchemaTools
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, Some(mock[JdbcLayerInterface]))
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[JdbcLayerInterface], mockSchemaTools)
 
     pipe.getMetadata() match {
       case Left(err) => assert(false)
@@ -45,7 +43,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "return cached metadata" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, Some(mock[JdbcLayerInterface]))
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[JdbcLayerInterface], mock[SchemaToolsInterface])
 
     pipe.getMetadata() match {
       case Left(err) => assert(false)
@@ -56,15 +54,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "return an error when there's an issue parsing schema" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, tablename = tablename, metadata = None)
 
-    val mockSchemaTools = mock[SchemaToolsImpl]
+    val mockSchemaTools = mock[SchemaToolsInterface]
       (mockSchemaTools.readSchema _).expects(*,tablename).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
-    SchemaTools.impl = mockSchemaTools
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, Some(mock[JdbcLayerInterface]))
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[JdbcLayerInterface], mockSchemaTools)
 
     pipe.getMetadata() match {
       case Left(err) => assert(err.err == SchemaDiscoveryError)
       case Right(metadata) => assert(false)
     }
   }
+
 }

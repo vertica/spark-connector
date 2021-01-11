@@ -1,6 +1,8 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
+import com.vertica.spark.jdbc.VerticaJdbcLayer
+import com.vertica.spark.util.schema.SchemaTools
 
 trait VerticaPipeFactoryImpl {
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
@@ -9,7 +11,7 @@ trait VerticaPipeFactoryImpl {
 class VerticaPipeFactoryDefaultImpl extends VerticaPipeFactoryImpl{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
-      case cfg: DistributedFilesystemReadConfig => new VerticaDistributedFilesystemReadPipe(cfg)
+      case cfg: DistributedFilesystemReadConfig => new VerticaDistributedFilesystemReadPipe(cfg, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools())
     }
   }
 }

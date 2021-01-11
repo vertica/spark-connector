@@ -14,7 +14,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
 import com.vertica.spark.util.error.JdbcErrorType._
 
-case class ColumnDef(index: Int, name: String, colType: Integer, colTypeName: String, scale: Integer, signed: Boolean, nullable: Boolean){
+case class ColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean){
 }
 
 /**
@@ -46,22 +46,22 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.isNullable _).expects(col.index).returning(if(col.nullable) ResultSetMetaData.columnNullable else ResultSetMetaData.columnNoNulls)
   }
 
-  private def mockColumnCount(rsmd: ResultSetMetaData, count: Integer) = {
+  private def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
   val tablename = "testtable"
 
-  it should "parse a single-column double schema" in {
-    SchemaTools.impl = new SchemaToolsDefaultImpl
+  val schemaTools = new SchemaTools()
 
+  it should "parse a single-column double schema" in {
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
     // Schema
     mockColumnMetadata(rsmd, new ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, false, true))
     mockColumnCount(rsmd, 1)
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(err) => assert(false)
       case Right(schema) => {
         val field = schema.fields(0)
@@ -81,7 +81,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, new ColumnDef(3, "col3", java.sql.Types.BIGINT, "BIGINT", 0, true, true))
     mockColumnCount(rsmd, 3)
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(err) => assert(false)
       case Right(schema) => {
         val fields = schema.fields
@@ -109,7 +109,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, new ColumnDef(2, "col2", java.sql.Types.BIGINT, "BIGINT", 0, false, true))
     mockColumnCount(rsmd, 2)
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(err) => assert(false)
       case Right(schema) => {
         val fields = schema.fields
@@ -129,7 +129,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, new ColumnDef(2, "col2", java.sql.Types.DECIMAL, "VARCHAR", 16, false, true))
     mockColumnCount(rsmd, 2)
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(err) => assert(false)
       case Right(schema) => {
         val fields = schema.fields
@@ -149,7 +149,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, new ColumnDef(2, "col2", 50000, "invalid-type", 16, false, true))
     mockColumnCount(rsmd, 2)
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(errList) => {
         assert(errList.size == 2)
         assert(errList(0).err == MissingConversionError)
@@ -164,7 +164,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Left(JDBCLayerError(ConnectionError)))
 
-    SchemaTools.readSchema(jdbcLayer, tablename) match {
+    schemaTools.readSchema(jdbcLayer, tablename) match {
       case Left(errList) => {
         assert(errList.size == 1)
         assert(errList(0).err == JdbcError)

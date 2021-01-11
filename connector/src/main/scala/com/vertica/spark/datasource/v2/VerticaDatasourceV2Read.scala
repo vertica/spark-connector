@@ -43,7 +43,7 @@ class VerticaScan extends Scan with Batch {
 /**
   * Schema of scan (can be different than full table schema)
   */
-  override def readSchema(): StructType = StructType(Array(StructField("a", IntegerType), StructField("b", FloatType)))
+  override def readSchema(): StructType = StructType(Array(StructField("a", IntType), StructField("b", FloatType)))
 
 /**
   * Returns this object as an instance of the Batch interface
@@ -100,7 +100,7 @@ class VerticaBatchReader extends PartitionReader[InternalRow] {
   * Return the current row
   */
   override def get: InternalRow = {
-    val v1: Integer = 1
+    val v1: Int = 1
     val v2: Float = 2
     val row = InternalRow(v1, v2)
     row
