@@ -1,32 +1,39 @@
 package com.vertica.spark.datasource.v2
 
-import java.util
-
-import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.read._
-import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.unsafe.types.UTF8String
 
 import collection.JavaConverters._
-import java.sql.DriverManager
-import java.sql.Connection
 
 import com.vertica.spark.config.ReadConfig
+import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.config.DistributedFilesystemReadConfig
+import com.vertica.spark.datasource.VerticaTable
 import com.vertica.spark.datasource.core.DSReadConfigSetup
 
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder {
+class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder {
 /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
   */
-  override def build(): Scan = new VerticaScan(config)
+  override def build(): Scan = {
+    val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
+      case Invalid(errList) =>
+        val errMsgList = for (err <- errList) yield err.msg
+        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
+        throw new Exception(msg)
+      case Valid(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
+    }
+
+    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+    new VerticaScan(config)
+  }
 }
 
 /**
@@ -49,7 +56,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    DSReadConfigSetup.getTableSchema(config) match {
+    (new DSReadConfigSetup).getTableSchema(config) match {
       case Right(schema) => schema
       case Left(err) => throw new Exception(err.msg)
     }
@@ -65,7 +72,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
   override def planInputPartitions(): Array[InputPartition] = {
-    DSReadConfigSetup.performInitialSetup(config) match {
+    (new DSReadConfigSetup).performInitialSetup(config) match {
       case Right(_) =>
       case Left(err) => throw new Exception(err.msg)
     }

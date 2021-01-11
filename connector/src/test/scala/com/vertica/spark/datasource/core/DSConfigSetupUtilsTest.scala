@@ -14,7 +14,6 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
     validation match {
       case Invalid(_) => {
         fail
-        throw new Exception()
       }
       case Valid(result) => result
     }
@@ -25,7 +24,6 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
       case Invalid(errors) => errors
       case Valid(result) => {
         fail
-        throw new Exception()
       }
     }
   }

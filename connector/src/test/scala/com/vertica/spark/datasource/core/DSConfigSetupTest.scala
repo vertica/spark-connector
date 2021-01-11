@@ -15,13 +15,14 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   }
 
   override def afterAll(): Unit = {
-    VerticaPipeFactory.impl = new VerticaPipeFactoryDefaultImpl()
   }
+
 
   // Parses config expecting success
   // Calling test with fail if an error is returned
-  def parseCorrectInitConfig(opts : Map[String, String]) : ReadConfig = {
-    val readConfig : ReadConfig = DSReadConfigSetup.validateAndGetConfig(opts) match {
+
+  def parseCorrectInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : ReadConfig = {
+    val readConfig : ReadConfig = dsReadConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(err) =>  {
         fail
         mock[ReadConfig]
@@ -35,8 +36,8 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
   // Parses config expecting an error
   // Calling test will fail if the config is parsed without error
-  def parseErrorInitConfig(opts : Map[String, String]) : Seq[ConnectorError] = {
-    DSReadConfigSetup.validateAndGetConfig(opts) match {
+  def parseErrorInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : Seq[ConnectorError] = {
+    dsReadConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(errList) => errList.toNonEmptyList.toList
       case Valid(config) => {
         fail
@@ -60,10 +61,12 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.getMetadata _).expects().returning(Right(new VerticaMetadata(new StructType))).once()
-    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+    (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    parseCorrectInitConfig(opts) match {
+    var dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsReadConfigSetup) match {
       case config: DistributedFilesystemReadConfig => {
         assert(config.jdbcConfig.host == "1.1.1.1")
         assert(config.jdbcConfig.port == 1234)
@@ -92,7 +95,9 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
-    val errSeq = parseErrorInitConfig(opts)
+    var dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+
+    val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 2)
     assert(!errSeq.filter(err => err.err == InvalidPortError).isEmpty)
     assert(!errSeq.filter(err => err.err == InvalidLoggingLevel).isEmpty)
@@ -111,13 +116,14 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     )
 
     // Set mock pipe
-
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Left(ConnectorError(SchemaDiscoveryError)))
-    VerticaPipeFactory.impl = mock[VerticaPipeFactoryImpl]
-    (VerticaPipeFactory.impl.getReadPipe _).expects(*).returning(mockPipe)
+    (mockPipe.getMetadata _).expects().returning(Left(ConnectorError(SchemaDiscoveryError))).once()
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+    (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    val errSeq = parseErrorInitConfig(opts)
+    var dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+
+    val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 1)
     assert(!errSeq.filter(err => err.err == SchemaDiscoveryError).isEmpty)
   }

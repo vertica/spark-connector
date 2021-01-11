@@ -9,13 +9,7 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
-import com.vertica.spark.datasource.core.DSReadConfigSetup
-import com.vertica.spark.datasource.core.DSWriteConfigSetup
-
 import collection.JavaConverters._
-import com.vertica.spark.config._
 
 
 /**
@@ -88,19 +82,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
-    val config = DSReadConfigSetup.validateAndGetConfig(options.asScala.toMap) match
-    {
-      case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
-      case Valid(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
-    }
-
-    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
-
-    // TODO: Use config for scan builder
-    new VerticaScanBuilder(config)
+    new VerticaScanBuilder(options)
   }
 
 /**
