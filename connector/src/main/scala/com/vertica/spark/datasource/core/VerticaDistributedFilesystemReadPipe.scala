@@ -8,9 +8,10 @@ import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.connector.fs._
 import org.apache.hadoop.conf.Configuration
-
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.connector.fs._
+import org.apache.spark.sql.connector.read.InputPartition
+
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -32,7 +33,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
-  def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
+  override def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
     this.config.metadata match {
       case Some(data) => Right(data)
       case None => this.retrieveMetadata()
@@ -42,12 +43,12 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  def getDataBlockSize(): Either[ConnectorError, Long] = Right(1)
+  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(1)
 
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
-  def doPreReadSteps(): Either[ConnectorError, Unit] = {
+  override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
     val hadoopConf : Configuration = new Configuration()
     val schema = getMetadata() match {
       case Left(err) => return Left(err)
@@ -86,7 +87,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
         return Left(ConnectorError(ExportFromVerticaError))
     }
 
-    Right(())
+    Right(PartitionInfo(Array[InputPartition]()))
   }
 
   /**

@@ -6,12 +6,13 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
 
 import collection.JavaConverters._
-
 import com.vertica.spark.config.ReadConfig
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.config.DistributedFilesystemReadConfig
 import com.vertica.spark.datasource.VerticaTable
-import com.vertica.spark.datasource.core.DSReadConfigSetup
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, VerticaPartition}
+import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 
 /**
   * Builds the scan class for use in reading of Vertica
@@ -37,12 +38,6 @@ class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder 
   }
 }
 
-/**
-  * Represents a partition of the data being read
-  *
-  * One spark worker is created per partition. The number of these partitions is decided at the driver.
-  */
-class VerticaPartition extends InputPartition
 
 /**
   * Represents a scan of a Vertica table.
@@ -74,11 +69,14 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   */
   override def planInputPartitions(): Array[InputPartition] = {
     (new DSReadConfigSetup).performInitialSetup(config) match {
-      case Right(_) =>
       case Left(err) => throw new Exception(err.msg)
+      case Right(opt) => opt match  {
+        case None =>
+          val err = ConnectorError(PartitioningError)
+          throw new Exception(err.msg)
+        case Some(partitionInfo) => partitionInfo.partitionSeq
+      }
     }
-
-    Array(new VerticaPartition())
   }
 
 
