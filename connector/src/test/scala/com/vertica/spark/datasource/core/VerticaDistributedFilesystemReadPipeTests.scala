@@ -15,6 +15,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.util.error.SchemaErrorType._
 import com.vertica.spark.util.error.JdbcErrorType._
+import org.apache.spark.sql.connector.read.InputPartition
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -71,6 +72,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val expectedAddress = fileStoreConfig.address + "/" + config.tablename
     (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
     (fileStoreLayer.createDir _).expects(expectedAddress).returning(Right())
+    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT * FROM dummy;"
@@ -115,6 +117,81 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.err == ExportFromVerticaError)
       case Right(_) => assert(false)
+    }
+  }
+
+  private def seqContains[T](seq: Seq[T], v: T) = {
+    !(seq.filter(partition => partition.asInstanceOf[VerticaDistributedFilesystemPartition].filename == v)).isEmpty
+  }
+
+  it should "return partitioning info from pre-read steps based on files from filesystem" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*).returning(Right())
+
+    // Files returned by filesystem (mock of what vertica would create
+    val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet", expectedAddress+"/t1p2.parquet", expectedAddress+"/t1p3.parquet")
+    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(exportedFiles))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.execute _).expects(*).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.doPreReadSteps() match {
+      case Left(err) => assert(false)
+      case Right(partitionInfo) =>
+        val partitions = partitionInfo.partitionSeq
+        assert(partitions.size == 3)
+        assert(seqContains(partitions, exportedFiles(0)))
+        assert(seqContains(partitions, exportedFiles(1)))
+        assert(seqContains(partitions, exportedFiles(2)))
+    }
+  }
+
+  it should "Return an error when there is a problem retrieving file list" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*).returning(Right())
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.execute _).expects(*).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    (fileStoreLayer.getFileList _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+
+    pipe.doPreReadSteps() match {
+      case Left(err) => assert(err.err == FileSystemError)
+      case Right(_) => fail
+    }
+  }
+
+  it should "Return an error when there are no files to create partitions from" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*).returning(Right())
+
+    // Files returned by filesystem (mock of what vertica would create
+    val exportedFiles = Array[String]()
+    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(exportedFiles))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.execute _).expects(*).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.doPreReadSteps() match {
+      case Left(err) => assert(err.err == PartitioningError)
+      case Right(_) => fail
     }
   }
 }

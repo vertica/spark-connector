@@ -18,6 +18,7 @@ trait FileStoreLayerInterface {
   def removeFile(filename: String) : Either[ConnectorError, Unit]
   def removeDir(filename: String) : Either[ConnectorError, Unit]
   def createDir(filename: String) : Either[ConnectorError, Unit]
+  def getFileList(path: String) : Either[ConnectorError, Seq[String]]
 }
 
 class DummyFileStoreLayer extends FileStoreLayerInterface {
@@ -35,4 +36,5 @@ class DummyFileStoreLayer extends FileStoreLayerInterface {
   def removeFile(filename: String) : Either[ConnectorError, Unit] = ???
   def removeDir(filename: String) : Either[ConnectorError, Unit] = ???
   def createDir(filename: String) : Either[ConnectorError, Unit] = ???
+  def getFileList(path: String) : Either[ConnectorError, Seq[String]] = ???
 }

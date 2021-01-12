@@ -12,6 +12,7 @@ import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.connector.fs._
 import org.apache.spark.sql.connector.read.InputPartition
 
+final case class VerticaDistributedFilesystemPartition(val filename: String) extends VerticaPartition
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -87,7 +88,20 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
         return Left(ConnectorError(ExportFromVerticaError))
     }
 
-    Right(PartitionInfo(Array[InputPartition]()))
+    // Retrieve all parquet files created by Vertica
+    fileStoreLayer.getFileList(hdfsPath) match {
+      case Left(err) => Left(err)
+      case Right(fileList) =>
+        if(fileList.isEmpty) {
+          logger.error("Returned file list was empty, so cannot create valid partition info")
+          Left(ConnectorError(PartitioningError))
+        }
+        else Right(
+          PartitionInfo(
+            fileList.map(file => VerticaDistributedFilesystemPartition(file)).toArray[InputPartition]
+          )
+        )
+    }
   }
 
   /**
