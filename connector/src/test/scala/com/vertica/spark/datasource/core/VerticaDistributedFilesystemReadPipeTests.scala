@@ -15,6 +15,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.util.error.SchemaErrorType._
 import com.vertica.spark.util.error.JdbcErrorType._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
@@ -194,4 +195,144 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Right(_) => fail
     }
   }
+
+  it should "Use filestore layer to read data" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val filename = "test.parquet"
+    val v1: Int = 1
+    val v2: Float = 2.0f
+    val data = DataBlock(List(InternalRow(v1, v2) ))
+
+    val partition = VerticaDistributedFilesystemPartition(filename)
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.openReadParquetFile _).expects(filename).returning(Right())
+    (fileStoreLayer.readDataFromParquetFile _).expects(filename,*).returning(Right(data))
+    (fileStoreLayer.closeReadParquetFile _).expects(filename).returning(Right())
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    pipe.dataSize = 2
+
+    pipe.startPartitionRead(partition) match {
+      case Left(err) => fail
+      case Right(_) => ()
+    }
+
+    pipe.readData match {
+      case Left(err) => fail
+      case Right(data) =>
+        assert(data.data.size == 1)
+        assert(data.data(0).getInt(0) == v1)
+        assert(data.data(0).getFloat(1) == v2)
+    }
+
+    pipe.endPartitionRead() match {
+      case Left(err) => fail
+      case Right(_) => ()
+    }
+  }
+
+  it should "Return an error if there is a partition type mismatch" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val filename = "test.parquet"
+    val v1: Int = 1
+    val v2: Float = 2
+    val data = DataBlock(List(InternalRow(v1, v2) ))
+
+    val partition = mock[VerticaPartition]
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.startPartitionRead(partition) match {
+      case Left(err) => assert(err.err == InvalidPartition)
+      case Right(_) => fail
+    }
+  }
+
+  it should "Pass on errors from filestore layer on read start" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val filename = "test.parquet"
+    val partition = VerticaDistributedFilesystemPartition(filename)
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.openReadParquetFile _).expects(filename).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.startPartitionRead(partition) match {
+      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Right(_) => fail
+    }
+  }
+
+  it should "Pass on errors from filestore layer on read" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val filename = "test.parquet"
+    val partition = VerticaDistributedFilesystemPartition(filename)
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.openReadParquetFile _).expects(filename).returning(Right())
+    (fileStoreLayer.readDataFromParquetFile _).expects(filename,*).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.startPartitionRead(partition) match {
+      case Left(err) => fail
+      case Right(_) => ()
+    }
+
+    pipe.readData match {
+      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Right(_) => fail
+    }
+  }
+
+  it should "Pass on errors from filestore layer on read end" in {
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, metadata = Some(new VerticaMetadata(new StructType())))
+
+    val filename = "test.parquet"
+    val v1: Int = 1
+    val v2: Float = 2.0f
+    val data = DataBlock(List(InternalRow(v1, v2) ))
+
+    val partition = VerticaDistributedFilesystemPartition(filename)
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.openReadParquetFile _).expects(filename).returning(Right())
+    (fileStoreLayer.readDataFromParquetFile _).expects(filename,*).returning(Right(data))
+    (fileStoreLayer.closeReadParquetFile _).expects(filename).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+
+    pipe.startPartitionRead(partition) match {
+      case Left(err) => fail
+      case Right(_) => ()
+    }
+
+    pipe.readData match {
+      case Left(err) => fail
+      case Right(_) => ()
+    }
+
+    pipe.endPartitionRead() match {
+      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Right(_) => fail
+    }
+  }
+
 }

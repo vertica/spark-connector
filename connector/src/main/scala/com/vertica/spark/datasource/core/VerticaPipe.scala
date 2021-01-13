@@ -80,7 +80,7 @@ trait VerticaPipeReadInterface {
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead(): Either[ConnectorError, Unit]
+  def startPartitionRead(partition: VerticaPartition): Either[ConnectorError, Unit]
 
 
   /**

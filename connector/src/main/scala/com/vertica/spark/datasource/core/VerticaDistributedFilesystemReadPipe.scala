@@ -21,6 +21,7 @@ final case class VerticaDistributedFilesystemPartition(val filename: String) ext
   */
 class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+  var dataSize = 1
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tablename) match {
@@ -44,7 +45,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(1)
+  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(dataSize)
 
   /**
     * Initial setup for the whole read operation. Called by driver.
@@ -104,22 +105,31 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     }
   }
 
+  var filename = ""
+
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead(): Either[ConnectorError, Unit] = ???
+  def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] = {
+    val partition = verticaPartition match {
+      case p: VerticaDistributedFilesystemPartition => p
+      case _ => return Left(ConnectorError(InvalidPartition))
+    }
+    this.filename = partition.filename
+    fileStoreLayer.openReadParquetFile(filename)
+  }
 
 
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: Either[ConnectorError, DataBlock] = ???
+  def readData: Either[ConnectorError, DataBlock] = fileStoreLayer.readDataFromParquetFile(this.filename, dataSize)
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit] = ???
+  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile(filename)
 
 }
 
