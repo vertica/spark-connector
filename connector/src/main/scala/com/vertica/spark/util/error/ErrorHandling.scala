@@ -18,6 +18,9 @@ object ConnectorErrorType extends Enumeration {
   val StagingFsUrlMissingError = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
   val ExportFromVerticaError = Value("There was an error when attempting to export from Vertica.")
   val FileSystemError = Value("There was an error communicating with the intermediary filesystem.")
+  val PartitioningError = Value("Failure when retrieving partitioning information for operation.")
+  val InvalidPartition = Value("Input Partition was not valid for the given operation.")
+  val DoneReading = Value("No more data to read from source.")
 }
 import ConnectorErrorType._
 

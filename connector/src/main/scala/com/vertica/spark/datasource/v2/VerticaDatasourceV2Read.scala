@@ -6,12 +6,13 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
 
 import collection.JavaConverters._
-
 import com.vertica.spark.config.ReadConfig
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.config.DistributedFilesystemReadConfig
 import com.vertica.spark.datasource.VerticaTable
-import com.vertica.spark.datasource.core.DSReadConfigSetup
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, VerticaPartition}
+import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 
 /**
   * Builds the scan class for use in reading of Vertica
@@ -37,12 +38,6 @@ class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder 
   }
 }
 
-/**
-  * Represents a partition of the data being read
-  *
-  * One spark worker is created per partition. The number of these partitions is decided at the driver.
-  */
-class VerticaPartition extends InputPartition
 
 /**
   * Represents a scan of a Vertica table.
@@ -74,11 +69,14 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   */
   override def planInputPartitions(): Array[InputPartition] = {
     (new DSReadConfigSetup).performInitialSetup(config) match {
-      case Right(_) =>
       case Left(err) => throw new Exception(err.msg)
+      case Right(opt) => opt match  {
+        case None =>
+          val err = ConnectorError(PartitioningError)
+          throw new Exception(err.msg)
+        case Some(partitionInfo) => partitionInfo.partitionSeq
+      }
     }
-
-    Array(new VerticaPartition())
   }
 
 
@@ -87,15 +85,14 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   *
   * @return [[VerticaReaderFactory]]
   */
-  override def createReaderFactory(): PartitionReaderFactory = new VerticaReaderFactory()
-}
+  override def createReaderFactory(): PartitionReaderFactory = new VerticaReaderFactory(config) }
 
 /**
   * Factory class for creating the Vertica reader
   *
   * This class is seriazlized and sent to each worker node. On the worker, createReader will be called with the given partition of data for that worker.
   */
-class VerticaReaderFactory extends PartitionReaderFactory {
+class VerticaReaderFactory(config: ReadConfig) extends PartitionReaderFactory {
 /**
   * Called from the worker node to get the reader for that node
   *
@@ -103,7 +100,7 @@ class VerticaReaderFactory extends PartitionReaderFactory {
   */
   override def createReader(partition: InputPartition): PartitionReader[InternalRow] =
   {
-    new VerticaBatchReader()
+    new VerticaBatchReader(config, partition)
   }
 
 }
@@ -111,29 +108,41 @@ class VerticaReaderFactory extends PartitionReaderFactory {
 /**
   * Reader class that reads rows from the underlying datasource
   */
-class VerticaBatchReader extends PartitionReader[InternalRow] {
-  // hardcoded vertica details for now
+class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends PartitionReader[InternalRow] {
+
+  val reader = new DSReader(config, partition)
+
+  // Open the read
+  reader.openRead()
+
+  var row: Option[InternalRow] = None
 
 /**
   * Returns true if there are more rows to read
   */
   override def next: Boolean =
   {
-    false
+    reader.readRow() match {
+      case Left(err) =>
+        throw new Exception(err.msg)
+      case Right(r) =>
+        row = r
+    }
+    row match {
+      case Some(_) => true
+      case None => false
+    }
   }
 
 /**
   * Return the current row
   */
   override def get: InternalRow = {
-    val v1: Int = 1
-    val v2: Float = 2
-    val row = InternalRow(v1, v2)
-    row
+    row.get
   }
 
 /**
   * Calls underlying datasource to do any needed cleanup
   */
-  def close(): Unit = Unit
+  def close(): Unit = reader.closeRead()
 }

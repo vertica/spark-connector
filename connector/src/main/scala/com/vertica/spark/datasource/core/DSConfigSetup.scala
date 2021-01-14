@@ -28,9 +28,11 @@ trait DSConfigSetupInterface[T] {
   def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[T]
 
   /**
-    * Performs any necessary initial steps required for the given configuration
-    */
-  def performInitialSetup(config: T): Either[ConnectorError, Unit]
+   * Performs any necessary initial steps required for the given configuration
+   *
+   * @return Optionally returns partitioning information for the operation when needed
+   */
+  def performInitialSetup(config: T): Either[ConnectorError, Option[PartitionInfo]]
 
   /**
     * Returns the schema for the table as required by Spark.
@@ -152,9 +154,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
-  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Unit] = {
+  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
     pipeFactory.getReadPipe(config).doPreReadSteps() match {
-      case Right(_) => Right(())
+      case Right(partitionInfo) => Right(Some(partitionInfo))
       case Left(err) => Left(err)
     }
   }
@@ -184,7 +186,7 @@ object DSWriteConfigSetup extends DSConfigSetupInterface[WriteConfig] {
     DSConfigSetupUtils.getLogLevel(config).map(DistributedFilesystemWriteConfig)
   }
 
-  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Unit] = Right(())
+  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Option[PartitionInfo]] = Right(None)
 
   override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = ???
 }
