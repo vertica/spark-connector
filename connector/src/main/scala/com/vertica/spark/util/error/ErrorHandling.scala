@@ -33,6 +33,9 @@ object ConnectorErrorType extends Enumeration {
   val RemoveDirectoryDoesNotExistError = Value("The specified directory to remove does not exist in the intermediary filesystem.")
   val CreateFileAlreadyExistsError = Value("The specified file to create already exists in the intermediary filesystem.")
   val CreateDirectoryAlreadyExistsError = Value("The specified directory to create already exists in the intermediary filesystem.")
+  val PartitioningError = Value("Failure when retrieving partitioning information for operation.")
+  val InvalidPartition = Value("Input Partition was not valid for the given operation.")
+  val DoneReading = Value("No more data to read from source.")
 }
 import ConnectorErrorType._
 

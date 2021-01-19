@@ -8,17 +8,20 @@ import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.datasource.fs._
 import org.apache.hadoop.conf.Configuration
-
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
+import org.apache.spark.sql.connector.read.InputPartition
+
+final case class VerticaDistributedFilesystemPartition(val filename: String) extends VerticaPartition
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface with FileStoreLayerReadInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+  var dataSize = 1
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tablename) match {
@@ -32,7 +35,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
-  def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
+  override def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
     this.config.metadata match {
       case Some(data) => Right(data)
       case None => this.retrieveMetadata()
@@ -42,12 +45,12 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  def getDataBlockSize(): Either[ConnectorError, Long] = Right(1)
+  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(dataSize)
 
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
-  def doPreReadSteps(): Either[ConnectorError, Unit] = {
+  override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
     val hadoopConf : Configuration = new Configuration()
     val schema = getMetadata() match {
       case Left(err) => return Left(err)
@@ -86,25 +89,47 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
         return Left(ConnectorError(ExportFromVerticaError))
     }
 
-    Right(())
+    // Retrieve all parquet files created by Vertica
+    fileStoreLayer.getFileList(hdfsPath) match {
+      case Left(err) => Left(err)
+      case Right(fileList) =>
+        if(fileList.isEmpty) {
+          logger.error("Returned file list was empty, so cannot create valid partition info")
+          Left(ConnectorError(PartitioningError))
+        }
+        else Right(
+          PartitionInfo(
+            fileList.map(file => VerticaDistributedFilesystemPartition(file)).toArray[InputPartition]
+          )
+        )
+    }
   }
+
+  var filename = ""
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead(): Either[ConnectorError, Unit] = ???
+  def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] = {
+    val partition = verticaPartition match {
+      case p: VerticaDistributedFilesystemPartition => p
+      case _ => return Left(ConnectorError(InvalidPartition))
+    }
+    this.filename = partition.filename
+    HDFSReader.openReadParquetFile(config.fileStoreConfig, ???)
+  }
 
 
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: Either[ConnectorError, DataBlock] = ???
+  def readData: Either[ConnectorError, DataBlock] = fileStoreLayer.readDataFromParquetFile(dataSize)
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit] = ???
+  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
 
 }
 

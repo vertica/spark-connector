@@ -3,8 +3,18 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.connector.read.InputPartition
 
 final case class DataBlock(data: List[InternalRow])
+
+/**
+ * Represents a partition of the data being read
+ *
+ * One spark worker is created per partition. The number of these partitions is decided at the driver.
+ */
+class VerticaPartition extends InputPartition
+
+final case class PartitionInfo(partitionSeq: Array[InputPartition])
 
 /**
   * Interface for the pipe that connects us to Vertica. Agnostic to the method used to transfer the data.
@@ -61,14 +71,16 @@ trait VerticaPipeWriteInterface {
 trait VerticaPipeReadInterface {
 
   /**
-    * Initial setup for the whole read operation. Called by driver.
-    */
-  def doPreReadSteps(): Either[ConnectorError, Unit]
+   * Initial setup for the whole read operation. Called by driver.
+   *
+   * @return Partitioning information for how the read operation will be partitioned across spark nodes
+   */
+  def doPreReadSteps(): Either[ConnectorError, PartitionInfo]
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead(): Either[ConnectorError, Unit]
+  def startPartitionRead(partition: VerticaPartition): Either[ConnectorError, Unit]
 
 
   /**
