@@ -13,12 +13,21 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.FileStoreConfig
-import org.apache.spark.sql.types.StructType
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig}
 
 import scala.util.{Failure, Success, Try}
 
 trait FileStoreLayerInterface {
+  // Write
+  def openWriteParquetFile(path: String) : Either[ConnectorError, Unit]
+  def writeDataToParquetFile(filename: String, data: DataBlock): Either[ConnectorError, Unit]
+  def closeWriteParquetFile(filename: String): Either[ConnectorError, Unit]
+
+  // Read
+  def openReadParquetFile(path: String) : Either[ConnectorError, Unit]
+  def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock]
+  def closeReadParquetFile(filename: String): Either[ConnectorError, Unit]
+
   // Other FS
   def getFileList(filename: String): Either[ConnectorError, Seq[String]]
   def removeFile(filename: String) : Either[ConnectorError, Unit]
@@ -27,28 +36,16 @@ trait FileStoreLayerInterface {
   def createDir(filename: String) : Either[ConnectorError, Unit]
 }
 
-trait FileStoreLayerWriteInterface {
+class DummyFileStoreLayer extends FileStoreLayerInterface {
   // Write
-  def writeDataToParquetFile(data: DataBlock): Either[ConnectorError, Unit]
-
-  def closeWriteParquetFile(): Either[ConnectorError, Unit]
-}
-
-trait FileStoreLayerReadInterface {
-  // Read
-  def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock]
-
-  def closeReadParquetFile(): Either[ConnectorError, Unit]
-}
-
-class DummyFileStoreLayer extends FileStoreLayerInterface with FileStoreLayerReadInterface with FileStoreLayerWriteInterface {
-  // Write
-  def writeDataToParquetFile(data: DataBlock) : Either[ConnectorError, Unit] = ???
-  def closeWriteParquetFile() : Either[ConnectorError, Unit] = ???
+  def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
+  def writeDataToParquetFile(filename: String, data: DataBlock) : Either[ConnectorError, Unit] = ???
+  def closeWriteParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
 
   // Read
-  def readDataFromParquetFile(blockSize : Int) : Either[ConnectorError, DataBlock] = ???
-  def closeReadParquetFile() : Either[ConnectorError, Unit] = ???
+  def openReadParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
+  def readDataFromParquetFile(filename: String, blockSize : Int) : Either[ConnectorError, DataBlock] = ???
+  def closeReadParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
 
   // Other FS
   def getFileList(filename: String): Either[ConnectorError, Seq[String]] = ???
@@ -58,7 +55,12 @@ class DummyFileStoreLayer extends FileStoreLayerInterface with FileStoreLayerRea
   def createDir(filename: String) : Either[ConnectorError, Unit] = ???
 }
 
-object HDFSWriter {
+class HDFSLayer(
+                 writeConfig: DistributedFilesystemWriteConfig,
+                 readConfig: DistributedFilesystemReadConfig,
+                 var writer: Option[ParquetWriter[InternalRow]] = None,
+                 var reader: Option[ParquetReader[InternalRow]] = None) extends FileStoreLayerInterface {
+  val logger: Logger = readConfig.getLogger(classOf[HDFSLayer])
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
@@ -66,59 +68,13 @@ object HDFSWriter {
     protected def getWriteSupport(conf: Configuration) = new ParquetWriteSupport
   }
 
-  // TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-  def openWriteParquetFile(config: FileStoreConfig, schema: StructType): Either[ConnectorError, HDFSWriter] = {
-    val logger: Logger = config.getLogger(classOf[HDFSWriter])
-    val builder = new VerticaParquetBuilder(new Path(s"$config"))
+  def openWriteParquetFile(filename: String): Either[ConnectorError, Unit] = ???
 
-    val hdfsConfig = new Configuration()
-    hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
-    hdfsConfig.set(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key, "false")
-    hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
+  override def writeDataToParquetFile(filename: String, dataBlock: DataBlock): Either[ConnectorError, Unit] = ???
 
-    for {
-      _ <- HDFSLayer(config).removeFile(config.address) match {
-        case Right(_) => Right(())
-        case Left(ConnectorError(RemoveFileDoesNotExistError)) => Right(())
-        case Left(err) => Left(err)
-      }
-      writer <- Try{builder.withConf(hdfsConfig).enableValidation().build()} match {
-        case Success(writer) => Right(HDFSWriter(config, writer))
-        case Failure(exception) =>
-          logger.error("Error opening write to HDFS.", exception)
-          Left(ConnectorError(OpenWriteError))
-      }
-    } yield writer
-  }
-}
+  override def closeWriteParquetFile(filename: String): Either[ConnectorError, Unit] = ???
 
-// TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-case class HDFSWriter(config: FileStoreConfig, writer: ParquetWriter[InternalRow]) extends FileStoreLayerWriteInterface {
-  val logger: Logger = config.getLogger(classOf[HDFSWriter])
-  override def writeDataToParquetFile(dataBlock: DataBlock): Either[ConnectorError, Unit] = {
-    dataBlock.data.map(record => Try{this.writer.write(record)} match {
-      case Failure(exception) =>
-        logger.error("Error writing parquet file to HDFS.", exception)
-        Left(ConnectorError(IntermediaryStoreWriteError))
-      case Success(v) => Right(v)
-    }).sequence_
-  }
-
-  override def closeWriteParquetFile(): Either[ConnectorError, Unit] = {
-    Try{this.writer.close()} match {
-      case Success(_) => Right(())
-      case Failure(exception) =>
-        logger.error("Error closing write of parquet file to HDFS.", exception)
-        Left(ConnectorError(CloseWriteError))
-    }
-  }
-}
-
-object HDFSReader {
-
-  // TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-  def openReadParquetFile(config: FileStoreConfig, schema: StructType): Either[ConnectorError, HDFSReader] = {
-    val logger: Logger = config.getLogger(classOf[HDFSReader])
+  override def openReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
 
     val readSupport = new ParquetReadSupport(
       convertTz = None,
@@ -126,53 +82,68 @@ object HDFSReader {
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
     )
 
-    val hdfsConfig : Configuration = new Configuration()
-    hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
+    val hdfsConfig: Configuration = new Configuration()
+    hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
     hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
     hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
 
-    for {
-      _ <- HDFSLayer(config).createFile(config.address) match {
+    val readerOrError = for {
+      _ <- this.createFile(filename) match {
         case Right(_) => Right(())
         case Left(ConnectorError(CreateFileAlreadyExistsError)) => Right(())
         case Left(err) => Left(err)
       }
-      reader <- Try{ParquetReader.builder(readSupport, new Path(config.address)).withConf(hdfsConfig).build()} match {
+      reader <- Try {
+        ParquetReader.builder(readSupport, new Path(filename)).withConf(hdfsConfig).build()
+      } match {
         case Success(reader) => Right(reader)
         case Failure(exception) =>
           logger.error("Error opening read to HDFS.", exception)
           Left(ConnectorError(OpenReadError))
       }
-    } yield HDFSReader(config, reader)
-  }
-}
+    } yield reader
 
-// TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-case class HDFSReader(config: FileStoreConfig, private val reader: ParquetReader[InternalRow]) extends FileStoreLayerReadInterface {
-  val logger: Logger = config.getLogger(classOf[HDFSReader])
-
-  override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = {
-    (0 until blockSize).map(_ => Try{this.reader.read().copy()} match {
-      case Failure(exception) =>
-        logger.error("Error reading parquet file from HDFS.", exception)
-        Left(ConnectorError(IntermediaryStoreReadError))
-      case Success(v) => Right(v)
-    }).toList.sequence.map(DataBlock)
-  }
-
-  override def closeReadParquetFile(): Either[ConnectorError, Unit] = {
-    Try{this.reader.close()} match {
-      case Success(_) => Right(())
-      case Failure(exception) =>
-        logger.error("Error closing read of parquet file from HDFS.", exception)
-        Left(ConnectorError(CloseReadError))
+    readerOrError match {
+      case Right(reader) =>
+        this.reader = Some(reader)
+        Right(())
+      case Left(err) => Left(err)
     }
   }
-}
 
-// TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-case class HDFSLayer(config: FileStoreConfig) extends FileStoreLayerInterface {
-  val logger: Logger = config.getLogger(classOf[HDFSLayer])
+  override def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock] = {
+    for {
+      reader <- this.reader match {
+        case Some (reader) => Right (reader)
+        case None =>
+          logger.error ("Error reading parquet file from HDFS: Reader was not initialized.")
+          Left(ConnectorError(IntermediaryStoreReadError))
+        }
+      dataBlock <- (0 until blockSize).map(_ => Try {reader.read().copy()} match {
+        case Failure(exception) =>
+          logger.error("Error reading parquet file from HDFS.", exception)
+          Left(ConnectorError(IntermediaryStoreReadError))
+        case Success(v) => Right(v)
+      }).toList.sequence.map(DataBlock)
+    } yield dataBlock
+  }
+
+  override def closeReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
+    for {
+      reader <- this.reader match {
+        case Some(reader) => Right(reader)
+        case None =>
+          logger.error("Error reading parquet file from HDFS: Reader was not initialized.")
+          Left(ConnectorError(CloseReadError))
+        }
+      _ <- Try {reader.close()} match {
+        case Success (_) => Right (())
+        case Failure (exception) =>
+          logger.error ("Error closing read of parquet file from HDFS.", exception)
+          Left (ConnectorError (CloseReadError))
+        }
+    } yield ()
+  }
 
   override def getFileList(filename: String): Either[ConnectorError, Seq[String]] = {
     this.useFileSystem(filename, (fs, path) =>
@@ -256,26 +227,3 @@ case class HDFSLayer(config: FileStoreConfig) extends FileStoreLayerInterface {
   }
 }
 
-// TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-case class HDFSWriteLayer(config: FileStoreConfig, private val writer: HDFSWriter) extends FileStoreLayerWriteInterface with FileStoreLayerInterface {
-  val hdfsLayer: HDFSLayer = HDFSLayer(config)
-  override def writeDataToParquetFile(data: DataBlock): Either[ConnectorError, Unit] = this.writer.writeDataToParquetFile(data)
-  override def closeWriteParquetFile(): Either[ConnectorError, Unit] = this.writer.closeWriteParquetFile()
-  override def getFileList(filename: String): Either[ConnectorError, Seq[String]] = hdfsLayer.getFileList(filename)
-  override def removeFile(filename: String): Either[ConnectorError, Unit] = hdfsLayer.removeFile(filename)
-  override def removeDir(filename: String): Either[ConnectorError, Unit] = hdfsLayer.removeDir(filename)
-  override def createFile(filename: String): Either[ConnectorError, Unit] = hdfsLayer.createFile(filename)
-  override def createDir(filename: String): Either[ConnectorError, Unit] = hdfsLayer.createDir(filename)
-}
-
-// TODO: This only requires the config for the Logger. Update this when we change how the logger is passed in.
-case class HDFSReadLayer(config: FileStoreConfig, private val reader: HDFSReader) extends FileStoreLayerReadInterface with FileStoreLayerInterface {
-  val hdfsLayer: HDFSLayer = HDFSLayer(config)
-  override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = this.reader.readDataFromParquetFile(blockSize)
-  override def closeReadParquetFile(): Either[ConnectorError, Unit] = this.reader.closeReadParquetFile()
-  override def getFileList(filename: String): Either[ConnectorError, Seq[String]] = hdfsLayer.getFileList(filename)
-  override def removeFile(filename: String): Either[ConnectorError, Unit] = hdfsLayer.removeFile(filename)
-  override def removeDir(filename: String): Either[ConnectorError, Unit] = hdfsLayer.removeDir(filename)
-  override def createFile(filename: String): Either[ConnectorError, Unit] = hdfsLayer.createFile(filename)
-  override def createDir(filename: String): Either[ConnectorError, Unit] = hdfsLayer.createDir(filename)
-}

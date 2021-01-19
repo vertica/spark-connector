@@ -1,8 +1,7 @@
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.functests.{JDBCTests, HDFSTests}
-import com.vertica.spark.config.FileStoreConfig
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, VerticaMetadata}
+import com.vertica.spark.functests.{HDFSTests, JDBCTests}
 import ch.qos.logback.classic.Level
 
 object Main extends App {
@@ -20,7 +19,19 @@ object Main extends App {
   val filename = "hdfs://localhost:8020/data/testhdfs.parquet"
   val dirTestFilename = "hdfs://localhost:8020/data/dirtest/"
   new HDFSTests(
-    FileStoreConfig(filename, if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF),
-    FileStoreConfig(dirTestFilename, if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF)
+    DistributedFilesystemReadConfig(
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
+      jdbcConfig,
+      FileStoreConfig(filename, Level.ERROR),
+      "",
+      None
+    ),
+    DistributedFilesystemReadConfig(
+      if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
+      jdbcConfig,
+      FileStoreConfig(dirTestFilename, Level.ERROR),
+      "",
+      None
+    )
   ).execute()
 }

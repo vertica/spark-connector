@@ -1,10 +1,9 @@
 package com.vertica.spark.functests
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.BeforeAndAfterEach
+import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.config.FileStoreConfig
-import com.vertica.spark.datasource.fs.{HDFSLayer, HDFSReadLayer, HDFSReader}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, VerticaMetadata}
+import com.vertica.spark.datasource.fs.HDFSLayer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 
@@ -15,7 +14,7 @@ import org.apache.spark.sql.types._
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) extends AnyFlatSpec {
+class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgInit: DistributedFilesystemReadConfig) extends AnyFlatSpec {
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -24,16 +23,18 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
   private val df = spark.range(100).toDF("number")
   private val schema = df.schema
 
+  private val fsCfg = fsCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
+  private val dirTestCfg = dirTestCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
+
   it should "correctly read data from HDFS" in {
-    val hdfsLayer = HDFSLayer(fsCfg)
-    hdfsLayer.removeFile(fsCfg.address)
-    df.write.parquet(fsCfg.address)
+    val fsLayer = new HDFSLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    fsLayer.removeFile(fsCfg.fileStoreConfig.address)
+    df.write.parquet(fsCfg.fileStoreConfig.address)
 
     val dataOrError = for {
-      reader <- HDFSReader.openReadParquetFile(fsCfg, schema)
-      fsReadLayer = HDFSReadLayer(fsCfg, reader)
-      data <- fsReadLayer.readDataFromParquetFile(100)
-      _ <- fsReadLayer.closeReadParquetFile()
+      _ <- fsLayer.openReadParquetFile(fsCfg.fileStoreConfig.address)
+      data <- fsLayer.readDataFromParquetFile("", 100)
+      _ <- fsLayer.closeReadParquetFile("")
     } yield data
 
     dataOrError match {
@@ -48,17 +49,18 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
   }
 
   it should "create, list, and remove files from HDFS correctly" in {
-    val fsLayer = HDFSLayer(dirTestCfg)
-    fsLayer.removeDir(dirTestCfg.address)
+    val fsLayer = new HDFSLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    val path = dirTestCfg.fileStoreConfig.address
+    fsLayer.removeDir(path)
     val unitOrError = for {
-      _ <- fsLayer.createDir(dirTestCfg.address)
-      _ <- fsLayer.createFile(dirTestCfg.address + "test.parquet")
-      fileList1 <- fsLayer.getFileList(dirTestCfg.address)
-      _ = fileList1.foreach(println)
-      _ <- fsLayer.removeFile(dirTestCfg.address + "test.parquet")
-      fileList2 <- fsLayer.getFileList(dirTestCfg.address)
-      _ = fileList2.foreach(println)
-      _ <- fsLayer.removeDir(dirTestCfg.address)
+      _ <- fsLayer.createDir(path)
+      _ <- fsLayer.createFile(path + "test.parquet")
+      fileList1 <- fsLayer.getFileList(path)
+      _ = fileList1.foreach(file => assert(file == path + "test.parquet"))
+      _ <- fsLayer.removeFile(path + "test.parquet")
+      fileList2 <- fsLayer.getFileList(path)
+      _ = assert(fileList2.isEmpty)
+      _ <- fsLayer.removeDir(path)
     } yield ()
 
     unitOrError match {

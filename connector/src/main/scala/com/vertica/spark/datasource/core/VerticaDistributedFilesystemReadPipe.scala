@@ -19,7 +19,7 @@ final case class VerticaDistributedFilesystemPartition(val filename: String) ext
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface with FileStoreLayerReadInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface) extends VerticaPipeInterface with VerticaPipeReadInterface {
   val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
   var dataSize = 1
 
@@ -116,20 +116,20 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case _ => return Left(ConnectorError(InvalidPartition))
     }
     this.filename = partition.filename
-    HDFSReader.openReadParquetFile(config.fileStoreConfig, ???)
+    fileStoreLayer.openReadParquetFile(filename)
   }
 
 
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: Either[ConnectorError, DataBlock] = fileStoreLayer.readDataFromParquetFile(dataSize)
+  def readData: Either[ConnectorError, DataBlock] = fileStoreLayer.readDataFromParquetFile(this.filename, dataSize)
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
+  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile(filename)
 
 }
 

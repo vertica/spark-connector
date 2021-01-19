@@ -36,6 +36,9 @@ object ConnectorErrorType extends Enumeration {
   val PartitioningError = Value("Failure when retrieving partitioning information for operation.")
   val InvalidPartition = Value("Input Partition was not valid for the given operation.")
   val DoneReading = Value("No more data to read from source.")
+  val UninitializedReadCloseError = Value("Error while closing read: The reader was not initialized.")
+  val UninitializedReadError = Value("Error while reading: The reader was not initialized.")
+  val MissingMetadata = Value("Metadata was missing from config.")
 }
 import ConnectorErrorType._
 
