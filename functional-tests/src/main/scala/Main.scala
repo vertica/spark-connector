@@ -16,8 +16,8 @@ object Main extends App {
 
   (new JDBCTests(jdbcConfig)).execute()
 
-  val filename = "hdfs://localhost:8020/data/testhdfs.parquet"
-  val dirTestFilename = "hdfs://localhost:8020/data/dirtest/"
+  val filename = conf.getString("functional-tests.filepath")
+  val dirTestFilename = conf.getString("functional-tests.dirpath")
   new HDFSTests(
     DistributedFilesystemReadConfig(
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
