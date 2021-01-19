@@ -6,11 +6,11 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
-import com.vertica.spark.connector.fs._
+import com.vertica.spark.datasource.fs._
 import org.apache.hadoop.conf.Configuration
 
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
-import com.vertica.spark.connector.fs._
+import com.vertica.spark.datasource.fs._
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.

@@ -29,7 +29,7 @@ class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder 
         val errMsgList = for (err <- errList) yield err.msg
         val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
         throw new Exception(msg)
-      case Valid(cfg) => cfg.asInstanceOf[DistributedFilesystemReadConfig]
+      case Valid(cfg) => cfg
     }
 
     config.getLogger(classOf[VerticaTable]).debug("Config loaded")

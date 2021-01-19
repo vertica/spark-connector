@@ -1,7 +1,7 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
-import com.vertica.spark.connector.fs.DummyFileStoreLayer
+import com.vertica.spark.datasource.fs.DummyFileStoreLayer
 import com.vertica.spark.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.schema.SchemaTools
 

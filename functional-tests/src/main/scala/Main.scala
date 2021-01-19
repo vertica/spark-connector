@@ -1,8 +1,8 @@
-package com.vertica.spark.functests
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.functests.{JDBCTests, HDFSTests}
+import com.vertica.spark.config.FileStoreConfig
 import ch.qos.logback.classic.Level
 
 object Main extends App {
@@ -16,4 +16,11 @@ object Main extends App {
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
   (new JDBCTests(jdbcConfig)).execute()
+
+  val filename = "hdfs://localhost:8020/data/testhdfs.parquet"
+  val dirTestFilename = "hdfs://localhost:8020/data/dirtest/"
+  new HDFSTests(
+    FileStoreConfig(filename, if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF),
+    FileStoreConfig(dirTestFilename, if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF)
+  ).execute()
 }
