@@ -102,6 +102,13 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getDbSchema(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("dbschema") match {
+      case Some(tablename) => Some(tablename).validNec
+      case None => None.validNec
+    }
+  }
+
   def getPassword(config: Map[String, String]): ValidationResult[String] = {
     config.get("password") match {
       case Some(password) => password.validNec
@@ -126,6 +133,11 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address))
   }
 
+  def validateAndGetFullTableName(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableName] = {
+    (DSConfigSetupUtils.getTablename(config),
+      DSConfigSetupUtils.getDbSchema(config) ).mapN(TableName)
+  }
+
 }
 
 /**
@@ -140,15 +152,17 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config).andThen { fileStoreConfig =>
-        (jdbcConfig.logLevel.validNec,
-        jdbcConfig.validNec,
-        fileStoreConfig.validNec,
-        DSConfigSetupUtils.getTablename(config),
-        None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-          val pipe = pipeFactory.getReadPipe(initialConfig)
+        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
+          (jdbcConfig.logLevel.validNec,
+          jdbcConfig.validNec,
+          fileStoreConfig.validNec,
+          tableName.validNec,
+          None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+            val pipe = pipeFactory.getReadPipe(initialConfig)
 
-          // Then, retrieve metadata
-          pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+            // Then, retrieve metadata
+            pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+          }
         }
       }
     }

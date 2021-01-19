@@ -12,7 +12,7 @@ import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types._
 
 class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
-  val tablename = "testtable"
+  val tablename = TableName("testtable", None)
   val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
   val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, metadata = None)
