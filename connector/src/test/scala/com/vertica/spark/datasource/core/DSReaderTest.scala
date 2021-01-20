@@ -14,7 +14,7 @@ import org.apache.spark.sql.types._
 class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename = "testtable"
   val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
-  val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
+  val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
   val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, metadata = None)
 
   override def beforeAll(): Unit = {

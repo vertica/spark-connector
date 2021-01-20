@@ -122,8 +122,8 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
 
-  def validateAndGetFilestoreConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
-    DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address))
+  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+    DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address, logLevel))
   }
 
 }
@@ -139,7 +139,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config).andThen { fileStoreConfig =>
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel).andThen { fileStoreConfig =>
         (jdbcConfig.logLevel.validNec,
         jdbcConfig.validNec,
         fileStoreConfig.validNec,

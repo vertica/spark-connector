@@ -14,11 +14,6 @@ import org.apache.spark.sql.connector.read.InputPartition
   */
 trait DSReaderInterface {
   /**
-    * Called before reading to perform any needed setup with the given configuration.
-    */
-  def openRead(): Either[ConnectorError, Unit]
-
-  /**
     * Called by spark to read an individual row
     */
   def readRow(): Either[ConnectorError, Option[InternalRow]]

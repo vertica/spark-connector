@@ -8,7 +8,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.util.schema._
 import com.vertica.spark.datasource.core._
 import ch.qos.logback.classic.Level
-import com.vertica.spark.connector.fs.FileStoreLayerInterface
+import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import org.apache.spark.sql.types._
 import com.vertica.spark.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error._
@@ -22,7 +22,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   val tablename = "dummy"
   val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
-  val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
+  val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
 
   override def afterAll() = {
   }

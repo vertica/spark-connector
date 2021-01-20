@@ -21,6 +21,7 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 parallelExecution in Test := false
 
 assemblyMergeStrategy in assembly := {
+  case n if n.contains("services") => MergeStrategy.concat
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
