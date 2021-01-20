@@ -19,12 +19,12 @@ import scala.util.{Failure, Success, Try}
 
 trait FileStoreLayerInterface {
   // Write
-  def openWriteParquetFile(path: String) : Either[ConnectorError, Unit]
+  def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit]
   def writeDataToParquetFile(filename: String, data: DataBlock): Either[ConnectorError, Unit]
   def closeWriteParquetFile(filename: String): Either[ConnectorError, Unit]
 
   // Read
-  def openReadParquetFile(path: String) : Either[ConnectorError, Unit]
+  def openReadParquetFile(filename: String) : Either[ConnectorError, Unit]
   def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock]
   def closeReadParquetFile(filename: String): Either[ConnectorError, Unit]
 
@@ -55,12 +55,13 @@ class DummyFileStoreLayer extends FileStoreLayerInterface {
   def createDir(filename: String) : Either[ConnectorError, Unit] = ???
 }
 
-class HDFSLayer(
+class HadoopFileStoreLayer(
                  writeConfig: DistributedFilesystemWriteConfig,
-                 readConfig: DistributedFilesystemReadConfig,
-                 var writer: Option[ParquetWriter[InternalRow]] = None,
-                 var reader: Option[ParquetReader[InternalRow]] = None) extends FileStoreLayerInterface {
-  val logger: Logger = readConfig.getLogger(classOf[HDFSLayer])
+                 readConfig: DistributedFilesystemReadConfig) extends FileStoreLayerInterface {
+  val logger: Logger = readConfig.getLogger(classOf[HadoopFileStoreLayer])
+
+  private var writer: Option[ParquetWriter[InternalRow]] = None
+  private var reader: Option[ParquetReader[InternalRow]] = None
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
@@ -215,8 +216,8 @@ class HDFSLayer(
                                fsAction: (FileSystem, Path) => Either[ConnectorError, T]): Either[ConnectorError, T] = {
     val sparkSession = SparkSession.active
 
-    // Path for directory of parquet files
-    logger.debug("HDFS PATH: " + filename)
+    // Path for directory of files
+    logger.debug("Filestore path: " + filename)
 
     // Get list of partitions
     val path = new Path(s"$filename")

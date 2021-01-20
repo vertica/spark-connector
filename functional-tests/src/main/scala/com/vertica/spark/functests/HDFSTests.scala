@@ -2,8 +2,8 @@ package com.vertica.spark.functests
 
 import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, VerticaMetadata}
-import com.vertica.spark.datasource.fs.HDFSLayer
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, VerticaMetadata}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 
@@ -27,7 +27,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
   private val dirTestCfg = dirTestCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
 
   it should "correctly read data from HDFS" in {
-    val fsLayer = new HDFSLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
     fsLayer.removeFile(fsCfg.fileStoreConfig.address)
     df.write.parquet(fsCfg.fileStoreConfig.address)
 
@@ -49,7 +49,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
   }
 
   it should "create, list, and remove files from HDFS correctly" in {
-    val fsLayer = new HDFSLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
     val path = dirTestCfg.fileStoreConfig.address
     fsLayer.removeDir(path)
     val unitOrError = for {
@@ -66,6 +66,33 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
     unitOrError match {
       case Right(_) => ()
       case Left(error) => fail(error.msg)
+    }
+  }
+
+  it should "return an error when reading and the reader is uninitialized." in {
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    val dataOrError = fsLayer.readDataFromParquetFile("", 100)
+    dataOrError match {
+      case Right(_) => fail
+      case Left(_) => ()
+    }
+  }
+
+  it should "return an error when closing a read and the reader is uninitialized." in {
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    val dataOrError = fsLayer.closeReadParquetFile("")
+    dataOrError match {
+      case Right(_) => fail
+      case Left(_) => ()
+    }
+  }
+
+  it should "return an error when reading and the schema has not been set in the config" in {
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), fsCfgInit)
+    val dataOrError = fsLayer.readDataFromParquetFile("", 100)
+    dataOrError match {
+      case Right(_) => fail
+      case Left(_) => ()
     }
   }
 }
