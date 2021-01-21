@@ -110,17 +110,6 @@ object DSConfigSetupUtils {
     //TODO: make option once kerberos support is introduced
   }
 
-  // Optional param, if not specified the partition count will be decided as part of the inital steps
-  def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
-    config.get("num_partitions") match {
-      case Some(partitionCount) => Try{partitionCount.toInt} match {
-        case Success(i) => Some(i).validNec
-        case Failure(_) => ConnectorError(InvalidPartitionCountError).invalidNec
-      }
-      case None => None.validNec
-    }
-  }
-
   /**
    * Parses the config map for JDBC config params, collecting any errors.
    */
@@ -155,7 +144,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
         jdbcConfig.validNec,
         fileStoreConfig.validNec,
         DSConfigSetupUtils.getTablename(config),
-        DSConfigSetupUtils.getPartitionCount(config),
         None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
           val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -175,7 +163,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 
   override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata) =>
         verticaMetadata match {
           case None => Left(ConnectorError(SchemaDiscoveryError))
           case Some(metadata) => Right(metadata.schema)

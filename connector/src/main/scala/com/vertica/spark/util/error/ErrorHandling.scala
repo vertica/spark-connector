@@ -14,7 +14,6 @@ object ConnectorErrorType extends Enumeration {
   val PasswordMissingError = Value("The 'password' param is missing. Please specify the password to use for authenticating with Vertica.")
   val TablenameMissingError = Value("The 'tablename' param is missing. Please specify the name of the table to use.")
   val InvalidPortError = Value("The 'port' param specified is invalid. Please specify a valid integer between 1 and 65535.")
-  val InvalidPartitionCountError = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer.")
   val SchemaDiscoveryError = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
   val StagingFsUrlMissingError = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
   val ExportFromVerticaError = Value("There was an error when attempting to export from Vertica.")
