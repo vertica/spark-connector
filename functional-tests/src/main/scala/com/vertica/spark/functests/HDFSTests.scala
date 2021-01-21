@@ -29,7 +29,8 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
   it should "correctly read data from HDFS" in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
     fsLayer.removeFile(fsCfg.fileStoreConfig.address)
-    df.write.parquet(fsCfg.fileStoreConfig.address)
+    df.coalesce(1).write.format("parquet").mode("append").save(fsCfg.fileStoreConfig.address)
+    //df.write.parquet(fsCfg.fileStoreConfig.address)
 
     val dataOrError = for {
       _ <- fsLayer.openReadParquetFile(fsCfg.fileStoreConfig.address)
