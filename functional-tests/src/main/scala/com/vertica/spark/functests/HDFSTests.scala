@@ -54,8 +54,8 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
     //df.write.parquet(fsCfg.fileStoreConfig.address)
 
     val dataOrError = for {
-      filename <- fsLayer.getFileList(fsCfg.fileStoreConfig.address)(0)
-      _ <- fsLayer.openReadParquetFile(filename)
+      files <- fsLayer.getFileList(fsCfg.fileStoreConfig.address)
+      _ <- fsLayer.openReadParquetFile(files(0))
       data <- fsLayer.readDataFromParquetFile("", 100)
       _ <- fsLayer.closeReadParquetFile("")
     } yield data
