@@ -116,6 +116,18 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
     assert(err.toNonEmptyList.head.err == UserMissingError)
   }
 
+  it should "parse the partition count" in {
+    val opts = Map("num_partitions" -> "5")
+    val pCount = getResultOrAssert[Option[Int]](DSConfigSetupUtils.getPartitionCount(opts))
+    assert(pCount.get == 5)
+  }
+
+  it should "fail on invalid partition count" in {
+    val opts = Map("num_partitions" -> "asdf")
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPartitionCount(opts))
+    assert(err.toNonEmptyList.head.err == InvalidPartitionCountError)
+  }
+
   it should "parse the table name" in {
     val opts = Map("tablename" -> "tbl")
     val table = getResultOrAssert[String](DSConfigSetupUtils.getTablename(opts))

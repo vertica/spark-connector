@@ -24,6 +24,7 @@ object Main extends App {
       jdbcConfig,
       FileStoreConfig(filename, Level.ERROR),
       "",
+      None,
       None
     ),
     DistributedFilesystemReadConfig(
@@ -31,6 +32,7 @@ object Main extends App {
       jdbcConfig,
       FileStoreConfig(dirTestFilename, Level.ERROR),
       "",
+      None,
       None
     )
   ).execute()
