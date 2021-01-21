@@ -26,29 +26,6 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
   private val fsCfg = fsCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
   private val dirTestCfg = dirTestCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
 
-  it should "correctly read data from HDFS" in {
-    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
-    fsLayer.removeFile(fsCfg.fileStoreConfig.address)
-    df.coalesce(1).write.format("parquet").mode("append").save(fsCfg.fileStoreConfig.address)
-    //df.write.parquet(fsCfg.fileStoreConfig.address)
-
-    val dataOrError = for {
-      _ <- fsLayer.openReadParquetFile(fsCfg.fileStoreConfig.address)
-      data <- fsLayer.readDataFromParquetFile("", 100)
-      _ <- fsLayer.closeReadParquetFile("")
-    } yield data
-
-    dataOrError match {
-      case Right(dataBlock) => dataBlock.data
-        .map(row => row.get(0, LongType).asInstanceOf[Long])
-        .sorted
-        .zipWithIndex
-        .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
-      case Left(error) => fail(error.msg)
-    }
-
-  }
-
   it should "create, list, and remove files from HDFS correctly" in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
     val path = dirTestCfg.fileStoreConfig.address
@@ -68,6 +45,30 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
       case Right(_) => ()
       case Left(error) => fail(error.msg)
     }
+  }
+
+  it should "correctly read data from HDFS" in {
+    val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
+    fsLayer.removeFile(fsCfg.fileStoreConfig.address)
+    df.coalesce(1).write.format("parquet").mode("append").save(fsCfg.fileStoreConfig.address)
+    //df.write.parquet(fsCfg.fileStoreConfig.address)
+
+    val dataOrError = for {
+      filename <- fsLayer.getFileList(fsCfg.fileStoreConfig.address)(0)
+      _ <- fsLayer.openReadParquetFile(filename)
+      data <- fsLayer.readDataFromParquetFile("", 100)
+      _ <- fsLayer.closeReadParquetFile("")
+    } yield data
+
+    dataOrError match {
+      case Right(dataBlock) => dataBlock.data
+          .map(row => row.get(0, LongType).asInstanceOf[Long])
+          .sorted
+          .zipWithIndex
+          .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
+      case Left(error) => fail(error.msg)
+    }
+
   }
 
   it should "return an error when reading and the reader is uninitialized." in {
