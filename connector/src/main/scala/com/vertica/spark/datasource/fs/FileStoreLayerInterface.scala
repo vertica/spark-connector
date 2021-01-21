@@ -106,7 +106,16 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
     }
   }
 
-  def close() : Either[ConnectorError, DataBlock] = ???
+  def close() : Either[ConnectorError, Unit] = {
+    Try{
+      this.reader.close()
+    } match {
+      case Success (_) => Right (())
+      case Failure (exception) =>
+        //logger.error ("Error closing read of parquet file from HDFS.", exception)
+        Left (ConnectorError (CloseReadError))
+    }
+  }
 }
 
 class HadoopFileStoreLayer(
@@ -204,20 +213,17 @@ class HadoopFileStoreLayer(
   }
 
   override def closeReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
-    for {
+    val r = for {
       reader <- this.reader match {
         case Some(reader) => Right(reader)
         case None =>
           logger.error("Error reading parquet file from HDFS: Reader was not initialized.")
           Left(ConnectorError(CloseReadError))
         }
-      _ <- Try {reader.close()} match {
-        case Success (_) => Right (())
-        case Failure (exception) =>
-          logger.error ("Error closing read of parquet file from HDFS.", exception)
-          Left (ConnectorError (CloseReadError))
-        }
+      _ <- reader.close()
     } yield ()
+    this.reader = None
+    r
   }
 
   override def getFileList(filename: String): Either[ConnectorError, Seq[String]] = {
