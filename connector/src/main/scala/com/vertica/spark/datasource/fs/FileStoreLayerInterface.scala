@@ -113,6 +113,10 @@ class HadoopFileStoreLayer(
   }
 
   override def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock] = {
+    if (this.done) {
+      return Left(ConnectorError(DoneReading))
+    }
+
     for {
       reader <- this.reader match {
         case Some (reader) => Right (reader)
@@ -120,13 +124,28 @@ class HadoopFileStoreLayer(
           logger.error ("Error reading parquet file from HDFS: Reader was not initialized.")
           Left(ConnectorError(IntermediaryStoreReadError))
         }
-      dataBlock <- (0 until blockSize).map(_ => Try {reader.read().copy()} match {
+      dataBlock <- read(blockSize, reader)
+    } yield dataBlock
+  }
+
+  private var done = false
+
+  private def read(blockSize: Int, reader: ParquetReader[InternalRow]): Either[ConnectorError, DataBlock] = {
+    var rows: List[InternalRow] = List()
+
+    for (_ <- 0 until blockSize) {
+      Try {reader.read().copy()} match {
         case Failure(exception) =>
           logger.error("Error reading parquet file from HDFS.", exception)
-          Left(ConnectorError(IntermediaryStoreReadError))
-        case Success(v) => Right(v)
-      }).toList.sequence.map(DataBlock)
-    } yield dataBlock
+          return Left(ConnectorError(IntermediaryStoreReadError))
+        case Success(null) =>
+          this.done = true
+          return Right(DataBlock(rows))
+        case Success(v) => rows = v :: rows
+      }
+    }
+
+    Right(DataBlock(rows))
   }
 
   override def closeReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
