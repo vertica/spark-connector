@@ -6,6 +6,7 @@ import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFil
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import org.scalatest.BeforeAndAfterAll
 
 /**
  * Tests basic functionality of the VerticaHDFSLayer
@@ -14,7 +15,7 @@ import org.apache.spark.sql.types._
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgInit: DistributedFilesystemReadConfig) extends AnyFlatSpec {
+class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgInit: DistributedFilesystemReadConfig) extends AnyFlatSpec with BeforeAndAfterAll {
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -25,6 +26,10 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
   private val fsCfg = fsCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
   private val dirTestCfg = dirTestCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
+
+  override def afterAll(): Unit = {
+    spark.close()
+  }
 
   it should "correctly read data from HDFS" in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
