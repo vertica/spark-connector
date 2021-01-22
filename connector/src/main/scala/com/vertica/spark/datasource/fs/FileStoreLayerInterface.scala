@@ -63,6 +63,14 @@ class HadoopFileStoreLayer(
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[ParquetReader[InternalRow]] = None
 
+  val hdfsConfig: Configuration = new Configuration()
+  readConfig.metadata match {
+    case Some(_) => hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+    case None => ()
+  }
+  hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
+  hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
+
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
 
@@ -83,10 +91,6 @@ class HadoopFileStoreLayer(
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
     )
 
-    val hdfsConfig: Configuration = new Configuration()
-    hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
-    hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
-    hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
 
     val readerOrError = for {
       _ <- this.createFile(filename) match {
@@ -146,9 +150,12 @@ class HadoopFileStoreLayer(
           logger.error("Error reading parquet file from HDFS.", exception)
           return Left(ConnectorError(IntermediaryStoreReadError))
         case Success(null) =>
+          logger.debug("Got Null return")
           this.done = true
           return Right(DataBlock(rows))
-        case Success(v) => rows = v :: rows
+        case Success(v) =>
+          logger.debug("Got Internal Row: " + v.toString)
+          rows = v :: rows
       }
     }
 
@@ -240,14 +247,12 @@ class HadoopFileStoreLayer(
 
   private def useFileSystem[T](filename: String,
                                fsAction: (FileSystem, Path) => Either[ConnectorError, T]): Either[ConnectorError, T] = {
-    val sparkSession = SparkSession.active
-
     // Path for directory of files
     logger.debug("Filestore path: " + filename)
 
     // Get list of partitions
     val path = new Path(s"$filename")
-    val fs = path.getFileSystem(sparkSession.sparkContext.hadoopConfiguration)
+    val fs = path.getFileSystem(hdfsConfig)
     val result = fsAction(fs, path)
     fs.close()
     result
