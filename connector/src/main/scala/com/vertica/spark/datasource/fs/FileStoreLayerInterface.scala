@@ -199,7 +199,7 @@ class HadoopFileStoreLayer(
             Left(ConnectorError(RemoveDirectoryError))
         }
       } else {
-        Left(ConnectorError(RemoveDirectoryDoesNotExistError))
+        Right(())
       })
   }
 
