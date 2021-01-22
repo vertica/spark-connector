@@ -31,10 +31,13 @@ class VerticaSource extends TableProvider {
   * @return The table's schema in spark StructType format
   */
   override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap):
-      StructType =
-        getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap.asCaseSensitiveMap()).schema()
+      StructType = {
 
-/**
+    val table = getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
+    table.schema()
+  }
+
+  /**
   * Gets the structure representing a Vertica table
   *
   * @param schema StructType representing table schema, used for write
@@ -45,7 +48,7 @@ class VerticaSource extends TableProvider {
   override def getTable(schema: StructType,
                         partitioning: Array[Transform],
                         properties: util.Map[String, String]): Table = {
-    new VerticaTable(properties.asScala.toMap)
+    new VerticaTable(new CaseInsensitiveStringMap(properties))
   }
 
 }
@@ -55,7 +58,7 @@ class VerticaSource extends TableProvider {
   *
   * Supports Read and Write functionality.
   */
-class VerticaTable(val configOptions: Map[String, String]) extends Table with SupportsRead with SupportsWrite {
+class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends Table with SupportsRead with SupportsWrite {
 
   // Cache the scan builder so we don't build it twice
   var scanBuilder : Option[VerticaScanBuilder] = None
@@ -73,7 +76,7 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = newScanBuilder(configOptions.asInstanceOf[CaseInsensitiveStringMap]).build().readSchema()
+  override def schema(): StructType = newScanBuilder(caseInsensitiveStringMap).build().readSchema()
 
 /**
   * Returns a list of capabilities that the table supports.
