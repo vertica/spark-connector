@@ -73,6 +73,7 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
       i = 0
     }
 
+    logger.debug("DSREADER ROW: " + row)
     Right(Some(row))
   }
 
