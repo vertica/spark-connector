@@ -64,7 +64,10 @@ class HadoopFileStoreLayer(
   private var reader: Option[ParquetReader[InternalRow]] = None
 
   val hdfsConfig: Configuration = new Configuration()
-  hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+  readConfig.metadata match {
+    case Some(_) => hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+    case None => ()
+  }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
 
