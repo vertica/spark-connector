@@ -63,6 +63,11 @@ class HadoopFileStoreLayer(
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[ParquetReader[InternalRow]] = None
 
+  val hdfsConfig: Configuration = new Configuration()
+  hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+  hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
+  hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
+
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
 
@@ -83,10 +88,6 @@ class HadoopFileStoreLayer(
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
     )
 
-    val hdfsConfig: Configuration = new Configuration()
-    hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
-    hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
-    hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
 
     val readerOrError = for {
       _ <- this.createFile(filename) match {
@@ -240,7 +241,7 @@ class HadoopFileStoreLayer(
 
     // Get list of partitions
     val path = new Path(s"$filename")
-    val fs = path.getFileSystem(sparkSession.sparkContext.hadoopConfiguration)
+    val fs = path.getFileSystem(hdfsConfig)
     val result = fsAction(fs, path)
     fs.close()
     result
