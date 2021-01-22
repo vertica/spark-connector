@@ -143,9 +143,12 @@ class HadoopFileStoreLayer(
           logger.error("Error reading parquet file from HDFS.", exception)
           return Left(ConnectorError(IntermediaryStoreReadError))
         case Success(null) =>
+          logger.debug("Got Null return")
           this.done = true
           return Right(DataBlock(rows))
-        case Success(v) => rows = v :: rows
+        case Success(v) =>
+          logger.debug("Got Internal Row: " + v.toString)
+          rows = v :: rows
       }
     }
 
