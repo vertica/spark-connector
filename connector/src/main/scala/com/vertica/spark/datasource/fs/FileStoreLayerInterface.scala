@@ -237,8 +237,6 @@ class HadoopFileStoreLayer(
 
   private def useFileSystem[T](filename: String,
                                fsAction: (FileSystem, Path) => Either[ConnectorError, T]): Either[ConnectorError, T] = {
-    val sparkSession = SparkSession.active
-
     // Path for directory of files
     logger.debug("Filestore path: " + filename)
 
