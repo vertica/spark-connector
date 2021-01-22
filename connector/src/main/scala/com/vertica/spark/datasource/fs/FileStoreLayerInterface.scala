@@ -134,7 +134,14 @@ class HadoopFileStoreLayer(
     var rows: List[InternalRow] = List()
 
     for (_ <- 0 until blockSize) {
-      Try {reader.read().copy()} match {
+      Try {
+        val row = reader.read()
+        if (row != null) {
+          row.copy()
+        } else {
+          null
+        }
+      } match {
         case Failure(exception) =>
           logger.error("Error reading parquet file from HDFS.", exception)
           return Left(ConnectorError(IntermediaryStoreReadError))

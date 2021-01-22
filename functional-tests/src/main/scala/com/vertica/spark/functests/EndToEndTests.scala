@@ -27,6 +27,7 @@ class EndToEndTests extends AnyFlatSpec with BeforeAndAfterAll {
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts).load()
 
+    assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Int](0) == 2))
   }
 }
