@@ -114,7 +114,8 @@ object DSConfigSetupUtils {
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
       case Some(partitionCount) => Try{partitionCount.toInt} match {
-        case Success(i) => Some(i).validNec
+        case Success(i) =>
+          if(i > 0) Some(i).validNec else ConnectorError(InvalidPartitionCountError).invalidNec
         case Failure(_) => ConnectorError(InvalidPartitionCountError).invalidNec
       }
       case None => None.validNec

@@ -7,12 +7,15 @@ import com.vertica.spark.config._
 import com.vertica.spark.jdbc._
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.datasource.fs._
+import cats.implicits._
 import org.apache.hadoop.conf.Configuration
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 import org.apache.spark.sql.connector.read.InputPartition
 
-final case class VerticaDistributedFilesystemPartition(val filename: String) extends VerticaPartition
+final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int)
+
+final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange]) extends VerticaPartition
 
 /**
   * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -97,11 +100,67 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
           logger.error("Returned file list was empty, so cannot create valid partition info")
           Left(ConnectorError(PartitioningError))
         }
-        else Right(
-          PartitionInfo(
-            fileList.map(file => VerticaDistributedFilesystemPartition(file)).toArray[InputPartition]
-          )
-        )
+        else {
+          val partitionCount = config.partitionCount match {
+            case Some(count) => count
+            case None => fileList.size // Default to 1 partition / file
+          }
+
+          for {
+            fileMetadata <- fileList.map(filename => fileStoreLayer.getParquetFileMetadata(filename)).toList.sequence
+            // Get room per partition for row groups in order to split the groups up evenly
+            rowGroupRoom <- {
+              val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
+              if(totalRowGroups < partitionCount) {
+                Left(ConnectorError(PartitioningError))
+              } else  {
+                val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+                Right((totalRowGroups / partitionCount) + extraSpace)
+              }
+            }
+            partitionInfo <- {
+              // Now, create partitions splitting up files roughly evenly
+              var i = 0
+              var partitions = List[VerticaDistributedFilesystemPartition]()
+              var curFileRanges = List[ParquetFileRange]()
+              for(m <- fileMetadata) {
+                val size = m.rowGroupCount
+                var j = 0
+                var low = 0
+                while(j < size){
+                  if(i == rowGroupRoom-1) { // Reached end of partition, cut off here
+                    val frange = ParquetFileRange(m.filename, low, j)
+                    curFileRanges = curFileRanges :+ frange
+                    val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+                    partitions = partitions :+ partition
+                    curFileRanges = List[ParquetFileRange]()
+                    i = 0
+                    low = j+1
+                  }
+                  else if(j == size - 1) { // Reached end of file's row groups, add to file ranges
+                    val frange = ParquetFileRange(m.filename, low, j)
+                    curFileRanges = curFileRanges :+ frange
+                    i += 1
+                  }
+                  else {
+                    i += 1
+                  }
+
+                  j += 1
+                }
+              }
+              // Last partition if leftover (only partition not of rowGroupRoom size)
+              if(!curFileRanges.isEmpty) {
+                val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+                partitions = partitions :+ partition
+              }
+
+              Right(
+                PartitionInfo(partitions.toArray)
+              )
+            }
+          } yield (partitionInfo)
+        }
     }
   }
 
@@ -115,7 +174,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case p: VerticaDistributedFilesystemPartition => p
       case _ => return Left(ConnectorError(InvalidPartition))
     }
-    this.filename = partition.filename
+    //this.filename = partition.filename
     fileStoreLayer.openReadParquetFile(filename)
   }
 

@@ -23,9 +23,10 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   override def afterAll(): Unit = {
   }
 
+  val filename = "test.parquet"
+  val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+
   it should "Read rows from data block" in {
-    val filename = "test.parquet"
-    val partition = VerticaDistributedFilesystemPartition(filename)
 
     val v1: Int = 1
     val v2: Float = 2.0f
@@ -89,9 +90,6 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   }
 
   it should "Read rows from several data blocks" in {
-    val filename = "test.parquet"
-    val partition = VerticaDistributedFilesystemPartition(filename)
-
     val v1: Int = 1
     val v2: Float = 2.0f
     val row = InternalRow(v1, v2)
@@ -172,9 +170,6 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   }
 
   it should "Pass on errors from read pipe" in {
-    val filename = "test.parquet"
-    val partition = VerticaDistributedFilesystemPartition(filename)
-
     val mockPipe = mock[DummyReadPipe]
 
     val pipeFactory = mock[VerticaPipeFactoryInterface]

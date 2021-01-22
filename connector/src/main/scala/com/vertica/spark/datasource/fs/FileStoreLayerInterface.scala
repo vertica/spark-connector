@@ -28,6 +28,9 @@ import scala.collection.JavaConversions._
 import collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
+// Relevant parquet metadata
+case class ParquetFileMetadata(filename: String, rowGroupCount: Int)
+
 trait FileStoreLayerInterface {
   // Write
   def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit]
@@ -35,6 +38,7 @@ trait FileStoreLayerInterface {
   def closeWriteParquetFile(filename: String): Either[ConnectorError, Unit]
 
   // Read
+  def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata]
   def openReadParquetFile(filename: String) : Either[ConnectorError, Unit]
   def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock]
   def closeReadParquetFile(filename: String): Either[ConnectorError, Unit]
@@ -45,25 +49,6 @@ trait FileStoreLayerInterface {
   def removeDir(filename: String) : Either[ConnectorError, Unit]
   def createFile(filename: String) : Either[ConnectorError, Unit]
   def createDir(filename: String) : Either[ConnectorError, Unit]
-}
-
-class DummyFileStoreLayer extends FileStoreLayerInterface {
-  // Write
-  def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
-  def writeDataToParquetFile(filename: String, data: DataBlock) : Either[ConnectorError, Unit] = ???
-  def closeWriteParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
-
-  // Read
-  def openReadParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
-  def readDataFromParquetFile(filename: String, blockSize : Int) : Either[ConnectorError, DataBlock] = ???
-  def closeReadParquetFile(filename: String) : Either[ConnectorError, Unit] = ???
-
-  // Other FS
-  def getFileList(filename: String): Either[ConnectorError, Seq[String]] = ???
-  def removeFile(filename: String) : Either[ConnectorError, Unit] = ???
-  def removeDir(filename: String) : Either[ConnectorError, Unit] = ???
-  def createFile(filename: String) : Either[ConnectorError, Unit] = ???
-  def createDir(filename: String) : Either[ConnectorError, Unit] = ???
 }
 
 case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow]) {
@@ -126,6 +111,14 @@ class HadoopFileStoreLayer(
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
 
+  // This variable is necessary for now until we change the interface's method of signalling when the read is done
+  private var done = false
+
+  val hdfsConfig: Configuration = new Configuration()
+  hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+  hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
+  hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
+
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
 
@@ -146,18 +139,32 @@ class HadoopFileStoreLayer(
     return Collections.unmodifiableMap(setMultiMap);
   }
 
+  override def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata] = {
+
+    val path = new Path(s"${filename}")
+
+    Try {
+      val reader = ParquetFileReader.open(hdfsConfig, path)
+
+      val rowGroupCount = reader.getRowGroups().size
+      reader.close()
+      ParquetFileMetadata(filename, rowGroupCount)
+    } match {
+      case Success(metadata) => Right(metadata)
+      case Failure(exception) =>
+        logger.error(s"Error getting metadata for file ${filename}.", exception)
+        Left(ConnectorError(FileListError))
+    }
+  }
+
   override def openReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
+    this.done = false
 
     val readSupport = new ParquetReadSupport(
       convertTz = None,
       enableVectorizedReader = false,
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
     )
-
-    val hdfsConfig: Configuration = new Configuration()
-    hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
-    hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
-    hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
 
     // Get reader
     val readerOrError = Try {
@@ -201,7 +208,9 @@ class HadoopFileStoreLayer(
   }
 
   override def readDataFromParquetFile(filename: String, blockSize: Int): Either[ConnectorError, DataBlock] = {
-    for{
+    if(this.done) return Left(ConnectorError(DoneReading))
+
+    val dataBlock = for{
       reader <- this.reader match {
         case Some (reader) => Right (reader)
         case None =>
@@ -210,6 +219,13 @@ class HadoopFileStoreLayer(
         }
       dataBlock <- reader.read(blockSize)
     } yield dataBlock
+
+    dataBlock match {
+      case Left(_) => ()
+      case Right(block) => this.done = true
+    }
+
+    dataBlock
   }
 
   override def closeReadParquetFile(filename: String): Either[ConnectorError, Unit] = {
