@@ -35,5 +35,14 @@ object Main extends App {
     )
   ).execute()
 
-  new EndToEndTests().execute()
+  val readOpts = Map(
+    "host" -> conf.getString("functional-tests.host"),
+    "user" -> conf.getString("functional-tests.user"),
+    "db" -> conf.getString("functional-tests.db"),
+    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "password" -> conf.getString("functional-tests.password"),
+    "tablename" -> conf.getString("functional-tests.tablename"),
+    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+  )
+  new EndToEndTests(readOpts).execute()
 }

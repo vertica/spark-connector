@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class EndToEndTests extends AnyFlatSpec with BeforeAndAfterAll {
+class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
 
   private val spark = SparkSession.builder()
     .master("local[*]")
@@ -16,15 +16,6 @@ class EndToEndTests extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   it should "read data from Vertica" in {
-    val readOpts = Map(
-      "host" -> "eng-g9-051",
-      "user" -> "release",
-      "db" -> "testdb",
-      "staging_fs_url" -> "hdfs://localhost:8020/data",
-      "password" -> "",
-      "tablename" -> "footable",
-      "logging_level" -> "DEBUG"
-    )
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts).load()
 
