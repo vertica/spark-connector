@@ -17,23 +17,13 @@ import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(options: CaseInsensitiveStringMap) extends ScanBuilder {
+class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder {
 /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
-
-    val config = (new DSReadConfigSetup).validateAndGetConfig(this.options.asScala.toMap) match {
-      case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
-      case Valid(cfg) => cfg
-    }
-
-    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
     new VerticaScan(config)
   }
 }

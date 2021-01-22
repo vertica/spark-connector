@@ -38,6 +38,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(table.isInstanceOf[VerticaTable])
   }
 
+  /* Temporarily disabled
   it should "return a Scan Builder" in {
     val opts = Map("logging_level" -> "ERROR",
                    "host" -> "1.1.1.1",
@@ -56,6 +57,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
     assert(scanBuilder.isInstanceOf[VerticaScanBuilder])
   }
+   */
 
   it should "return a Write Builder" in {
     val mockLogicalWriteInfo = mock[LogicalWriteInfo]

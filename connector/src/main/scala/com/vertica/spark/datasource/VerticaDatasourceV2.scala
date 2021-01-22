@@ -9,6 +9,9 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
+import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+
 import collection.JavaConverters._
 
 
@@ -53,6 +56,10 @@ class VerticaSource extends TableProvider {
   * Supports Read and Write functionality.
   */
 class VerticaTable(val configOptions: Map[String, String]) extends Table with SupportsRead with SupportsWrite {
+
+  // Cache the scan builder so we don't build it twice
+  var scanBuilder : Option[VerticaScanBuilder] = None
+
 /**
   * A name to differentiate this table from other tables
   *
@@ -60,12 +67,13 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def name(): String = "VerticaTable" // TODO: change this to db.tablename
 
+
 /**
   * Should reach out to SQL layer and return schema of the table.
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = new StructType()
+  override def schema(): StructType = newScanBuilder(configOptions.asInstanceOf[CaseInsensitiveStringMap]).build().readSchema()
 
 /**
   * Returns a list of capabilities that the table supports.
@@ -82,7 +90,21 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
-    new VerticaScanBuilder(options)
+    this.scanBuilder match {
+      case Some(builder) => builder
+      case None =>
+        val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
+          case Invalid(errList) =>
+            val errMsgList = for (err <- errList) yield err.msg
+            val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
+            throw new Exception(msg)
+          case Valid(cfg) => cfg
+        }
+        config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+
+        this.scanBuilder = Some(new VerticaScanBuilder(config))
+        this.scanBuilder.get
+    }
   }
 
 /**
