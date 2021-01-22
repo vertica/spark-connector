@@ -79,7 +79,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   it should "defaults to port 5543" in {
     val opts = Map[String, String]()
     val port = getResultOrAssert[Int](DSConfigSetupUtils.getPort(opts))
-    assert(port == 5543)
+    assert(port == 5433)
   }
 
   it should "error with invalid port input" in {
