@@ -20,9 +20,10 @@ class EndToEndTests extends AnyFlatSpec with BeforeAndAfterAll {
       "host" -> "eng-g9-051",
       "user" -> "release",
       "db" -> "testdb",
-      "staging_fs_url" -> "hdfs://eng-g9-051:8020/data/testhdfs.parquet",
+      "staging_fs_url" -> "hdfs://localhost:8020/data",
       "password" -> "",
-      "tablename" -> "footable"
+      "tablename" -> "footable",
+      "logging_level" -> "DEBUG"
     )
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts).load()
