@@ -62,6 +62,10 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
     }
 
     // Get row from block. If this is the last row of the block, reset the block
+    if(dataBlock.data.isEmpty){
+      return Right(None)
+    }
+
     val row = dataBlock.data(i)
     i += 1
     if(i >= dataBlock.data.size) {
