@@ -1,14 +1,19 @@
 package com.vertica.spark.functests
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class EndToEndTests extends AnyFlatSpec {
+class EndToEndTests extends AnyFlatSpec with BeforeAndAfterAll {
 
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()
+
+  override def afterAll(): Unit = {
+    spark.close()
+  }
 
   it should "read data from Vertica" in {
     val readOpts = Map(
