@@ -19,7 +19,7 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename)).load()
 
     assert(df.count() == 1)
-    df.rdd.foreach(row => assert(row.getAs[Int](0) == 2))
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
   }
 
 
@@ -27,7 +27,7 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename20)).load()
 
     assert(df.count() == 20)
-    df.rdd.foreach(row => assert(row.getAs[Int](0) == 2))
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
 
   }
 }
