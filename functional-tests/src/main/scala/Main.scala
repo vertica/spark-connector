@@ -41,8 +41,10 @@ object Main extends App {
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "password" -> conf.getString("functional-tests.password"),
-    "tablename" -> conf.getString("functional-tests.tablename"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
-  new EndToEndTests(readOpts).execute()
+  new EndToEndTests(
+    readOpts,
+    conf.getString("functional-tests.tablename"),
+    conf.getString("functional-tests.tablename20")).execute()
 }

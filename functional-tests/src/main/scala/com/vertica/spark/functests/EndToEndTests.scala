@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
+class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename20: String) extends AnyFlatSpec with BeforeAndAfterAll {
 
   private val spark = SparkSession.builder()
     .master("local[*]")
@@ -16,10 +16,18 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
   }
 
   it should "read data from Vertica" in {
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename)).load()
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Int](0) == 2))
+  }
+
+
+  it should "read 20 rows of data from Vertica" in {
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename20)).load()
+
+    assert(df.count() == 20)
+    df.rdd.foreach(row => assert(row.getAs[Int](0) == 2))
+
   }
 }
