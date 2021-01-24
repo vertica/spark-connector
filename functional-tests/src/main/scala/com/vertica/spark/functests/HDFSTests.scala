@@ -3,6 +3,7 @@ package com.vertica.spark.functests
 import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, VerticaMetadata}
+import com.vertica.spark.datasource.core.ParquetFileRange
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
@@ -55,9 +56,9 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
     val dataOrError = for {
       files <- fsLayer.getFileList(fsCfg.fileStoreConfig.address)
-      _ <- fsLayer.openReadParquetFile(files.filter(fname => fname.endsWith(".parquet"))(0))
-      data <- fsLayer.readDataFromParquetFile("", 100)
-      _ <- fsLayer.closeReadParquetFile("")
+      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet"))(0),0,0))
+      data <- fsLayer.readDataFromParquetFile(100)
+      _ <- fsLayer.closeReadParquetFile()
     } yield data
 
     dataOrError match {
@@ -73,7 +74,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
   it should "return an error when reading and the reader is uninitialized." in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
-    val dataOrError = fsLayer.readDataFromParquetFile("", 100)
+    val dataOrError = fsLayer.readDataFromParquetFile(100)
     dataOrError match {
       case Right(_) => fail
       case Left(_) => ()
@@ -82,7 +83,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
   it should "return an error when closing a read and the reader is uninitialized." in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
-    val dataOrError = fsLayer.closeReadParquetFile("")
+    val dataOrError = fsLayer.closeReadParquetFile()
     dataOrError match {
       case Right(_) => fail
       case Left(_) => ()
@@ -91,7 +92,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
   it should "return an error when reading and the schema has not been set in the config" in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), fsCfgInit)
-    val dataOrError = fsLayer.readDataFromParquetFile("", 100)
+    val dataOrError = fsLayer.readDataFromParquetFile(100)
     dataOrError match {
       case Right(_) => fail
       case Left(_) => ()
