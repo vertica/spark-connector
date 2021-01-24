@@ -164,31 +164,60 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     }
   }
 
-  var filename = ""
+  var partition : Option[VerticaDistributedFilesystemPartition] = None
+  var fileIdx = 0
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
   def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] = {
-    val partition = verticaPartition match {
+    val part = verticaPartition match {
       case p: VerticaDistributedFilesystemPartition => p
       case _ => return Left(ConnectorError(InvalidPartition))
     }
-    //this.filename = partition.filename
-    fileStoreLayer.openReadParquetFile(filename)
+    this.partition = Some(part)
+    this.fileIdx = 0
+
+    if(part.fileRanges.isEmpty) {
+      logger.warn("No files to read set on partition.")
+      return Left(ConnectorError(DoneReading))
+    }
+
+    fileStoreLayer.openReadParquetFile(part.fileRanges.head) // TODO: change to passing in file range
   }
 
 
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: Either[ConnectorError, DataBlock] = fileStoreLayer.readDataFromParquetFile(this.filename, dataSize)
+  def readData: Either[ConnectorError, DataBlock] = {
+    val part = this.partition match {
+      case None => return Left(ConnectorError(UninitializedReadError))
+      case Some(p) => p
+    }
+    // TODO: remove filename from api
+    fileStoreLayer.readDataFromParquetFile(dataSize) match {
+      case Left(err) => err.err match {
+        case DoneReading =>
+          this.fileIdx += 1
+          if(this.fileIdx >= part.fileRanges.size) return Left(ConnectorError(DoneReading))
+
+          for {
+            _ <- fileStoreLayer.closeReadParquetFile()
+            _ <- fileStoreLayer.openReadParquetFile(part.fileRanges(this.fileIdx))
+            data <- fileStoreLayer.readDataFromParquetFile(dataSize)
+            } yield (data)
+        case _ => return Left(err)
+      }
+      case Right(data) => Right(data)
+    }
+  }
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile(filename)
+  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
 
 }
 
