@@ -183,7 +183,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       return Left(ConnectorError(DoneReading))
     }
 
-    fileStoreLayer.openReadParquetFile(part.fileRanges.head) // TODO: change to passing in file range
+    fileStoreLayer.openReadParquetFile(part.fileRanges.head)
   }
 
 
@@ -195,7 +195,6 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case None => return Left(ConnectorError(UninitializedReadError))
       case Some(p) => p
     }
-    // TODO: remove filename from api
     fileStoreLayer.readDataFromParquetFile(dataSize) match {
       case Left(err) => err.err match {
         case DoneReading =>
