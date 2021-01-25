@@ -182,9 +182,8 @@ class HadoopFileStoreLayer(
     // Get reader
     val readerOrError = Try {
       val path = new Path(s"${filename}")
-      //val inputfile = HadoopInputFile.fromPath(path, hdfsConfig)
-      val options = (new ParquetReadOptions.Builder()).build()
-      val fileReader = ParquetFileReader.open(hdfsConfig, path)
+      val inputFile = HadoopInputFile.fromPath(path, hdfsConfig)
+      val fileReader = ParquetFileReader.open(inputFile)
 
       val parquetFileMetadata = fileReader.getFooter().getFileMetaData()
       val fileSchema = parquetFileMetadata.getSchema();
