@@ -20,7 +20,7 @@ import org.apache.spark.sql.connector.read.InputPartition
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
-  val tablename = "dummy"
+  val tablename = TableName("dummy", None)
   val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
   val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
 
@@ -31,7 +31,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-    (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
+    (mockSchemaTools.readSchema _).expects(*,tablename.name).returning(Right(new StructType()))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools)
 
@@ -39,6 +39,18 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Left(err) => fail
       case Right(metadata) => assert(metadata.schema == new StructType())
     }
+  }
+
+  it should "use full schema" in {
+    val fullTablename = TableName("table", Some("schema"))
+    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, partitionCount = None, tablename = fullTablename, metadata = None)
+
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.readSchema _).expects(*,"schema.table").returning(Right(new StructType()))
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools)
+
+    pipe.getMetadata()
   }
 
   it should "return cached metadata" in {
@@ -56,7 +68,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-      (mockSchemaTools.readSchema _).expects(*,tablename).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
+      (mockSchemaTools.readSchema _).expects(*,tablename.name).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools)
 
@@ -70,7 +82,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(new VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
     (fileStoreLayer.createDir _).expects(expectedAddress).returning(Right())
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
@@ -127,7 +139,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(new VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
     (fileStoreLayer.createDir _).expects(*).returning(Right())
 
@@ -170,7 +182,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(new VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
     (fileStoreLayer.createDir _).expects(*).returning(Right())
 
@@ -220,7 +232,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(new VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
     (fileStoreLayer.createDir _).expects(*).returning(Right())
 
@@ -278,7 +290,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(new VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename
+    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
     (fileStoreLayer.createDir _).expects(*).returning(Right())
 

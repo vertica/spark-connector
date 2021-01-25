@@ -3,6 +3,7 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
+import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
@@ -132,6 +133,27 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
     val opts = Map("tablename" -> "tbl")
     val table = getResultOrAssert[String](DSConfigSetupUtils.getTablename(opts))
     assert(table == "tbl")
+  }
+
+  it should "parse the db schema" in {
+    val opts = Map("dbschema" -> "test")
+    val schema = getResultOrAssert[Option[String]](DSConfigSetupUtils.getDbSchema(opts))
+    assert(schema.get == "test")
+  }
+
+  it should "default to no schema" in {
+    val opts = Map[String, String]()
+    val schema = getResultOrAssert[Option[String]](DSConfigSetupUtils.getDbSchema(opts))
+    schema match {
+      case Some(_) => fail
+      case None => ()
+    }
+  }
+
+  it should "parse full table name with schema" in {
+    val opts = Map("dbschema" -> "test", "tablename" -> "table")
+    val schema = getResultOrAssert[TableName](DSConfigSetupUtils.validateAndGetFullTableName(opts))
+    assert(schema.getFullTableName == "test.table")
   }
 
   it should "fail with missing table name" in {

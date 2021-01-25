@@ -16,7 +16,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, LogProvider}
 import org.apache.parquet.ParquetReadOptions
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
@@ -51,7 +51,9 @@ trait FileStoreLayerInterface {
   def createDir(filename: String) : Either[ConnectorError, Unit]
 }
 
-case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
+case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
+  val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
+
   var recordReader: Option[RecordReader[InternalRow]] = None
   var curRow = 0L
   var rowCount = 0L
@@ -77,7 +79,6 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
         this.rowCount = pages.getRowCount()
         this.curRow = 0
         this.curRowGroup += 1
-        println("Row count for page: " + rowCount)
       }
       else {
         doneReading
@@ -94,7 +95,7 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
       }
     } match {
       case Failure(exception) =>
-        //logger.error("Error reading parquet file from HDFS.", exception)
+        logger.error("Error reading parquet file from HDFS.", exception)
         Left(ConnectorError(IntermediaryStoreReadError))
       case Success(v) => Right(v)
     }).toList.sequence match {
@@ -109,7 +110,7 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
     } match {
       case Success (_) => Right (())
       case Failure (exception) =>
-        //logger.error ("Error closing read of parquet file from HDFS.", exception)
+        logger.error ("Error closing read of parquet file from HDFS.", exception)
         Left (ConnectorError (CloseReadError))
     }
   }
@@ -203,7 +204,7 @@ class HadoopFileStoreLayer(
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking);
 
-      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file)
+      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, readConfig.logProvider)
     } match {
       case Success(r) => Right(r)
       case Failure(exception) =>

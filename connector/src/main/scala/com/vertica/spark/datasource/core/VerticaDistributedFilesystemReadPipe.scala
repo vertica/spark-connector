@@ -27,7 +27,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   var dataSize = 1
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    schemaTools.readSchema(this.jdbcLayer, this.config.tablename) match {
+    schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
       case Right(schema) => Right(VerticaMetadata(schema))
       case Left(errList) =>
         for(err <- errList) logger.error(err.msg)
@@ -63,7 +63,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val fileStoreConfig = config.fileStoreConfig
 
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
 
     fileStoreLayer.removeDir(hdfsPath) match {
       case Left(err) => return Left(err)
@@ -84,7 +84,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     // TODO: Add file permission option w/ default value '700'
     val filePermissions = "777"
 
-    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS SELECT * FROM " + config.tablename + ";"
+    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS SELECT * FROM " + config.tablename.getFullTableName + ";"
     jdbcLayer.execute(exportStatement) match {
       case Right(_) =>
       case Left(err) =>
