@@ -10,6 +10,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename20: String) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
+  val numSparkPartitions = 4
+
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -120,13 +122,12 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     assert(c == n)
   }
 
-  /*
   it should "load data from Vertica table that is [SEGMENTED] on [SOME] nodes for [arbitrary partition number]" in {
     val tableName1 = "t1"
 
     val n = 40
-    val nodes = getNodeNames(conn)
-    createTablePartialNodes(conn, tableName1, true, numOfRows = n, nodes.splitAt(3)._1)
+    val nodes = TestUtils.getNodeNames(conn)
+    TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = true, numOfRows = n, nodes.splitAt(3)._1)
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
@@ -139,8 +140,8 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val tableName1 = "dftest1"
 
     val n = 40
-    val nodes = getNodeNames(conn)
-    createTablePartialNodes(conn, tableName1, true, numOfRows = n, nodes.splitAt(3)._1)
+    val nodes = TestUtils.getNodeNames(conn)
+    TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = true, numOfRows = n, nodes.splitAt(3)._1)
     val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
     assert(r == n)
@@ -150,8 +151,8 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val tableName1 = "dftest1"
 
     val n = 10
-    val nodes = getNodeNames(conn)
-    createTablePartialNodes(conn, tableName1, true, numOfRows = n, nodes.splitAt(3)._1)
+    val nodes = TestUtils.getNodeNames(conn)
+    TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = true, numOfRows = n, nodes.splitAt(3)._1)
     val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
     assert(r == n)
@@ -161,10 +162,10 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val tableName1 = "t1"
 
     val n = 40
-    val nodes = getNodeNames(conn)
+    val nodes = TestUtils.getNodeNames(conn)
     val stmt = conn.createStatement()
     stmt.execute("SELECT MARK_DESIGN_KSAFE(0);")
-    createTablePartialNodes(conn, tableName1, false, numOfRows = n, nodes.splitAt(3)._1)
+    TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = false, numOfRows = n, nodes.splitAt(3)._1)
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
@@ -174,7 +175,6 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     stmt.execute("drop table " + tableName1)
     stmt.execute("SELECT MARK_DESIGN_KSAFE(1);")
   }
-   */
 
   it should "load data from Vertica for [all Binary data types] of Vertica" in {
     val tableName1 = "t1"
@@ -396,7 +396,8 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
+  // TODO: Re-enable when pushdown is supported
+  ignore should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
     val n = 3
