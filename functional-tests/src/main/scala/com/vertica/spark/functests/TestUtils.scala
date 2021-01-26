@@ -54,7 +54,7 @@ object TestUtils {
   private def populateTable(stmt: Statement, tableName: String, numOfRows: Int) {
     for (i <- 0 until numOfRows) {
       val insertStr = "insert into " + tableName + " values (" + i + " ," + i + ")"
-      println(insertStr);
+      println(insertStr)
       stmt.execute(insertStr)
     }
   }
@@ -74,5 +74,25 @@ object TestUtils {
     val c = df.count()
     println("count = " + c)
     c
+  }
+
+  def createTablePartialNodes(conn: Connection, tableName: String, isSegmented: Boolean = true, numOfRows: Int = 10, nodes: List[String]): Unit = {
+    val stmt = conn.createStatement()
+    stmt.execute("drop table if exists " + tableName)
+    val createStr = "create table if not exists " + tableName + "(a int, b int) " +
+      (if (isSegmented) "segmented by hash(a)" + " nodes " + nodes.mkString(",")
+      else " UNSEGMENTED node " + nodes.head + " KSAFE 0") + ";"
+    println(createStr)
+    stmt.execute(createStr)
+    populateTable(stmt, tableName, numOfRows)
+  }
+
+  def getNodeNames(conn: Connection): List[String] = {
+    val nodeQry = "select node_name from nodes;"
+    val rs = conn.createStatement().executeQuery(nodeQry)
+    new Iterator[String] {
+      def hasNext: Boolean = rs.next()
+      def next(): String = rs.getString(1)
+    }.toList
   }
 }

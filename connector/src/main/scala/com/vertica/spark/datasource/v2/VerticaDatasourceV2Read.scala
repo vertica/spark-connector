@@ -75,7 +75,8 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   *
   * @return [[VerticaReaderFactory]]
   */
-  override def createReaderFactory(): PartitionReaderFactory = new VerticaReaderFactory(config) }
+  override def createReaderFactory(): PartitionReaderFactory = new VerticaReaderFactory(config)
+}
 
 /**
   * Factory class for creating the Vertica reader
