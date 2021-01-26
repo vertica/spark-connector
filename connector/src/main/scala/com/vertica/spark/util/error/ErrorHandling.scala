@@ -14,6 +14,7 @@ object ConnectorErrorType extends Enumeration {
   val PasswordMissingError = Value("The 'password' param is missing. Please specify the password to use for authenticating with Vertica.")
   val TablenameMissingError = Value("The 'tablename' param is missing. Please specify the name of the table to use.")
   val InvalidPortError = Value("The 'port' param specified is invalid. Please specify a valid integer between 1 and 65535.")
+  val InvalidPartitionCountError = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer above 0.")
   val SchemaDiscoveryError = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
   val StagingFsUrlMissingError = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
   val ExportFromVerticaError = Value("There was an error when attempting to export from Vertica.")
@@ -24,6 +25,7 @@ object ConnectorErrorType extends Enumeration {
   val OpenReadError = Value("There was an error reading from the intermediary filesystem.")
   val IntermediaryStoreReadError = Value("There was an error reading from the intermediary filesystem.")
   val CloseReadError = Value("There was an error closing the read from the intermediary filesystem.")
+  val ParquetMetadataError = Value("There was an error retrieving parquet file metadata.")
   val FileListError = Value("There was an error listing files in the intermediary filesystem.")
   val CreateFileError = Value("There was an error creating a file in the intermediary filesystem.")
   val CreateDirectoryError = Value("There was an error creating a directory in the intermediary filesystem.")
@@ -39,6 +41,7 @@ object ConnectorErrorType extends Enumeration {
   val UninitializedReadCloseError = Value("Error while closing read: The reader was not initialized.")
   val UninitializedReadError = Value("Error while reading: The reader was not initialized.")
   val MissingMetadata = Value("Metadata was missing from config.")
+  val TooManyPartitions = Value("More partitions specified than is possible to divide the operation.")
 }
 import ConnectorErrorType._
 

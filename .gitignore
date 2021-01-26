@@ -12,4 +12,5 @@ functional-tests/project/build.properties
 functional-tests/project/project/
 functional-tests/project/target/
 functional-tests/target/
+functional-tests/.idea/
 .DS_Store

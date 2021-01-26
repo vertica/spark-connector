@@ -8,12 +8,7 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 
-/**
-  * Generic config that all operations (read and write) share
-  */
-trait GenericConfig {
-  val logLevel: Level = Level.ERROR
-
+case class LogProvider(val logLevel: Level) {
   def getLogger(c: Class[_]): Logger = {
     val logger = Logger(c)
     Try{logger.underlying.asInstanceOf[classic.Logger].setLevel(logLevel) } match {
@@ -23,6 +18,16 @@ trait GenericConfig {
 
     logger
   }
+}
+
+/**
+  * Generic config that all operations (read and write) share
+  */
+trait GenericConfig {
+  val logLevel: Level = Level.ERROR
+  val logProvider = LogProvider(logLevel)
+
+  def getLogger(c: Class[_]): Logger = logProvider.getLogger(c)
 }
 
 

@@ -102,12 +102,31 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getDbSchema(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("dbschema") match {
+      case Some(tablename) => Some(tablename).validNec
+      case None => None.validNec
+    }
+  }
+
   def getPassword(config: Map[String, String]): ValidationResult[String] = {
     config.get("password") match {
       case Some(password) => password.validNec
       case None => ConnectorError(PasswordMissingError).invalidNec
     }
     //TODO: make option once kerberos support is introduced
+  }
+
+  // Optional param, if not specified the partition count will be decided as part of the inital steps
+  def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
+    config.get("num_partitions") match {
+      case Some(partitionCount) => Try{partitionCount.toInt} match {
+        case Success(i) =>
+          if(i > 0) Some(i).validNec else ConnectorError(InvalidPartitionCountError).invalidNec
+        case Failure(_) => ConnectorError(InvalidPartitionCountError).invalidNec
+      }
+      case None => None.validNec
+    }
   }
 
   /**
@@ -126,6 +145,11 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address, logLevel))
   }
 
+  def validateAndGetFullTableName(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableName] = {
+    (DSConfigSetupUtils.getTablename(config),
+      DSConfigSetupUtils.getDbSchema(config) ).mapN(TableName)
+  }
+
 }
 
 /**
@@ -140,15 +164,18 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel).andThen { fileStoreConfig =>
-        (jdbcConfig.logLevel.validNec,
-        jdbcConfig.validNec,
-        fileStoreConfig.validNec,
-        DSConfigSetupUtils.getTablename(config),
-        None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-          val pipe = pipeFactory.getReadPipe(initialConfig)
+        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
+            (jdbcConfig.logLevel.validNec,
+            jdbcConfig.validNec,
+            fileStoreConfig.validNec,
+            tableName.validNec,
+            DSConfigSetupUtils.getPartitionCount(config),
+            None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+              val pipe = pipeFactory.getReadPipe(initialConfig)
 
-          // Then, retrieve metadata
-          pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+              // Then, retrieve metadata
+              pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+          }
         }
       }
     }
@@ -163,7 +190,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 
   override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
         verticaMetadata match {
           case None => Left(ConnectorError(SchemaDiscoveryError))
           case Some(metadata) => Right(metadata.schema)
