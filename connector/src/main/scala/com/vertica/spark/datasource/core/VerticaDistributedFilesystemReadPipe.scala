@@ -50,6 +50,48 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     */
   override def getDataBlockSize(): Either[ConnectorError, Long] = Right(dataSize)
 
+
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): Either[ConnectorError, PartitionInfo] = {
+    // Now, create partitions splitting up files roughly evenly
+    var i = 0
+    var partitions = List[VerticaDistributedFilesystemPartition]()
+    var curFileRanges = List[ParquetFileRange]()
+    for(m <- fileMetadata) {
+      val size = m.rowGroupCount
+      var j = 0
+      var low = 0
+      while(j < size){
+        if(i == rowGroupRoom-1) { // Reached end of partition, cut off here
+          val frange = ParquetFileRange(m.filename, low, j)
+          curFileRanges = curFileRanges :+ frange
+          val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+          partitions = partitions :+ partition
+          curFileRanges = List[ParquetFileRange]()
+          i = 0
+          low = j+1
+        }
+        else if(j == size - 1) { // Reached end of file's row groups, add to file ranges
+          val frange = ParquetFileRange(m.filename, low, j)
+          curFileRanges = curFileRanges :+ frange
+          i += 1
+        }
+        else {
+          i += 1
+        }
+
+        j += 1
+      }
+    }
+    // Last partition if leftover (only partition not of rowGroupRoom size)
+    if(!curFileRanges.isEmpty) {
+      val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+      partitions = partitions :+ partition
+    }
+
+    Right(
+      PartitionInfo(partitions.toArray)
+    )
+  }
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
@@ -118,47 +160,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
                 Right((totalRowGroups / partitionCount) + extraSpace)
               }
             }
-            partitionInfo <- {
-              // Now, create partitions splitting up files roughly evenly
-              var i = 0
-              var partitions = List[VerticaDistributedFilesystemPartition]()
-              var curFileRanges = List[ParquetFileRange]()
-              for(m <- fileMetadata) {
-                val size = m.rowGroupCount
-                var j = 0
-                var low = 0
-                while(j < size){
-                  if(i == rowGroupRoom-1) { // Reached end of partition, cut off here
-                    val frange = ParquetFileRange(m.filename, low, j)
-                    curFileRanges = curFileRanges :+ frange
-                    val partition = VerticaDistributedFilesystemPartition(curFileRanges)
-                    partitions = partitions :+ partition
-                    curFileRanges = List[ParquetFileRange]()
-                    i = 0
-                    low = j+1
-                  }
-                  else if(j == size - 1) { // Reached end of file's row groups, add to file ranges
-                    val frange = ParquetFileRange(m.filename, low, j)
-                    curFileRanges = curFileRanges :+ frange
-                    i += 1
-                  }
-                  else {
-                    i += 1
-                  }
-
-                  j += 1
-                }
-              }
-              // Last partition if leftover (only partition not of rowGroupRoom size)
-              if(!curFileRanges.isEmpty) {
-                val partition = VerticaDistributedFilesystemPartition(curFileRanges)
-                partitions = partitions :+ partition
-              }
-
-              Right(
-                PartitionInfo(partitions.toArray)
-              )
-            }
+            partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
           } yield (partitionInfo)
         }
     }

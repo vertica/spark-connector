@@ -17,7 +17,6 @@ import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, LogProvider}
-import org.apache.parquet.ParquetReadOptions
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
@@ -145,11 +144,11 @@ class HadoopFileStoreLayer(
   override def closeWriteParquetFile(): Either[ConnectorError, Unit] = ???
 
   private def toSetMultiMap[K, V](map: util.Map[K, V] ) :  util.Map[K, util.Set[V]] = {
-    val setMultiMap: util.Map[K, util.Set[V]] = new util.HashMap();
+    val setMultiMap: util.Map[K, util.Set[V]] = new util.HashMap()
     for (entry <- map.entrySet()) {
-      setMultiMap.put(entry.getKey(), Collections.singleton(entry.getValue()));
+      setMultiMap.put(entry.getKey(), Collections.singleton(entry.getValue()))
     }
-    return Collections.unmodifiableMap(setMultiMap);
+    Collections.unmodifiableMap(setMultiMap);
   }
 
   override def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata] = {
