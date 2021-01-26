@@ -1,6 +1,6 @@
 scalaVersion := "2.12.0"
 name := "spark-vertica-connector"
-organization := "ch.epfl.scala"
+organization := "com.vertica"
 version := "1.0"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
