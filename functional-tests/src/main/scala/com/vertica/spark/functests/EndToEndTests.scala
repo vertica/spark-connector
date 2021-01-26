@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename20: String) extends AnyFlatSpec with BeforeAndAfterAll {
+class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
   val numSparkPartitions = 4
@@ -23,18 +23,33 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
   }
 
   it should "read data from Vertica" in {
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename)).load()
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
   }
 
   it should "read 20 rows of data from Vertica" in {
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tablename20)).load()
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
 
     assert(df.count() == 20)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
-
   }
 
   it should "support data frame schema" in {
@@ -215,7 +230,8 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "load data from Vertica for [all Date/Time data types] of Vertica" in {
+  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Time type
+  ignore should "load data from Vertica for [all Date/Time data types] of Vertica" in {
     val tableName1 = "t1"
 
     val n = 40
@@ -441,7 +457,8 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "be able to handle interval types" in {
+  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Interval types
+  ignore should "be able to handle interval types" in {
     val tableName1 = "dftest"
     val stmt = conn.createStatement()
     val n = 1
@@ -456,7 +473,4 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
   }
-
-
-
 }
