@@ -10,7 +10,7 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.datasource.core._
 import org.apache.spark.sql.types._
 
-class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   override def beforeAll(): Unit = {
   }
 
@@ -51,7 +51,7 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
@@ -61,7 +61,7 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    var dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+    val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
     parseCorrectInitConfig(opts, dsReadConfigSetup) match {
       case config: DistributedFilesystemReadConfig =>
