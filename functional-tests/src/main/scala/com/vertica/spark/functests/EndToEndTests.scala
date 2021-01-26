@@ -39,16 +39,18 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
 
   it should "support data frame schema" in {
 
-    //val tableName1 = "dftest1"
-    //val stmt = conn.createStatement
-    //createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b float)")
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b float)")
 
-    //val insert = "insert into "+ tableName1 + " values(1, 2.2)"
-    //populateTableBySQL(stmt, tableName1, insert, n)
+    val insert = "insert into "+ tableName1 + " values(1, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> "dftest1")).load()
+    val df = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
 
     val schema = df.schema
+    info("table schema: " + schema)
     val sc = StructType(Array(StructField("a",LongType,nullable = true), StructField("b",DoubleType,nullable = true)))
 
     assert(schema.toString equals sc.toString)
@@ -95,31 +97,20 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val n = 40
     TestUtils.createTable(conn, tableName1, numOfRows = n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [ALL] nodes" in {
     val tableName1 = "dftest1"
 
     val n = 40
+
     TestUtils.createTable(conn, tableName1, isSegmented = false, numOfRows = n)
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [SOME] nodes for [arbitrary partition number]" in {
@@ -185,15 +176,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values(hex_to_binary('0xff'), HEX_TO_BINARY('0xFFFF'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -207,15 +192,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values('t',0)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -229,15 +208,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values('a', 'efghi', 'jklm', 'nopqrst')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -251,15 +224,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values('1/8/1999', '2004-10-19 10:23:54', '23:59:59.999999-14', '2004-10-19 10:23:54', '2004-10-19 10:23:54+02', '1 day 6 hours', '1 year 6 months')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -273,15 +240,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values('abcde', 'fghijk')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -295,15 +256,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values(1,2,3,4)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -317,15 +272,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values(1.1, 2.2, 3.3, 4.4, 5.5)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
@@ -339,15 +288,9 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val insert = "insert into "+ tableName1 + " values(1.1, 2.2, 3.3, 4.4)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
-    df.cache()
-    df.show()
-    println("schema =" + df.schema)
-    val c = df.count()
-    println("count = " + c)
-
-    assert(c == n)
+    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
