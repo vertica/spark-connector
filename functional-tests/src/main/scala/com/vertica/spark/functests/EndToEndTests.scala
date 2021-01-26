@@ -110,7 +110,7 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
     val tableName1 = "dftest1"
 
     val n = 40
-    TestUtils.createTable(conn, tableName1, isSegmented = false)
+    TestUtils.createTable(conn, tableName1, isSegmented = false, numOfRows = n)
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
 
     df.cache()
