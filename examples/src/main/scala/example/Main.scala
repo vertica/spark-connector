@@ -1,5 +1,7 @@
 import java.sql.Connection
 
+import org.apache.spark.sql.{DataFrame, SparkSession}
+
 object Main extends App {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
