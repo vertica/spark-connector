@@ -67,22 +67,27 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
     if(this.curRow == this.rowCount){
       while(this.curRowGroup < fileRange.minRowGroup) {
         reader.skipNextRowGroup()
-        this.curRowGroup = this.curRowGroup + 1
-      }
-
-      if(this.curRowGroup > fileRange.maxRowGroup) doneReading
-
-      val pages = reader.readNextRowGroup()
-      if(pages != null) {
-        this.recordReader = Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
-        this.rowCount = pages.getRowCount()
-        this.curRow = 0
         this.curRowGroup += 1
       }
-      else {
+
+      println("CUR ROW GROUP: " + this.curRowGroup + " , MAX ROW GROUP: " + fileRange.maxRowGroup)
+      if(this.curRowGroup > fileRange.maxRowGroup) {
         doneReading
       }
+      else {
+        val pages = reader.readNextRowGroup()
+        if(pages != null) {
+          this.recordReader = Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
+          this.rowCount = pages.getRowCount()
+          this.curRow = 0
+          this.curRowGroup += 1
+        }
+        else {
+          doneReading
+        }
+      }
     }
+
     this.curRow += 1
   }
 
@@ -97,7 +102,8 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
       case Failure(exception) =>
         logger.error("Error reading parquet file from HDFS.", exception)
         Left(ConnectorError(IntermediaryStoreReadError))
-      case Success(v) => Right(v)
+      case Success(v) =>
+        Right(v)
     }).toList.sequence match {
       case Left(err) => Left(err)
       case Right(list) => Right(DataBlock(list.flatten))
