@@ -31,7 +31,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
@@ -46,7 +46,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     assert(df.count() == 20)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
@@ -62,7 +62,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(1, 2.2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val schema = df.schema
     info("table schema: " + schema)
@@ -79,7 +79,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(1, 2.2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val filtered = df.select(df("a"))
     val count = filtered.count()
@@ -99,7 +99,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     TestUtils.populateTableBySQL(stmt, insert, n)
     val insert2 = "insert into "+ tableName1 + " values(3, 4.4)"
     TestUtils.populateTableBySQL(stmt, insert2, n)
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
     val filtered = df.filter(df("a")> 2).where(df("b") > 3.3)
     val count = filtered.count()
 
@@ -112,7 +112,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val n = 40
     TestUtils.createTable(conn, tableName1, numOfRows = n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
   }
@@ -123,7 +123,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val n = 40
 
     TestUtils.createTable(conn, tableName1, isSegmented = false, numOfRows = n)
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
   }
@@ -137,7 +137,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
-      val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
       assert(r == n)
     }
   }
@@ -148,7 +148,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val n = 40
     val nodes = TestUtils.getNodeNames(conn)
     TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = true, numOfRows = n, nodes.splitAt(3)._1)
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
   }
@@ -159,7 +159,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val n = 10
     val nodes = TestUtils.getNodeNames(conn)
     TestUtils.createTablePartialNodes(conn, tableName1, isSegmented = true, numOfRows = n, nodes.splitAt(3)._1)
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
   }
@@ -175,7 +175,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
-      val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
       assert(r == n)
     }
     stmt.execute("drop table " + tableName1)
@@ -191,7 +191,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(hex_to_binary('0xff'), HEX_TO_BINARY('0xFFFF'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -207,7 +207,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values('t',0)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -223,7 +223,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values('a', 'efghi', 'jklm', 'nopqrst')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -240,7 +240,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values('1/8/1999', '2004-10-19 10:23:54', '23:59:59.999999-14', '2004-10-19 10:23:54', '2004-10-19 10:23:54+02', '1 day 6 hours', '1 year 6 months')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -256,7 +256,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values('abcde', 'fghijk')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -272,7 +272,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(1,2,3,4)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -288,7 +288,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(1.1, 2.2, 3.3, 4.4, 5.5)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -304,7 +304,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values(1.1, 2.2, 3.3, 4.4)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
+    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
 
@@ -323,7 +323,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values('2077-02-01', 2.2)"
     TestUtils.populateTableBySQL(stmt, insert, n + 1)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val r = df.filter("a < cast('2001-01-01' as DATE)").count
     val r2 = df.filter("a > cast('2001-01-01' as DATE)").count
@@ -345,7 +345,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values('cde', 2.2)"
     TestUtils.populateTableBySQL(stmt, insert, n + 1)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val r = df.filter("a = 'abc'").count
     val r2 = df.filter("a = 'cde'").count
@@ -368,7 +368,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
     TestUtils.populateTableBySQL(stmt, insert, n + 1)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
     val r = dr.count
@@ -390,7 +390,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values('hannukah', 10)"
     TestUtils.populateTableBySQL(stmt, insert, n/2)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val r = df.filter(df("a").startsWith("chr")).count
 
@@ -415,7 +415,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values('hannukah', 10)"
     TestUtils.populateTableBySQL(stmt, insert, n-1)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val r = df.cache.count
 
@@ -440,7 +440,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     insert = "insert into "+ tableName1 + " values('hannukah', 10)"
     TestUtils.populateTableBySQL(stmt, insert, j)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val r = df.filter("a in ('christmas','hannukah','foo')").count
     val u = df.filter(df.col("a").isin("christmas","hannukah","foo")).count
@@ -468,7 +468,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val insert = "insert into "+ tableName1 + " values('1 day 6 hours', '1 year 6 months')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
