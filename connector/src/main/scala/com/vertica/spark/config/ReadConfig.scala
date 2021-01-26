@@ -5,7 +5,7 @@ import ch.qos.logback.classic.Level
 trait ReadConfig extends GenericConfig
 
 final case class TableName(name: String, dbschema: Option[String]) {
-  def getFullTableName = {
+  def getFullTableName : String = {
     dbschema match {
       case None => name
       case Some(schema) => schema + "." + name

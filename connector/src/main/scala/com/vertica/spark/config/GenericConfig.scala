@@ -8,7 +8,7 @@ import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
 
-case class LogProvider(val logLevel: Level) {
+case class LogProvider(logLevel: Level) {
   def getLogger(c: Class[_]): Logger = {
     val logger = Logger(c)
     Try{logger.underlying.asInstanceOf[classic.Logger].setLevel(logLevel) } match {
@@ -25,7 +25,7 @@ case class LogProvider(val logLevel: Level) {
   */
 trait GenericConfig {
   val logLevel: Level = Level.ERROR
-  val logProvider = LogProvider(logLevel)
+  val logProvider: LogProvider = LogProvider(logLevel)
 
   def getLogger(c: Class[_]): Logger = logProvider.getLogger(c)
 }

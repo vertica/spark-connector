@@ -6,7 +6,7 @@ import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 
 import com.vertica.spark.util.schema._
-import com.vertica.spark.jdbc._
+import com.vertica.spark.datasource.jdbc._
 
 import org.apache.spark.sql.types._
 
@@ -57,17 +57,16 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
     // Schema
-    mockColumnMetadata(rsmd, new ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, false, true))
     mockColumnCount(rsmd, 1)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => fail
-      case Right(schema) => {
+      case Left(_) => fail
+      case Right(schema) =>
         val field = schema.fields(0)
         assert(field.name == "col1")
-        assert(field.nullable == true)
+        assert(field.nullable)
         assert(field.dataType == DoubleType)
-      }
     }
   }
 
@@ -75,27 +74,26 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
     // Schema
-    mockColumnMetadata(rsmd, new ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, false, true))
-    mockColumnMetadata(rsmd, new ColumnDef(2, "col2", java.sql.Types.VARCHAR, "VARCHAR", 0, false, true))
-    mockColumnMetadata(rsmd, new ColumnDef(3, "col3", java.sql.Types.BIGINT, "BIGINT", 0, true, true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(2, "col2", java.sql.Types.VARCHAR, "VARCHAR", 0, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(3, "col3", java.sql.Types.BIGINT, "BIGINT", 0, true, true))
     mockColumnCount(rsmd, 3)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => fail
-      case Right(schema) => {
+      case Left(_) => fail
+      case Right(schema) =>
         val fields = schema.fields
         assert(fields(0).name == "col1")
-        assert(fields(0).nullable == true)
+        assert(fields(0).nullable)
         assert(fields(0).dataType == DoubleType)
 
         assert(fields(1).name == "col2")
-        assert(fields(1).nullable == true)
+        assert(fields(1).nullable)
         assert(fields(1).dataType == StringType)
 
         assert(fields(2).name == "col3")
-        assert(fields(2).nullable == true)
+        assert(fields(2).nullable)
         assert(fields(2).dataType == LongType)
-      }
     }
   }
 
@@ -103,58 +101,55 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
     // Signed BIGINT represented by long type
-    mockColumnMetadata(rsmd, new ColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 32, true, true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 32, true, true))
     // Unsigned BIGINT represented by decimal type without any digits after the 0
-    mockColumnMetadata(rsmd, new ColumnDef(2, "col2", java.sql.Types.BIGINT, "BIGINT", 0, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(2, "col2", java.sql.Types.BIGINT, "BIGINT", 0, false, true))
     mockColumnCount(rsmd, 2)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => fail
-      case Right(schema) => {
+      case Left(_) => fail
+      case Right(schema) =>
         val fields = schema.fields
         assert(fields(0).name == "col1")
         assert(fields(0).dataType == LongType)
 
         assert(fields(1).name == "col2")
         assert(fields(1).dataType == DecimalType(DecimalType.MAX_PRECISION,0))
-      }
     }
   }
 
   it should "parse DECIMAL | NUMERIC" in {
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
-    mockColumnMetadata(rsmd, new ColumnDef(1, "col1", java.sql.Types.NUMERIC, "NUMERIC", 32, true, true))
-    mockColumnMetadata(rsmd, new ColumnDef(2, "col2", java.sql.Types.DECIMAL, "VARCHAR", 16, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.NUMERIC, "NUMERIC", 32, true, true))
+    mockColumnMetadata(rsmd, ColumnDef(2, "col2", java.sql.Types.DECIMAL, "VARCHAR", 16, false, true))
     mockColumnCount(rsmd, 2)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(err) => fail
-      case Right(schema) => {
+      case Left(_) => fail
+      case Right(schema) =>
         val fields = schema.fields
         assert(fields(0).name == "col1")
         assert(fields(0).dataType == DecimalType(DecimalType.MAX_PRECISION, 32))
 
         assert(fields(1).name == "col2")
         assert(fields(1).dataType == DecimalType(DecimalType.MAX_PRECISION, 16))
-      }
     }
   }
 
   it should "fail when trying to parse invalid types" in {
     val (jdbcLayer, resultSet, rsmd) = mockJdbcDeps(tablename)
 
-    mockColumnMetadata(rsmd, new ColumnDef(1, "col1", 50000, "invalid-type", 16, false, true))
-    mockColumnMetadata(rsmd, new ColumnDef(2, "col2", 50000, "invalid-type", 16, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col1", 50000, "invalid-type", 16, false, true))
+    mockColumnMetadata(rsmd, ColumnDef(2, "col2", 50000, "invalid-type", 16, false, true))
     mockColumnCount(rsmd, 2)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(errList) => {
+      case Left(errList) =>
         assert(errList.size == 2)
-        assert(errList(0).err == MissingConversionError)
+        assert(errList.head.err == MissingConversionError)
         assert(errList(1).err == MissingConversionError)
-      }
-      case Right(schema) => fail
+      case Right(_) => fail
     }
   }
 
@@ -164,10 +159,9 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Left(JDBCLayerError(ConnectionError)))
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(errList) => {
+      case Left(errList) =>
         assert(errList.size == 1)
-        assert(errList(0).err == JdbcError)
-      }
+        assert(errList.head.err == JdbcError)
       case Right(schema) => fail
     }
   }

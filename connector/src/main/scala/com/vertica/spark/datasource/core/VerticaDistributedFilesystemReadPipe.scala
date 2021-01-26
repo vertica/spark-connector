@@ -4,14 +4,10 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
-import com.vertica.spark.jdbc._
-import com.vertica.spark.util.schema.SchemaTools
-import com.vertica.spark.datasource.fs._
+import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import org.apache.hadoop.conf.Configuration
-import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
+import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
-import org.apache.spark.sql.connector.read.InputPartition
 
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int)
 
@@ -38,7 +34,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
-  override def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
+  override def getMetadata: Either[ConnectorError, VerticaMetadata] = {
     this.config.metadata match {
       case Some(data) => Right(data)
       case None => this.retrieveMetadata()
@@ -48,7 +44,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(dataSize)
+  override def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
 
 
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): Either[ConnectorError, PartitionInfo] = {
@@ -83,7 +79,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       }
     }
     // Last partition if leftover (only partition not of rowGroupRoom size)
-    if(!curFileRanges.isEmpty) {
+    if(curFileRanges.nonEmpty) {
       val partition = VerticaDistributedFilesystemPartition(curFileRanges)
       partitions = partitions :+ partition
     }
@@ -96,10 +92,9 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     * Initial setup for the whole read operation. Called by driver.
     */
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
-    val hadoopConf : Configuration = new Configuration()
-    val schema = getMetadata() match {
+    getMetadata match {
       case Left(err) => return Left(err)
-      case Right(metadata) => metadata.schema
+      case Right(metadata) => ()
     }
 
     val fileStoreConfig = config.fileStoreConfig
@@ -157,7 +152,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
               }
             }
             partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
-          } yield (partitionInfo)
+          } yield partitionInfo
         }
     }
   }
@@ -203,8 +198,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
             _ <- fileStoreLayer.closeReadParquetFile()
             _ <- fileStoreLayer.openReadParquetFile(part.fileRanges(this.fileIdx))
             data <- fileStoreLayer.readDataFromParquetFile(dataSize)
-            } yield (data)
-        case _ => return Left(err)
+            } yield data
+        case _ => Left(err)
       }
       case Right(data) => Right(data)
     }

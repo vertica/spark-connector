@@ -1,4 +1,4 @@
-package com.vertica.spark.jdbc
+package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
 

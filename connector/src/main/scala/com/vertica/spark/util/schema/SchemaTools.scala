@@ -1,6 +1,6 @@
 package com.vertica.spark.util.schema
 
-import com.vertica.spark.jdbc._
+import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import java.sql.ResultSetMetaData
 

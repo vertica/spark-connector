@@ -22,10 +22,9 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val logLevel : Level = Level.ERROR
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
-      case Invalid(_) => {
+      case Invalid(_) =>
         fail
-      }
-      case Valid(jdbcConfig) => {
+      case Valid(jdbcConfig) =>
         assert(jdbcConfig.host == "1.1.1.1")
         assert(jdbcConfig.port == 1234)
         assert(jdbcConfig.db == "testdb")
@@ -33,7 +32,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(jdbcConfig.password == "password")
         println(jdbcConfig.logLevel)
         assert(jdbcConfig.logLevel == logLevel)
-      }
     }
   }
 
@@ -45,15 +43,13 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val logLevel : Level = Level.ERROR
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
-      case Invalid(errSeq) => {
+      case Invalid(errSeq) =>
         assert(errSeq.toNonEmptyList.size == 3)
         assert(!errSeq.filter(err => err.err == UserMissingError).isEmpty)
         assert(!errSeq.filter(err => err.err == PasswordMissingError).isEmpty)
         assert(!errSeq.filter(err => err.err == DbMissingError).isEmpty)
-      }
-      case Valid(jdbcConfig) => {
+      case Valid(_) =>
         fail // should not succeed
-      }
     }
   }
 
@@ -63,12 +59,10 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val logLevel : Level = Level.ERROR
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
-      case Invalid(errSeq) => {
+      case Invalid(errSeq) =>
         assert(errSeq.toNonEmptyList.size == 4)
-      }
-      case Valid(jdbcConfig) => {
+      case Valid(_) =>
         fail // should not succeed
-      }
     }
   }
 }

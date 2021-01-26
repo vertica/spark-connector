@@ -28,14 +28,15 @@ trait DSReaderInterface {
 
 
 class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
-  val logger: Logger = config.getLogger(classOf[DSReader])
+  private val logger: Logger = config.getLogger(classOf[DSReader])
 
-  val pipe = pipeFactory.getReadPipe(config)
+  private val pipe = pipeFactory.getReadPipe(config)
 
-  var block: Option[DataBlock] = None
-  var i: Int = 0
+  private var block: Option[DataBlock] = None
+  private var i: Int = 0
 
   def openRead(): Either[ConnectorError, Unit] = {
+    i = 0
     partition match {
       case verticaPartition: VerticaPartition => pipe.startPartitionRead(verticaPartition)
       case _ =>
