@@ -121,7 +121,8 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     val tableName1 = "dftest1"
 
     val n = 40
-    TestUtils.createTable(conn, tableName1, isSegmented = false)
+
+    TestUtils.createTable(conn, tableName1, isSegmented = false, numOfRows = n)
     val r = TestUtils.doCount(spark, readOpts + ("tablename" -> tableName1))
 
     assert(r == n)
