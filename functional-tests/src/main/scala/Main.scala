@@ -1,6 +1,6 @@
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, VerticaMetadata}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, TableName, VerticaMetadata}
 import com.vertica.spark.functests.{EndToEndTests, HDFSTests, JDBCTests}
 import ch.qos.logback.classic.Level
 
@@ -23,7 +23,7 @@ object Main extends App {
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
       jdbcConfig,
       FileStoreConfig(filename, Level.ERROR),
-      "",
+      TableName("", None),
       None,
       None
     ),
@@ -31,7 +31,7 @@ object Main extends App {
       if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
       jdbcConfig,
       FileStoreConfig(dirTestFilename, Level.ERROR),
-      "",
+      TableName("", None),
       None,
       None
     )
