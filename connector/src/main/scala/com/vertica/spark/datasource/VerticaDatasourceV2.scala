@@ -105,8 +105,9 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
         }
         config.getLogger(classOf[VerticaTable]).debug("Config loaded")
 
-        this.scanBuilder = Some(new VerticaScanBuilder(config))
-        this.scanBuilder.get
+        val scanBuilder = new VerticaScanBuilder(config)
+        this.scanBuilder = Some(scanBuilder)
+        scanBuilder
     }
   }
 

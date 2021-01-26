@@ -26,7 +26,7 @@ import collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 // Relevant parquet metadata
-case class ParquetFileMetadata(filename: String, rowGroupCount: Int)
+final case class ParquetFileMetadata(filename: String, rowGroupCount: Int)
 
 trait FileStoreLayerInterface {
   // Write
@@ -48,7 +48,7 @@ trait FileStoreLayerInterface {
   def createDir(filename: String) : Either[ConnectorError, Unit]
 }
 
-case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
+final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
   private val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
 
   private var recordReader: Option[RecordReader[InternalRow]] = None
@@ -133,7 +133,7 @@ class HadoopFileStoreLayer(
 
   val hdfsConfig: Configuration = new Configuration()
   readConfig.metadata match {
-    case Some(_) => hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, readConfig.metadata.get.schema.json)
+    case Some(metadata) => hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, metadata.schema.json)
     case None => ()
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
@@ -151,7 +151,7 @@ class HadoopFileStoreLayer(
 
   override def closeWriteParquetFile(): Either[ConnectorError, Unit] = ???
 
-  private def toSetMultiMap[K, V](map: util.Map[K, V] ) :  util.Map[K, util.Set[V]] = {
+  private def toSetMultiMap[K, V](map: util.Map[K, V] ): util.Map[K, util.Set[V]] = {
     val setMultiMap: util.Map[K, util.Set[V]] = new util.HashMap()
     for (entry <- map.entrySet().asScala) {
       setMultiMap.put(entry.getKey, Collections.singleton(entry.getValue))
@@ -229,7 +229,7 @@ class HadoopFileStoreLayer(
   }
 
   override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = {
-    if(this.done){
+    if (this.done){
       println("DONE SET; DONE READING")
       return Left(ConnectorError(DoneReading))
     }

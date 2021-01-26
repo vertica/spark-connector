@@ -57,7 +57,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       var j = 0
       var low = 0
       while(j < size){
-        if(i == rowGroupRoom-1) { // Reached end of partition, cut off here
+        if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val frange = ParquetFileRange(m.filename, low, j)
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
@@ -66,7 +66,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
           i = 0
           low = j+1
         }
-        else if(j == size - 1) { // Reached end of file's row groups, add to file ranges
+        else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val frange = ParquetFileRange(m.filename, low, j)
           curFileRanges = curFileRanges :+ frange
           i += 1
@@ -129,7 +129,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     fileStoreLayer.getFileList(hdfsPath) match {
       case Left(err) => Left(err)
       case Right(fileList) =>
-        if(fileList.isEmpty) {
+        if(fileList.isEmpty){
           logger.error("Returned file list was empty, so cannot create valid partition info")
           Left(ConnectorError(PartitioningError))
         }
@@ -171,12 +171,14 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     this.partition = Some(part)
     this.fileIdx = 0
 
-    if(part.fileRanges.isEmpty) {
-      logger.warn("No files to read set on partition.")
-      return Left(ConnectorError(DoneReading))
+    // Check if empty and initialize with first file range
+    part.fileRanges.headOption match {
+      case None =>
+        logger.warn("No files to read set on partition.")
+        return Left(ConnectorError(DoneReading))
+      case Some(head) =>
+        fileStoreLayer.openReadParquetFile(head)
     }
-
-    fileStoreLayer.openReadParquetFile(part.fileRanges.head)
   }
 
 
