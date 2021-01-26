@@ -128,9 +128,10 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   * Return the current row
   */
   override def get: InternalRow = {
-    val r = row.get
-    println("API ROW: " + r)
-    r
+    row match {
+      case None => throw new Exception("Fatal error: expected row did not exist")
+      case Some(v) => v
+    }
   }
 
 /**
