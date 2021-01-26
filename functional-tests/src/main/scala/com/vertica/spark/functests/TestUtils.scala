@@ -54,7 +54,7 @@ object TestUtils {
   private def populateTable(stmt: Statement, tableName: String, numOfRows: Int) {
     for (i <- 0 until numOfRows) {
       val insertStr = "insert into " + tableName + " values (" + i + " ," + i + ")"
-      println(insertStr);
+      println(insertStr)
       stmt.execute(insertStr)
     }
   }

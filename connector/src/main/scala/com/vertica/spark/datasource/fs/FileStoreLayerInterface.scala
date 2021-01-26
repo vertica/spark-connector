@@ -8,8 +8,7 @@ import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.parquet.hadoop.{ParquetFileReader, ParquetReader, ParquetWriter}
-import org.apache.spark.sql.SparkSession
+import org.apache.parquet.hadoop.{ParquetFileReader, ParquetWriter}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.parquet.{ParquetReadSupport, ParquetWriteSupport}
 import org.apache.spark.sql.internal.SQLConf
@@ -23,7 +22,6 @@ import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
 
-import scala.collection.JavaConversions._
 import collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -51,19 +49,19 @@ trait FileStoreLayerInterface {
 }
 
 case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
-  val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
+  private val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
 
-  var recordReader: Option[RecordReader[InternalRow]] = None
-  var curRow = 0L
-  var rowCount = 0L
-  var curRowGroup = 0L
+  private var recordReader: Option[RecordReader[InternalRow]] = None
+  private var curRow = 0L
+  private var rowCount = 0L
+  private var curRowGroup = 0L
 
   private def doneReading : Unit = {
     this.recordReader = None
     rowCount = -1
   }
 
-  def checkUpdateRecordReader = {
+  def checkUpdateRecordReader: Unit = {
     if(this.curRow == this.rowCount){
       while(this.curRowGroup < fileRange.minRowGroup) {
         reader.skipNextRowGroup()
@@ -78,7 +76,7 @@ case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageCol
         val pages = reader.readNextRowGroup()
         if(pages != null) {
           this.recordReader = Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
-          this.rowCount = pages.getRowCount()
+          this.rowCount = pages.getRowCount
           this.curRow = 0
           this.curRowGroup += 1
         }
@@ -155,26 +153,27 @@ class HadoopFileStoreLayer(
 
   private def toSetMultiMap[K, V](map: util.Map[K, V] ) :  util.Map[K, util.Set[V]] = {
     val setMultiMap: util.Map[K, util.Set[V]] = new util.HashMap()
-    for (entry <- map.entrySet()) {
-      setMultiMap.put(entry.getKey(), Collections.singleton(entry.getValue()))
+    for (entry <- map.entrySet().asScala) {
+      setMultiMap.put(entry.getKey, Collections.singleton(entry.getValue))
     }
-    Collections.unmodifiableMap(setMultiMap);
+    Collections.unmodifiableMap(setMultiMap)
   }
 
   override def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata] = {
 
-    val path = new Path(s"${filename}")
+    val path = new Path(s"$filename")
 
     Try {
-      val reader = ParquetFileReader.open(hdfsConfig, path)
+      val inputFile = HadoopInputFile.fromPath(path, hdfsConfig)
+      val reader = ParquetFileReader.open(inputFile)
 
-      val rowGroupCount = reader.getRowGroups().size
+      val rowGroupCount = reader.getRowGroups.size
       reader.close()
       ParquetFileMetadata(filename, rowGroupCount)
     } match {
       case Success(metadata) => Right(metadata)
       case Failure(exception) =>
-        logger.error(s"Error getting metadata for file ${filename}.", exception)
+        logger.error(s"Error getting metadata for file $filename.", exception)
         Left(ConnectorError(FileListError))
     }
   }
@@ -191,27 +190,27 @@ class HadoopFileStoreLayer(
 
     // Get reader
     val readerOrError = Try {
-      val path = new Path(s"${filename}")
+      val path = new Path(s"$filename")
       val inputFile = HadoopInputFile.fromPath(path, hdfsConfig)
       val fileReader = ParquetFileReader.open(inputFile)
 
-      val parquetFileMetadata = fileReader.getFooter().getFileMetaData()
-      val fileSchema = parquetFileMetadata.getSchema();
-      val fileMetadata = parquetFileMetadata.getKeyValueMetaData()
-      val readContext = readSupport.init(new InitContext(hdfsConfig, toSetMultiMap(fileMetadata), fileSchema));
+      val parquetFileMetadata = fileReader.getFooter.getFileMetaData
+      val fileSchema = parquetFileMetadata.getSchema
+      val fileMetadata = parquetFileMetadata.getKeyValueMetaData
+      val readContext = readSupport.init(new InitContext(hdfsConfig, toSetMultiMap(fileMetadata), fileSchema))
 
       // Create record converter
-      val recordConverter = readSupport.prepareForRead(hdfsConfig, fileMetadata, fileSchema, readContext);
+      val recordConverter = readSupport.prepareForRead(hdfsConfig, fileMetadata, fileSchema, readContext)
 
       // Set readers requested schema from read context
-      val requestedSchema = readContext.getRequestedSchema()
+      val requestedSchema = readContext.getRequestedSchema
       fileReader.setRequestedSchema(requestedSchema)
 
       // Column IO for record conversion
-      val columnIOFactory = new ColumnIOFactory(parquetFileMetadata.getCreatedBy())
+      val columnIOFactory = new ColumnIOFactory(parquetFileMetadata.getCreatedBy)
 
       val strictTypeChecking = false
-      val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking);
+      val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
       HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, readConfig.logProvider)
     } match {

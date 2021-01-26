@@ -504,7 +504,7 @@ class EndToEndTests(readOpts: Map[String, String], tablename: String, tablename2
 
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (f INTERVAL DAY TO SECOND, g INTERVAL YEAR TO MONTH)")
 
-    var insert = "insert into "+ tableName1 + " values('1 day 6 hours', '1 year 6 months')"
+    val insert = "insert into "+ tableName1 + " values('1 day 6 hours', '1 year 6 months')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName1)).load()
