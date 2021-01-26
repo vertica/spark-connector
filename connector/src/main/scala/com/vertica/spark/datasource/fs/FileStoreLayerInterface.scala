@@ -237,7 +237,7 @@ class HadoopFileStoreLayer(
 
     dataBlock match {
       case Left(_) => ()
-      case Right(block) => this.done = true
+      case Right(block) => if(block.data.size < blockSize) this.done = true
     }
 
     dataBlock
