@@ -30,8 +30,7 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.CLOB => StringType
       case java.sql.Types.DATALINK => null
       case java.sql.Types.DATE => DateType
-      case java.sql.Types.DECIMAL if precision != 0 || scale != 0 => DecimalType(precision, scale)
-      case java.sql.Types.DECIMAL => DecimalType(DecimalType.USER_DEFAULT.precision,DecimalType.USER_DEFAULT.scale)
+      case java.sql.Types.DECIMAL => DecimalType(precision, scale)
       case java.sql.Types.DISTINCT => null
       case java.sql.Types.DOUBLE => DoubleType
       case java.sql.Types.FLOAT => FloatType

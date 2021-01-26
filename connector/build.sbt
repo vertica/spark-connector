@@ -29,13 +29,16 @@ assemblyMergeStrategy in assembly := {
 import sbtsonar.SonarPlugin.autoImport.sonarProperties
 
 sonarProperties ++= Map(
-  "sonar.host.url" -> "http://localhost:80"
+  "sonar.host.url" -> "http://localhost:80",
+  "sonar.coverage.exclusions" -> "**/*FileStoreLayerInterface.scala,**/*VerticaJdbcLayer.scala"
 )
 
 scapegoatVersion in ThisBuild := "1.3.3"
 scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
 scalacOptions += "-Ypartial-unification"
+
+
 
 
 
