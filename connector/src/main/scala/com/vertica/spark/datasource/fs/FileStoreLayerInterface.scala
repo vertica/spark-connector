@@ -223,7 +223,10 @@ class HadoopFileStoreLayer(
   }
 
   override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = {
-    if(this.done) return Left(ConnectorError(DoneReading))
+    if(this.done){
+      println("DONE SET; DONE READING")
+      return Left(ConnectorError(DoneReading))
+    }
 
     val dataBlock = for{
       reader <- this.reader match {
@@ -237,7 +240,11 @@ class HadoopFileStoreLayer(
 
     dataBlock match {
       case Left(_) => ()
-      case Right(block) => if(block.data.size < blockSize) this.done = true
+      case Right(block) => if(block.data.size < blockSize) {
+        println("BLOCK SIZE " + block.data.size + " + WAS SMALLER THAN EXPECTED " + blockSize)
+        println("DATA BLOCK: " + block)
+        this.done = true
+      }
     }
 
     dataBlock
