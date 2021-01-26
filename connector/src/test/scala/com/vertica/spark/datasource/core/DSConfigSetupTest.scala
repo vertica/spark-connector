@@ -73,7 +73,7 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(config.jdbcConfig.db == "testdb")
         assert(config.jdbcConfig.username == "user")
         assert(config.jdbcConfig.password == "password")
-        assert(config.tablename == "tbl")
+        assert(config.tablename.getFullTableName == "tbl")
         assert(config.logLevel == Level.ERROR)
         config.metadata match {
           case Some(metadata) => assert(metadata.schema == new StructType())
