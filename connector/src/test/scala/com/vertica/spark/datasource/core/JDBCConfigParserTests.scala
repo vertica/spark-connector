@@ -1,8 +1,9 @@
+package com.vertica.spark.datasource.core
+
 import cats.data.Validated.{Invalid, Valid}
 import cats.implicits._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource.core.DSConfigSetupUtils
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error.ConnectorErrorType._
@@ -40,8 +41,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "host" -> "1.1.1.1"
     )
 
-    val logLevel : Level = Level.ERROR
-
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(errSeq) =>
         assert(errSeq.toNonEmptyList.size == 3)
@@ -55,8 +54,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
   it should "return all possible configuration errors" in {
     val opts = Map[String, String]()
-
-    val logLevel : Level = Level.ERROR
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(errSeq) =>
