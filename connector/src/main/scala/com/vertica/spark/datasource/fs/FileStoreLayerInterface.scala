@@ -75,7 +75,6 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
         this.curRowGroup += 1
       }
 
-      println("CUR ROW GROUP: " + this.curRowGroup + " , MAX ROW GROUP: " + fileRange.maxRowGroup)
       if(this.curRowGroup > fileRange.maxRowGroup) {
         doneReading
       }
@@ -94,6 +93,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
     }
 
     this.curRow += 1
+
   }
 
   def read(blockSize: Int) : Either[ConnectorError, DataBlock] = {
@@ -175,6 +175,7 @@ class HadoopFileStoreLayer(
       val reader = ParquetFileReader.open(inputFile)
 
       val rowGroupCount = reader.getRowGroups.size
+
       reader.close()
       ParquetFileMetadata(filename, rowGroupCount)
     } match {
@@ -254,8 +255,6 @@ class HadoopFileStoreLayer(
     dataBlock match {
       case Left(_) => ()
       case Right(block) => if(block.data.size < blockSize) {
-        println("BLOCK SIZE " + block.data.size + " + WAS SMALLER THAN EXPECTED " + blockSize)
-        println("DATA BLOCK: " + block)
         this.done = true
       }
     }

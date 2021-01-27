@@ -74,7 +74,6 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
         else {
           i += 1
         }
-
         j += 1
       }
     }
