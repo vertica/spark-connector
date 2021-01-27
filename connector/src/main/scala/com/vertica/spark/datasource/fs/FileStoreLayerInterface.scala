@@ -28,7 +28,14 @@ import scala.util.{Failure, Success, Try}
 // Relevant parquet metadata
 final case class ParquetFileMetadata(filename: String, rowGroupCount: Int)
 
+/**
+ * Interface for communicating with a filesystem.
+ *
+ * Contains common operations for a filesystem such as creating, removing, reading, and writing files
+ * TODO: Leaving out individual function javadoc comments for now as we plan to redesign this interface
+ */
 trait FileStoreLayerInterface {
+
   // Write
   def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit]
   def writeDataToParquetFile(data: DataBlock): Either[ConnectorError, Unit]

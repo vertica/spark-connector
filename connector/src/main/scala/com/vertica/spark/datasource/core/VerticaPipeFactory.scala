@@ -6,12 +6,20 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.schema.SchemaTools
 
+/**
+ * Factory for creating a data pipe to send or retrieve data from Vertica
+ *
+ * Constructed based on the passed in configuration
+ */
 trait VerticaPipeFactoryInterface {
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
 
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = ???
 }
 
+/**
+ * Implementation of the vertica pipe factory
+ */
 object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
