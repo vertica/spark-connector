@@ -1,6 +1,7 @@
+package example
+
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
-
 import org.apache.spark.sql.SparkSession
 
 object TestUtils {
