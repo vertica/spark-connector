@@ -1,3 +1,5 @@
+package com.vertica.spark.datasource.core
+
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
@@ -7,7 +9,6 @@ import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.datasource.core.DSConfigSetupUtils
 
 class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
@@ -44,7 +45,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   }
 
   it should "default to ERROR logging level" in {
-    var opts = Map[String, String]()
+    val opts = Map[String, String]()
     val level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
     assert(level == Level.ERROR)
   }

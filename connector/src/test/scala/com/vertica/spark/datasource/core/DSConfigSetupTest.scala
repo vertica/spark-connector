@@ -1,13 +1,14 @@
+package com.vertica.spark.datasource.core
+
 import cats.data.Validated.{Invalid, Valid}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource.core.DSReadConfigSetup
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.datasource.core._
+import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.types._
 
 class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {

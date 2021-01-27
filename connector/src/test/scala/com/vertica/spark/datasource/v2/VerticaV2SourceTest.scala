@@ -1,3 +1,5 @@
+package com.vertica.spark.datasource.v2
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -7,9 +9,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.connector.catalog._
-import org.apache.spark.sql.connector.read._
-import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import com.vertica.spark.datasource.v2._
 import org.scalamock.scalatest.MockFactory
 
 import java.util
@@ -17,9 +16,6 @@ import java.util
 import scala.collection.JavaConversions._
 
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.config.VerticaMetadata
-import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
 
 trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
