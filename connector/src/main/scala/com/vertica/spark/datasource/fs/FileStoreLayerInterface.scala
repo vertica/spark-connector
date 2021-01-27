@@ -63,12 +63,12 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   private var rowCount = 0L
   private var curRowGroup = 0L
 
-  private def doneReading : Unit = {
+  private def doneReading() : Unit = {
     this.recordReader = None
     rowCount = -1
   }
 
-  def checkUpdateRecordReader: Unit = {
+  def checkUpdateRecordReader(): Unit = {
     if(this.curRow == this.rowCount){
       while(this.curRowGroup < fileRange.minRowGroup) {
         reader.skipNextRowGroup()
@@ -77,7 +77,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 
       println("CUR ROW GROUP: " + this.curRowGroup + " , MAX ROW GROUP: " + fileRange.maxRowGroup)
       if(this.curRowGroup > fileRange.maxRowGroup) {
-        doneReading
+        this.doneReading()
       }
       else {
         val pages = reader.readNextRowGroup()
@@ -88,7 +88,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
           this.curRowGroup += 1
         }
         else {
-          doneReading
+          this.doneReading()
         }
       }
     }
@@ -98,7 +98,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 
   def read(blockSize: Int) : Either[ConnectorError, DataBlock] = {
     (0 until blockSize).map(_ => Try {
-      checkUpdateRecordReader
+      this.checkUpdateRecordReader()
       recordReader match {
         case None => None
         case Some(reader) => Some(reader.read().copy())

@@ -94,7 +94,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
     getMetadata match {
       case Left(err) => return Left(err)
-      case Right(metadata) => ()
+      case Right(_) => ()
     }
 
     val fileStoreConfig = config.fileStoreConfig
@@ -175,7 +175,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     part.fileRanges.headOption match {
       case None =>
         logger.warn("No files to read set on partition.")
-        return Left(ConnectorError(DoneReading))
+        Left(ConnectorError(DoneReading))
       case Some(head) =>
         fileStoreLayer.openReadParquetFile(head)
     }
