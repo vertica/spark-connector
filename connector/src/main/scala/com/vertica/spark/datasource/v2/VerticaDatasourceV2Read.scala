@@ -2,15 +2,10 @@ package com.vertica.spark.datasource.v2
 
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.catalyst.InternalRow
 
-import collection.JavaConverters._
 import com.vertica.spark.config.ReadConfig
-import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.config.DistributedFilesystemReadConfig
-import com.vertica.spark.datasource.VerticaTable
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, VerticaPartition}
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 
