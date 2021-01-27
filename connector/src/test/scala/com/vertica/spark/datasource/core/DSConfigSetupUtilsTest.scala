@@ -9,13 +9,11 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.datasource.core.DSConfigSetupUtils
 
-class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
   def getResultOrAssert[ResultType](validation : ValidatedNec[_,ResultType]): ResultType = {
     validation match {
-      case Invalid(_) => {
-        fail
-      }
+      case Invalid(_) => fail
       case Valid(result) => result
     }
   }
@@ -23,9 +21,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   def getErrorOrAssert[ErrorType](validation : ValidatedNec[ErrorType,_]): NonEmptyChain[ErrorType] = {
     validation match {
       case Invalid(errors) => errors
-      case Valid(result) => {
-        fail
-      }
+      case Valid(_) => fail
     }
   }
 
@@ -130,7 +126,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   }
 
   it should "parse the table name" in {
-    val opts = Map("tablename" -> "tbl")
+    val opts = Map("table" -> "tbl")
     val table = getResultOrAssert[String](DSConfigSetupUtils.getTablename(opts))
     assert(table == "tbl")
   }
@@ -151,7 +147,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   }
 
   it should "parse full table name with schema" in {
-    val opts = Map("dbschema" -> "test", "tablename" -> "table")
+    val opts = Map("dbschema" -> "test", "table" -> "table")
     val schema = getResultOrAssert[TableName](DSConfigSetupUtils.validateAndGetFullTableName(opts))
     assert(schema.getFullTableName == "test.table")
   }

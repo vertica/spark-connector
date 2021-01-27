@@ -12,7 +12,7 @@ object ConnectorErrorType extends Enumeration {
   val DbMissingError : Value = Value("The 'db' param is missing. Please specify the name of the Vertica database to connect to.")
   val UserMissingError : Value = Value("The 'user' param is missing. Please specify the username to use for authenticating with Vertica.")
   val PasswordMissingError : Value = Value("The 'password' param is missing. Please specify the password to use for authenticating with Vertica.")
-  val TablenameMissingError : Value = Value("The 'tablename' param is missing. Please specify the name of the table to use.")
+  val TablenameMissingError : Value = Value("The 'table' param is missing. Please specify the name of the table to use.")
   val InvalidPortError : Value = Value("The 'port' param specified is invalid. Please specify a valid integer between 1 and 65535.")
   val InvalidPartitionCountError : Value = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer above 0.")
   val SchemaDiscoveryError : Value = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")

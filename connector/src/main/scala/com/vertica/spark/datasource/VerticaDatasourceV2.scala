@@ -76,7 +76,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = newScanBuilder(caseInsensitiveStringMap).build().readSchema()
+  override def schema(): StructType = this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
 
 /**
   * Returns a list of capabilities that the table supports.

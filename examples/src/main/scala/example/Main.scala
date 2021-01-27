@@ -1,5 +1,4 @@
 import java.sql.Connection
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import ch.qos.logback.classic.Level
@@ -32,7 +31,7 @@ object Main extends App {
   val insert = "insert into "+ tableName + " values(2)"
   TestUtils.populateTableBySQL(stmt, insert, n)
 
-  val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("tablename" -> tableName)).load()
+  val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
   df.rdd.foreach(println)
 }

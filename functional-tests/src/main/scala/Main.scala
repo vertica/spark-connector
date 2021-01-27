@@ -14,7 +14,7 @@ object Main extends App {
                               password = conf.getString("functional-tests.password"),
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
-  (new JDBCTests(jdbcConfig)).execute()
+  new JDBCTests(jdbcConfig).execute()
 
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
