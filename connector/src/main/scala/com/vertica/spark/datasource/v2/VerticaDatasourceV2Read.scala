@@ -51,7 +51,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
 /**
   * Returns this object as an instance of the Batch interface
   */
-  override def toBatch(): Batch = this
+  override def toBatch: Batch = this
 
 
 /**
