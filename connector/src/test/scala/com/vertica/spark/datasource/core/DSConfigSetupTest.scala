@@ -23,7 +23,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   def parseCorrectInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : ReadConfig = {
     val readConfig : ReadConfig = dsReadConfigSetup.validateAndGetConfig(opts) match {
-      case Invalid(err) =>
+      case Invalid(_) =>
         fail
         mock[ReadConfig]
       case Valid(config) =>
@@ -87,11 +87,11 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
                    "port" -> "asdf",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
-    var dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+    val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 2)
@@ -107,7 +107,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
