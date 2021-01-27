@@ -9,6 +9,9 @@ import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
+import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.datasource.core.DSReadConfigSetup
+
 import collection.JavaConverters._
 
 
@@ -28,10 +31,13 @@ class VerticaSource extends TableProvider {
   * @return The table's schema in spark StructType format
   */
   override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap):
-      StructType =
-        getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap.asCaseSensitiveMap()).schema()
+      StructType = {
 
-/**
+    val table = getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
+    table.schema()
+  }
+
+  /**
   * Gets the structure representing a Vertica table
   *
   * @param schema StructType representing table schema, used for write
@@ -42,7 +48,7 @@ class VerticaSource extends TableProvider {
   override def getTable(schema: StructType,
                         partitioning: Array[Transform],
                         properties: util.Map[String, String]): Table = {
-    new VerticaTable(properties.asScala.toMap)
+    new VerticaTable(new CaseInsensitiveStringMap(properties))
   }
 
 }
@@ -52,7 +58,11 @@ class VerticaSource extends TableProvider {
   *
   * Supports Read and Write functionality.
   */
-class VerticaTable(val configOptions: Map[String, String]) extends Table with SupportsRead with SupportsWrite {
+class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends Table with SupportsRead with SupportsWrite {
+
+  // Cache the scan builder so we don't build it twice
+  var scanBuilder : Option[VerticaScanBuilder] = None
+
 /**
   * A name to differentiate this table from other tables
   *
@@ -60,12 +70,13 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def name(): String = "VerticaTable" // TODO: change this to db.tablename
 
+
 /**
   * Should reach out to SQL layer and return schema of the table.
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = new StructType()
+  override def schema(): StructType = this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
 
 /**
   * Returns a list of capabilities that the table supports.
@@ -82,7 +93,22 @@ class VerticaTable(val configOptions: Map[String, String]) extends Table with Su
   */
   override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
   {
-    new VerticaScanBuilder(options)
+    this.scanBuilder match {
+      case Some(builder) => builder
+      case None =>
+        val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
+          case Invalid(errList) =>
+            val errMsgList = for (err <- errList) yield err.msg
+            val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
+            throw new Exception(msg)
+          case Valid(cfg) => cfg
+        }
+        config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+
+        val scanBuilder = new VerticaScanBuilder(config)
+        this.scanBuilder = Some(scanBuilder)
+        scanBuilder
+    }
   }
 
 /**

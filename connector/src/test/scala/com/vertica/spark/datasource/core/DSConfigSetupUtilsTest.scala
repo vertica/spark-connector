@@ -1,3 +1,5 @@
+package com.vertica.spark.datasource.core
+
 import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
@@ -7,15 +9,12 @@ import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.datasource.core.DSConfigSetupUtils
 
-class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
   def getResultOrAssert[ResultType](validation : ValidatedNec[_,ResultType]): ResultType = {
     validation match {
-      case Invalid(_) => {
-        fail
-      }
+      case Invalid(_) => fail
       case Valid(result) => result
     }
   }
@@ -23,9 +22,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   def getErrorOrAssert[ErrorType](validation : ValidatedNec[ErrorType,_]): NonEmptyChain[ErrorType] = {
     validation match {
       case Invalid(errors) => errors
-      case Valid(result) => {
-        fail
-      }
+      case Valid(_) => fail
     }
   }
 
@@ -48,7 +45,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   }
 
   it should "default to ERROR logging level" in {
-    var opts = Map[String, String]()
+    val opts = Map[String, String]()
     val level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
     assert(level == Level.ERROR)
   }
@@ -80,7 +77,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   it should "defaults to port 5543" in {
     val opts = Map[String, String]()
     val port = getResultOrAssert[Int](DSConfigSetupUtils.getPort(opts))
-    assert(port == 5543)
+    assert(port == 5433)
   }
 
   it should "error with invalid port input" in {
@@ -130,7 +127,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   }
 
   it should "parse the table name" in {
-    val opts = Map("tablename" -> "tbl")
+    val opts = Map("table" -> "tbl")
     val table = getResultOrAssert[String](DSConfigSetupUtils.getTablename(opts))
     assert(table == "tbl")
   }
@@ -151,7 +148,7 @@ class DSReadConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with
   }
 
   it should "parse full table name with schema" in {
-    val opts = Map("dbschema" -> "test", "tablename" -> "table")
+    val opts = Map("dbschema" -> "test", "table" -> "table")
     val schema = getResultOrAssert[TableName](DSConfigSetupUtils.validateAndGetFullTableName(opts))
     assert(schema.getFullTableName == "test.table")
   }

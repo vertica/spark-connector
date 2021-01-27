@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import com.vertica.spark.util.error.JdbcErrorType._
 
-import com.vertica.spark.jdbc._
+import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.JDBCConfig
 
 /**
@@ -37,7 +37,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0;")
     }
     catch {
-      case _ : Throwable => assert(false) // There should be no error loading the created table
+      case _ : Throwable => fail // There should be no error loading the created table
     }
   }
 
@@ -47,13 +47,11 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(123);")
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
+      case Right(rs) =>
         assert(rs.next())
         assert(rs.getInt(1) == 123)
-      }
-      case Left(err) => {
-        assert(false)
-      }
+      case Left(err) =>
+        fail
     }
   }
 

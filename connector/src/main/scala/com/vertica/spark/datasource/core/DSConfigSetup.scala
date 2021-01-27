@@ -74,7 +74,7 @@ object DSConfigSetupUtils {
   }
 
   def getPort(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("port","5543").toInt} match {
+    Try {config.getOrElse("port","5433").toInt} match {
       case Success(i) => if (i >= 1 && i <= 65535) i.validNec else ConnectorError(InvalidPortError).invalidNec
       case Failure(_) => ConnectorError(InvalidPortError).invalidNec
     }
@@ -96,15 +96,15 @@ object DSConfigSetupUtils {
   }
 
   def getTablename(config: Map[String, String]): ValidationResult[String] = {
-    config.get("tablename") match {
-      case Some(tablename) => tablename.validNec
+    config.get("table") match {
+      case Some(table) => table.validNec
       case None => ConnectorError(TablenameMissingError).invalidNec
     }
   }
 
   def getDbSchema(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("dbschema") match {
-      case Some(tablename) => Some(tablename).validNec
+      case Some(dbschema) => Some(dbschema).validNec
       case None => None.validNec
     }
   }

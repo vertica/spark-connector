@@ -4,14 +4,10 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
-import com.vertica.spark.jdbc._
-import com.vertica.spark.util.schema.SchemaTools
-import com.vertica.spark.datasource.fs._
+import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import org.apache.hadoop.conf.Configuration
-import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
+import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
-import org.apache.spark.sql.connector.read.InputPartition
 
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int)
 
@@ -38,7 +34,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
     */
-  override def getMetadata(): Either[ConnectorError, VerticaMetadata] = {
+  override def getMetadata: Either[ConnectorError, VerticaMetadata] = {
     this.config.metadata match {
       case Some(data) => Right(data)
       case None => this.retrieveMetadata()
@@ -48,7 +44,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  override def getDataBlockSize(): Either[ConnectorError, Long] = Right(dataSize)
+  override def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
 
 
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): Either[ConnectorError, PartitionInfo] = {
@@ -61,7 +57,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       var j = 0
       var low = 0
       while(j < size){
-        if(i == rowGroupRoom-1) { // Reached end of partition, cut off here
+        if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val frange = ParquetFileRange(m.filename, low, j)
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
@@ -70,7 +66,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
           i = 0
           low = j+1
         }
-        else if(j == size - 1) { // Reached end of file's row groups, add to file ranges
+        else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val frange = ParquetFileRange(m.filename, low, j)
           curFileRanges = curFileRanges :+ frange
           i += 1
@@ -78,12 +74,11 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
         else {
           i += 1
         }
-
         j += 1
       }
     }
     // Last partition if leftover (only partition not of rowGroupRoom size)
-    if(!curFileRanges.isEmpty) {
+    if(curFileRanges.nonEmpty) {
       val partition = VerticaDistributedFilesystemPartition(curFileRanges)
       partitions = partitions :+ partition
     }
@@ -96,10 +91,9 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     * Initial setup for the whole read operation. Called by driver.
     */
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
-    val hadoopConf : Configuration = new Configuration()
-    val schema = getMetadata() match {
+    getMetadata match {
       case Left(err) => return Left(err)
-      case Right(metadata) => metadata.schema
+      case Right(_) => ()
     }
 
     val fileStoreConfig = config.fileStoreConfig
@@ -107,12 +101,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
 
+    // Remove export directory if it exists (Vertica must create this dir)
     fileStoreLayer.removeDir(hdfsPath) match {
-      case Left(err) => return Left(err)
-      case Right(_) =>
-    }
-
-    fileStoreLayer.createDir(hdfsPath) match {
       case Left(err) => return Left(err)
       case Right(_) =>
     }
@@ -138,7 +128,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     fileStoreLayer.getFileList(hdfsPath) match {
       case Left(err) => Left(err)
       case Right(fileList) =>
-        if(fileList.isEmpty) {
+        if(fileList.isEmpty){
           logger.error("Returned file list was empty, so cannot create valid partition info")
           Left(ConnectorError(PartitioningError))
         }
@@ -161,7 +151,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
               }
             }
             partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
-          } yield (partitionInfo)
+          } yield partitionInfo
         }
     }
   }
@@ -180,12 +170,14 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     this.partition = Some(part)
     this.fileIdx = 0
 
-    if(part.fileRanges.isEmpty) {
-      logger.warn("No files to read set on partition.")
-      return Left(ConnectorError(DoneReading))
+    // Check if empty and initialize with first file range
+    part.fileRanges.headOption match {
+      case None =>
+        logger.warn("No files to read set on partition.")
+        Left(ConnectorError(DoneReading))
+      case Some(head) =>
+        fileStoreLayer.openReadParquetFile(head)
     }
-
-    fileStoreLayer.openReadParquetFile(part.fileRanges.head)
   }
 
 
@@ -207,8 +199,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
             _ <- fileStoreLayer.closeReadParquetFile()
             _ <- fileStoreLayer.openReadParquetFile(part.fileRanges(this.fileIdx))
             data <- fileStoreLayer.readDataFromParquetFile(dataSize)
-            } yield (data)
-        case _ => return Left(err)
+            } yield data
+        case _ => Left(err)
       }
       case Right(data) => Right(data)
     }

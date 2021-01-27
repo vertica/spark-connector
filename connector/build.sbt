@@ -1,6 +1,6 @@
 scalaVersion := "2.12.0"
 name := "spark-vertica-connector"
-organization := "ch.epfl.scala"
+organization := "com.vertica"
 version := "1.0"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
@@ -29,13 +29,16 @@ assemblyMergeStrategy in assembly := {
 import sbtsonar.SonarPlugin.autoImport.sonarProperties
 
 sonarProperties ++= Map(
-  "sonar.host.url" -> "http://localhost:80"
+  "sonar.host.url" -> "http://localhost:80",
+  "sonar.coverage.exclusions" -> "**/*FileStoreLayerInterface.scala,**/*VerticaJdbcLayer.scala"
 )
 
 scapegoatVersion in ThisBuild := "1.3.3"
 scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
 scalacOptions += "-Ypartial-unification"
+
+
 
 
 

@@ -1,16 +1,17 @@
+package com.vertica.spark.datasource.core
+
 import cats.data.Validated.{Invalid, Valid}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource.core.DSReadConfigSetup
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.datasource.core._
+import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.types._
 
-class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   override def beforeAll(): Unit = {
   }
 
@@ -23,13 +24,11 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
 
   def parseCorrectInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : ReadConfig = {
     val readConfig : ReadConfig = dsReadConfigSetup.validateAndGetConfig(opts) match {
-      case Invalid(err) =>  {
+      case Invalid(_) =>
         fail
         mock[ReadConfig]
-      }
-      case Valid(config) => {
+      case Valid(config) =>
         config
-      }
     }
     readConfig
   }
@@ -39,10 +38,9 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
   def parseErrorInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : Seq[ConnectorError] = {
     dsReadConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(errList) => errList.toNonEmptyList.toList
-      case Valid(config) => {
+      case Valid(_) =>
         fail
         List[ConnectorError]()
-      }
     }
   }
 
@@ -54,20 +52,20 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Right(new VerticaMetadata(new StructType))).once()
+    (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    var dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+    val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
     parseCorrectInitConfig(opts, dsReadConfigSetup) match {
-      case config: DistributedFilesystemReadConfig => {
+      case config: DistributedFilesystemReadConfig =>
         assert(config.jdbcConfig.host == "1.1.1.1")
         assert(config.jdbcConfig.port == 1234)
         assert(config.jdbcConfig.db == "testdb")
@@ -79,7 +77,6 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
           case Some(metadata) => assert(metadata.schema == new StructType())
           case None => fail
         }
-      }
     }
   }
 
@@ -91,16 +88,16 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "port" -> "asdf",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
-    var dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+    val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 2)
-    assert(!errSeq.filter(err => err.err == InvalidPortError).isEmpty)
-    assert(!errSeq.filter(err => err.err == InvalidLoggingLevel).isEmpty)
+    assert(errSeq.exists(err => err.err == InvalidPortError))
+    assert(errSeq.exists(err => err.err == InvalidLoggingLevel))
   }
 
   it should "Return error when there's a problem retrieving metadata" in {
@@ -111,7 +108,7 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "db" -> "testdb",
                    "user" -> "user",
                    "password" -> "password",
-                   "tablename" -> "tbl",
+                   "table" -> "tbl",
                    "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
@@ -121,10 +118,10 @@ class DSReadConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with Mock
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    var dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+    val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 1)
-    assert(!errSeq.filter(err => err.err == SchemaDiscoveryError).isEmpty)
+    assert(errSeq.exists(err => err.err == SchemaDiscoveryError))
   }
 }

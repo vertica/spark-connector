@@ -7,6 +7,7 @@ import com.vertica.spark.datasource.core.ParquetFileRange
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import org.scalatest.BeforeAndAfterAll
 
 /**
  * Tests basic functionality of the VerticaHDFSLayer
@@ -15,7 +16,7 @@ import org.apache.spark.sql.types._
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgInit: DistributedFilesystemReadConfig) extends AnyFlatSpec {
+class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgInit: DistributedFilesystemReadConfig) extends AnyFlatSpec with BeforeAndAfterAll {
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -26,6 +27,10 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
   private val fsCfg = fsCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
   private val dirTestCfg = dirTestCfgInit.copy(metadata = Some(VerticaMetadata(schema)))
+
+  override def afterAll(): Unit = {
+    spark.close()
+  }
 
   it should "create, list, and remove files from HDFS correctly" in {
     val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), dirTestCfg)
@@ -56,7 +61,7 @@ class HDFSTests(val fsCfgInit: DistributedFilesystemReadConfig, val dirTestCfgIn
 
     val dataOrError = for {
       files <- fsLayer.getFileList(fsCfg.fileStoreConfig.address)
-      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet"))(0),0,0))
+      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet")).head,0,0))
       data <- fsLayer.readDataFromParquetFile(100)
       _ <- fsLayer.closeReadParquetFile()
     } yield data
