@@ -195,8 +195,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
     // If there's an error, cleanup
     ret match {
-      case Left(err) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
-      case Right(v) => ()
+      case Left(_) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      case Right(_) => ()
     }
     ret
   }
