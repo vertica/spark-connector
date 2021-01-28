@@ -79,7 +79,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     var i = 0
     var partitions = List[VerticaDistributedFilesystemPartition]()
     var curFileRanges = List[ParquetFileRange]()
-    var rangeCountMap = scala.collection.mutable.Map[String, Int]()
+    val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
     for(m <- fileMetadata) {
       val size = m.rowGroupCount
@@ -156,11 +156,12 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case Right(_) =>
       case Left(err) =>
         logger.error(err.msg)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
         return Left(ConnectorError(ExportFromVerticaError))
     }
 
     // Retrieve all parquet files created by Vertica
-    fileStoreLayer.getFileList(hdfsPath) match {
+    val ret = fileStoreLayer.getFileList(hdfsPath) match {
       case Left(err) => Left(err)
       case Right(fileList) =>
         if(fileList.isEmpty){
@@ -189,6 +190,13 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
           } yield partitionInfo
         }
     }
+
+    // If there's an error, cleanup
+    ret match {
+      case Left(err) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      case Right(v) => ()
+    }
+    ret
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
@@ -216,12 +224,12 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   }
 
   private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
-    if(this.fileIdx >= part.fileRanges.size) {
+    if(curIdx >= part.fileRanges.size) {
       logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
       return None
     }
 
-    val curRange = part.fileRanges(this.fileIdx)
+    val curRange = part.fileRanges(curIdx)
     part.rangeCountMap match {
       case Some(rangeCountMap) if rangeCountMap.contains(curRange.filename) => curRange.rangeIdx match {
         case Some(rangeIdx) => Some(FileCleanupInfo(curRange.filename,rangeIdx,rangeCountMap(curRange.filename)))
@@ -246,7 +254,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case None => return Left(ConnectorError(UninitializedReadError))
       case Some(p) => p
     }
-    fileStoreLayer.readDataFromParquetFile(dataSize) match {
+    val ret = fileStoreLayer.readDataFromParquetFile(dataSize) match {
       case Left(err) => err.err match {
         case DoneReading =>
 
@@ -272,11 +280,18 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       }
       case Right(data) => Right(data)
     }
+
+    // If there was an underlying error, call cleanup
+    (ret, getCleanupInfo(part,this.fileIdx)) match {
+      case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
+      case _ => ()
+    }
+    ret
   }
 
 
-  /**
-    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
+        /**
+         * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
   def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
 

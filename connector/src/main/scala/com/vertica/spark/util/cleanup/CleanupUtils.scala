@@ -28,7 +28,13 @@ trait CleanupUtilsInterface {
    */
   def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : Either[ConnectorError, Unit]
 
-  // TODO: Add clean up all function (called in error case)
+  /**
+   * Cleanup all files
+   *
+   * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
+   * @param path Path of directory
+   */
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = fileStoreLayer.removeDir(path)
 }
 
 object CleanupUtils extends CleanupUtilsInterface {
