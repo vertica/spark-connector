@@ -230,8 +230,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     stmt.execute("drop table " + tableName1)
   }
 
-  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Time type
-  ignore should "load data from Vertica for [all Date/Time data types] of Vertica" in {
+  it should "load data from Vertica for [all Date/Time data types] of Vertica" in {
     val tableName1 = "t1"
 
     val n = 40
@@ -457,7 +456,6 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     stmt.execute("drop table " + tableName1)
   }
 
-  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Interval types
   it should "be able to handle interval types" in {
     val tableName1 = "dftest"
     val stmt = conn.createStatement()
@@ -474,7 +472,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     stmt.execute("drop table " + tableName1)
   }
 
-  ignore should "be able to handle the UUID type" in {
+  it should "be able to handle the UUID type" in {
     val tableName1 = "dftest"
     val stmt = conn.createStatement()
     val n = 1
