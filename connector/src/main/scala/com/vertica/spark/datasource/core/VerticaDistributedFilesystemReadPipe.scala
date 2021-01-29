@@ -118,6 +118,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     // TODO: Add file permission option w/ default value '700'
     val filePermissions = "777"
 
+    def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+
     val cols: String = jdbcLayer.query("SELECT * FROM " + config.tablename.getFullTableName + " WHERE 1=0") match {
       case Left(err) => throw new Exception("Error getting schema") //TODO: Use an actual error here
       case Right(rs) =>
@@ -128,9 +130,11 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
             case (java.sql.Types.OTHER, typeName, colName) =>
               val typenameNormalized = typeName.toLowerCase()
               if (typenameNormalized.startsWith("interval") || typenameNormalized.startsWith("uuid"))
-                colName + "::varchar AS " + colName
+                castToVarchar(colName)
               else
                 colName
+            case (java.sql.Types.TIME, _, colName) =>
+              castToVarchar(colName)
             case (_, _, colName) => colName
           })
         columnStrings match {
