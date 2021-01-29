@@ -45,7 +45,9 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.NUMERIC if precision != 0 || scale != 0 => DecimalType(precision, scale)
       case java.sql.Types.NUMERIC => DecimalType(DecimalType.USER_DEFAULT.precision,DecimalType.USER_DEFAULT.scale) //spark 2.x
       case java.sql.Types.NVARCHAR => StringType
-      case java.sql.Types.OTHER => if(typename.toLowerCase().startsWith("interval")) StringType else null
+      case java.sql.Types.OTHER =>
+        val typenameNormalized = typename.toLowerCase()
+        if (typenameNormalized.startsWith("interval") || typenameNormalized.startsWith("uuid")) StringType else null
       case java.sql.Types.REAL => DoubleType
       case java.sql.Types.REF => StringType
       case java.sql.Types.ROWID => LongType
@@ -79,15 +81,14 @@ class SchemaTools extends SchemaToolsInterface {
           val rsmd = rs.getMetaData
           val ncols = rsmd.getColumnCount
           val fields = new Array[StructField](ncols)
-          var i = 0
-          while (i < ncols) {
-            val columnName = rsmd.getColumnLabel(i + 1)
-            val dataType = rsmd.getColumnType(i + 1)
-            val typeName = rsmd.getColumnTypeName(i + 1)
+          for (i <- 1 to ncols) {
+            val columnName = rsmd.getColumnLabel(i)
+            val dataType = rsmd.getColumnType(i)
+            val typeName = rsmd.getColumnTypeName(i)
             val fieldSize = DecimalType.MAX_PRECISION
-            val fieldScale = rsmd.getScale(i + 1)
-            val isSigned = rsmd.isSigned(i + 1)
-            val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+            val fieldScale = rsmd.getScale(i)
+            val isSigned = rsmd.isSigned(i)
+            val nullable = rsmd.isNullable(i) != ResultSetMetaData.columnNoNulls
             val metadata = new MetadataBuilder().putString("name", columnName)
 
 
@@ -98,7 +99,6 @@ class SchemaTools extends SchemaToolsInterface {
               case Left(err) =>
                 errList = errList :+ err
             }
-            i = i + 1
           }
           if(errList.isEmpty) {
             schema = Some(new StructType(fields))

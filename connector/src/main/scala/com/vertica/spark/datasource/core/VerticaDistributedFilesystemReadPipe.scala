@@ -9,6 +9,8 @@ import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 
+import scala.util.{Failure, Success, Try}
+
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int)
 
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange]) extends VerticaPartition
@@ -116,7 +118,32 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     // TODO: Add file permission option w/ default value '700'
     val filePermissions = "777"
 
-    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS SELECT * FROM " + config.tablename.getFullTableName + ";"
+    val cols: String = jdbcLayer.query("SELECT * FROM " + config.tablename.getFullTableName + " WHERE 1=0") match {
+      case Left(err) => throw new Exception("Error getting schema") //TODO: Use an actual error here
+      case Right(rs) =>
+        val md = rs.getMetaData
+        val columnStrings = Try((1 to md.getColumnCount)
+          .map(i => (md.getColumnType(i), md.getColumnTypeName(i), md.getColumnName(i)))
+          .map {
+            case (java.sql.Types.OTHER, typeName, colName) =>
+              val typenameNormalized = typeName.toLowerCase()
+              if (typenameNormalized.startsWith("interval") || typenameNormalized.startsWith("uuid"))
+                colName + "::varchar"
+              else
+                colName
+            case (_, _, colName) => colName
+          })
+        columnStrings match {
+          case Success(list) => list.mkString(",")
+          case Failure(exception) =>
+            logger.debug("Error getting column metadata info.")
+            throw exception // TODO: Use an actual error here
+        }
+    }
+
+    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
+      "SELECT " + cols + " FROM " + config.tablename.getFullTableName + ";"
+
     jdbcLayer.execute(exportStatement) match {
       case Right(_) =>
       case Left(err) =>
