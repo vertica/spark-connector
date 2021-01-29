@@ -3,9 +3,10 @@ package com.vertica.spark.functests
 import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, VerticaMetadata}
-import com.vertica.spark.datasource.core.ParquetFileRange
+import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
 import org.scalatest.BeforeAndAfterAll
 
@@ -99,5 +100,31 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
       case Right(_) => fail
       case Left(_) => ()
     }
+  }
+
+  it should "write then read a parquet file" in {
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
+    val path = dirTestCfg.address
+    val filename = path + "test.parquet"
+
+    fsLayer.openWriteParquetFile(filename)
+    fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList))
+    fsLayer.closeWriteParquetFile()
+
+    assert(fsLayer.fileExists(filename).right.getOrElse(false))
+
+    fsLayer.openReadParquetFile(ParquetFileRange(filename, 0, 0, None))
+    val dataOrError = fsLayer.readDataFromParquetFile(100)
+    fsLayer.closeReadParquetFile()
+
+    dataOrError match {
+      case Right(dataBlock) => dataBlock.data
+        .map(row => row.get(0, LongType).asInstanceOf[Long])
+        .sorted
+        .zipWithIndex
+        .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
+      case Left(error) => fail(error.msg)
+    }
+
   }
 }
