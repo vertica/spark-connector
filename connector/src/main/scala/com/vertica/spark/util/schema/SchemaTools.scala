@@ -81,21 +81,23 @@ class SchemaTools extends SchemaToolsInterface {
           val rsmd = rs.getMetaData
           val ncols = rsmd.getColumnCount
           val fields = new Array[StructField](ncols)
-          for (i <- 1 to ncols) {
-            val columnName = rsmd.getColumnLabel(i)
-            val dataType = rsmd.getColumnType(i)
-            val typeName = rsmd.getColumnTypeName(i)
+          for (fieldIdx <- 0 until ncols) {
+            val metadataIdx = fieldIdx + 1
+
+            val columnName = rsmd.getColumnLabel(metadataIdx)
+            val dataType = rsmd.getColumnType(metadataIdx)
+            val typeName = rsmd.getColumnTypeName(metadataIdx)
             val fieldSize = DecimalType.MAX_PRECISION
-            val fieldScale = rsmd.getScale(i)
-            val isSigned = rsmd.isSigned(i)
-            val nullable = rsmd.isNullable(i) != ResultSetMetaData.columnNoNulls
+            val fieldScale = rsmd.getScale(metadataIdx)
+            val isSigned = rsmd.isSigned(metadataIdx)
+            val nullable = rsmd.isNullable(metadataIdx) != ResultSetMetaData.columnNoNulls
             val metadata = new MetadataBuilder().putString("name", columnName)
 
 
             getCatalystType(dataType, fieldSize, fieldScale, isSigned, typeName) match {
 
               case Right(columnType) =>
-                fields(i) = StructField(columnName, columnType, nullable, metadata.build())
+                fields(fieldIdx) = StructField(columnName, columnType, nullable, metadata.build())
               case Left(err) =>
                 errList = errList :+ err
             }

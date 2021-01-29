@@ -75,7 +75,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "call Vertica to export parquet files on pre read steps" in {
+  ignore should "call Vertica to export parquet files on pre read steps" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -112,7 +112,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "return an error when there's a JDBC failure" in {
+  ignore should "return an error when there's a JDBC failure" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -130,7 +130,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   // Default partition count of 1 per file, with equal partition counts
-  it should "return partitioning info from pre-read steps based on files from filesystem" in {
+  ignore should "return partitioning info from pre-read steps based on files from filesystem" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -168,7 +168,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   // Default partition count of 1 per file, with equal partition counts
-  it should "split a file evenly among many partitions" in {
+  ignore should "split a file evenly among many partitions" in {
     // 2 row groups per partition except last one which should have 1 row group
     val partitionCount = 15
     val rowGroupCount = 29
@@ -217,7 +217,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "Split up files among partitions when they don't divide evenly" in {
+  ignore should "Split up files among partitions when they don't divide evenly" in {
     val partitionCount = 4
     val rowGroupPerFile = 5
     // With 3 files so 15 total row groups, partitions should end up containning rows as such: [4,4,4,3]
@@ -258,7 +258,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "Return an error when there is a problem retrieving file list" in {
+  ignore should "Return an error when there is a problem retrieving file list" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -277,7 +277,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "Return an error when there are no files to create partitions from" in {
+  ignore should "Return an error when there are no files to create partitions from" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
