@@ -128,7 +128,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
             case (java.sql.Types.OTHER, typeName, colName) =>
               val typenameNormalized = typeName.toLowerCase()
               if (typenameNormalized.startsWith("interval") || typenameNormalized.startsWith("uuid"))
-                colName + "::varchar"
+                colName + "::varchar AS " + colName
               else
                 colName
             case (_, _, colName) => colName
