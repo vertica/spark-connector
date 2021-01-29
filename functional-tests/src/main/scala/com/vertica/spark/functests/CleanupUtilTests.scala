@@ -46,4 +46,23 @@ class CleanupUtilTests(val cfg: DistributedFilesystemReadConfig) extends AnyFlat
       case Right(exists) => assert(!exists)
     }
   }
+
+
+  it should "Clean up parent unique directory" in {
+    val uniqueDir = path + "/unique-dir-123"
+    fsLayer.createDir(uniqueDir)
+
+    val childDir = uniqueDir + "/tablename"
+    fsLayer.createDir(childDir)
+
+    val filename = childDir + "/test.parquet"
+    fsLayer.createFile(filename)
+
+    assert(fsLayer.fileExists(uniqueDir).right.get)
+
+    // Now test cleanup
+    CleanupUtils.cleanupAll(fsLayer, childDir)
+
+    assert(!fsLayer.fileExists(uniqueDir).right.get)
+  }
 }

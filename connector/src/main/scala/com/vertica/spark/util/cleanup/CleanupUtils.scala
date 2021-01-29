@@ -3,6 +3,8 @@ package com.vertica.spark.util.cleanup
 import cats.implicits.toTraverseOps
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
+import org.apache.hadoop.fs.Path
 
 /**
  * Structure containing cleanup information for a given portion of a file.
@@ -34,27 +36,40 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param path Path of directory
    */
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = fileStoreLayer.removeDir(path)
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit]
 }
 
 object CleanupUtils extends CleanupUtilsInterface {
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
-  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
+  override def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit] = {
+    // Cleanup parent dir (unique id)
+    val p = new Path(s"$path")
+    val parent = p.getParent()
+    if(parent != null) {
+      fileStoreLayer.removeDir(parent.toString)
+      Right(())
+    }
+    else {
+      Left(ConnectorError(CleanupError))
+    }
+  }
+
+  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
     val filename = fileCleanupInfo.filename
     for {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
       // Check if all portions are written
-      filesExist <- Array.range(0,fileCleanupInfo.fileRangeCount).map(idx =>
+      filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
           fileStoreLayer.fileExists(recordFileName(filename, idx))
         ).toList.sequence
       allExist <- Right(filesExist.forall(identity))
 
       // Delete all portions
       _ <- if(allExist){
-            Array.range(0,fileCleanupInfo.fileRangeCount).map(idx =>
+          (0 until fileCleanupInfo.fileRangeCount).map(idx =>
                 fileStoreLayer.removeFile(recordFileName(filename, idx))
               ).toList.sequence
            } else Right(())

@@ -42,6 +42,7 @@ object ConnectorErrorType extends Enumeration {
   val UninitializedReadError : Value = Value("Error while reading: The reader was not initialized.")
   val MissingMetadata : Value = Value("Metadata was missing from config.")
   val TooManyPartitions : Value = Value("More partitions specified than is possible to divide the operation.")
+  val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
 }
 import ConnectorErrorType._
 

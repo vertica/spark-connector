@@ -136,6 +136,13 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val uniqueSessionId = sessionIdProvider.getId
+
+    // Create unique directory for session
+    fileStoreLayer.createDir(fileStoreConfig.address + delimiter + uniqueSessionId) match {
+      case Left(err) => return Left(err)
+      case Right(_) =>
+    }
+
     val hdfsPath = fileStoreConfig.address + delimiter + uniqueSessionId + delimiter + config.tablename.getFullTableName
 
     // Remove export directory if it exists (Vertica must create this dir)
@@ -292,9 +299,9 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
   }
 
 
-        /**
-         * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
-    */
+/**
+  * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
+  */
   def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
 
 }
