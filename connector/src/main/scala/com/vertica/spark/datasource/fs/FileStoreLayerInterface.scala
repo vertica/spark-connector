@@ -53,6 +53,7 @@ trait FileStoreLayerInterface {
   def removeDir(filename: String) : Either[ConnectorError, Unit]
   def createFile(filename: String) : Either[ConnectorError, Unit]
   def createDir(filename: String) : Either[ConnectorError, Unit]
+  def fileExists(filename: String) : Either[ConnectorError, Boolean]
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
@@ -296,7 +297,7 @@ class HadoopFileStoreLayer(
             Left(ConnectorError(RemoveFileError))
         }
       } else {
-        Left(ConnectorError(RemoveFileDoesNotExistError))
+        Right(())
       })
   }
 
@@ -340,6 +341,11 @@ class HadoopFileStoreLayer(
       } else {
         Left(ConnectorError(CreateDirectoryAlreadyExistsError))
       })
+  }
+
+  def fileExists(filename: String) : Either[ConnectorError, Boolean] = {
+    this.useFileSystem(filename, (fs, path) =>
+      Right(fs.exists(path)))
   }
 
   private def useFileSystem[T](filename: String,
