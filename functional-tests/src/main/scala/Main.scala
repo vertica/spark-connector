@@ -25,7 +25,8 @@ object Main extends App {
     ),
     FileStoreConfig(dirTestFilename,
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
-    )
+    ),
+    jdbcConfig
   ).execute()
 
   new CleanupUtilTests(
