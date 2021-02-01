@@ -1,10 +1,13 @@
 package com.vertica.spark.functests
 
+import java.sql.Connection
+
 import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, VerticaMetadata}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, VerticaMetadata}
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
@@ -17,7 +20,7 @@ import org.scalatest.BeforeAndAfterAll
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -25,6 +28,12 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
 
   private val df = spark.range(100).toDF("number")
   private val schema = df.schema
+
+  var jdbcLayer : JdbcLayerInterface = _
+
+  override def beforeAll(): Unit = {
+    jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
+  }
 
   override def afterAll(): Unit = {
     spark.close()
@@ -105,7 +114,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
   it should "write then read a parquet file" in {
     val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
     val path = dirTestCfg.address
-    val filename = path + "test.parquet"
+    val filename = path + "testwriteread.parquet"
 
     fsLayer.openWriteParquetFile(filename)
     fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList))
@@ -126,5 +135,29 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig) ext
       case Left(error) => fail(error.msg)
     }
 
+  }
+
+
+  it should "write then copy into vertica" in {
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
+    val path = dirTestCfg.address
+    val filename = path + "testwriteload.parquet"
+
+    fsLayer.openWriteParquetFile(filename)
+    fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList))
+    fsLayer.closeWriteParquetFile()
+
+    assert(fsLayer.fileExists(filename).right.getOrElse(false))
+
+    val tablename = "testwriteload"
+    // Create table
+    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
+
+    val copyStmt = s"COPY $tablename FROM $filename ON ANY NODE parquet NO COMMIT"
+    jdbcLayer.execute(copyStmt) match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
   }
 }
