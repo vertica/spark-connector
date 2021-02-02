@@ -194,7 +194,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val timestampSchema = new StructType(Array(StructField("a", TimestampType)))
     val fsLayer = new HadoopFileStoreLayer(fsCfg, Some(timestampSchema))
     val path = fsCfg.address
-    val filename = path + "testwriteload.parquet"
+    val filename = path + "testwritetimestamp.parquet"
 
     val timestamp = new Timestamp(System.currentTimeMillis());
 
@@ -207,7 +207,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     assert(fsLayer.fileExists(filename).right.getOrElse(false))
 
-    val tablename = "testwriteload"
+    val tablename = "testwritetimestamp"
     // Create table
     val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
