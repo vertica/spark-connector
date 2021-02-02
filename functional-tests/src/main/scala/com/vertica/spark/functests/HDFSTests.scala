@@ -112,8 +112,8 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "write then read a parquet file" in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
-    val path = dirTestCfg.address
+    val fsLayer = new HadoopFileStoreLayer(fsCfg, Some(schema))
+    val path = fsCfg.address
     val filename = path + "testwriteread.parquet"
 
     fsLayer.openWriteParquetFile(filename)
@@ -139,8 +139,8 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
 
   it should "write then copy into vertica" in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
-    val path = dirTestCfg.address
+    val fsLayer = new HadoopFileStoreLayer(fsCfg, Some(schema))
+    val path = fsCfg.address
     val filename = path + "testwriteload.parquet"
 
     fsLayer.openWriteParquetFile(filename)
