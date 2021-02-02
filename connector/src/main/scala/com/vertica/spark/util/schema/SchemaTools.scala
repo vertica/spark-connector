@@ -47,7 +47,10 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.NVARCHAR => StringType
       case java.sql.Types.OTHER =>
         val typenameNormalized = typename.toLowerCase()
-        if (typenameNormalized.startsWith("interval") || typenameNormalized.startsWith("uuid")) StringType else null
+        if (typenameNormalized.startsWith("interval") ||
+          typenameNormalized.startsWith("uuid") ||
+          typenameNormalized.startsWith("geometry") ||
+          typenameNormalized.startsWith("geography")) StringType else null
       case java.sql.Types.REAL => DoubleType
       case java.sql.Types.REF => StringType
       case java.sql.Types.ROWID => LongType
