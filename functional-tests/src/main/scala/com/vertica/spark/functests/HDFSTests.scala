@@ -1,6 +1,6 @@
 package com.vertica.spark.functests
 
-import java.sql.Connection
+import java.sql.{Connection, Timestamp}
 
 import ch.qos.logback.classic.Level
 import org.scalatest.flatspec.AnyFlatSpec
@@ -8,6 +8,7 @@ import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFil
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import jdk.jfr.internal.handlers.EventHandler.timestamp
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
@@ -188,5 +189,45 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     results.sorted
       .zipWithIndex
       .foreach { case (rowValue, idx) => assert(rowValue == idx.toInt) }
+  }
+
+
+  it should "write a timestamp then copy into vertica" in {
+    val timestampSchema = new StructType(Array(StructField("a", TimestampType)))
+    val fsLayer = new HadoopFileStoreLayer(fsCfg, Some(timestampSchema))
+    val path = fsCfg.address
+    val filename = path + "testwriteload.parquet"
+
+    val timestamp = new Timestamp(System.currentTimeMillis());
+
+    fsLayer.openWriteParquetFile(filename)
+    fsLayer.writeDataToParquetFile(DataBlock(List(InternalRow(timestamp)))) match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
+    fsLayer.closeWriteParquetFile()
+
+    assert(fsLayer.fileExists(filename).right.getOrElse(false))
+
+    val tablename = "testwriteload"
+    // Create table
+    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
+
+    val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
+    jdbcLayer.execute(copyStmt) match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
+
+    jdbcLayer.query("SELECT count(*) FROM " + tablename + ";") match {
+      case Right(rs) => {
+        assert(rs.next())
+        assert(rs.getInt(1) == 1)
+      }
+      case Left(err) => {
+        fail
+      }
+    }
   }
 }
