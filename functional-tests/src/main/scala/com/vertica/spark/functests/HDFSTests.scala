@@ -154,7 +154,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
 
-    val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet NO COMMIT"
+    val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
     jdbcLayer.execute(copyStmt) match {
       case Left(err) => fail(err.msg)
       case Right(_) => ()
