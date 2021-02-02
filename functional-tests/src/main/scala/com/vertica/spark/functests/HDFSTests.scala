@@ -175,7 +175,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     var results = List[Int]()
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
       case Right(rs) => {
-        for(i <- 0 to 100) {
+        for(i <- 1 to 100) {
           assert(rs.next())
           results :+ rs.getInt(1)
         }
