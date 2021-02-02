@@ -18,6 +18,8 @@ class SchemaTools extends SchemaToolsInterface {
     scale: Int,
     signed: Boolean,
     typename: String): Either[SchemaError, DataType] = {
+    println("The type is: " + sqlType)
+    println("The type name is: " + typename)
     val answer = sqlType match {
       // scalastyle:off
       case java.sql.Types.ARRAY => null
@@ -47,7 +49,6 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.NVARCHAR => StringType
       case java.sql.Types.OTHER =>
         val typenameNormalized = typename.toLowerCase()
-        println("The type name was: " + typenameNormalized)
         if (typenameNormalized.startsWith("interval") ||
           typenameNormalized.startsWith("uuid") ||
           typenameNormalized.startsWith("geometry") ||
