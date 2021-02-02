@@ -9,6 +9,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.scalatest.BeforeAndAfterAll
 
@@ -196,10 +197,10 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val path = fsCfg.address
     val filename = path + "testwritetimestamp.parquet"
 
-    val timestamp = new Timestamp(System.currentTimeMillis());
+    val timestampInMicros = System.currentTimeMillis() * 1000
 
     fsLayer.openWriteParquetFile(filename)
-    fsLayer.writeDataToParquetFile(DataBlock(List(InternalRow(timestamp)))) match {
+    fsLayer.writeDataToParquetFile(DataBlock(List(InternalRow(timestampInMicros)))) match {
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
