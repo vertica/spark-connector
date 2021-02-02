@@ -119,7 +119,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val filePermissions = "777"
 
     def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
-
+    def castToLongVarbinary: String => String = colName => colName + "::long varbinary AS " + colName
     val cols: String = jdbcLayer.query("SELECT * FROM " + config.tablename.getFullTableName + " WHERE 1=0") match {
       case Left(err) => throw new Exception("Error getting schema") //TODO: Use an actual error here
       case Right(rs) =>
@@ -138,7 +138,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
               val typenameNormalized = typeName.toLowerCase()
               if (typenameNormalized.startsWith("geometry") ||
                 typenameNormalized.startsWith("geography"))
-                castToVarchar(colName)
+                castToLongVarbinary(colName)
               else
                 colName
             case (java.sql.Types.TIME, _, colName) =>
