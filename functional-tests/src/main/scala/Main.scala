@@ -43,5 +43,6 @@ object Main extends App {
     "password" -> conf.getString("functional-tests.password"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
-  new EndToEndTests(readOpts).execute()
+  val writeOpts = readOpts
+  new EndToEndTests(readOpts, writeOpts).execute()
 }
