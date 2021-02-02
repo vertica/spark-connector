@@ -495,7 +495,7 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
 
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (f geometry)")
 
-    val insert = "insert into "+ tableName1 + " values((1, 2))"
+    val insert = "insert into "+ tableName1 + " values(ST_GeomFromText('POLYGON((1 1,2 3,3 5,0 5,1 -2,0 0,1 1))'))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
