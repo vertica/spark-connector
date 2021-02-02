@@ -2,13 +2,11 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Timestamp}
 
-import ch.qos.logback.classic.Level
+import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, VerticaMetadata}
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
-import jdk.jfr.internal.handlers.EventHandler.timestamp
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
