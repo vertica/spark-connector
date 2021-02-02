@@ -135,10 +135,10 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
       case Right(dataBlock) =>
         assert(dataBlock.data.size == 100)
         dataBlock.data
-        .map(row => row.get(0, LongType).asInstanceOf[Long])
+        .map(row => row.get(0, IntegerType).asInstanceOf[Integer])
         .sorted
         .zipWithIndex
-        .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
+        .foreach { case (rowValue, idx) => assert(rowValue == idx.toInt) }
       case Left(error) => fail(error.msg)
     }
 
@@ -152,7 +152,10 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val filename = path + "testwriteload.parquet"
 
     fsLayer.openWriteParquetFile(filename)
-    fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList))
+    fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList)) match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
     fsLayer.closeWriteParquetFile()
 
     assert(fsLayer.fileExists(filename).right.getOrElse(false))
@@ -184,6 +187,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     results.sorted
       .zipWithIndex
-      .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
+      .foreach { case (rowValue, idx) => assert(rowValue == idx.toInt) }
   }
 }
