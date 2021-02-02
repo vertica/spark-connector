@@ -126,8 +126,11 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val dataOrError = fsLayer.readDataFromParquetFile(100)
     fsLayer.closeReadParquetFile()
 
+
     dataOrError match {
-      case Right(dataBlock) => dataBlock.data
+      case Right(dataBlock) =>
+        assert(dataBlock.data.size == 100)
+        dataBlock.data
         .map(row => row.get(0, LongType).asInstanceOf[Long])
         .sorted
         .zipWithIndex
