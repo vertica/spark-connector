@@ -159,5 +159,23 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
+
+    // Verify proper copy of data
+    var results = List[Int]()
+    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+      case Right(rs) => {
+        for(i <- 0 to 100) {
+          assert(rs.next())
+          results :+ rs.getInt(1)
+        }
+      }
+      case Left(err) => {
+        assert(false)
+      }
+    }
+
+    results.sorted
+      .zipWithIndex
+      .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
   }
 }
