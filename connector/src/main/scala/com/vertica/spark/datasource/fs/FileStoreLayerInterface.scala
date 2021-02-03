@@ -129,8 +129,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(config: FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
-  val logger: Logger = config.getLogger(classOf[HadoopFileStoreLayer])
+class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
+  val logger: Logger = logProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -278,7 +278,7 @@ class HadoopFileStoreLayer(config: FileStoreConfig, schema: Option[StructType]) 
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
-      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, config.logProvider)
+      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
     } match {
       case Success(r) => Right(r)
       case Failure(exception) =>

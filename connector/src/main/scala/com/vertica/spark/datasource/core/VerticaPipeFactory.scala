@@ -24,7 +24,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
-        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
+        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
           case Some(metadata) => Some(metadata.schema)
           case None => None
         })
