@@ -119,37 +119,33 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val filePermissions = "777"
 
     def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
-    def castToLongVarbinary: String => String = colName => colName + "::long varbinary AS " + colName
     val cols: String = jdbcLayer.query("SELECT * FROM " + config.tablename.getFullTableName + " WHERE 1=0") match {
       case Left(err) => throw new Exception("Error getting schema") //TODO: Use an actual error here
       case Right(rs) =>
-        val md = rs.getMetaData
-        val columnStrings = Try((1 to md.getColumnCount)
-          .map(i => (md.getColumnType(i), md.getColumnTypeName(i), md.getColumnName(i)))
-          .map {
-            case (java.sql.Types.OTHER, typeName, colName) =>
-              val typenameNormalized = typeName.toLowerCase()
-              if (typenameNormalized.startsWith("interval") ||
-                typenameNormalized.startsWith("uuid"))
+        try {
+          val md = rs.getMetaData
+          val columnStrings = Try((1 to md.getColumnCount)
+            .map(i => (md.getColumnType(i), md.getColumnTypeName(i), md.getColumnName(i)))
+            .map {
+              case (java.sql.Types.OTHER, typeName, colName) =>
+                val typenameNormalized = typeName.toLowerCase()
+                if (typenameNormalized.startsWith("interval") ||
+                  typenameNormalized.startsWith("uuid"))
+                  castToVarchar(colName)
+                else
+                  colName
+              case (java.sql.Types.TIME, _, colName) =>
                 castToVarchar(colName)
-              else
-                colName
-            case (java.sql.Types.LONGVARBINARY, typeName, colName) =>
-              val typenameNormalized = typeName.toLowerCase()
-              if (typenameNormalized.startsWith("geometry") ||
-                typenameNormalized.startsWith("geography"))
-                castToLongVarbinary(colName)
-              else
-                colName
-            case (java.sql.Types.TIME, _, colName) =>
-              castToVarchar(colName)
-            case (_, _, colName) => colName
-          })
-        columnStrings match {
-          case Success(list) => list.mkString(",")
-          case Failure(exception) =>
-            logger.debug("Error getting column metadata info.")
-            throw exception // TODO: Use an actual error here
+              case (_, _, colName) => colName
+            })
+          columnStrings match {
+            case Success(list) => list.mkString(",")
+            case Failure(exception) =>
+              logger.debug("Error getting column metadata info.")
+              throw exception // TODO: Use an actual error here
+          }
+        } finally {
+          rs.close()
         }
     }
 

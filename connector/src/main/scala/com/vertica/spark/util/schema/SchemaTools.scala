@@ -39,9 +39,7 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.INTEGER => if (signed) { IntegerType } else { LongType }
       case java.sql.Types.JAVA_OBJECT => null
       case java.sql.Types.LONGNVARCHAR => StringType
-      case java.sql.Types.LONGVARBINARY =>
-        val typenameNormalized = typename.toLowerCase()
-        if (typenameNormalized.startsWith("geometry") || typenameNormalized.startsWith("geography")) StringType else BinaryType
+      case java.sql.Types.LONGVARBINARY => BinaryType
       case java.sql.Types.LONGVARCHAR => StringType
       case java.sql.Types.NCHAR => StringType
       case java.sql.Types.NCLOB => StringType
