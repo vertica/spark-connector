@@ -487,4 +487,20 @@ class EndToEndTests(readOpts: Map[String, String]) extends AnyFlatSpec with Befo
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
   }
+
+  it should "be able to handle the ARRAY type" in {
+    val tableName1 = "dftest"
+    val stmt = conn.createStatement()
+    val n = 1
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (f ARRAY[integer])")
+
+    val insert = "insert into "+ tableName1 + " values(ARRAY[1, 2, 3])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.cache.count == n)
+    stmt.execute("drop table " + tableName1)
+  }
 }
