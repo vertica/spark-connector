@@ -6,7 +6,7 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 
 import scala.util.{Failure, Success, Try}
@@ -119,36 +119,24 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val filePermissions = "777"
 
     def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
-    val cols: String = jdbcLayer.query("SELECT * FROM " + config.tablename.getFullTableName + " WHERE 1=0") match {
-      case Left(err) => throw new Exception("Error getting schema") //TODO: Use an actual error here
-      case Right(rs) =>
-        try {
-          val md = rs.getMetaData
-          val columnStrings = Try((1 to md.getColumnCount)
-            .map(i => (md.getColumnType(i), md.getColumnTypeName(i), md.getColumnName(i)))
-            .map {
-              case (java.sql.Types.OTHER, typeName, colName) =>
-                val typenameNormalized = typeName.toLowerCase()
-                if (typenameNormalized.startsWith("interval") ||
-                  typenameNormalized.startsWith("uuid"))
-                  castToVarchar(colName)
-                else
-                  colName
-              case (java.sql.Types.TIME, _, colName) =>
-                castToVarchar(colName)
-              //case (java.sql.Types.ARRAY, _, colName) =>
-              //  castToVarchar(colName)
-              case (_, _, colName) => colName
-            })
-          columnStrings match {
-            case Success(list) => list.mkString(",")
-            case Failure(exception) =>
-              logger.debug("Error getting column metadata info.")
-              throw exception // TODO: Use an actual error here
-          }
-        } finally {
-          rs.close()
+
+    val cols: String = SchemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+      case Left(err) =>
+        logger.error(err.msg)
+        return Left(ConnectorError(ConnectorErrorType.SchemaError))
+      case Right(columnDefs) => columnDefs.map(info => {
+        info.colType match {
+          case java.sql.Types.OTHER =>
+            val typenameNormalized = info.colTypeName.toLowerCase()
+            if (typenameNormalized.startsWith("interval") ||
+              typenameNormalized.startsWith("uuid"))
+              castToVarchar(info.label)
+            else
+              info.label
+          case java.sql.Types.TIME => castToVarchar(info.label)
+          case _ => info.label
         }
+      }).mkString(",")
     }
 
     val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
