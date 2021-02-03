@@ -1,11 +1,10 @@
-import java.sql.{ResultSet, ResultSetMetaData}
+package com.vertica.spark.datasource.core
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.config._
 import com.vertica.spark.util.schema._
-import com.vertica.spark.datasource.core._
 import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
@@ -21,24 +20,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   private val tablename = TableName("dummy", None)
   private val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
   private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
+  private val metadata = new MetadataBuilder().putString("name", "col1").build()
 
   override def afterAll(): Unit = {
   }
 
-  case class ColumnDef(index: Int, colName: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
-
-  private def mockColumnMetadata(rsmd: ResultSetMetaData, col: ColumnDef) = {
-    (rsmd.getColumnType _).expects(col.index).returning(col.colType)
-    (rsmd.getColumnTypeName _).expects(col.index).returning(col.colTypeName)
-    (rsmd.getColumnName _).expects(col.index).returning(col.colName)
-    //(rsmd.getScale _).expects(col.index).returning(col.scale)
-    //(rsmd.isSigned _).expects(col.index).returning(col.signed)
-    //(rsmd.isNullable _).expects(col.index).returning(if(col.nullable) ResultSetMetaData.columnNullable else ResultSetMetaData.columnNoNulls)
-  }
-
-  private def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
-    (rsmd.getColumnCount _).expects().returning(count)
-  }
+  case class TestColumnDef(index: Int, colName: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
   it should "retrieve metadata when not provided" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None)
@@ -101,22 +88,18 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy;"
     (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
-      case Left(_) => fail
+      case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
   }
@@ -144,18 +127,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.err == ExportFromVerticaError)
@@ -180,18 +159,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Right())
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -231,18 +206,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Right())
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -292,18 +263,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Right())
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -326,18 +293,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Right(()))
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     (fileStoreLayer.getFileList _).expects(*).returning(Left(ConnectorError(FileSystemError)))
 
@@ -359,18 +322,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(exportedFiles))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val resultSet = mock[ResultSet]
-    val rsmd = mock[ResultSetMetaData]
-    (jdbcLayer.query _).expects("SELECT * FROM dummy WHERE 1=0").returning(Right(resultSet))
     (jdbcLayer.execute _).expects(*).returning(Right())
 
-    (resultSet.getMetaData _).expects().returning(rsmd)
-    (resultSet.close _).expects()
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
-    mockColumnCount(rsmd, 1)
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools)
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.err == PartitioningError)

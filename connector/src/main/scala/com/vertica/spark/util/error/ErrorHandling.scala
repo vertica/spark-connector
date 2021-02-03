@@ -42,7 +42,7 @@ object ConnectorErrorType extends Enumeration {
   val UninitializedReadError : Value = Value("Error while reading: The reader was not initialized.")
   val MissingMetadata : Value = Value("Metadata was missing from config.")
   val TooManyPartitions : Value = Value("More partitions specified than is possible to divide the operation.")
-  val SchemaError : Value = Value("Failed to get table schema")
+  val CastingSchemaReadError : Value = Value("Failed to get table schema when checking for fields that need casts.")
 }
 import ConnectorErrorType._
 

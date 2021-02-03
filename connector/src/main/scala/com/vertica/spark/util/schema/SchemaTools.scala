@@ -3,16 +3,14 @@ package com.vertica.spark.util.schema
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import java.sql.ResultSetMetaData
+
 import cats.implicits._
+
 import scala.util.Either
-import cats.syntax.traverse._
 import cats.instances.list._
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
-
-trait SchemaToolsInterface {
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
-}
 
 case class ColumnDef(
                       label: String,
@@ -24,7 +22,14 @@ case class ColumnDef(
                       nullable: Boolean,
                       metadata: Metadata)
 
-object SchemaTools extends SchemaToolsInterface {
+trait SchemaToolsInterface {
+  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
+  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[SchemaError, Seq[ColumnDef]]
+}
+
+class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
+  private val logger = logProvider.getLogger(classOf[SchemaTools])
+
   private def getCatalystType(
     sqlType: Int,
     precision: Int,
@@ -83,7 +88,7 @@ object SchemaTools extends SchemaToolsInterface {
 
   def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[Seq[SchemaError], StructType] = {
     this.getColumnInfo(jdbcLayer, tablename) match {
-      case Left(err) => Left(List(SchemaError(JdbcError, err.msg)))
+      case Left(err) => Left(List(err))
       case Right(colInfo) =>
         val errorsOrFields: List[Either[SchemaError, StructField]] = colInfo.map(info => {
             this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName).map(columnType =>
@@ -118,7 +123,9 @@ object SchemaTools extends SchemaToolsInterface {
           }))
         }
         catch {
-          case e: Throwable => Left(SchemaError(UnexpectedExceptionError, e.getMessage))
+          case e: Throwable =>
+            logger.error("Could not get column info: ", e)
+            Left(SchemaError(UnexpectedExceptionError, e.getMessage))
         }
         finally {
           rs.close()

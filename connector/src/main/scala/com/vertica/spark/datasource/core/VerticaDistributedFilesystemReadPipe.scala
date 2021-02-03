@@ -9,8 +9,6 @@ import cats.implicits._
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 
-import scala.util.{Failure, Success, Try}
-
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int)
 
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange]) extends VerticaPartition
@@ -120,10 +118,10 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
     def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
 
-    val cols: String = SchemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+    val cols: String = schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
       case Left(err) =>
         logger.error(err.msg)
-        return Left(ConnectorError(ConnectorErrorType.SchemaError))
+        return Left(ConnectorError(CastingSchemaReadError))
       case Right(columnDefs) => columnDefs.map(info => {
         info.colType match {
           case java.sql.Types.OTHER =>
