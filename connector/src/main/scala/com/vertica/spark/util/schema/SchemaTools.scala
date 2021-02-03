@@ -22,7 +22,7 @@ class SchemaTools extends SchemaToolsInterface {
     println("The type name is: " + typename)
     val answer = sqlType match {
       // scalastyle:off
-      case java.sql.Types.ARRAY => StringType
+      case java.sql.Types.ARRAY => ArrayType
       case java.sql.Types.BIGINT =>  if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION,0)} //spark 2.x
       case java.sql.Types.BINARY => BinaryType
       case java.sql.Types.BIT => BooleanType

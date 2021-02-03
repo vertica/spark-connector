@@ -136,8 +136,8 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
                   colName
               case (java.sql.Types.TIME, _, colName) =>
                 castToVarchar(colName)
-              case (java.sql.Types.ARRAY, _, colName) =>
-                castToVarchar(colName)
+              //case (java.sql.Types.ARRAY, _, colName) =>
+              //  castToVarchar(colName)
               case (_, _, colName) => colName
             })
           columnStrings match {
