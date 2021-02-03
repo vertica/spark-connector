@@ -1,16 +1,16 @@
 package com.vertica.spark.functests
 
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.cleanup.{CleanupUtils, FileCleanupInfo}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class CleanupUtilTests(val cfg: DistributedFilesystemReadConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll {
 
-  val fsLayer = new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.ERROR), cfg)
-  val path = cfg.fileStoreConfig.address + "/CleanupTest"
+  val fsLayer = new HadoopFileStoreLayer(cfg.logProvider, None)
+  val path = cfg.address + "/CleanupTest"
 
   override def beforeAll() = {
     fsLayer.createDir(path)

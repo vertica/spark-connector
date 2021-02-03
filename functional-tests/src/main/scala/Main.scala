@@ -19,32 +19,19 @@ object Main extends App {
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
   new HDFSTests(
-    DistributedFilesystemReadConfig(
-      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
-      jdbcConfig,
-      FileStoreConfig(filename, Level.ERROR),
-      TableName("", None),
-      None,
-      None
+    FileStoreConfig(
+      filename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     ),
-    DistributedFilesystemReadConfig(
-      if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
-      jdbcConfig,
-      FileStoreConfig(dirTestFilename, Level.ERROR),
-      TableName("", None),
-      None,
-      None
-    )
+    FileStoreConfig(dirTestFilename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
+    ),
+    jdbcConfig
   ).execute()
 
   new CleanupUtilTests(
-    DistributedFilesystemReadConfig(
-      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
-      jdbcConfig,
-      FileStoreConfig(filename, Level.ERROR),
-      TableName("", None),
-      None,
-      None
+    FileStoreConfig(filename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     )
   ).execute()
 

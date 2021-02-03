@@ -15,12 +15,13 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, LogProvider}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, LogProvider}
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
+import org.apache.spark.sql.types.StructType
 
 import collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -128,10 +129,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(
-                 writeConfig: DistributedFilesystemWriteConfig,
-                 readConfig: DistributedFilesystemReadConfig) extends FileStoreLayerInterface {
-  val logger: Logger = readConfig.getLogger(classOf[HadoopFileStoreLayer])
+class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
+  val logger: Logger = logProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -140,12 +139,17 @@ class HadoopFileStoreLayer(
   private var done = false
 
   val hdfsConfig: Configuration = new Configuration()
-  readConfig.metadata match {
-    case Some(metadata) => hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, metadata.schema.json)
+  schema match {
+    case Some(schema) =>
+      hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
+      hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
     case None => ()
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
+  hdfsConfig.set(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key, "false")
+  hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
+
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
@@ -153,11 +157,64 @@ class HadoopFileStoreLayer(
     protected def getWriteSupport(conf: Configuration) = new ParquetWriteSupport
   }
 
-  def openWriteParquetFile(filename: String): Either[ConnectorError, Unit] = ???
+  def openWriteParquetFile(filename: String): Either[ConnectorError, Unit] = {
+    val builder = new VerticaParquetBuilder(new Path(s"$filename"))
 
-  override def writeDataToParquetFile(dataBlock: DataBlock): Either[ConnectorError, Unit] = ???
+    val writerOrError = for {
+      _ <- removeFile(filename) match {
+        case Right(_) => Right(())
+        case Left(ConnectorError(RemoveFileDoesNotExistError)) => Right(())
+        case Left(err) => Left(err)
+      }
+      writer <- Try{builder.withConf(hdfsConfig).enableValidation().build()} match {
+        case Success(writer) => Right(writer)
+        case Failure(exception) =>
+          logger.error("Error opening write to HDFS.", exception)
+          Left(ConnectorError(OpenWriteError))
+      }
+    } yield writer
 
-  override def closeWriteParquetFile(): Either[ConnectorError, Unit] = ???
+    writerOrError match {
+      case Left(err) => Left(err)
+      case Right(writer) =>
+        this.writer = Some(writer)
+        Right(())
+    }
+  }
+
+  override def writeDataToParquetFile(dataBlock: DataBlock): Either[ConnectorError, Unit] = {
+    for {
+      writer <- this.writer match {
+        case Some (reader) => Right (reader)
+        case None =>
+          logger.error ("Error writing parquet file from HDFS: Writer was not initialized.")
+          Left(ConnectorError(IntermediaryStoreWriteError))
+      }
+      _ <- dataBlock.data.map(record => Try{writer.write(record)} match {
+        case Failure(exception) =>
+          logger.error("Error writing parquet file to HDFS.", exception)
+          Left(ConnectorError(IntermediaryStoreWriteError))
+        case Success(_) => Right(())
+      }).sequence
+    } yield ()
+  }
+
+  override def closeWriteParquetFile(): Either[ConnectorError, Unit] = {
+    for {
+      writer <- this.writer match {
+        case Some(reader) => Right(reader)
+        case None =>
+          logger.error("Error writing parquet file from HDFS: Writer was not initialized.")
+          Left(ConnectorError(IntermediaryStoreWriteError))
+      }
+      _ <- Try {writer.close()} match {
+        case Success (_) => Right (())
+        case Failure (exception) =>
+          logger.error ("Error closing write of parquet file to HDFS.", exception)
+          Left(ConnectorError (CloseWriteError))
+      }
+    } yield ()
+  }
 
   private def toSetMultiMap[K, V](map: util.Map[K, V] ): util.Map[K, util.Set[V]] = {
     val setMultiMap: util.Map[K, util.Set[V]] = new util.HashMap()
@@ -221,7 +278,7 @@ class HadoopFileStoreLayer(
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
-      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, readConfig.logProvider)
+      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
     } match {
       case Success(r) => Right(r)
       case Failure(exception) =>
