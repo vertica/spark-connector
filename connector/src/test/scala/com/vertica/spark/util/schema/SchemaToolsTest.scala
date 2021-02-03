@@ -306,15 +306,15 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "error on unsupported types" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
-    mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true))
-    mockColumnMetadata(rsmd, ColumnDef(2, "col2", java.sql.Types.DATALINK, "DATALINK", 0, signed = true, nullable = true))
-    mockColumnMetadata(rsmd, ColumnDef(3, "col3", java.sql.Types.DISTINCT, "DISTINCT", 0, signed = true, nullable = true))
-    mockColumnMetadata(rsmd, ColumnDef(4, "col4", java.sql.Types.JAVA_OBJECT, "JAVA_OBJECT", 0, signed = true, nullable = true))
-    mockColumnMetadata(rsmd, ColumnDef(5, "col5", java.sql.Types.NULL, "NULL", 0, signed = true, nullable = true))
-    mockColumnCount(rsmd, 5)
+    //mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, ColumnDef(1, "col2", java.sql.Types.DATALINK, "DATALINK", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, ColumnDef(2, "col3", java.sql.Types.DISTINCT, "DISTINCT", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, ColumnDef(3, "col4", java.sql.Types.JAVA_OBJECT, "JAVA_OBJECT", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, ColumnDef(4, "col5", java.sql.Types.NULL, "NULL", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 4)
 
     schemaTools.readSchema(jdbcLayer, tablename) match {
-      case Left(errList) => assert(errList.size == 5)
+      case Left(errList) => assert(errList.size == 4)
       case Right(_) => fail
     }
   }
