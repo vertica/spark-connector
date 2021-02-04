@@ -496,9 +496,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + tableName
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) { rowsLoaded = rs.getInt("count") }
+      }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows )
   }
 
@@ -524,9 +528,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsExisting = 0
     var stmt = conn.createStatement()
     var query = "SELECT COUNT(*) AS count FROM " + options("table")
-    var rs = stmt.executeQuery(query)
-    if (rs.next) { rowsExisting = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsExisting = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"APPEND MODE to table:" + options("table") + "  Number of existing rows=" + rowsExisting + " Number of DataFrame rows=" + numDfRows)
 
     val mode = SaveMode.Append
@@ -537,10 +547,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     stmt = conn.createStatement()
-    query = "SELECT COUNT(*) AS count FROM " + options("table")
-    rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      query = "SELECT COUNT(*) AS count FROM " + options("table")
+      val rs = stmt.executeQuery(query)
+      if (rs.next) { totalRows = rs.getInt("count") }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"APPEND MODE to table:" + options("table") + "  total rows is now=" + totalRows)
     assert (totalRows == (numDfRows + rowsExisting))
   }
@@ -577,9 +591,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows)
   }
 
@@ -607,9 +627,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     if (mode == SaveMode.Append) {
       stmt = conn.createStatement()
       val query = "SELECT COUNT(*) AS count FROM " + options("table")
-      val rs = stmt.executeQuery(query)
-      if (rs.next) { rows_exist = rs.getInt("count") }
-      stmt.close()
+      try {
+        val rs = stmt.executeQuery(query)
+        if (rs.next) {
+          rows_exist = rs.getInt("count")
+        }
+      }
+      finally {
+        stmt.close()
+      }
     }
 
     val start = System.currentTimeMillis()
@@ -619,10 +645,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var rowsLoaded = 0
     stmt = conn.createStatement()
-    val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val query = "SELECT COUNT(*) AS count FROM " + options("table")
+      val rs = stmt.executeQuery(query)
+      if (rs.next) { rowsLoaded = rs.getInt("count") }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == (rows_exist + numDfRows) )
   }
 
@@ -653,9 +683,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     if (mode == SaveMode.Append) {
       stmt = conn.createStatement()
       val query = "SELECT COUNT(*) AS count FROM " + options("dbschema") + "." + options("table")
-      val rs = stmt.executeQuery(query)
-      if (rs.next) { rows_exist = rs.getInt("count") }
-      stmt.close()
+      try {
+        val rs = stmt.executeQuery(query)
+        if (rs.next) {
+          rows_exist = rs.getInt("count")
+        }
+      }
+      finally {
+        stmt.close()
+      }
     }
 
     val start = System.currentTimeMillis()
@@ -666,9 +702,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + options("dbschema") + "." + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == (rows_exist + numDfRows) )
   }
 
@@ -714,9 +756,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rows = 0
     stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + options("dbschema") + "." + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rows == (rows_exist + numDfRows) )
   }
 
@@ -786,11 +834,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var rowsLoaded = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("dbschema") + "." + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-
-    //stmt.execute("DROP TABLE  IF EXISTS "+tableName)
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     println("REJECTED-ROWS:  Check the log here to verify these printed.")
     assert (rowsLoaded == numDfRows)
   }
@@ -976,7 +1028,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dbschema = "public"
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
-    //creatTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)", 10)
 
     val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
@@ -1005,9 +1056,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (rowsLoaded == numDfRows)
   }
 
@@ -1064,7 +1121,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dbschema = "public"
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
-    //creatTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)", 10)
 
     val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
@@ -1093,9 +1149,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (rowsLoaded == numDfRows)
   }
 
@@ -1142,9 +1204,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     //since load is ignored so there should be 0 rows in the target table
     var rowsLoaded = -1
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (rowsLoaded == 0)
   }
 
@@ -1371,14 +1439,18 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     query = "select count(*) as cnt from v_catalog.tables where table_schema ILIKE '" +
       options("dbschema") + "' and table_name ILIKE '" +  rejects_table +  "'"
     var rejects_table_dropped = false
-    rs = stmt.executeQuery(query)
-    if (rs.next) {
-      val count = rs.getInt("cnt")
-      if (count == 0) rejects_table_dropped = true
+    try {
+      rs = stmt.executeQuery(query)
+      if (rs.next) {
+        val count = rs.getInt("cnt")
+        if (count == 0) rejects_table_dropped = true
+      }
+      rs.close()
+      stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     }
-    rs.close()
-    stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
-    stmt.close()
+    finally {
+      stmt.close()
+    }
 
     assert (rejects_table_dropped)
   }
@@ -1413,9 +1485,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows )
   }
 
@@ -1436,9 +1514,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows )
   }
 
@@ -1460,9 +1544,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
 
     assert ( rowsLoaded == numDfRows )
   }
@@ -1496,9 +1586,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var rowsLoaded = 0
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) AS count FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
 
     assert ( rowsLoaded == numDfRows )
   }
@@ -1563,9 +1659,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     var rowsLoaded = 0
     val query = "SELECT COUNT(*) AS count FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows )
   }
 
@@ -1610,9 +1712,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var rowsLoaded = 0
     val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { rowsLoaded = rs.getInt("cnt") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ( rowsLoaded == numDfRows )
   }
 
@@ -1644,9 +1752,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var count = 0
     val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { count = rs.getInt("cnt") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        count = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (count == numDfRows)
   }
 
@@ -1673,9 +1787,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var count = 0
     val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { count = rs.getInt("cnt") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        count = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (count == numDfRows)
   }
 
@@ -1750,9 +1870,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     // get new count
     var countnew = 0
-    rs = stmt.executeQuery(query)
-    if (rs.next) { countnew = rs.getInt("cnt") }
-    stmt.close()
+    try {
+      rs = stmt.executeQuery(query)
+      if (rs.next) {
+        countnew = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert ((countnew == countold) && failureMessage.contains(expectedMessage))
   }
 
@@ -1785,9 +1911,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"APPEND MODE to table:" + options("table") + "  total rows is now=" + totalRows)
 
     assert (totalRows == numDfRows)
@@ -1937,9 +2069,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (totalRows == numDfRows)
   }
 
@@ -1977,9 +2115,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"Overwrite Mode to table: " + options("table") + "  total rows is now: " + totalRows)
     assert (totalRows == numDfRows)
   }
@@ -2019,9 +2163,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"Overwrite mode to table: " + options("table") + "  total rows is now: " + totalRows)
     assert (totalRows == numDfRows)
   }
@@ -2062,9 +2212,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + options("table")
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     log.info(s"Append mode to table: " + options("table") + "  total rows is now: " + totalRows)
     assert (totalRows == numDfRows)
   }
@@ -2113,9 +2269,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + "\"" + options("table") + "\";"
-    val rs = stmt.executeQuery(query)
-    if (rs.next) { totalRows = rs.getInt("count") }
-    stmt.close()
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        totalRows = rs.getInt("count")
+      }
+    }
+    finally {
+      stmt.close()
+    }
     assert (totalRows == numDfRows)
   }
 
