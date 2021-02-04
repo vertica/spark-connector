@@ -1,7 +1,7 @@
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, TableName, VerticaMetadata}
-import com.vertica.spark.functests.{EndToEndTests, HDFSTests, JDBCTests}
+import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import ch.qos.logback.classic.Level
 
 object Main extends App {
@@ -19,21 +19,19 @@ object Main extends App {
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
   new HDFSTests(
-    DistributedFilesystemReadConfig(
-      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
-      jdbcConfig,
-      FileStoreConfig(filename, Level.ERROR),
-      TableName("", None),
-      None,
-      None
+    FileStoreConfig(
+      filename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     ),
-    DistributedFilesystemReadConfig(
-      if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF,
-      jdbcConfig,
-      FileStoreConfig(dirTestFilename, Level.ERROR),
-      TableName("", None),
-      None,
-      None
+    FileStoreConfig(dirTestFilename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
+    ),
+    jdbcConfig
+  ).execute()
+
+  new CleanupUtilTests(
+    FileStoreConfig(filename,
+      logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     )
   ).execute()
 

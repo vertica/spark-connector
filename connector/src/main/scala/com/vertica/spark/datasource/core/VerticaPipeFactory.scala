@@ -23,7 +23,12 @@ trait VerticaPipeFactoryInterface {
 object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
-      case cfg: DistributedFilesystemReadConfig => new VerticaDistributedFilesystemReadPipe(cfg, new HadoopFileStoreLayer(DistributedFilesystemWriteConfig(Level.DEBUG), cfg), new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
+      case cfg: DistributedFilesystemReadConfig =>
+        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
+          case Some(metadata) => Some(metadata.schema)
+          case None => None
+        })
+        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
     }
   }
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = ???

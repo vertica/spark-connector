@@ -43,6 +43,7 @@ object ConnectorErrorType extends Enumeration {
   val MissingMetadata : Value = Value("Metadata was missing from config.")
   val TooManyPartitions : Value = Value("More partitions specified than is possible to divide the operation.")
   val CastingSchemaReadError : Value = Value("Failed to get table schema when checking for fields that need casts.")
+  val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
 }
 import ConnectorErrorType._
 
