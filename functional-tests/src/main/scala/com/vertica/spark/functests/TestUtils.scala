@@ -3,7 +3,8 @@ package com.vertica.spark.functests
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.{Row, SparkSession}
 
 object TestUtils {
   def getJDBCConnection(host: String, port: Int = 5433, db: String, user: String, password: String): Connection = {
@@ -95,4 +96,18 @@ object TestUtils {
       def next(): String = rs.getString(1)
     }.toList
   }
+
+  def getKmeans100colFloatSchema(): org.apache.spark.sql.types.StructType = {
+    val colNames = (for(i<-Range(1,101)) yield "feature"+i).toArray
+    val nullable = false
+    val cols = for (i <-Range(0,colNames.size)) yield StructField(colNames(i), org.apache.spark.sql.types.FloatType, nullable)
+    val schema = StructType(cols.toArray)
+    schema
+  }
+
+  def getKmeans100colFloatRowRDD(kmmdata: org.apache.spark.rdd.RDD[String]): org.apache.spark.rdd.RDD[org.apache.spark.sql.Row]  = {
+    val rowRDD = kmmdata.map(_.split(" ").map(col=>col.trim.toFloat).toSeq).map(row=>Row.fromSeq(row))
+    rowRDD
+  }
+
 }
