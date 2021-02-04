@@ -33,7 +33,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(jdbcConfig.password == "password")
         println(jdbcConfig.logLevel)
         assert(jdbcConfig.logLevel == logLevel)
-        fail
     }
   }
 

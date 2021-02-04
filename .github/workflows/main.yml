@@ -21,29 +21,16 @@ jobs:
         with:
           name: build-jar-file
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-1.0.jar
-  #run-unit-tests:
-  #  runs-on: ubuntu-latest
-  #  needs: build
-  #  steps:
-  #    - name: Checkout the project
-  #      uses: actions/checkout@v2
-  #    - name: Download the build artifact
-  #      uses: actions/download-artifact@v2
-  #      with:
-  #        name: build-jar-file
-  #        path: ./benchmarking/lib/
-  #    - name: Run the unit tests
-  #      run: cd benchmarking && sbt "testOnly com.vertica.UnitTests"
-  #run-integration-tests:
-  #  runs-on: ubuntu-latest
-  #  needs: build
-  #  steps:
-  #    - name: Checkout the project
-  #      uses: actions/checkout@v2
-  #    - name: Download the build artifact
-  #      uses: actions/download-artifact@v2
-  #      with:
-  #        name: build-jar-file
-  #        path: ./benchmarking/lib/
-  #    - name: Run the integration tests
-  #      run: cd benchmarking && sbt "testOnly com.vertica.IntegrationTests"
+  run-integration-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Run the integration tests
+        run: cd functional-tests && sbt run
