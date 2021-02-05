@@ -47,9 +47,8 @@ final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFi
   *
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val cleanupUtils: CleanupUtilsInterface = CleanupUtils, val sessionIdProvider: SessionIdInterface = SessionId) extends VerticaPipeInterface with VerticaPipeReadInterface {
-  val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
-  var dataSize = 1
+class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val cleanupUtils: CleanupUtilsInterface = CleanupUtils, val dataSize: Int = 1)  extends VerticaPipeInterface with VerticaPipeReadInterface {
+  private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
@@ -147,16 +146,14 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
     val fileStoreConfig = config.fileStoreConfig
 
-    val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val uniqueSessionId = sessionIdProvider.getId
-
     // Create unique directory for session
-    fileStoreLayer.createDir(fileStoreConfig.address + delimiter + uniqueSessionId) match {
+    fileStoreLayer.createDir(fileStoreConfig.address) match {
       case Left(err) => return Left(err)
       case Right(_) =>
     }
 
-    val hdfsPath = fileStoreConfig.address + delimiter + uniqueSessionId + delimiter + config.tablename.getFullTableName
+    val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
 
     // Remove export directory if it exists (Vertica must create this dir)
     fileStoreLayer.removeDir(hdfsPath) match {

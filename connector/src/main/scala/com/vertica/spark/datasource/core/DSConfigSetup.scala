@@ -16,9 +16,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
 import org.apache.spark.sql.types.StructType
-
 import ch.qos.logback.classic.Level
-
 import com.vertica.spark.config._
 
 import scala.util.Try
@@ -130,6 +128,10 @@ object DSConfigSetupUtils {
     //TODO: make option once kerberos support is introduced
   }
 
+  def getTargetTableSQL(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("target_table_sql").validNec
+  }
+
   // Optional param, if not specified the partition count will be decided as part of the inital steps
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
@@ -139,6 +141,13 @@ object DSConfigSetupUtils {
         case Failure(_) => ConnectorError(InvalidPartitionCountError).invalidNec
       }
       case None => None.validNec
+    }
+  }
+
+  def getStrLen(config: Map[String, String]) : ValidationResult[Long] = {
+    Try {config.getOrElse("strlen","1024").toLong} match {
+      case Success(i) => if (i >= 1 && i <= 32000000) i.validNec else ConnectorError(InvalidStrlenError).invalidNec
+      case Failure(_) => ConnectorError(InvalidStrlenError).invalidNec
     }
   }
 
@@ -154,8 +163,18 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
 
-  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
-    DSConfigSetupUtils.getStagingFsUrl(config).map(address => FileStoreConfig(address, logLevel))
+  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level, sessionIdProvider: SessionIdInterface): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+    DSConfigSetupUtils.getStagingFsUrl(config).map(
+      address => {
+        val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
+        val uniqueSessionId = sessionIdProvider.getId
+
+        // Create unique directory for session
+        val uniqueAddress = address + delimiter + uniqueSessionId
+
+        FileStoreConfig(uniqueAddress, logLevel)
+      }
+    )
   }
 
   def validateAndGetFullTableName(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableName] = {
@@ -168,7 +187,7 @@ object DSConfigSetupUtils {
 /**
   * Implementation for parsing user option map and getting read config
   */
-class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
   /**
     * Validates the user option map and parses read config
     *
@@ -176,7 +195,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel).andThen { fileStoreConfig =>
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionIdProvider = sessionIdInterface).andThen { fileStoreConfig =>
         DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
             (jdbcConfig.logLevel.validNec,
             jdbcConfig.validNec,
@@ -215,18 +234,47 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 /**
   * Implementation for parsing user option map and getting write config
   */
-object DSWriteConfigSetup extends DSConfigSetupInterface[WriteConfig] {
+class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
   /**
     * Validates the user option map and parses read config
     *
     * @return Either [[WriteConfig]] or [[ConnectorError]]
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
+
+
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
-    DSConfigSetupUtils.getLogLevel(config).map(DistributedFilesystemWriteConfig)
+    DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionIdInterface).andThen { fileStoreConfig =>
+        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
+          schema match {
+            case Some(passedInSchema) =>
+              (jdbcConfig.logLevel.validNec,
+                jdbcConfig.validNec,
+                fileStoreConfig.validNec,
+                tableName.validNec,
+                passedInSchema.validNec,
+                DSConfigSetupUtils.getStrLen(config),
+                DSConfigSetupUtils.getTargetTableSQL(config)
+                ).mapN(DistributedFilesystemWriteConfig)
+            case None =>
+              ConnectorError(MissingSchemaError).invalidNec
+          }
+        }
+      }
+    }
   }
 
-  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Option[PartitionInfo]] = Right(None)
+  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Option[PartitionInfo]] = {
+    val pipe = pipeFactory.getWritePipe(config)
+    pipe.doPreWriteSteps() match {
+      case Left(err) => Left(err)
+      case Right(_) => Right(None)
+    }
+  }
 
-  override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = ???
+  override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = schema match {
+    case Some(schem) => Right(schem)
+    case None => Left(ConnectorError(SchemaDiscoveryError))
+  }
 }
