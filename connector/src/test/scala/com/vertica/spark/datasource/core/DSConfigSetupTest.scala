@@ -34,7 +34,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   // Parses config expecting success
   // Calling test with fail if an error is returned
-
   def parseCorrectInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : ReadConfig = {
     val readConfig : ReadConfig = dsReadConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(_) =>
@@ -45,11 +44,29 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
     readConfig
   }
+  def parseCorrectInitConfig(opts : Map[String, String], dsWriteConfigSetup: DSWriteConfigSetup) : WriteConfig = {
+    val writeConfig : WriteConfig = dsWriteConfigSetup.validateAndGetConfig(opts) match {
+      case Invalid(_) =>
+        fail
+        mock[WriteConfig]
+      case Valid(config) =>
+        config
+    }
+    writeConfig
+  }
 
   // Parses config expecting an error
   // Calling test will fail if the config is parsed without error
   def parseErrorInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : Seq[ConnectorError] = {
     dsReadConfigSetup.validateAndGetConfig(opts) match {
+      case Invalid(errList) => errList.toNonEmptyList.toList
+      case Valid(_) =>
+        fail
+        List[ConnectorError]()
+    }
+  }
+  def parseErrorInitConfig(opts : Map[String, String], dsWriteConfigSetup: DSWriteConfigSetup) : Seq[ConnectorError] = {
+    dsWriteConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(errList) => errList.toNonEmptyList.toList
       case Valid(_) =>
         fail
@@ -93,7 +110,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "Return several parsing errors" in {
+  it should "Return several parsing errors on read" in {
     // Should be one error from the jdbc parser for the port and one for the missing log level
     val opts = Map("logging_level" -> "invalid",
                    "host" -> "1.1.1.1",
@@ -136,5 +153,55 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 1)
     assert(errSeq.exists(err => err.err == SchemaDiscoveryError))
+  }
+
+  it should "parse a valid write config" in {
+    val opts = Map("logging_level" -> "ERROR",
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case config: DistributedFilesystemWriteConfig =>
+        assert(config.jdbcConfig.host == "1.1.1.1")
+        assert(config.jdbcConfig.port == 1234)
+        assert(config.jdbcConfig.db == "testdb")
+        assert(config.jdbcConfig.username == "user")
+        assert(config.jdbcConfig.password == "password")
+        assert(config.tablename.getFullTableName == "tbl")
+        assert(config.logLevel == Level.ERROR)
+    }
+  }
+
+  it should "Return several parsing errors on write" in {
+    val opts = Map("logging_level" -> "invalid",
+      "host" -> "1.1.1.1",
+      "db" -> "testdb",
+      "port" -> "asdf",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
+    assert(errSeq.size == 2)
+    assert(errSeq.exists(err => err.err == InvalidPortError))
+    assert(errSeq.exists(err => err.err == InvalidLoggingLevel))
   }
 }

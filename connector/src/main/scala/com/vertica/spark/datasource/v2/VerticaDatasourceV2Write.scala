@@ -13,6 +13,10 @@
 
 package com.vertica.spark.datasource.v2
 
+import com.vertica.spark.config.WriteConfig
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
+import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
@@ -20,14 +24,14 @@ import org.apache.spark.sql.catalyst.InternalRow
 /**
   * Builds the class for use in writing to Vertica
   */
-class VerticaWriteBuilder extends WriteBuilder {
+class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder {
 /**
   * Builds the class representing a write operation to a Vertica table
   *
   * @return [[VerticaBatchWrite]]
   */
   override def buildForBatch(): BatchWrite = {
-    new VerticaBatchWrite()
+    new VerticaBatchWrite(config)
   }
 }
 
@@ -36,7 +40,13 @@ class VerticaWriteBuilder extends WriteBuilder {
   *
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
-class VerticaBatchWrite extends BatchWrite {
+class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
+
+  // Perform initial setup for the write operation
+  (new DSWriteConfigSetup(None)).performInitialSetup(config) match {
+    case Left(err) => throw new Exception(err.msg)
+    case Right(_) => ()
+  }
 
 /**
   * Creates the writer factory which will be serialized and sent to workers

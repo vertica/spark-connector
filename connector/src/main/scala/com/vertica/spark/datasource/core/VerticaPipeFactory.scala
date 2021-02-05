@@ -44,6 +44,11 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
     }
   }
-  override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = ???
+  override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
+    config match {
+      case cfg: DistributedFilesystemWriteConfig =>
+        new VerticaDistributedFilesystemWritePipe(cfg, new HadoopFileStoreLayer(cfg.logProvider, Some(cfg.schema)), new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(logProvider = cfg.logProvider))
+    }
+  }
 }
 

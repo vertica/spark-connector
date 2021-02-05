@@ -24,6 +24,7 @@ import java.util
 
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.datasource.core.DSReadConfigSetup
+import com.vertica.spark.datasource.core.DSWriteConfigSetup
 
 import collection.JavaConverters._
 
@@ -131,8 +132,16 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    // TODO: Use config for write builder
-    new VerticaWriteBuilder()
+    val config = (new DSWriteConfigSetup(schema = Some(info.schema))).validateAndGetConfig(info.options.asScala.toMap) match {
+      case Invalid(errList) =>
+        val errMsgList = for (err <- errList) yield err.msg
+        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
+        throw new Exception(msg)
+      case Valid(cfg) => cfg
+    }
+    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+
+    new VerticaWriteBuilder(config)
   }
 }
 
