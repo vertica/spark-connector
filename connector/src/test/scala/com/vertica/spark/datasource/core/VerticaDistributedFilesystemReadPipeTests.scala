@@ -424,8 +424,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
-    pipe.dataSize = 2
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
 
     pipe.startPartitionRead(partition) match {
       case Left(_) => fail
@@ -473,8 +472,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
-    pipe.dataSize = 2
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
 
     pipe.startPartitionRead(partition) match {
       case Left(_) => fail
@@ -540,8 +538,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, FileCleanupInfo(filename1,0,1)).returning(Right(()))
     (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, FileCleanupInfo(filename2,0,1)).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
-    pipe.dataSize = 2
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, dataSize = 2)
 
     pipe.startPartitionRead(partition)
     pipe.readData
