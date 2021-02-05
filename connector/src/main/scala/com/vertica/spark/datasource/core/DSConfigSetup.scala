@@ -116,10 +116,7 @@ object DSConfigSetupUtils {
   }
 
   def getTargetTableSQL(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("target_table_sql") match {
-      case Some(sql) => Some(sql).validNec
-      case None => None.validNec
-    }
+    config.get("target_table_sql").validNec
   }
 
   // Optional param, if not specified the partition count will be decided as part of the inital steps

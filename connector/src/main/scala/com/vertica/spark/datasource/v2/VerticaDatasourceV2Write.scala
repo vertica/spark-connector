@@ -33,7 +33,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   (new DSWriteConfigSetup(None)).performInitialSetup(config) match {
     case Left(err) => throw new Exception(err.msg)
     case Right(_) => ()
-    }
+  }
 
 /**
   * Creates the writer factory which will be serialized and sent to workers

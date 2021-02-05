@@ -6,11 +6,10 @@ import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, SchemaConversionError, SchemaDiscoveryError, TableCheckError}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
-import org.apache.spark.sql.types.StructType
 
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val sessionIdProvider: SessionIdInterface = SessionId) extends VerticaPipeInterface with VerticaPipeWriteInterface {
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
-  var dataSize = 1
+  private val dataSize = 1
 
   def getMetadata: Either[ConnectorError, VerticaMetadata] = ???
 

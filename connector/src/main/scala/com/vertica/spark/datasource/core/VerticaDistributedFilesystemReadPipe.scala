@@ -35,8 +35,8 @@ final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFi
   * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
   */
 class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val cleanupUtils: CleanupUtilsInterface = CleanupUtils)  extends VerticaPipeInterface with VerticaPipeReadInterface {
-  val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
-  var dataSize = 1
+  private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+  private val dataSize = 1
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
