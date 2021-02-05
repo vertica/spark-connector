@@ -3,7 +3,7 @@ name: Tests-CI
 
 on:
   push:
-    branches: [ scalastyletest ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
