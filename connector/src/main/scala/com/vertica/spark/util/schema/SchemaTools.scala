@@ -156,7 +156,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
       case org.apache.spark.sql.types.BooleanType => Right("BOOLEAN")
       case org.apache.spark.sql.types.ByteType => Right("TINYINT")
       case org.apache.spark.sql.types.DateType => Right("DATE")
-      case org.apache.spark.sql.types.CalendarIntervalType => Right("INTERVAL")  // 1.5 only
+      case org.apache.spark.sql.types.CalendarIntervalType => Right("INTERVAL")
       case org.apache.spark.sql.types.DecimalType() => Right("DECIMAL")
       case org.apache.spark.sql.types.DoubleType => Right("DOUBLE PRECISION")
       case org.apache.spark.sql.types.FloatType => Right("FLOAT")

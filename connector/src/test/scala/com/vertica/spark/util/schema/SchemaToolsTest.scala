@@ -358,4 +358,32 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       case Right(_) => fail
     }
   }
+
+  it should "Convert basic spark types to vertica types" in {
+    val schemaTools = new SchemaTools(logProvider)
+
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1) == Right("VARBINARY(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1) == Right("BOOLEAN"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1 ) == Right("TINYINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1 ) == Right("DATE"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1) == Right("INTERVAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 ) == Right("DOUBLE PRECISION"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0,0), 1 ) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1 ) == Right("FLOAT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 ) == Right("INTEGER"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 ) == Right("BIGINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 ) == Right("null"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 ) == Right("SMALLINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 ) == Right("TIMESTAMP"))
+  }
+
+
+  it should "Convert string types to vertica type properly" in {
+    val schemaTools = new SchemaTools(logProvider)
+
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024) == Right("VARCHAR(1024)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000) == Right("VARCHAR(5000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000) == Right("VARCHAR(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000) == Right("LONG VARCHAR(100000)"))
+  }
 }

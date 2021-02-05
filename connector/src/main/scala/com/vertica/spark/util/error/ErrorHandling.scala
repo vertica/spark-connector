@@ -61,7 +61,7 @@ object ConnectorErrorType extends Enumeration {
   val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
   val MissingSchemaError: Value = Value("Expected to be passed in schema for this configuration. No schema found.")
   val TableCheckError: Value = Value("Error checking if table exists.")
-  val CreateTableError: Value = Value("Error when trying to create table. Invalid.")
+  val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
 }
 import ConnectorErrorType._
 
