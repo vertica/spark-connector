@@ -1,3 +1,16 @@
+// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.vertica.spark.util.error
 
 /**
@@ -42,6 +55,7 @@ object ConnectorErrorType extends Enumeration {
   val UninitializedReadError : Value = Value("Error while reading: The reader was not initialized.")
   val MissingMetadata : Value = Value("Metadata was missing from config.")
   val TooManyPartitions : Value = Value("More partitions specified than is possible to divide the operation.")
+  val CastingSchemaReadError : Value = Value("Failed to get table schema when checking for fields that need casts.")
   val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
 }
 import ConnectorErrorType._

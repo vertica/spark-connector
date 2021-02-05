@@ -1,3 +1,16 @@
+// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.vertica.spark.functests
 
 import java.sql.{Connection, Date}
@@ -231,8 +244,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Time type
-  ignore should "load data from Vertica for [all Date/Time data types] of Vertica" in {
+  it should "load data from Vertica for [all Date/Time data types] of Vertica" in {
     val tableName1 = "t1"
 
     val n = 40
@@ -458,8 +470,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-  // TODO (VER-75773): Re-enable this test once we resolve how to deal with Interval types
-  ignore should "be able to handle interval types" in {
+  it should "be able to handle interval types" in {
     val tableName1 = "dftest"
     val stmt = conn.createStatement()
     val n = 1
@@ -467,6 +478,22 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (f INTERVAL DAY TO SECOND, g INTERVAL YEAR TO MONTH)")
 
     val insert = "insert into "+ tableName1 + " values('1 day 6 hours', '1 year 6 months')"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.cache.count == n)
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "be able to handle the UUID type" in {
+    val tableName1 = "dftest"
+    val stmt = conn.createStatement()
+    val n = 1
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (f uuid)")
+
+    val insert = "insert into " + tableName1 + " values('6bbf0744-74b4-46b9-bb05-53905d4538e7')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()

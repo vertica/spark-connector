@@ -1,3 +1,16 @@
+// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.vertica.spark.datasource.core
 
 import com.typesafe.scalalogging.Logger
@@ -6,7 +19,7 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.util.cleanup.{CleanupUtils, CleanupUtilsInterface, FileCleanupInfo}
 
@@ -160,7 +173,30 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     // TODO: Add file permission option w/ default value '700'
     val filePermissions = "777"
 
-    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS SELECT * FROM " + config.tablename.getFullTableName + ";"
+    def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+
+    val cols: String = schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+      case Left(err) =>
+        logger.error(err.msg)
+        return Left(ConnectorError(CastingSchemaReadError))
+      case Right(columnDefs) => columnDefs.map(info => {
+        info.colType match {
+          case java.sql.Types.OTHER =>
+            val typenameNormalized = info.colTypeName.toLowerCase()
+            if (typenameNormalized.startsWith("interval") ||
+              typenameNormalized.startsWith("uuid"))
+              castToVarchar(info.label)
+            else
+              info.label
+          case java.sql.Types.TIME => castToVarchar(info.label)
+          case _ => info.label
+        }
+      }).mkString(",")
+    }
+
+    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
+      "SELECT " + cols + " FROM " + config.tablename.getFullTableName + ";"
+
     jdbcLayer.execute(exportStatement) match {
       case Right(_) =>
       case Left(err) =>
