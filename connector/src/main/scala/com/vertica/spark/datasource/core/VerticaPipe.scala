@@ -45,9 +45,11 @@ trait VerticaPipeWriteInterface {
   def doPreWriteSteps(): Either[ConnectorError, Unit]
 
   /**
-    * Initial setup for the write of an individual partition. Called by executor.
-    */
-  def startPartitionWrite(): Either[ConnectorError, Unit]
+   * Initial setup for the write of an individual partition. Called by executor.
+   *
+   * @param uniqueId Unique identifier for the partition being written
+   */
+  def startPartitionWrite(uniqueId: String): Either[ConnectorError, Unit]
 
   /**
     * Write a block of data to the underlying source. Called by executor.

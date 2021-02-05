@@ -75,7 +75,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Right(VerticaMetadata(new StructType))).once()
+    (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 

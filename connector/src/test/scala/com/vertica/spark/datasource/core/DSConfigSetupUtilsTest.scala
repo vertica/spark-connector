@@ -182,4 +182,38 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStagingFsUrl(opts))
     assert(err.toNonEmptyList.head.err == StagingFsUrlMissingError)
   }
+
+  it should "parse the strlen" in {
+    val opts = Map("strlen" -> "1234")
+    val strlen = getResultOrAssert[Long](DSConfigSetupUtils.getStrLen(opts))
+    assert(strlen == 1234)
+  }
+
+  it should "defaults to strlen 1024" in {
+    val opts = Map[String, String]()
+    val strlen = getResultOrAssert[Long](DSConfigSetupUtils.getStrLen(opts))
+    assert(strlen == 1024)
+  }
+
+  it should "error with invalid strlen input" in {
+    var opts = Map("strlen" -> "abc123")
+    var err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStrLen(opts))
+    assert(err.toNonEmptyList.head.err == InvalidStrlenError)
+
+    opts = Map("strlen" -> "1.1")
+    err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStrLen(opts))
+    assert(err.toNonEmptyList.head.err == InvalidStrlenError)
+  }
+
+  it should "parse target table SQL" in {
+    val stmt = "CREATE TABLE t1(col1 INTEGER);"
+    val opts = Map("target_table_sql" -> stmt)
+
+    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getTargetTableSQL(opts))
+
+    res match {
+      case Some(str) => assert(str == stmt)
+      case None => fail
+    }
+  }
 }

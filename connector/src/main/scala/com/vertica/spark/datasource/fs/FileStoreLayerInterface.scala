@@ -15,7 +15,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, LogProvider}
+import com.vertica.spark.config.LogProvider
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile

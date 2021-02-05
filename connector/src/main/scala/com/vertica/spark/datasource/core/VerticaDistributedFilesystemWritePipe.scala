@@ -1,18 +1,18 @@
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, SchemaConversionError, SchemaDiscoveryError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
-import org.apache.spark.sql.types.StructType
 
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val sessionIdProvider: SessionIdInterface = SessionId) extends VerticaPipeInterface with VerticaPipeWriteInterface {
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
   var dataSize = 1
 
-  def getMetadata: Either[ConnectorError, VerticaMetadata] = ???
+  // No write metadata required for configuration as of yet
+  def getMetadata: Either[ConnectorError, VerticaMetadata] = Right(VerticaWriteMetadata())
 
   def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
 
@@ -104,19 +104,33 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // TODO: Write modes
     for {
       // Create the table if it doesn't exist
-      tableExists <- tableExists(config.tablename, jdbcLayer)
-      _ <- if(tableExists) createTable(config) else Right(())
+      tableExistsPre <- tableExists(config.tablename, jdbcLayer)
+      _ <- if(tableExistsPre) createTable(config) else Right(())
+
+      // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
+      tableExistsPost <- tableExists(config.tablename, jdbcLayer)
+      _ <- if(tableExistsPost) Right(()) else Left(ConnectorError(CreateTableError))
 
       // Create the directory to export files to
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
     } yield ()
   }
 
-  def startPartitionWrite(): Either[ConnectorError, Unit] = ???
+  def startPartitionWrite(uniqueId: String): Either[ConnectorError, Unit] = {
+    val address = config.fileStoreConfig.address
+    val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
+    val filename = address + delimiter + uniqueId + ".parquet"
 
-  def writeData(data: DataBlock): Either[ConnectorError, Unit] = ???
+    fileStoreLayer.openWriteParquetFile(filename)
+  }
 
-  def endPartitionWrite(): Either[ConnectorError, Unit] = ???
+  def writeData(data: DataBlock): Either[ConnectorError, Unit] = {
+    fileStoreLayer.writeDataToParquetFile(data)
+  }
+
+  def endPartitionWrite(): Either[ConnectorError, Unit] = {
+    fileStoreLayer.closeWriteParquetFile()
+  }
 
   def commit(): Either[ConnectorError, Unit] = ???
 }

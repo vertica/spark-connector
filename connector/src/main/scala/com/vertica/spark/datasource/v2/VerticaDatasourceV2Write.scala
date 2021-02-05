@@ -1,12 +1,12 @@
 package com.vertica.spark.datasource.v2
 
 import com.vertica.spark.config.WriteConfig
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
+import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
+object WriteSucceeded extends WriterCommitMessage
+object WriteFailed extends WriterCommitMessage
 
 /**
   * Builds the class for use in writing to Vertica
@@ -30,7 +30,7 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder {
 class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
 
   // Perform initial setup for the write operation
-  (new DSWriteConfigSetup(None)).performInitialSetup(config) match {
+  new DSWriteConfigSetup(None).performInitialSetup(config) match {
     case Left(err) => throw new Exception(err.msg)
     case Right(_) => ()
     }
@@ -41,7 +41,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * @param physicalWriteInfo Structure containing partition information.
   * @return [[VerticaWriterFactory]]
   */
-  override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory()
+  override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory(config)
 
 /**
   * Responsible for commiting the write operation.
@@ -65,7 +65,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   *
   * This class is seriazlized and sent to each worker node. On the worker, createWriter will be called with a given unique id for the partition being written.
   */
-class VerticaWriterFactory extends DataWriterFactory {
+class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
 
 /**
   * Called from the worker node to get the writer for that node
@@ -74,28 +74,46 @@ class VerticaWriterFactory extends DataWriterFactory {
   * @param taskId A unique identifier for the specific task, which there may be multiple of for a partition due to retries or speculative execution
   * @return [[VerticaBatchWriter]]
   */
-  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = new VerticaBatchWriter()
+  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = new VerticaBatchWriter(config, partitionId, taskId)
 }
 
 /**
   * Writer class that passes rows to be written to the underlying datasource
   */
-class VerticaBatchWriter extends DataWriter[InternalRow] {
-  object WriteSucceeded extends WriterCommitMessage
+class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) extends DataWriter[InternalRow] {
 
-/**
+  // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
+  val uniqueId : String = partitionId + "-" + taskId
+
+  val writer = new DSWriter(config, uniqueId)
+  writer.openWrite() match {
+    case Right(_) => ()
+    case Left(err) => throw new Exception(err.msg)
+  }
+
+  /**
   * Writes the row to datasource. Not permanent until a commit from the driver happens
   *
   * @param record The row to be written to the source.
   */
-  override def write(record: InternalRow): Unit = {}
+  override def write(record: InternalRow): Unit = {
+    writer.writeRow(record) match {
+      case Right(_) => ()
+      case Left(err) => throw new Exception(err.msg)
+    }
+  }
 
 /**
   * Initiates final stages of writing for a sucessful write of this partition. This does not act as a final commit as that will be done by [[VerticaBatchWrite.commit]] from the driver.
   *
   * @return org.apache.spark.sql.connector.write.WriterCommitMessage
   */
-  override def commit(): WriterCommitMessage = WriteSucceeded
+  override def commit(): WriterCommitMessage = {
+    writer.closeWrite() match {
+      case Left(err) => throw new Exception(err.msg)
+      case Right(_) => WriteSucceeded
+    }
+  }
 
 /**
   * Initiates final stages of writing for a failed write of this partition.
