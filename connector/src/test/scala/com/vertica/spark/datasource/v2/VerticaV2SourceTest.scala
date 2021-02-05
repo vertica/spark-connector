@@ -34,18 +34,4 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(table.isInstanceOf[VerticaTable])
   }
 
-  it should "return a Write Builder" in {
-    val mockLogicalWriteInfo = mock[LogicalWriteInfo]
-
-    val opts = Map("logging_level" -> "ERROR")
-    val source = new VerticaSource()
-    val table = source.getTable(new StructType(), Array[Transform](), opts )
-    val writeTable = table.asInstanceOf[SupportsWrite]
-    val writeBuilder = writeTable.newWriteBuilder(mockLogicalWriteInfo)
-
-
-    assert(writeBuilder.isInstanceOf[VerticaWriteBuilder])
-  }
-
-
 }

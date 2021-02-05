@@ -14,8 +14,10 @@ object ConnectorErrorType extends Enumeration {
   val PasswordMissingError : Value = Value("The 'password' param is missing. Please specify the password to use for authenticating with Vertica.")
   val TablenameMissingError : Value = Value("The 'table' param is missing. Please specify the name of the table to use.")
   val InvalidPortError : Value = Value("The 'port' param specified is invalid. Please specify a valid integer between 1 and 65535.")
+  val InvalidStrlenError : Value = Value("The 'strlen' param specified is invalid. Please specify a valid integer between 1 and 32000000.")
   val InvalidPartitionCountError : Value = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer above 0.")
   val SchemaDiscoveryError : Value = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
+  val SchemaConversionError : Value = Value("Failed to convert the schema of the table.")
   val StagingFsUrlMissingError : Value = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
   val ExportFromVerticaError : Value = Value("There was an error when attempting to export from Vertica.")
   val FileSystemError : Value = Value("There was an error communicating with the intermediary filesystem.")
@@ -44,6 +46,9 @@ object ConnectorErrorType extends Enumeration {
   val TooManyPartitions : Value = Value("More partitions specified than is possible to divide the operation.")
   val CastingSchemaReadError : Value = Value("Failed to get table schema when checking for fields that need casts.")
   val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
+  val MissingSchemaError: Value = Value("Expected to be passed in schema for this configuration. No schema found.")
+  val TableCheckError: Value = Value("Error checking if table exists.")
+  val CreateTableError: Value = Value("Error when trying to create table. Invalid.")
 }
 import ConnectorErrorType._
 

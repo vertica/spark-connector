@@ -24,7 +24,10 @@ case class ColumnDef(
 
 trait SchemaToolsInterface {
   def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
+
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[SchemaError, Seq[ColumnDef]]
+
+  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String]
 }
 
 class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
@@ -130,6 +133,38 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         finally {
           rs.close()
         }
+    }
+  }
+
+
+  override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String] = {
+    sparkType match {
+      case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(65000)")
+      case org.apache.spark.sql.types.BooleanType => Right("BOOLEAN")
+      case org.apache.spark.sql.types.ByteType => Right("TINYINT")
+      case org.apache.spark.sql.types.DateType => Right("DATE")
+      case org.apache.spark.sql.types.CalendarIntervalType => Right("INTERVAL")  // 1.5 only
+      case org.apache.spark.sql.types.DecimalType() => Right("DECIMAL")
+      case org.apache.spark.sql.types.DoubleType => Right("DOUBLE PRECISION")
+      case org.apache.spark.sql.types.FloatType => Right("FLOAT")
+      case org.apache.spark.sql.types.IntegerType => Right("INTEGER")
+      case org.apache.spark.sql.types.LongType => Right("BIGINT")
+      case org.apache.spark.sql.types.NullType => Right("null")
+      case org.apache.spark.sql.types.ShortType => Right("SMALLINT")
+      case org.apache.spark.sql.types.TimestampType => Right("TIMESTAMP")
+      case org.apache.spark.sql.types.StringType =>
+        // here we constrain to 32M, max long type size
+        // and default to VARCHAR for sizes <= 65K
+        val vtype = if (strlen > 65000) "LONG VARCHAR" else "VARCHAR"
+        Right(vtype + "(" + strlen.toString + ")")
+
+      // To be reconsidered. Store as binary for now
+      case org.apache.spark.sql.types.ArrayType(_,_) |
+           org.apache.spark.sql.types.MapType(_,_,_) |
+           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(65000)")
+
+
+      case _ => Left(SchemaError(MissingConversionError))
     }
   }
 }
