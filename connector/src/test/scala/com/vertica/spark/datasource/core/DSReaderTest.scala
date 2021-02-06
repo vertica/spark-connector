@@ -24,7 +24,6 @@ import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
-
 class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
   val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)

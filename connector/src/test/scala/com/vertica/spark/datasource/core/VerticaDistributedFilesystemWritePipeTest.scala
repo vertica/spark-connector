@@ -50,7 +50,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true).twice()
+    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
+    (resultSet.getBoolean(_: Int)).expects(1).returning(true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
@@ -78,7 +79,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true).twice()
+    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
+    (resultSet.getBoolean(_: Int)).expects(1).returning(true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
@@ -103,7 +105,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true)
+    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet))
@@ -150,10 +152,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(*).returning(Right(resultSet)).twice()
-    (jdbcLayerInterface.execute _).expects(*).returning(Right())
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getVerticaTypeFromSparkType _).expects(*, *).returning(Right("INTEGER"))
 
     // Directory w/ configured address is created
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]

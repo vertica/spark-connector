@@ -104,7 +104,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     for {
       // Create the table if it doesn't exist
       tableExistsPre <- tableExists(config.tablename, jdbcLayer)
-      _ <- if(tableExistsPre) createTable(config) else Right(())
+      _ <- if(!tableExistsPre) createTable(config) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableExists(config.tablename, jdbcLayer)

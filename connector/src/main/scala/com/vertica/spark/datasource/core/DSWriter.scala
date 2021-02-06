@@ -52,17 +52,11 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   private var data = List[InternalRow]()
 
   def openWrite(): Either[ConnectorError, Unit] = {
-    val sizeOrErr = for{
+    for {
       size <- pipe.getDataBlockSize
       _ <- pipe.startPartitionWrite(uniqueId)
-    } yield (size)
-
-    sizeOrErr match {
-      case Left(err) => Left(err)
-      case Right(l) =>
-        blockSize = l
-        Right(())
-    }
+      _ = (this.blockSize = size)
+    } yield ()
   }
 
   def writeRow(row: InternalRow): Either[ConnectorError, Unit] = {
