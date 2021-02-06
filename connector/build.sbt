@@ -51,7 +51,8 @@ scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
 scalacOptions += "-Ypartial-unification"
 
-
+scalastyleFailOnError := true
+scalastyleFailOnWarning := true
 
 
 
