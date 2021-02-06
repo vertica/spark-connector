@@ -39,6 +39,8 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val filename = "test.parquet"
   val partition: VerticaDistributedFilesystemPartition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
 
+
+
   it should "Read rows from data block" in {
 
     val v1: Int = 1

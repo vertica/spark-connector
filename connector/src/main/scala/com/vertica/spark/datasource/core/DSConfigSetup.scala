@@ -206,7 +206,14 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
               val pipe = pipeFactory.getReadPipe(initialConfig)
 
               // Then, retrieve metadata
-              pipe.getMetadata.toValidatedNec.map(metadata => initialConfig.copy(metadata = Some(metadata)))
+              val metadata = pipe.getMetadata
+               metadata match {
+                case Left(err) => err.invalidNec
+                case Right(meta) => meta match {
+                  case readMeta: VerticaReadMetadata => initialConfig.copy(metadata = Some(readMeta)).validNec
+                  case _ => ConnectorError(MissingMetadata).invalidNec
+                }
+              }
           }
         }
       }

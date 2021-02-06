@@ -58,7 +58,7 @@ object CleanupUtils extends CleanupUtilsInterface {
   override def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit] = {
     // Cleanup parent dir (unique id)
     val p = new Path(s"$path")
-    val parent = p.getParent()
+    val parent = p.getParent
     if(parent != null) {
       fileStoreLayer.removeDir(parent.toString)
       Right(())
