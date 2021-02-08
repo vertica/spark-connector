@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
 
@@ -131,5 +131,24 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     fileStoreLayer.closeWriteParquetFile()
   }
 
-  def commit(): Either[ConnectorError, Unit] = ???
+
+  def buildCopyStatement(targetTable: String, columnList: String, url: String, fileFormat: String): String = {
+    s"COPY $targetTable $columnList FROM $url ON ANY NODE $fileFormat"
+    // TODO: s"REJECTED DATA AS TABLE $rejectsTable NO COMMIT"
+    // TODO: COMMIT AFTER CHECKING REJECTS / UPDATING STATUS
+  }
+
+  def commit(): Either[ConnectorError, Unit] = {
+    val copyStatement = buildCopyStatement(config.tablename.getFullTableName,
+      "", // TODO: Implement custom column copy list option
+      config.fileStoreConfig.address,
+      "parquet"
+    )
+    jdbcLayer.execute(copyStatement) match {
+      case Right(_) => Right(())
+      case Left(err) =>
+        logger.error("JDBC Error when trying to copy data into Vertica: " + err.msg)
+        Left(ConnectorError(CommitError))
+    }
+  }
 }

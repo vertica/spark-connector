@@ -86,5 +86,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     }
   }
 
-  def commitRows(): Either[ConnectorError, Unit] = ???
+  def commitRows(): Either[ConnectorError, Unit] = {
+    pipe.commit()
+  }
 }

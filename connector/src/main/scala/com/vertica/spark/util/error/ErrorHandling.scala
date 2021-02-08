@@ -62,6 +62,7 @@ object ConnectorErrorType extends Enumeration {
   val MissingSchemaError: Value = Value("Expected to be passed in schema for this configuration. No schema found.")
   val TableCheckError: Value = Value("Error checking if table exists.")
   val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
+  val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
 }
 import ConnectorErrorType._
 

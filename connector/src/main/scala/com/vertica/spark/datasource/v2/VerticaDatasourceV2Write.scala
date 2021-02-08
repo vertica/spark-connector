@@ -62,7 +62,13 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
-  override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
+  override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
+    val writer = new DSWriter(config, "")
+    writer.commitRows() match {
+      case Left(err) => throw new Exception(err.msg)
+      case Right(_) => ()
+    }
+  }
 
 /**
   * Responsible for cleaning up a failed write operation.
