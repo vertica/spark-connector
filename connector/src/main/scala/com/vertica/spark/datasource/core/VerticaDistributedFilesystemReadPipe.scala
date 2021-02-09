@@ -149,8 +149,13 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     // Create unique directory for session
     fileStoreLayer.createDir(fileStoreConfig.address) match {
       case Left(err) =>
-        logger.error("Failed to create directory: " + fileStoreConfig.address)
-        return Left(err)
+        err.err match {
+          case CreateDirectoryAlreadyExistsError =>
+            logger.debug("Directory already existed: " + fileStoreConfig.address)
+          case _ =>
+            logger.error("Failed to create directory: " + fileStoreConfig.address)
+            return Left(err)
+        }
       case Right(_) =>
     }
 
