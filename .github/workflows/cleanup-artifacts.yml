@@ -3,9 +3,11 @@
 name: Remove Old Artifacts
 
 on:
+  push:
+    branches: [ aggressively_remove_artifacts ]
   schedule:
-    # Every day at 1am
-    - cron: '0 1 * * *'
+    # Every 15 minutes
+    - cron: '*/15 * * * *'
 
 jobs:
   remove-old-artifacts:
@@ -15,3 +17,5 @@ jobs:
     steps:
       - name: Remove Old Artifacts
         uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '1 minutes'
