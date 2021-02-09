@@ -24,7 +24,7 @@ object WriteFailed extends WriterCommitMessage
 /**
   * Builds the class for use in writing to Vertica
   */
-class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder {
+class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with SupportsOverwrite {
 /**
   * Builds the class representing a write operation to a Vertica table
   *

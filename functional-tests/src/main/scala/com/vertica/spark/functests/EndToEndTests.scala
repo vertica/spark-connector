@@ -536,6 +536,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Append" in {
     val tableName = "s2vdevtest02"
 
+    // create and populate table
+    TestUtils.createTable(conn, tableName)
+
     // else local file path within this project.
     val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
