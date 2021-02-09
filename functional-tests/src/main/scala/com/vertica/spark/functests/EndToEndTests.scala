@@ -539,9 +539,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Append" in {
     val tableName = "s2vdevtest02"
 
-    // create and populate table
-    TestUtils.createTable(conn, tableName)
-
     // else local file path within this project.
     val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
@@ -553,11 +550,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
 
-    // ALL save modes should work
-    // SaveMode.Overwrite, SaveMode.Append, SaveMode.ErrorIfExists
-    val log = Logger.getLogger(getClass.getName)
-    log.info(s"Test options:" + options.toString)
-
     var rowsExisting = 0
     var stmt = conn.createStatement()
     var query = "SELECT COUNT(*) AS count FROM " + options("table")
@@ -567,10 +559,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         rowsExisting = rs.getInt("count")
       }
     }
+    catch {
+      case Exception => rowsExisting = 0
+    }
     finally {
       stmt.close()
     }
-    log.info(s"APPEND MODE to table:" + options("table") + "  Number of existing rows=" + rowsExisting + " Number of DataFrame rows=" + numDfRows)
 
     val mode = SaveMode.Append
     val start = System.currentTimeMillis()
@@ -588,7 +582,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     finally {
       stmt.close()
     }
-    log.info(s"APPEND MODE to table:" + options("table") + "  total rows is now=" + totalRows)
     assert (totalRows == (numDfRows + rowsExisting))
 
     TestUtils.dropTable(conn, tableName)
@@ -646,6 +639,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val tableName = "s2vdevtest03"
 
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (txt VARCHAR(1024), a INTEGER, b BOOLEAN, float FLOAT)")
+
     val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
     val schema = StructType(Array(
@@ -692,6 +687,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == (rows_exist + numDfRows) )
+
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "save a dataframe under specified schema in Overwrite mode" in {
