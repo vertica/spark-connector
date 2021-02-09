@@ -560,7 +560,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       }
     }
     catch {
-      case Exception => rowsExisting = 0
+      case e: Exception => rowsExisting = 0
     }
     finally {
       stmt.close()
@@ -755,7 +755,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest05"
     val dbschema = "S2VTestSchema"
 
-    // the schema was created above in Test ORC06
+    // the schema was created above in Test 06
     //stmt.executeUpdate("DROP SCHEMA IF EXISTS " + dbschema + " CASCADE")
     //stmt.executeUpdate("CREATE SCHEMA " + dbschema)
 
