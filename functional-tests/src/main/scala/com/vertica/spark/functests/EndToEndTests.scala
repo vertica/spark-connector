@@ -506,7 +506,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest01"
 
     // else local file path within this project.
-    val datafile = "src/test/resources/datafile-100cols-100rows.csv"
+    val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
     val schema = TestUtils.getKmeans100colFloatSchema()
@@ -537,7 +537,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest02"
 
     // else local file path within this project.
-    val datafile = "src/test/resources/datafile-100cols-100rows.csv"
+    val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
     val options = writeOpts + ("table" -> tableName)
@@ -589,7 +589,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create a dataframe with different types and Overwrite mode" in {
     val tableName = "s2vdevtest03"
 
-    val diffTypesText = spark.sparkContext.textFile("src/test/resources/diffTypesORC.txt")
+    val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
     val schema = StructType(Array(
       StructField("txt",StringType,nullable=true),
@@ -635,7 +635,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val tableName = "s2vdevtest03"
 
-    val diffTypesText = spark.sparkContext.textFile("src/test/resources/diffTypesORC.txt")
+    val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
     val schema = StructType(Array(
       StructField("txt",StringType,nullable=true),
@@ -691,7 +691,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.executeUpdate("DROP SCHEMA IF EXISTS " + dbschema + " CASCADE")
     stmt.executeUpdate("CREATE SCHEMA " + dbschema)
 
-    val diffTypesText = spark.sparkContext.textFile("src/test/resources/diffTypesORC.txt")
+    val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
     val schema = StructType(Array(
       StructField("txt",StringType,nullable=true),
@@ -751,7 +751,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     //stmt.executeUpdate("DROP SCHEMA IF EXISTS " + dbschema + " CASCADE")
     //stmt.executeUpdate("CREATE SCHEMA " + dbschema)
 
-    val diffTypesText = spark.sparkContext.textFile("src/test/resources/diffTypesORC.txt")
+    val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
     val schema = StructType(Array(
       StructField("txt",StringType,nullable=true),
@@ -832,7 +832,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (tdate DATE NOT NULL,tsymbol VARCHAR(3) NOT NULL) PARTITION BY EXTRACT (year FROM tdate)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
 
     // to convert our text file string dates into java.util.Date type then to
     // java.sql.Date type
@@ -884,7 +884,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
 
     // to convert our text file string dates into java.util.Date type then to
     // java.sql.Date type
@@ -928,7 +928,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -964,7 +964,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val path = "/nonexistent/path/here"
     val tableName = "s2vdevtest16"
     val dbschema = "public"
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1013,7 +1013,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP VIEW  IF EXISTS "+ viewName)
     TestUtils.createTableBySQL(conn, viewName, "CREATE VIEW " + viewName + " as select * from " + tableName)
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1056,7 +1056,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1106,7 +1106,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1149,7 +1149,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1198,7 +1198,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1252,7 +1252,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1301,7 +1301,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("CREATE USER test_user IDENTIFIED BY 'password'")
     stmt.execute("GRANT ALL PRIVILEGES ON " + dbschema + "." + tableName + " TO test_user")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1427,7 +1427,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
 
-    val data = spark.sparkContext.textFile("src/test/resources/date_test_file.txt")
+    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
     val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
     val rowRDD = data.map(_.split(",")).map(p => {
       val sd: java.util.Date = formatter.parse(p(0))
@@ -1487,7 +1487,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest27 with some spaces"
 
     // else local file path within this project.
-    val datafile = "src/test/resources/datafile-100cols-100rows.csv"
+    val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
 
@@ -1912,7 +1912,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Append when table does not exist" in {
     val tableName = "s2vdevtest44"
     // else local file path within this project.
-    val datafile = "src/test/resources/datafile-100cols-100rows.csv"
+    val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
     val options = writeOpts + ("table" -> tableName)
@@ -2284,7 +2284,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
     val df = spark.read.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat")
-      .option("header", "true").load("src/test/resources/1600ColumnTable.csv")
+      .option("header", "true").load("src/main/resources/1600ColumnTable.csv")
 
     val numDfRows = df.count()
     val stmt = conn.createStatement()
