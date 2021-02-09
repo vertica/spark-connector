@@ -3,11 +3,9 @@
 name: Remove Old Artifacts
 
 on:
-  push:
-    branches: [ aggressively_remove_artifacts ]
   schedule:
     # Every 15 minutes
-    - cron: '*/15 * * * *'
+    - cron: '0 1 * * *'
 
 jobs:
   remove-old-artifacts:
