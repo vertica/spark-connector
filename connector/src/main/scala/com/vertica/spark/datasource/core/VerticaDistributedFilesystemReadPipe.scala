@@ -147,6 +147,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     val fileStoreConfig = config.fileStoreConfig
 
     // Create unique directory for session
+    logger.debug("Creating unique directory: " + fileStoreConfig.address)
     fileStoreLayer.createDir(fileStoreConfig.address) match {
       case Left(err) =>
         err.err match {
@@ -161,8 +162,9 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
+    logger.debug("Export path: " + hdfsPath)
 
-    // Remove export directory if it exists (Vertica must create this dir)
+    // Safety check: Remove export directory if it exists (Vertica must create this dir)
     fileStoreLayer.removeDir(hdfsPath) match {
       case Left(err) => return Left(err)
       case Right(_) =>
