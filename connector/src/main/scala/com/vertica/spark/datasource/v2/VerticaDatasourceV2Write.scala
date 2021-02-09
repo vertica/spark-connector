@@ -25,7 +25,7 @@ object WriteFailed extends WriterCommitMessage
 /**
   * Builds the class for use in writing to Vertica
   */
-class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with SupportsOverwrite {
+class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with SupportsTruncate {
 /**
   * Builds the class representing a write operation to a Vertica table
   *
@@ -35,10 +35,10 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with Support
     new VerticaBatchWrite(config)
   }
 
-  override def overwrite(filters: Array[Filter]): WriteBuilder = {
-    // TODO: Support filters (when implementing save modes)
+  def truncate: WriteBuilder = {
     this
   }
+
 }
 
 /**
