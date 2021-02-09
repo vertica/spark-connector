@@ -139,9 +139,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def commit(): Either[ConnectorError, Unit] = {
+    val globPattern: String = "*.parquet"
+    val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
+
     val copyStatement = buildCopyStatement(config.tablename.getFullTableName,
       "", // TODO: Implement custom column copy list option
-      config.fileStoreConfig.address,
+      url,
       "parquet"
     )
     jdbcLayer.execute(copyStatement) match {
