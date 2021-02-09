@@ -106,7 +106,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   * @return Set of [[TableCapability]] representing the functions this source supports.
   */
   override def capabilities(): util.Set[TableCapability] =
-    Set(TableCapability.BATCH_READ).asJava  // Update this set with any capabilities this table supports
+    Set(TableCapability.BATCH_READ, TableCapability.BATCH_WRITE, TableCapability.OVERWRITE_BY_FILTER,
+      TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava  // Update this set with any capabilities this table supports
 
 /**
   * Returns a scan builder for reading from Vertica
