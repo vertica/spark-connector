@@ -17,6 +17,7 @@ import com.vertica.spark.config.WriteConfig
 import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.sources.Filter
 
 object WriteSucceeded extends WriterCommitMessage
 object WriteFailed extends WriterCommitMessage
@@ -32,6 +33,11 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with Support
   */
   override def buildForBatch(): BatchWrite = {
     new VerticaBatchWrite(config)
+  }
+
+  override def overwrite(filters: Array[Filter]): WriteBuilder = {
+    // TODO: Support filters (when implementing save modes)
+    this
   }
 }
 
