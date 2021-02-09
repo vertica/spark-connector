@@ -55,6 +55,11 @@ object TestUtils {
     stmt.execute(createTableStr)
   }
 
+  def dropTable(conn: Connection, tableName: String): Unit = {
+    val stmt = conn.createStatement()
+    stmt.execute("drop table if exists " + tableName)
+  }
+
   def createTable(conn: Connection, tableName: String, isSegmented: Boolean = true, numOfRows: Int = 10): Unit = {
     val stmt = conn.createStatement()
     stmt.execute("drop table if exists " + tableName)

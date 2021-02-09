@@ -504,6 +504,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Overwrite" in {
     val tableName = "s2vdevtest01"
+    TestUtils.dropTable(conn, tableName)
 
     // else local file path within this project.
     val datafile = "src/main/resources/datafile-100cols-100rows.csv"
@@ -531,6 +532,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows )
+
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Append" in {
@@ -587,10 +590,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     log.info(s"APPEND MODE to table:" + options("table") + "  total rows is now=" + totalRows)
     assert (totalRows == (numDfRows + rowsExisting))
+
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "create a dataframe with different types and Overwrite mode" in {
     val tableName = "s2vdevtest03"
+    TestUtils.dropTable(conn, tableName)
 
     val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
@@ -631,6 +637,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows)
+
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "create a dataframe with different types and Append mode" in {
