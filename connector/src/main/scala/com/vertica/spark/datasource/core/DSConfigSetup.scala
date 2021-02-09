@@ -231,9 +231,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
         verticaMetadata match {
-          case None =>
-            // Couldn't retrieve schema, return empty schema
-            Right(new StructType())
+          case None => Left(ConnectorError(SchemaDiscoveryError))
           case Some(metadata) => Right(metadata.schema)
         }
     }

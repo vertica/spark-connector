@@ -25,6 +25,7 @@ import java.util
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.datasource.core.DSReadConfigSetup
 import com.vertica.spark.datasource.core.DSWriteConfigSetup
+import com.vertica.spark.util.error.ConnectorErrorType.MissingMetadata
 
 import collection.JavaConverters._
 
@@ -90,7 +91,14 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
+  override def schema(): StructType = {
+    // Check if there's a valid read config with schema for the table, if not return empty schema
+    (new DSReadConfigSetup).validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
+      case Invalid(_) => new StructType()
+      case Valid(_) => this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
+    }
+
+  }
 
 /**
   * Returns a list of capabilities that the table supports.
