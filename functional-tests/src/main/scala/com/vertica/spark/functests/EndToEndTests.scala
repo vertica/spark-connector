@@ -752,12 +752,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "save a dataframe under specified schema in Append mode" in {
     var stmt = conn.createStatement()
 
-    val tableName = "s2vdevtest05"
+    val tableName = "s2vdevtest06"
     val dbschema = "S2VTestSchema"
 
     // the schema was created above in Test 06
     //stmt.executeUpdate("DROP SCHEMA IF EXISTS " + dbschema + " CASCADE")
     //stmt.executeUpdate("CREATE SCHEMA " + dbschema)
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (txt VARCHAR(1024), a INTEGER, b BOOLEAN, float FLOAT)")
 
     val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
@@ -838,7 +839,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dbschema = "public"
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
-    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (tdate DATE NOT NULL,tsymbol VARCHAR(3) NOT NULL) PARTITION BY EXTRACT (year FROM tdate)")
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + dbschema + "." + tableName + " (tdate DATE NOT NULL,tsymbol VARCHAR(3) NOT NULL) PARTITION BY EXTRACT (year FROM tdate)")
 
     val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
 

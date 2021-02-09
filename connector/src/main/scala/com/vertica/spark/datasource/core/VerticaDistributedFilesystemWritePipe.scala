@@ -30,7 +30,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           Left(ConnectorError(TableCheckError))
         }
         else {
-          Right(rs.getBoolean(1))
+          Right(rs.getInt(1) >= 1)
         }
     }
   }

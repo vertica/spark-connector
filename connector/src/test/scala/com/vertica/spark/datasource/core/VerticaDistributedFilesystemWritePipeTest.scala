@@ -50,8 +50,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true)
+    (resultSet.getInt(_: Int)).expects(1).returning(0)
+    (resultSet.getInt(_: Int)).expects(1).returning(1)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
@@ -79,8 +79,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true)
+    (resultSet.getInt(_: Int)).expects(1).returning(0)
+    (resultSet.getInt(_: Int)).expects(1).returning(1)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
@@ -105,7 +105,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
-    (resultSet.getBoolean(_: Int)).expects(1).returning(false)
+    (resultSet.getInt(_: Int)).expects(1).returning(0)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet))
@@ -148,7 +148,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getBoolean(_: Int)).expects(1).returning(true).twice()
+    (resultSet.getInt(_: Int)).expects(1).returning(1).twice()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(*).returning(Right(resultSet)).twice()
