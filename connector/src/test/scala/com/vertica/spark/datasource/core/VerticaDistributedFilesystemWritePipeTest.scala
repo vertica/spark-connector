@@ -19,10 +19,10 @@ import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{OpenWriteError, SchemaConversionError, TableCheckError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, OpenWriteError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.JdbcErrorType.SyntaxError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError, SchemaError}
-import com.vertica.spark.util.error.SchemaErrorType.MissingConversionError
+import com.vertica.spark.util.error.SchemaErrorType.{JdbcError, MissingConversionError, UnexpectedExceptionError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -243,6 +243,43 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     pipe.doPreWriteSteps() match {
       case Left(err) => assert(err.err == ViewExistsError)
       case Right(_) => fail
+    }
+  }
+
+  it should "call vertica copy upon commit" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None)
+
+    val uniqueId = "unique-id"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.execute _).expects("COPY dummy  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet").returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning()
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface , mock[SessionIdInterface])
+
+    checkResult(pipe.commit())
+  }
+
+  it should "passes error upon commit" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.execute _).expects(*).returning(Left(JDBCLayerError(SyntaxError)))
+    (jdbcLayerInterface.close _).expects().returning()
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface , mock[SessionIdInterface])
+
+    pipe.commit() match {
+      case Right(_) => fail
+      case Left(err) => assert(err.err == CommitError)
     }
   }
 }

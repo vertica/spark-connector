@@ -968,7 +968,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
   }
 
-  it should "error when hdfs_url path not exist." in {
+  it should "error when hdfs_url path does not exist." in {
     val path = "/nonexistent/path/here"
     val tableName = "s2vdevtest16"
     val dbschema = "public"
@@ -991,7 +991,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema, "failed_rows_percent_tolerance" -> "0.10",
-    "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+    "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
 
     val mode = SaveMode.Overwrite
@@ -1040,7 +1040,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> viewName, "dbschema" -> dbschema,
-    "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+    "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
     var failureMessage = ""
@@ -1083,7 +1083,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.ErrorIfExists
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
@@ -1133,7 +1133,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.ErrorIfExists
     var failureMessage = ""
@@ -1176,7 +1176,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Ignore
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
@@ -1225,7 +1225,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Ignore
     var failureMessage = ""
@@ -1290,7 +1290,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failureMessage = e.toString
     }
     println("failureMessage=" + failureMessage)
-    val expectedMessage = "Failed to connect to host"
+    val expectedMessage = "connection error"
 
     assert (failureMessage.contains(expectedMessage))
   }
@@ -1375,7 +1375,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
     var failureMessage = ""
@@ -1409,7 +1409,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
     var failureMessage = ""
@@ -1454,7 +1454,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
 
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url") + path))
+      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()

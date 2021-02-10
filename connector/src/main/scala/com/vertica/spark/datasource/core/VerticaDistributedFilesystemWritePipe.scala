@@ -177,11 +177,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       url,
       "parquet"
     )
-    jdbcLayer.execute(copyStatement) match {
+    val ret = jdbcLayer.execute(copyStatement) match {
       case Right(_) => Right(())
       case Left(err) =>
         logger.error("JDBC Error when trying to copy data into Vertica: " + err.msg)
         Left(ConnectorError(CommitError))
     }
+    jdbcLayer.close()
+    ret
   }
 }

@@ -130,4 +130,14 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
       case Left(err) => assert(err.err == MissingSchemaError)
     }
   }
+
+  it should "call pipe commit on commit" in {
+    val pipe = mock[DummyWritePipe]
+    (pipe.commit _).expects().returning(Right())
+    val pipeFactory = mock[VerticaPipeFactoryInterface]
+    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+
+    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    checkResult(writer.commitRows())
+  }
 }
