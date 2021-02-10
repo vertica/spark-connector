@@ -145,7 +145,9 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
 /**
   * Initiates final stages of writing for a failed write of this partition.
   */
-  override def abort(): Unit = {}
+  override def abort(): Unit = {
+    writer.closeWrite()
+  }
 
 /**
   * Called when all rows have been written.

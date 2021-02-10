@@ -19,7 +19,7 @@ import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{OpenWriteError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{OpenWriteError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.JdbcErrorType.SyntaxError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError, SchemaError}
 import com.vertica.spark.util.error.SchemaErrorType.MissingConversionError
@@ -43,18 +43,31 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     }
   }
 
+  private def getTableResultSet(exists: Boolean = false) : ResultSet = {
+    val resultSet = mock[ResultSet]
+    (resultSet.next _).expects().returning(true).twice()
+    (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
+    (resultSet.getInt(_: Int)).expects(1).returning(1)
+
+    resultSet
+  }
+
+  private def getViewResultSet(exists: Boolean = false) : ResultSet = {
+    val resultSet = mock[ResultSet]
+    (resultSet.next _).expects().returning(true)
+    (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
+
+    resultSet
+  }
+
   // TODO: Change this based on write modes
   it should "Create a table if it doesn't exist" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None)
 
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getInt(_: Int)).expects(1).returning(0)
-    (resultSet.getInt(_: Int)).expects(1).returning(1)
-
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
+    (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(getTableResultSet())).twice()
+    (jdbcLayerInterface.query _).expects("select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(getViewResultSet()))
     (jdbcLayerInterface.execute _).expects("CREATE table \"dummy\" (\"col1\" INTEGER)  INCLUDE SCHEMA PRIVILEGES ").returning(Right())
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -77,13 +90,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = Some(createTableStatement))
 
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getInt(_: Int)).expects(1).returning(0)
-    (resultSet.getInt(_: Int)).expects(1).returning(1)
-
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet)).twice()
+    (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(getTableResultSet())).twice()
+    (jdbcLayerInterface.query _).expects("select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(getViewResultSet()))
     (jdbcLayerInterface.execute _).expects(createTableStatement).returning(Right())
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -109,6 +118,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet))
+    (jdbcLayerInterface.query _).expects("select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(getViewResultSet()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getVerticaTypeFromSparkType _).expects(IntegerType, strlen).returning(Left(SchemaError(MissingConversionError)))
@@ -146,12 +156,11 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None)
 
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getInt(_: Int)).expects(1).returning(1).twice()
-
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.query _).expects(*).returning(Right(resultSet)).twice()
+    val tableResultSet = getTableResultSet(true)
+    (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
+    (jdbcLayerInterface.query _).expects(*).returning(Right(getViewResultSet(false)))
+    (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -211,6 +220,29 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     pipe.startPartitionWrite(uniqueId) match {
       case Right(_) => fail
       case Left(err) => assert(err.err == OpenWriteError)
+    }
+  }
+
+  it should "error if view exists with the table name" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    val tableResultSet = mock[ResultSet]
+    (tableResultSet.next _).expects().returning(true)
+    (tableResultSet.getInt(_: Int)).expects(1).returning(0)
+    (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
+    (jdbcLayerInterface.query _).expects(*).returning(Right(getViewResultSet(exists=true)))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface , mock[SessionIdInterface])
+
+    pipe.doPreWriteSteps() match {
+      case Left(err) => assert(err.err == ViewExistsError)
+      case Right(_) => fail
     }
   }
 }

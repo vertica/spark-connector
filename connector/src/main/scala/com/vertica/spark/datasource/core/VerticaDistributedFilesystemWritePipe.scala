@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
 
@@ -14,6 +14,26 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def getMetadata: Either[ConnectorError, VerticaMetadata] = Right(VerticaWriteMetadata())
 
   def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
+
+  private def viewExists(view: TableName, jdbcLayer: JdbcLayerInterface): Either[ConnectorError, Boolean] = {
+    val dbschema = view.dbschema.getOrElse("public")
+    val query = "select count(*) from views where table_schema ILIKE '" +
+     dbschema + "' and table_name ILIKE '" + view.name + "'"
+
+    jdbcLayer.query(query) match {
+      case Left(err) =>
+        logger.error("JDBC Error when checking if view exists: ", err.msg)
+        Left(ConnectorError(TableCheckError))
+      case Right(rs) =>
+        if(!rs.next()) {
+          logger.error("View check: empty result")
+          Left(ConnectorError(TableCheckError))
+        }
+        else {
+          Right(rs.getInt(1) >= 1)
+        }
+    }
+  }
 
   private def tableExists(table: TableName, jdbcLayer: JdbcLayerInterface): Either[ConnectorError, Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
@@ -111,6 +131,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     for {
       // Create the table if it doesn't exist
       tableExistsPre <- tableExists(config.tablename, jdbcLayer)
+      viewExists <- viewExists(config.tablename, jdbcLayer)
+      _ <- if(viewExists) Left(ConnectorError(ViewExistsError)) else Right(())
       _ <- if(!tableExistsPre) createTable(config) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql

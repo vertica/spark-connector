@@ -63,6 +63,7 @@ object ConnectorErrorType extends Enumeration {
   val TableCheckError: Value = Value("Error checking if table exists: connection error with JDBC.")
   val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
   val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
+  val ViewExistsError: Value = Value("Table name provided cannot refer to an existing view in Vertica.")
 }
 import ConnectorErrorType._
 
