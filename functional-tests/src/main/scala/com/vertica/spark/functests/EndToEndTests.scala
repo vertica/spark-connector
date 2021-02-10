@@ -758,7 +758,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // the schema was created above in Test 06
     //stmt.executeUpdate("DROP SCHEMA IF EXISTS " + dbschema + " CASCADE")
     //stmt.executeUpdate("CREATE SCHEMA " + dbschema)
-    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (txt VARCHAR(1024), a INTEGER, b BOOLEAN, float FLOAT)")
+    TestUtils.createTableBySQL(conn, tableName, "create table " + dbschema + "." + tableName + " (txt VARCHAR(1024), a INTEGER, b BOOLEAN, float FLOAT)")
 
     val diffTypesText = spark.sparkContext.textFile("src/main/resources/diffTypesORC.txt")
     val rowRDD = diffTypesText.map(_.split(",")).map(p => Row(p(0), p(1).toInt, p(2).toBoolean, p(3).toFloat))
@@ -1285,7 +1285,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     var failureMessage = ""
     try {
-      df.write.format("com.vertica.spark.datasource.DefaultSource").options(options).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
       case e: java.lang.Exception => failureMessage = e.toString
@@ -1381,7 +1381,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     var failureMessage = ""
     try {
-      df.write.format("com.vertica.spark.datasource.DefaultSource").options(options).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
       case e: java.lang.Exception => failureMessage = e.toString
@@ -1415,7 +1415,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     var failureMessage = ""
     try {
-      df.write.format("com.vertica.spark.datasource.DefaultSource").options(options).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
       case e: java.lang.Exception => failureMessage = e.toString
@@ -1575,7 +1575,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val options = writeOpts + ("table" -> tableName)
 
     val mode = SaveMode.Overwrite
-    df.write.format("com.vertica.spark.datasource.DefaultSource").options(options).mode(mode).save()
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
 
     var rowsLoaded = 0
     val stmt = conn.createStatement()
@@ -2031,7 +2031,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Append
     var failureMessage = ""
     try {
-      df.write.format("com.vertica.spark.datasource.DefaultSource").options(options).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
       case e: java.lang.Exception => failureMessage = e.toString
