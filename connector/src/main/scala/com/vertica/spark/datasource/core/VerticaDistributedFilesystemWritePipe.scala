@@ -135,6 +135,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def endPartitionWrite(): Either[ConnectorError, Unit] = {
+    jdbcLayer.close()
     fileStoreLayer.closeWriteParquetFile()
   }
 

@@ -135,118 +135,112 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       PartitionInfo(partitions.toArray)
     )
   }
+
+  private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+
   /**
     * Initial setup for the whole read operation. Called by driver.
     */
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
-    getMetadata match {
-      case Left(err) => return Left(err)
-      case Right(_) => ()
-    }
-
     val fileStoreConfig = config.fileStoreConfig
-
-    // Create unique directory for session
-    logger.debug("Creating unique directory: " + fileStoreConfig.address)
-    fileStoreLayer.createDir(fileStoreConfig.address) match {
-      case Left(err) =>
-        err.err match {
-          case CreateDirectoryAlreadyExistsError =>
-            logger.debug("Directory already existed: " + fileStoreConfig.address)
-          case _ =>
-            logger.error("Failed to create directory: " + fileStoreConfig.address)
-            return Left(err)
-        }
-      case Right(_) =>
-    }
-
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
     logger.debug("Export path: " + hdfsPath)
 
-    // Safety check: Remove export directory if it exists (Vertica must create this dir)
-    fileStoreLayer.removeDir(hdfsPath) match {
-      case Left(err) => return Left(err)
-      case Right(_) =>
-    }
+    val ret = for {
+      _ <- getMetadata
 
-    // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
-    // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
-    val maxFileSize = 512
-    val maxRowGroupSize = 64
+      // Create unique directory for session
+      _ = logger.debug("Creating unique directory: " + fileStoreConfig.address)
 
-    // File permissions.
-    // TODO: Add file permission option w/ default value '700'
-    val filePermissions = "777"
+      _ <- fileStoreLayer.createDir(fileStoreConfig.address) match {
+        case Left(err) =>
+          err.err match {
+            case CreateDirectoryAlreadyExistsError =>
+              logger.debug("Directory already existed: " + fileStoreConfig.address)
+              Right(())
+            case _ =>
+              logger.error("Failed to create directory: " + fileStoreConfig.address)
+              Left(err)
+          }
+        case Right(_) => Right(())
+      }
 
-    def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
 
-    val cols: String = schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
-      case Left(err) =>
-        logger.error(err.msg)
-        return Left(ConnectorError(CastingSchemaReadError))
-      case Right(columnDefs) => columnDefs.map(info => {
-        info.colType match {
-          case java.sql.Types.OTHER =>
-            val typenameNormalized = info.colTypeName.toLowerCase()
-            if (typenameNormalized.startsWith("interval") ||
-              typenameNormalized.startsWith("uuid"))
-              castToVarchar(info.label)
-            else
-              info.label
-          case java.sql.Types.TIME => castToVarchar(info.label)
-          case _ => info.label
-        }
-      }).mkString(",")
-    }
+      // Safety check: Remove export directory if it exists (Vertica must create this dir)
+      _ <- fileStoreLayer.removeDir(hdfsPath)
 
-    val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
-      "SELECT " + cols + " FROM " + config.tablename.getFullTableName + ";"
+      // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
+      // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
+      maxFileSize = 512
+      maxRowGroupSize = 64
 
-    jdbcLayer.execute(exportStatement) match {
-      case Right(_) =>
-      case Left(err) =>
-        logger.error(err.msg)
-        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
-        return Left(ConnectorError(ExportFromVerticaError))
-    }
+      // File permissions.
+      // TODO: Add file permission option w/ default value '700'
+      filePermissions = "777"
 
-    // Retrieve all parquet files created by Vertica
-    val ret = fileStoreLayer.getFileList(hdfsPath) match {
-      case Left(err) => Left(err)
-      case Right(fileList) =>
-        if(fileList.isEmpty){
+      cols: String = schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+        case Left(err) =>
+          logger.error(err.msg)
+          return Left(ConnectorError(CastingSchemaReadError))
+        case Right(columnDefs) => columnDefs.map(info => {
+          info.colType match {
+            case java.sql.Types.OTHER =>
+              val typenameNormalized = info.colTypeName.toLowerCase()
+              if (typenameNormalized.startsWith("interval") ||
+                typenameNormalized.startsWith("uuid"))
+                castToVarchar(info.label)
+              else
+                info.label
+            case java.sql.Types.TIME => castToVarchar(info.label)
+            case _ => info.label
+          }
+        }).mkString(",")
+      }
+
+      exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
+        "SELECT " + cols + " FROM " + config.tablename.getFullTableName + ";"
+
+      _ <- jdbcLayer.execute(exportStatement) match {
+        case Right(_) => Right(())
+        case Left(err) =>
+          logger.error(err.msg)
+          Left(ConnectorError(ExportFromVerticaError))
+      }
+
+      // Retrieve all parquet files created by Vertica
+      fileList <- fileStoreLayer.getFileList(hdfsPath)
+      partitionCount <- if(fileList.isEmpty){
           logger.error("Returned file list was empty, so cannot create valid partition info")
           Left(ConnectorError(PartitioningError))
         }
         else {
-          val partitionCount = config.partitionCount match {
-            case Some(count) => count
-            case None => fileList.size // Default to 1 partition / file
+          config.partitionCount match {
+            case Some(count) => Right(count)
+            case None => Right(fileList.size) // Default to 1 partition / file
           }
+      }
 
-          for {
-            fileMetadata <- fileList.map(filename => fileStoreLayer.getParquetFileMetadata(filename)).toList.sequence
-            // Get room per partition for row groups in order to split the groups up evenly
-            rowGroupRoom <- {
-              val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
-              if(totalRowGroups < partitionCount) {
-                Left(ConnectorError(PartitioningError))
-              } else  {
-                val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-                Right((totalRowGroups / partitionCount) + extraSpace)
-              }
-            }
-            partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
-          } yield partitionInfo
+      fileMetadata <- fileList.map(filename => fileStoreLayer.getParquetFileMetadata(filename)).toList.sequence
+      // Get room per partition for row groups in order to split the groups up evenly
+      rowGroupRoom <- {
+        val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
+        if(totalRowGroups < partitionCount) {
+          Left(ConnectorError(PartitioningError))
+        } else  {
+          val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+          Right((totalRowGroups / partitionCount) + extraSpace)
         }
-    }
+      }
+      partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
+    } yield partitionInfo
 
     // If there's an error, cleanup
     ret match {
       case Left(_) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
-      case Right(_) => ()
+      case _ => ()
     }
+    jdbcLayer.close()
     ret
   }
 
@@ -344,7 +338,10 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 /**
   * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
   */
-  def endPartitionRead(): Either[ConnectorError, Unit] = fileStoreLayer.closeReadParquetFile()
+  def endPartitionRead(): Either[ConnectorError, Unit] = {
+    jdbcLayer.close()
+    fileStoreLayer.closeReadParquetFile()
+  }
 
 }
 

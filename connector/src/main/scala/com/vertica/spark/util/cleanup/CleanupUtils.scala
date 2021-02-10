@@ -15,6 +15,7 @@ package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
+import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
 import org.apache.hadoop.fs.Path
@@ -55,7 +56,7 @@ trait CleanupUtilsInterface {
 object CleanupUtils extends CleanupUtilsInterface {
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
-  override def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit] = {
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = {
     // Cleanup parent dir (unique id)
     val p = new Path(s"$path")
     val parent = p.getParent
