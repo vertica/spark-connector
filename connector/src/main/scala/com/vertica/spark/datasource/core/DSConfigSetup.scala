@@ -170,7 +170,7 @@ object DSConfigSetupUtils {
         val uniqueSessionId = sessionIdProvider.getId
 
         // Create unique directory for session
-        val uniqueAddress = address + delimiter + uniqueSessionId
+        val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
 
         FileStoreConfig(uniqueAddress, logLevel)
       }

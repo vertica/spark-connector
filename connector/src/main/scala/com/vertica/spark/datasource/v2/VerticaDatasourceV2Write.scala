@@ -82,7 +82,9 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after one or more worker nodes report that they have failed.
   */
-  override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
+  override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
+    throw new Exception("Writing job aborted. Check spark worker log for specific error.")
+  }
 }
 
 /**

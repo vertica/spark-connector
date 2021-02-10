@@ -32,7 +32,7 @@ object ConnectorErrorType extends Enumeration {
   val SchemaDiscoveryError : Value = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
   val SchemaConversionError : Value = Value("Failed to convert the schema of the table.")
   val StagingFsUrlMissingError : Value = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
-  val ExportFromVerticaError : Value = Value("There was an error when attempting to export from Vertica.")
+  val ExportFromVerticaError : Value = Value("There was an error when attempting to export from Vertica: connection error with JDBC.")
   val FileSystemError : Value = Value("There was an error communicating with the intermediary filesystem.")
   val OpenWriteError : Value = Value("There was an error opening a write to the intermediary filesystem.")
   val IntermediaryStoreWriteError : Value = Value("There was an error writing to the intermediary filesystem.")
@@ -60,7 +60,7 @@ object ConnectorErrorType extends Enumeration {
   val CastingSchemaReadError : Value = Value("Failed to get table schema when checking for fields that need casts.")
   val CleanupError: Value = Value("Unexpected error when attempting to clean up files.")
   val MissingSchemaError: Value = Value("Expected to be passed in schema for this configuration. No schema found.")
-  val TableCheckError: Value = Value("Error checking if table exists.")
+  val TableCheckError: Value = Value("Error checking if table exists: connection error with JDBC.")
   val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
   val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
 }
