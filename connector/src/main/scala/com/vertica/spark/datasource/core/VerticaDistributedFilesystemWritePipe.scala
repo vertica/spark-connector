@@ -41,7 +41,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Some(sql) => sql
       case None =>
         val sb = new StringBuilder()
-        sb.append("CREATE table \"" + config.tablename.getFullTableName + "\" (")
+        sb.append("CREATE table ")
+        config.tablename.dbschema match {
+          case Some(dbschema) =>
+            sb.append("\"" + dbschema + "\"" + "." +
+              "\"" + config.tablename.name + "\"")
+          case None => sb.append("\"" + config.tablename.name + "\"")
+        }
+        sb.append(" (")
 
         var first = true
         config.schema.foreach(s => {
