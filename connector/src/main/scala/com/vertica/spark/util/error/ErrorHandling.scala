@@ -30,6 +30,7 @@ object ConnectorErrorType extends Enumeration {
   val InvalidStrlenError : Value = Value("The 'strlen' param specified is invalid. Please specify a valid integer between 1 and 32000000.")
   val InvalidPartitionCountError : Value = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer above 0.")
   val SchemaDiscoveryError : Value = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
+  val SchemaColumnListError : Value = Value("Failed to create a valid column list for the write operation due to mismatch with the existing table.")
   val SchemaConversionError : Value = Value("Failed to convert the schema of the table.")
   val StagingFsUrlMissingError : Value = Value("The 'staging_fs_url' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.")
   val ExportFromVerticaError : Value = Value("There was an error when attempting to export from Vertica: connection error with JDBC.")
@@ -112,6 +113,7 @@ object SchemaErrorType extends Enumeration {
   val MissingConversionError: Value = Value("Could not find conversion for unsupported SQL type")
   val UnexpectedExceptionError: Value = Value("Unexpected exception while retrieving schema: ")
   val JdbcError: Value = Value("JDBC failure when trying to retrieve schema")
+  val TableNotEnoughRowsError : Value = Value("Attempting to write to a table with less columns than the spark schema.")
 }
 import SchemaErrorType._
 

@@ -3,9 +3,11 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaConversionError, TableCheckError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
+
+import scala.util.control.Breaks.{break, breakable}
 
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val sessionIdProvider: SessionIdInterface = SessionId, val dataSize: Int = 1) extends VerticaPipeInterface with VerticaPipeWriteInterface {
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
@@ -168,21 +170,68 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // TODO: COMMIT AFTER CHECKING REJECTS / UPDATING STATUS
   }
 
+  /**
+   * Function to get column list to use for the operation
+   *
+   * Three options depending on configuration and specified table:
+   * - Custom column list provided by the user
+   * - Column list built for a subset of rows in the table that match our schema
+   * - Empty string, load by position rather than column list
+   */
+  private def getColumnList(): Either[ConnectorError, String] = {
+    config.copyColumnList match {
+      case Some(list) =>
+        logger.info(s"Using custom COPY column list. " + "Target table: " + config.tablename.getFullTableName +
+          ", " + "copy_column_list: " + list + ".")
+        Right("(" + list + ")")
+      case None =>
+        // Default COPY
+        // TODO: Implement this with append mode
+        // Behavior should be default to load by position if we created the table
+        // We know this by lack of custom create statement + lack of append mode
+        //if ((params("target_table_ddl") == null) && (params("save_mode") != "Append")) {
+        if(false) {
+          //If connector created the target table no need to try to load by name, except for Append mode
+          logger.info("Load by Position")
+          Right("")
+        }
+        else {
+          logger.info(s"Building default copy column list")
+          schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema) match {
+            case Left(err) =>
+              logger.error("Schema tools error: " + err.msg)
+              Left(ConnectorError(SchemaColumnListError))
+            case Right(str) => Right(str)
+          }
+        }
+    }
+  }
+
   def commit(): Either[ConnectorError, Unit] = {
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
 
-    val copyStatement = buildCopyStatement(config.tablename.getFullTableName,
-      "", // TODO: Implement custom column copy list option
-      url,
-      "parquet"
-    )
-    val ret = jdbcLayer.execute(copyStatement) match {
-      case Right(_) => Right(())
-      case Left(err) =>
-        logger.error("JDBC Error when trying to copy data into Vertica: " + err.msg)
-        Left(ConnectorError(CommitError))
-    }
+
+
+    val ret = for {
+      // Get columnList
+      columnList <- getColumnList()
+
+      copyStatement = buildCopyStatement(config.tablename.getFullTableName,
+        columnList,
+        url,
+        "parquet"
+      )
+
+      _ <- jdbcLayer.execute(copyStatement) match {
+        case Right (_) => Right (())
+          fileStoreLayer.removeDir (config.fileStoreConfig.address)
+        case Left (err) =>
+          logger.error ("JDBC Error when trying to copy data into Vertica: " + err.msg)
+          fileStoreLayer.removeDir (config.fileStoreConfig.address)
+          Left(ConnectorError (CommitError))
+      }
+    } yield ()
     jdbcLayer.close()
     ret
   }

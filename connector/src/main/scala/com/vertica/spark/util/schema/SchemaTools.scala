@@ -25,6 +25,8 @@ import com.vertica.spark.config.LogProvider
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.SchemaErrorType._
 
+import scala.util.control.Breaks.{break, breakable}
+
 case class ColumnDef(
                       label: String,
                       colType: Int,
@@ -41,6 +43,8 @@ trait SchemaToolsInterface {
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[SchemaError, Seq[ColumnDef]]
 
   def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String]
+
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String]
 }
 
 class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
@@ -179,6 +183,73 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
 
       case _ => Left(SchemaError(MissingConversionError))
     }
+  }
+
+
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String] = {
+    for {
+      columns <- getColumnInfo(jdbcLayer, tablename)
+
+      columnList <- {
+        var colCount = columns.length
+        var colsFound = 0
+        columns.foreach (column => {
+          logger.debug("Will check that target column: " + column.label + " exist in DF")
+          breakable {
+            schema.foreach(s => {
+              logger.debug("Comparing target table column: " + column.label + " with DF column: " + s.name)
+              if (s.name.equalsIgnoreCase(column.label)) {
+                colsFound += 1
+                logger.debug("Column: " + s.name + " found in target table and DF")
+                // Data types compatibility is already verified by COPY
+                // Check nullability
+                // Log a warning if target column is not null and DF column is null
+                if (!column.nullable) {
+                  if (s.nullable) {
+                    logger.warn("S2V: Column " + s.name + " is NOT NULL in target table " + tablename +
+                      " but it's nullable in the DataFrame. Rows with NULL values in column " +
+                      s.name + " will be rejected.")
+                  }
+                }
+                break
+              }
+            })
+          }
+        })
+        // Verify DataFrame column count <= target table column count
+        if (!(schema.length <= colCount)) {
+          logger.error("Error: Number of columns in the target table should be greater or equal to number of columns in the DataFrame. "
+            + " Number of columns in DataFrame: " + schema.length + ". Number of columns in the target table: "
+            + tablename + ": " + colCount)
+          Left(SchemaError(TableNotEnoughRowsError))
+        }
+        // Load by Name:
+        // if all cols in DataFrame were found in target table
+        else if (colsFound == schema.length) {
+          var columnList = ""
+          var first = true
+          schema.foreach(s => {
+            if (first) {
+              columnList = "\"" + s.name
+              first = false
+            }
+            else {
+              columnList += "\",\"" + s.name
+            }
+          })
+          columnList = "(" + columnList + "\")"
+          logger.info("Load by name. Column list: " + columnList)
+          Right(columnList)
+        }
+
+        else {
+          // Load by position:
+          // If not all column names in the schema match column names in the target table
+          logger.info("Load by Position")
+          Right("")
+        }
+      }
+    } yield columnList
   }
 }
 
