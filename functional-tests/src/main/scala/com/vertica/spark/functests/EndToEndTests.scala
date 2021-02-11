@@ -507,7 +507,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = new StructType(Array(StructField("col1", IntegerType)))
 
     val data = Seq(Row(77))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    println(df.toString())
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
@@ -537,7 +538,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     ))
 
     val data = Seq(Row(77, 77, "hello"), Row(88, 0, "goodbye"))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(2)
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
