@@ -22,7 +22,7 @@ import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, OpenWriteError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.JdbcErrorType.SyntaxError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError, SchemaError}
-import com.vertica.spark.util.error.SchemaErrorType.{JdbcError, MissingConversionError, UnexpectedExceptionError}
+import com.vertica.spark.util.error.SchemaErrorType.MissingConversionError
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -159,7 +159,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     val tableResultSet = getTableResultSet(true)
     (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
-    (jdbcLayerInterface.query _).expects(*).returning(Right(getViewResultSet(false)))
+    (jdbcLayerInterface.query _).expects(*).returning(Right(getViewResultSet()))
     (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]

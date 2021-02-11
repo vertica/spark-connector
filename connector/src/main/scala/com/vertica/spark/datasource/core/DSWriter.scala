@@ -55,7 +55,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     for {
       size <- pipe.getDataBlockSize
       _ <- pipe.startPartitionWrite(uniqueId)
-      _ = (this.blockSize = size)
+      _ = this.blockSize = size
     } yield ()
   }
 

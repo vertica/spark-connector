@@ -25,7 +25,6 @@ import java.util
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.datasource.core.DSReadConfigSetup
 import com.vertica.spark.datasource.core.DSWriteConfigSetup
-import com.vertica.spark.util.error.ConnectorErrorType.MissingMetadata
 
 import collection.JavaConverters._
 
@@ -141,7 +140,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    val config = (new DSWriteConfigSetup(schema = Some(info.schema))).validateAndGetConfig(info.options.asScala.toMap) match {
+    val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
       case Invalid(errList) =>
         val errMsgList = for (err <- errList) yield err.msg
         val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")

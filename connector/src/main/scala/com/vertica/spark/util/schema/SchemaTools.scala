@@ -191,7 +191,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
       columns <- getColumnInfo(jdbcLayer, tablename)
 
       columnList <- {
-        var colCount = columns.length
+        val colCount = columns.length
         var colsFound = 0
         columns.foreach (column => {
           logger.debug("Will check that target column: " + column.label + " exist in DF")

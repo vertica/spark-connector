@@ -7,8 +7,6 @@ import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTable
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.schema.SchemaToolsInterface
 
-import scala.util.control.Breaks.{break, breakable}
-
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val sessionIdProvider: SessionIdInterface = SessionId, val dataSize: Int = 1) extends VerticaPipeInterface with VerticaPipeWriteInterface {
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
@@ -178,7 +176,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Column list built for a subset of rows in the table that match our schema
    * - Empty string, load by position rather than column list
    */
-  private def getColumnList(): Either[ConnectorError, String] = {
+  private def getColumnList: Either[ConnectorError, String] = {
     config.copyColumnList match {
       case Some(list) =>
         logger.info(s"Using custom COPY column list. " + "Target table: " + config.tablename.getFullTableName +
@@ -215,7 +213,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     val ret = for {
       // Get columnList
-      columnList <- getColumnList()
+      columnList <- getColumnList
 
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
