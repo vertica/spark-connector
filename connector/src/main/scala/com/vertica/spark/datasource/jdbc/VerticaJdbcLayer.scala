@@ -35,6 +35,8 @@ trait JdbcLayerInterface {
     */
   def query(query: String): Either[JDBCLayerError, ResultSet]
 
+  def valid(): Either[JDBCLayerError, Unit]
+
   /**
     * Executes a statement
     *

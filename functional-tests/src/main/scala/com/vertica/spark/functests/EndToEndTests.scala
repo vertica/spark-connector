@@ -968,45 +968,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
   }
 
-  it should "error when hdfs_url path does not exist." in {
-    val path = "/nonexistent/path/here"
-    val tableName = "s2vdevtest16"
-    val dbschema = "public"
-    val data = spark.sparkContext.textFile("src/main/resources/date_test_file.txt")
-    val formatter= new java.text.SimpleDateFormat("MM/dd/yy")
-    val rowRDD = data.map(_.split(",")).map(p => {
-      val sd: java.util.Date = formatter.parse(p(0))
-      Row(new java.sql.Date(sd.getTime), p(1))
-    })
-
-    // Generate the schema based on the string of schema
-    val schema = StructType(Array(
-      StructField("tdate",DateType,nullable=true),
-      StructField("tsymbol",StringType,nullable=true)
-    ))
-
-    val df = spark.createDataFrame(rowRDD, schema)
-    val numDfRows = df.count()
-    df.show
-    println("numDfRows=" + numDfRows)
-
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema, "failed_rows_percent_tolerance" -> "0.10",
-    "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
-
-
-    val mode = SaveMode.Overwrite
-    var failureMessage = ""
-    try {
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
-    }
-    catch {
-      case e: java.lang.Exception => failureMessage = e.toString
-    }
-    println("failureMessage=" + failureMessage)
-    val expectedMessage = "HDFS path provided does not exist"
-    assert (failureMessage.contains(expectedMessage))
-  }
-
   it should "halt if table name already exists as view." in {
     val stmt = conn.createStatement()
 
@@ -1331,7 +1292,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       // Use the new user as opposed to the user for running the test
 
       val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-        "password" -> "oops")
+       "user" -> "test_user", "password" -> "oops")
       val mode = SaveMode.Overwrite
       var failureMessage = ""
       try {
@@ -1340,10 +1301,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       catch {
         case e: java.lang.Exception => failureMessage = e.toString
       }
-      println("failureMessage=" + failureMessage)
-      val expectedMessage = "FATAL: Invalid username or password"
-      println("expectedMessage=" + expectedMessage)
-      assert (failureMessage.contains(expectedMessage))
+      assert (failureMessage.nonEmpty)
     } finally {
       stmt.execute("DROP USER IF EXISTS test_user")
       stmt.close()
