@@ -17,7 +17,7 @@ import java.sql.{Connection, Date}
 
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession, types}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -500,6 +500,71 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
+  }
+
+  it should "write data to Vertica" in {
+    val tableName = "basicWriteTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write int and string rows to Vertica" in {
+    val tableName = "basicWriteTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType),
+      StructField("col2", IntegerType),
+      StructField("col3", StringType)
+    ))
+
+    val data = Seq(Row(77, 77, "hello"), Row(88, 0, "goodbye"))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      val first = rs.getInt(1)
+      if(first == 77) {
+        assert(rs.getInt(2) == 77)
+        assert(rs.getString(3) == "hello")
+      }
+      if(first == 88) {
+        assert(rs.getInt(2) == 0)
+        assert(rs.getString(3) == "goodbye")
+      }
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Overwrite" in {
