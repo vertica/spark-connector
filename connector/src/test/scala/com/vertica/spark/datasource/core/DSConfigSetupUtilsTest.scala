@@ -22,6 +22,7 @@ import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
+import org.scalactic.TolerantNumerics
 
 class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
@@ -38,6 +39,8 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
       case Valid(_) => fail
     }
   }
+
+  implicit val floatEquality = TolerantNumerics.tolerantFloatEquality(0.01f)
 
   it should "parse the logging level" in {
     var opts = Map("logging_level" -> "ERROR")
@@ -101,6 +104,24 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     opts = Map("port" -> "1.1")
     err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPort(opts))
     assert(err.toNonEmptyList.head.err == InvalidPortError)
+  }
+
+  it should "parse the failed row tolerance" in {
+    val opts = Map("failed_rows_percent_tolerance" -> "0.05")
+    val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(tol === 0.05)
+  }
+
+  it should "default to zero failed row tolerance" in {
+    val opts = Map[String, String]()
+    val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(tol === 0.00)
+  }
+
+  it should "error on invalid failed row tolerance" in {
+    val opts = Map("failed_rows_percent_tolerance" -> "1.5")
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(err.toNonEmptyList.head.err == InvalidFailedRowsTolerance)
   }
 
   it should "parse the db name" in {

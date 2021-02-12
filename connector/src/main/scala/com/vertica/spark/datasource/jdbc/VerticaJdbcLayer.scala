@@ -43,6 +43,11 @@ trait JdbcLayerInterface {
   def execute(statement: String): Either[JDBCLayerError, Unit]
 
   /**
+   * Executes a statement returning a row count
+   */
+  def executeUpdate(statement: String): Either[JDBCLayerError, Int]
+
+  /**
     * Close and cleanup
     */
   def close(): Unit
@@ -151,6 +156,20 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         try {
           stmt.execute(statement)
           Right()
+        }
+        catch{
+          case e: Throwable => Left(handleJDBCException(e))
+        }
+      case Left(err) => Left(err)
+    }
+  }
+
+  def executeUpdate(statement: String): Either[JDBCLayerError, Int] = {
+    logger.debug("Attempting to execute statement: " + statement)
+    getStatement match {
+      case Right(stmt) =>
+        try {
+          Right(stmt.executeUpdate(statement))
         }
         catch{
           case e: Throwable => Left(handleJDBCException(e))
