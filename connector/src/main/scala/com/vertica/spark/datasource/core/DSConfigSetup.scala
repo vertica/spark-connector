@@ -132,6 +132,10 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
+  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("copy_column_list").validNec
+  }
+
   // Optional param, if not specified the partition count will be decided as part of the inital steps
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
@@ -170,7 +174,7 @@ object DSConfigSetupUtils {
         val uniqueSessionId = sessionIdProvider.getId
 
         // Create unique directory for session
-        val uniqueAddress = address + delimiter + uniqueSessionId
+        val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
 
         FileStoreConfig(uniqueAddress, logLevel)
       }
@@ -262,7 +266,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
                 tableName.validNec,
                 passedInSchema.validNec,
                 DSConfigSetupUtils.getStrLen(config),
-                DSConfigSetupUtils.getTargetTableSQL(config)
+                DSConfigSetupUtils.getTargetTableSQL(config),
+                DSConfigSetupUtils.getCopyColumnList(config)
                 ).mapN(DistributedFilesystemWriteConfig)
             case None =>
               ConnectorError(MissingSchemaError).invalidNec

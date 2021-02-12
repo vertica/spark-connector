@@ -29,7 +29,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
   val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
-  val config: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = new StructType(), targetTableSql = None, strlen = 1024)
+  val config: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = new StructType(), targetTableSql = None, strlen = 1024, copyColumnList = None)
 
   val uniqueId = "unique-id"
 
@@ -129,5 +129,15 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
       case Right(_) => fail
       case Left(err) => assert(err.err == MissingSchemaError)
     }
+  }
+
+  it should "call pipe commit on commit" in {
+    val pipe = mock[DummyWritePipe]
+    (pipe.commit _).expects().returning(Right())
+    val pipeFactory = mock[VerticaPipeFactoryInterface]
+    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+
+    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    checkResult(writer.commitRows())
   }
 }
