@@ -30,7 +30,17 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           Left(ConnectorError(TableCheckError))
         }
         else {
-          Right(rs.getInt(1) >= 1)
+          try{
+            Right(rs.getInt(1) >= 1)
+          }
+          catch {
+            case e: Throwable =>
+              jdbcLayer.handleJDBCException(e)
+              Left(ConnectorError(TableCheckError))
+          }
+          finally {
+            rs.close()
+          }
         }
     }
   }
@@ -45,12 +55,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         logger.error("JDBC Error when checking if table exists: ", err.msg)
         Left(ConnectorError(TableCheckError))
       case Right(rs) =>
-        if(!rs.next()) {
-          logger.error("Table check: empty result")
-          Left(ConnectorError(TableCheckError))
+        try{
+          if(!rs.next()) {
+            logger.error("Table check: empty result")
+            Left(ConnectorError(TableCheckError))
+          }
+          else {
+            Right(rs.getInt(1) >= 1)
+          }
         }
-        else {
-          Right(rs.getInt(1) >= 1)
+        catch {
+          case e: Throwable =>
+            jdbcLayer.handleJDBCException(e)
+            Left(ConnectorError(TableCheckError))
+        }
+        finally {
+          rs.close()
         }
     }
   }

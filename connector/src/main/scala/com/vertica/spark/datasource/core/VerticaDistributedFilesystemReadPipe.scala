@@ -179,11 +179,11 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       // TODO: Add file permission option w/ default value '700'
       filePermissions = "777"
 
-      cols: String = schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+      cols <- schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
         case Left(err) =>
           logger.error(err.msg)
-          return Left(ConnectorError(CastingSchemaReadError))
-        case Right(columnDefs) => columnDefs.map(info => {
+          Left(ConnectorError(CastingSchemaReadError))
+        case Right(columnDefs) => Right(columnDefs.map(info => {
           info.colType match {
             case java.sql.Types.OTHER =>
               val typenameNormalized = info.colTypeName.toLowerCase()
@@ -195,7 +195,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
             case java.sql.Types.TIME => castToVarchar(info.label)
             case _ => info.label
           }
-        }).mkString(",")
+        }).mkString(","))
       }
 
       exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +

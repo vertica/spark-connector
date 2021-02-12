@@ -18,6 +18,14 @@ import org.apache.spark.sql.types.StructType
 
 trait WriteConfig extends GenericConfig
 
-final case class DistributedFilesystemWriteConfig(override val logLevel: Level, jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, tablename: TableName, schema: StructType, strlen: Long, targetTableSql: Option[String], copyColumnList: Option[String]) extends WriteConfig {
+final case class DistributedFilesystemWriteConfig(override val logLevel: Level,
+                                                  jdbcConfig: JDBCConfig,
+                                                  fileStoreConfig: FileStoreConfig,
+                                                  tablename: TableName,
+                                                  schema: StructType,
+                                                  strlen: Long,
+                                                  targetTableSql: Option[String],
+                                                  copyColumnList: Option[String]
+                                                 ) extends WriteConfig {
 }
 

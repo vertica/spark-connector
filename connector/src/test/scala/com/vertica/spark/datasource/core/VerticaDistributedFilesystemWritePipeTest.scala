@@ -48,6 +48,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (resultSet.next _).expects().returning(true).twice()
     (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
     (resultSet.getInt(_: Int)).expects(1).returning(1)
+    (resultSet.close _).expects().returning().twice()
 
     resultSet
   }
@@ -56,6 +57,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
+    (resultSet.close _).expects().returning()
+
 
     resultSet
   }
@@ -115,6 +118,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: Int)).expects(1).returning(0)
+    (resultSet.close _).expects().returning()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'").returning(Right(resultSet))
@@ -231,6 +235,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableResultSet = mock[ResultSet]
     (tableResultSet.next _).expects().returning(true)
     (tableResultSet.getInt(_: Int)).expects(1).returning(0)
+    (tableResultSet.close _).expects().returning()
     (jdbcLayerInterface.query _).expects(*).returning(Right(tableResultSet))
     (jdbcLayerInterface.query _).expects(*).returning(Right(getViewResultSet(exists=true)))
 

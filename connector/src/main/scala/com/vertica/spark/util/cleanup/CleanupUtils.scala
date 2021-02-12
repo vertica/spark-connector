@@ -15,7 +15,6 @@ package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
 import org.apache.hadoop.fs.Path

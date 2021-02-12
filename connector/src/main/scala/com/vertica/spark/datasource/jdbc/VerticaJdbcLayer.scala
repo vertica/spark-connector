@@ -46,6 +46,12 @@ trait JdbcLayerInterface {
     * Close and cleanup
     */
   def close(): Unit
+
+
+  /**
+   * Converts and logs JDBC exception to our error format
+   */
+  def handleJDBCException(e: Throwable): JDBCLayerError
 }
 
 /**
@@ -103,7 +109,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
     * Turns exception from driver into error and logs.
     */
-  private def handleJDBCException(e: Throwable): JDBCLayerError = {
+  def handleJDBCException(e: Throwable): JDBCLayerError = {
     e match {
       case ex: java.sql.SQLSyntaxErrorException =>
         logger.error("Syntax Error.", ex)
