@@ -22,6 +22,7 @@ import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
+import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
 import org.scalactic.TolerantNumerics
 
 class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -109,13 +110,13 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "parse the failed row tolerance" in {
     val opts = Map("failed_rows_percent_tolerance" -> "0.05")
     val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
-    assert(tol === 0.05)
+    assert(tol === 0.05f)
   }
 
   it should "default to zero failed row tolerance" in {
     val opts = Map[String, String]()
     val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
-    assert(tol === 0.00)
+    assert(tol === 0.00f)
   }
 
   it should "error on invalid failed row tolerance" in {

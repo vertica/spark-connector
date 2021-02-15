@@ -26,6 +26,7 @@ final case class DistributedFilesystemWriteConfig(override val logLevel: Level,
                                                   strlen: Long,
                                                   targetTableSql: Option[String],
                                                   copyColumnList: Option[String],
+                                                  sessionId: String,
                                                   failedRowPercentTolerance: Float
                                                  ) extends WriteConfig {
 }

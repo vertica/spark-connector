@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 
@@ -248,28 +248,31 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       }
 
       // Report save status message to user either way.
-      tolerance_message = (
+      tolerance_message =
         "Number of rows_rejected=" + rejectedCount +
           ". rows_copied=" + rowsCopied +
           ". failedRowsPercent=" + failedRowsPercent +
           ". user's failed_rows_percent_tolerance=" +
           config.failedRowPercentTolerance +
           ". passedFaultToleranceTest=" + passedFaultToleranceTest.toString
-        )
 
       _ = logger.info(s"Verifying rows saved to Vertica is within user tolerance...")
       _ = logger.info(tolerance_message + {
         if(passedFaultToleranceTest) "...PASSED.  OK to commit to database."
         else "...FAILED.  NOT OK to commit to database"
       })
-    } yield (passedFaultToleranceTest)
+
+      _ <- if(rejectedCount == 0) {
+        val dropRejectsTableStatement = "DROP TABLE IF EXISTS " + rejectsTable  + " CASCADE"
+        logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
+        jdbcLayer.execute(dropRejectsTableStatement)
+      } else Right(())
+    } yield passedFaultToleranceTest
   }
 
   def commit(): Either[ConnectorError, Unit] = {
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
-
-
 
     val ret = for {
       // Get columnList
@@ -297,10 +300,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       }
 
       passedFaultToleranceTest <- testFaultTolerance(rowsCopied, rejectsTableName) match {
-        case Right (_) => Right (())
+        case Right (b) => Right (b)
         case Left (err) =>
           logger.error ("JDBC Error when trying to determine fault tolerance" + err.msg)
           Left(ConnectorError(CommitError))
+      }
+
+      _ <- if(passedFaultToleranceTest) {
+        jdbcLayer.commit()
+        Right(())
+      }
+      else {
+        jdbcLayer.rollback()
+        Left(ConnectorError(FaultToleranceTestFail))
       }
     } yield ()
 
