@@ -278,11 +278,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Get columnList
       columnList <- getColumnList
 
-      tableName = config.tablename.getFullTableName
+      tableName = config.tablename.name
       sessionId = config.sessionId
       rejectsTableName = tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS"
 
-      copyStatement = buildCopyStatement(config.tablename.name,
+      copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
         url,
         rejectsTableName,

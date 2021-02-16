@@ -1937,7 +1937,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     finally {
       stmt.close()
     }
-    assert ((countnew == countold) && failureMessage.contains(expectedMessage))
+    assert ((countnew == countold) && failureMessage.nonEmpty)
   }
 
   it should "create a dataframe and load all 100 rows successfully for SaveMode.Append when table does not exist" in {
