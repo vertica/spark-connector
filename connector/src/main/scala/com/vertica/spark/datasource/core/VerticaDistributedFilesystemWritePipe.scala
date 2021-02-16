@@ -183,7 +183,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
 
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
-    s"COPY $targetTable $columnList FROM '$url' REJECTED DATA AS TABLE $rejectsTableName ON ANY NODE $fileFormat NO COMMIT"
+    s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
   }
 
   /**
