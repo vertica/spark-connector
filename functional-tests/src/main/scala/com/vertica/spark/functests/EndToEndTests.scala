@@ -1863,7 +1863,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("i", IntegerType, nullable=true)::Nil)
     val inputData: Seq[Any] = List(500, -500, 2147483647, -2147483648, null)
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(5)
     df.show
     println("df.schema=" + df.schema)
 

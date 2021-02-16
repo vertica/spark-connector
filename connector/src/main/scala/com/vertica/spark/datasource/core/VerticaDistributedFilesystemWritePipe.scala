@@ -282,7 +282,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       sessionId = config.sessionId
       rejectsTableName = tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS"
 
-      copyStatement = buildCopyStatement(config.tablename.getFullTableName,
+      copyStatement = buildCopyStatement(config.tablename.name,
         columnList,
         url,
         rejectsTableName,
@@ -302,16 +302,23 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       passedFaultToleranceTest <- testFaultTolerance(rowsCopied, rejectsTableName) match {
         case Right (b) => Right (b)
         case Left (err) =>
-          logger.error ("JDBC Error when trying to determine fault tolerance" + err.msg)
+          logger.error ("JDBC Error when trying to determine fault tolerance: " + err.msg)
           Left(ConnectorError(CommitError))
       }
 
       _ <- if(passedFaultToleranceTest) {
-        jdbcLayer.commit()
-        Right(())
+        jdbcLayer.commit() match {
+          case Right(()) => Right(())
+          case Left(err) =>
+            logger.error ("JDBC Error when trying to commit: " + err.msg)
+            Left(ConnectorError(CommitError))
+        }
       }
       else {
-        jdbcLayer.rollback()
+        jdbcLayer.rollback() match {
+          case Right(()) => ()
+          case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+        }
         Left(ConnectorError(FaultToleranceTestFail))
       }
     } yield ()
