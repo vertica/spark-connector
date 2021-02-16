@@ -3,7 +3,7 @@ name: Tests-CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, docker_gha ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
@@ -50,3 +52,5 @@ jobs:
           path: ./functional-tests/lib/
       - name: Run the integration tests
         run: cd functional-tests && sbt run
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
