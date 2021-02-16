@@ -43,6 +43,8 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
+      - name: Add hostfile entry for hdfs
+        run: echo "127.0.0.1 hdfs" >> /etc/hosts
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Download the build artifact
