@@ -68,6 +68,7 @@ object ConnectorErrorType extends Enumeration {
   val ViewExistsError: Value = Value("Table name provided cannot refer to an existing view in Vertica.")
   val FaultToleranceTestFail: Value = Value("Failed row count is above error tolerance threshold. Operation aborted.")
   val JobStatusCreateError: Value = Value("Failed to create job status table.")
+  val JobStatusUpdateError: Value = Value("Failed to update job status table.")
 }
 import ConnectorErrorType._
 

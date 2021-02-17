@@ -2,7 +2,7 @@ package com.vertica.spark.util.table
 
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, JobStatusCreateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
@@ -12,6 +12,7 @@ trait TableUtilsInterface {
   def tableExists(table: TableName): Either[ConnectorError, Boolean]
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
+  def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit]
 }
 
 class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
@@ -184,6 +185,36 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
           Left(ConnectorError(JobStatusCreateError))
       }
       case Right(_) => Right(())
+    }
+  }
+
+  override def updateJobStatusTable(mainTableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit] = {
+    val dbschema = mainTableName.dbschema.getOrElse("public")
+    val tablename = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
+
+    val updateStatusTable = ("UPDATE "
+      + dbschema + "." + tablename + " "
+      + "SET all_done=" + true + ","
+      + "success=" + success + ","
+      + "percent_failed_rows=" + failedRowsPercent.toString + " "
+      + "WHERE job_name='" + sessionId + "' "
+      + "AND all_done=" + false)
+
+    // update the S2V_JOB_STATUS table, and commit the final operation.
+    logger.info(s"Updating " + dbschema + "." + tablename + " next...")
+    jdbcLayer.executeUpdate(updateStatusTable) match {
+      case Left(err) =>
+        logger.error("JDBC Error when updating status table: " + err.msg)
+        Left(ConnectorError(JobStatusUpdateError))
+      case Right(c) =>
+        if(c == 1) {
+          logger.info(s"Update of " + dbschema + "." + tablename + " succeeded.")
+          Right(())
+        }
+        else {
+          logger.error(s"Status_table update failed.")
+          Left(ConnectorError(JobStatusUpdateError))
+        }
     }
   }
 }

@@ -21,8 +21,7 @@ import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, FaultToleranceTestFail, OpenWriteError, SchemaConversionError, TableCheckError, ViewExistsError}
 import com.vertica.spark.util.error.JdbcErrorType.SyntaxError
-import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError, SchemaError}
-import com.vertica.spark.util.error.SchemaErrorType.MissingConversionError
+import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.catalyst.InternalRow
@@ -42,26 +41,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
-  }
-
-  private def getTableResultSet(exists: Boolean = false) : ResultSet = {
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true).twice()
-    (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
-    (resultSet.getInt(_: Int)).expects(1).returning(1)
-    (resultSet.close _).expects().returning().twice()
-
-    resultSet
-  }
-
-  private def getViewResultSet(exists: Boolean = false) : ResultSet = {
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true)
-    (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
-    (resultSet.close _).expects().returning()
-
-
-    resultSet
   }
 
   private def getCountTableResultSet(count: Int = 0) : ResultSet = {
@@ -266,6 +245,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(tablename, jdbcConfig.username, 0.0, "id", true).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -290,6 +270,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -302,6 +283,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*).returning(Left(JDBCLayerError(SyntaxError)))
+    (jdbcLayerInterface.rollback _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning()
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -340,6 +322,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(fileStoreConfig.address).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -366,6 +349,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -392,6 +376,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -415,6 +400,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -441,6 +427,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -467,6 +454,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 

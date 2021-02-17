@@ -112,7 +112,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
   }
 
-  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, Boolean] = {
+  private case class FaultToleranceTestResult(success: Boolean, failedRowsPercent: Double)
+
+  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, FaultToleranceTestResult] = {
     // verify rejects to see if this falls within user tolerance.
     val rejectsQuery = "SELECT COUNT(*) as count FROM " + rejectsTable
     logger.info(s"Checking number of rejected rows via statement: " + rejectsQuery)
@@ -154,7 +156,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
         jdbcLayer.execute(dropRejectsTableStatement)
       } else Right(())
-    } yield passedFaultToleranceTest
+
+      testResult = FaultToleranceTestResult(passedFaultToleranceTest, failedRowsPercent)
+    } yield testResult
   }
 
   def commit(): Either[ConnectorError, Unit] = {
@@ -186,31 +190,41 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           Left(ConnectorError(CommitError))
       }
 
-      passedFaultToleranceTest <- testFaultTolerance(rowsCopied, rejectsTableName) match {
+      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName) match {
         case Right (b) => Right (b)
         case Left (err) =>
           logger.error ("JDBC Error when trying to determine fault tolerance: " + err.msg)
           Left(ConnectorError(CommitError))
       }
 
-      _ <- if(passedFaultToleranceTest) {
-          jdbcLayer.commit() match {
-            case Right(()) => Right(())
-            case Left(err) =>
-              logger.error ("JDBC Error when trying to commit: " + err.msg)
-              Left(ConnectorError(CommitError))
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.username, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+
+      _ <- if(faultToleranceResults.success) {
+            Right(())
           }
-        }
-        else {
-          jdbcLayer.rollback() match {
-            case Right(()) => ()
-            case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+          else {
+            Left(ConnectorError(FaultToleranceTestFail))
           }
-          Left(ConnectorError(FaultToleranceTestFail))
-        }
     } yield ()
 
+    // Commit or rollback
+    val result = ret match {
+      case Right(_) =>
+        jdbcLayer.commit() match {
+          case Right(()) => Right(())
+          case Left(err) =>
+            logger.error ("JDBC Error when trying to commit: " + err.msg)
+            Left(ConnectorError(CommitError))
+        }
+      case Left(err) =>
+        jdbcLayer.rollback() match {
+          case Right(()) => ()
+          case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+        }
+        Left(err)
+    }
+
     jdbcLayer.close()
-    ret
+    result
   }
 }

@@ -5,8 +5,8 @@ import java.sql.ResultSet
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.TableCheckError
-import com.vertica.spark.util.error.JDBCLayerError
+import com.vertica.spark.util.error.ConnectorErrorType.{JobStatusCreateError, TableCheckError}
+import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.error.JdbcErrorType.ConnectionError
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -19,19 +19,18 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
   private val logProvider = LogProvider(Level.ERROR)
   private val strlen = 1024
 
-  private def getTableResultSet(exists: Boolean = false) : ResultSet = {
+  private def checkResult(eith: Either[ConnectorError, Unit]): Unit= {
+    eith match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
+  }
+
+  private def getTableResultSet(exists: Boolean) : ResultSet = {
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
     (resultSet.close _).expects().returning()
-
-    resultSet
-  }
-
-  private def getCountTableResultSet(count: Int = 0) : ResultSet = {
-    val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true)
-    (resultSet.getInt(_: String)).expects("count").returning(count)
 
     resultSet
   }
@@ -167,5 +166,102 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
       case Left(err) => fail(err.msg)
       case Right(v) => ()
     }
+  }
+
+  it should "Create the job status table if it doesn't exist" in {
+    val tablename = "dummy"
+    val user = "user"
+    val sessionId = "session_id"
+
+    val jobStatusTableName = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(
+      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE '" + jobStatusTableName + "'"
+    ).returning(Right(getTableResultSet(exists = false)))
+    (jdbcLayerInterface.execute _).expects("CREATE TABLE IF NOT EXISTS \"public\".\"S2V_JOB_STATUS_USER_USER\"(target_table_schema VARCHAR(128), target_table_name VARCHAR(128), save_mode VARCHAR(128), job_name VARCHAR(256), start_time TIMESTAMPTZ, all_done BOOLEAN NOT NULL, success BOOLEAN NOT NULL, percent_failed_rows DOUBLE PRECISION)").returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId))
+  }
+
+  it should "Add initial entry to job status table" in {
+    val tablename = "dummy"
+    val user = "user"
+    val sessionId = "session_id"
+
+    val jobStatusTableName = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(
+      *
+    ).returning(Right(getTableResultSet(exists = false)))
+    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(where { stmt: String =>
+      stmt.startsWith("INSERT into public.S2V_JOB_STATUS_USER_USER VALUES ('public','dummy','OVERWRITE','session_id',")
+    }).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId))
+  }
+
+  it should "Pass on error from job status init" in {
+    val tablename = "dummy"
+    val user = "user"
+    val sessionId = "session_id"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(
+      *
+    ).returning(Right(getTableResultSet(exists = false)))
+    (jdbcLayerInterface.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId) match {
+      case Right(_) => fail
+      case Left(err) => assert(err.err == JobStatusCreateError)
+    }
+  }
+
+  it should "Update entry in job status table" in {
+    val tablename = "dummy"
+    val user = "user"
+    val sessionId = "session_id"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=true,percent_failed_rows=0.1 WHERE job_name='session_id' AND all_done=false").returning(Right(1))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.updateJobStatusTable(TableName(tablename,None), user, 0.1, sessionId, success = true))
+  }
+
+  it should "Update entry in job status table with failure" in {
+    val tablename = "dummy"
+    val user = "user"
+    val sessionId = "session_id"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=false,percent_failed_rows=0.2 WHERE job_name='session_id' AND all_done=false").returning(Right(1))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.updateJobStatusTable(TableName(tablename,None), user, 0.2, sessionId, success = false))
   }
 }
