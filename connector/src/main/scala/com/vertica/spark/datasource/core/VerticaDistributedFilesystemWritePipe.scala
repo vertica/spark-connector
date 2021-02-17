@@ -243,9 +243,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         else 1.0
       }
 
-      passedFaultToleranceTest =  {
-        if (failedRowsPercent > config.failedRowPercentTolerance.toDouble) false else true
-      }
+      passedFaultToleranceTest = failedRowsPercent <= config.failedRowPercentTolerance.toDouble
 
       // Report save status message to user either way.
       tolerance_message =
@@ -307,20 +305,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       }
 
       _ <- if(passedFaultToleranceTest) {
-        jdbcLayer.commit() match {
-          case Right(()) => Right(())
-          case Left(err) =>
-            logger.error ("JDBC Error when trying to commit: " + err.msg)
-            Left(ConnectorError(CommitError))
+          jdbcLayer.commit() match {
+            case Right(()) => Right(())
+            case Left(err) =>
+              logger.error ("JDBC Error when trying to commit: " + err.msg)
+              Left(ConnectorError(CommitError))
+          }
         }
-      }
-      else {
-        jdbcLayer.rollback() match {
-          case Right(()) => ()
-          case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+        else {
+          jdbcLayer.rollback() match {
+            case Right(()) => ()
+            case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+          }
+          Left(ConnectorError(FaultToleranceTestFail))
         }
-        Left(ConnectorError(FaultToleranceTestFail))
-      }
     } yield ()
 
     jdbcLayer.close()
