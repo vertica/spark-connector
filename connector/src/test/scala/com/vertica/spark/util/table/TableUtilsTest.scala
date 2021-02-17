@@ -182,6 +182,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.execute _).expects("CREATE TABLE IF NOT EXISTS \"public\".\"S2V_JOB_STATUS_USER_USER\"(target_table_schema VARCHAR(128), target_table_name VARCHAR(128), save_mode VARCHAR(128), job_name VARCHAR(256), start_time TIMESTAMPTZ, all_done BOOLEAN NOT NULL, success BOOLEAN NOT NULL, percent_failed_rows DOUBLE PRECISION)").returning(Right(()))
     (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
     (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -206,6 +207,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.execute _).expects(where { stmt: String =>
       stmt.startsWith("INSERT into public.S2V_JOB_STATUS_USER_USER VALUES ('public','dummy','OVERWRITE','session_id',")
     }).returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
