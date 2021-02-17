@@ -175,6 +175,7 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
       _ <- if(!tableExists) jdbcLayer.execute(createStatement) else Right(())
       _ <- if(!tableExists) jdbcLayer.execute(comment) else Right(())
       _ <- jdbcLayer.execute(insertStatement)
+      _ <- jdbcLayer.commit()
     } yield ()
 
     ret match {
