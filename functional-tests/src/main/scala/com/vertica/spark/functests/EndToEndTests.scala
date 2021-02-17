@@ -17,7 +17,7 @@ import java.sql.{Connection, Date}
 
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession, types}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
