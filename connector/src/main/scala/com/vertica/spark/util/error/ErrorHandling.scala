@@ -27,6 +27,7 @@ object ConnectorErrorType extends Enumeration {
   val PasswordMissingError : Value = Value("The 'password' param is missing. Please specify the password to use for authenticating with Vertica.")
   val TablenameMissingError : Value = Value("The 'table' param is missing. Please specify the name of the table to use.")
   val InvalidPortError : Value = Value("The 'port' param specified is invalid. Please specify a valid integer between 1 and 65535.")
+  val InvalidFailedRowsTolerance : Value = Value("The 'failed_rows_percent_tolerance' param specified is invalid. Please specify ad valid float between 0 and 1, representing a percent between 0 and 100.")
   val InvalidStrlenError : Value = Value("The 'strlen' param specified is invalid. Please specify a valid integer between 1 and 32000000.")
   val InvalidPartitionCountError : Value = Value("The 'num_partitions' param specified is invalid. Please specify a valid integer above 0.")
   val SchemaDiscoveryError : Value = Value("Failed to discover the schema of the table. There may be an issue with connectivity to the database.")
@@ -65,6 +66,7 @@ object ConnectorErrorType extends Enumeration {
   val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
   val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
   val ViewExistsError: Value = Value("Table name provided cannot refer to an existing view in Vertica.")
+  val FaultToleranceTestFail: Value = Value("Failed row count is above error tolerance threshold. Operation aborted.")
 }
 import ConnectorErrorType._
 

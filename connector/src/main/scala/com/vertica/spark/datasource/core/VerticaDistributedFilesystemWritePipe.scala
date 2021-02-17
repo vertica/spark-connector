@@ -3,11 +3,11 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
-import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
+import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 
-class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val sessionIdProvider: SessionIdInterface = SessionId, val dataSize: Int = 1) extends VerticaPipeInterface with VerticaPipeWriteInterface {
+class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val dataSize: Int = 1) extends VerticaPipeInterface with VerticaPipeWriteInterface {
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
   // No write metadata required for configuration as of yet
@@ -182,10 +182,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
 
-  def buildCopyStatement(targetTable: String, columnList: String, url: String, fileFormat: String): String = {
-    s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat"
-    // TODO: s"REJECTED DATA AS TABLE $rejectsTable NO COMMIT"
-    // TODO: COMMIT AFTER CHECKING REJECTS / UPDATING STATUS
+  def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
+    s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
   }
 
   /**
@@ -225,31 +223,104 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
   }
 
+  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, Boolean] = {
+    // verify rejects to see if this falls within user tolerance.
+    val rejectsQuery = "SELECT COUNT(*) as count FROM " + rejectsTable
+    logger.info(s"Checking number of rejected rows via statement: " + rejectsQuery)
+
+    for {
+      rs <- jdbcLayer.query(rejectsQuery)
+      rejectedCount = if (rs.next) {
+          rs.getInt("count")
+        }
+        else {
+          logger.error("Could not retrieve rejected row count.")
+          0
+        }
+
+      failedRowsPercent = {
+        if (rowsCopied > 0) rejectedCount.toDouble / (rowsCopied.toDouble + rejectedCount.toDouble)
+        else 1.0
+      }
+
+      passedFaultToleranceTest = failedRowsPercent <= config.failedRowPercentTolerance.toDouble
+
+      // Report save status message to user either way.
+      tolerance_message =
+        "Number of rows_rejected=" + rejectedCount +
+          ". rows_copied=" + rowsCopied +
+          ". failedRowsPercent=" + failedRowsPercent +
+          ". user's failed_rows_percent_tolerance=" +
+          config.failedRowPercentTolerance +
+          ". passedFaultToleranceTest=" + passedFaultToleranceTest.toString
+
+      _ = logger.info(s"Verifying rows saved to Vertica is within user tolerance...")
+      _ = logger.info(tolerance_message + {
+        if(passedFaultToleranceTest) "...PASSED.  OK to commit to database."
+        else "...FAILED.  NOT OK to commit to database"
+      })
+
+      _ <- if(rejectedCount == 0) {
+        val dropRejectsTableStatement = "DROP TABLE IF EXISTS " + rejectsTable  + " CASCADE"
+        logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
+        jdbcLayer.execute(dropRejectsTableStatement)
+      } else Right(())
+    } yield passedFaultToleranceTest
+  }
+
   def commit(): Either[ConnectorError, Unit] = {
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
-
-
 
     val ret = for {
       // Get columnList
       columnList <- getColumnList
 
+      tableName = config.tablename.name
+      sessionId = config.sessionId
+      rejectsTableName = tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS"
+
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
         url,
+        rejectsTableName,
         "parquet"
       )
 
-      _ <- jdbcLayer.execute(copyStatement) match {
-        case Right (_) => Right (())
-          fileStoreLayer.removeDir (config.fileStoreConfig.address)
+      rowsCopied <- jdbcLayer.executeUpdate(copyStatement) match {
+        case Right(v) =>
+          fileStoreLayer.removeDir(config.fileStoreConfig.address)
+          Right(v)
         case Left (err) =>
           logger.error ("JDBC Error when trying to copy data into Vertica: " + err.msg)
           fileStoreLayer.removeDir (config.fileStoreConfig.address)
-          Left(ConnectorError (CommitError))
+          Left(ConnectorError(CommitError))
       }
+
+      passedFaultToleranceTest <- testFaultTolerance(rowsCopied, rejectsTableName) match {
+        case Right (b) => Right (b)
+        case Left (err) =>
+          logger.error ("JDBC Error when trying to determine fault tolerance: " + err.msg)
+          Left(ConnectorError(CommitError))
+      }
+
+      _ <- if(passedFaultToleranceTest) {
+          jdbcLayer.commit() match {
+            case Right(()) => Right(())
+            case Left(err) =>
+              logger.error ("JDBC Error when trying to commit: " + err.msg)
+              Left(ConnectorError(CommitError))
+          }
+        }
+        else {
+          jdbcLayer.rollback() match {
+            case Right(()) => ()
+            case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+          }
+          Left(ConnectorError(FaultToleranceTestFail))
+        }
     } yield ()
+
     jdbcLayer.close()
     ret
   }
