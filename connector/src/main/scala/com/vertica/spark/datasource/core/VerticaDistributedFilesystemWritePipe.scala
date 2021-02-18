@@ -175,7 +175,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val ret = for {
 
       // Explain copy first to verify it's valid.
-      _ <- jdbcLayer.execute("EXPLAIN " + copyStatement)
+      rs <- jdbcLayer.query("EXPLAIN " + copyStatement)
+      _ = rs.close()
 
       // Real copy
       rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
