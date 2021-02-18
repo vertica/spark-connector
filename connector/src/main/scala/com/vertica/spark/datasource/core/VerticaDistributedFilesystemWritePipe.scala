@@ -1,6 +1,6 @@
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
@@ -161,6 +161,34 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield testResult
   }
 
+  /**
+   * Performs copy operations
+   *
+   * @return rows copied
+   */
+  def performCopy(copyStatement: String, tablename: TableName): Either[ConnectorError, Int]= {
+    // Empty copy to make sure a projection is created if it hasn't been yet
+    // This will error out, but create the projection
+    val emptyCopy = "COPY " + tablename.getFullTableName + " FROM '';"
+    jdbcLayer.executeUpdate(emptyCopy)
+
+    val ret = for {
+
+      // Explain copy first to verify it's valid.
+      _ <- jdbcLayer.executeUpdate("EXPLAIN " + copyStatement)
+
+      // Real copy
+      rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
+    } yield (rowsCopied)
+
+    ret match {
+      case Left(err) =>
+        logger.error("JDBC error when trying to copy: " + err)
+        Left(ConnectorError(CommitError))
+      case Right(v) => Right(v)
+    }
+  }
+
   def commit(): Either[ConnectorError, Unit] = {
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
@@ -180,15 +208,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         "parquet"
       )
 
-      rowsCopied <- jdbcLayer.executeUpdate(copyStatement) match {
-        case Right(v) =>
-          fileStoreLayer.removeDir(config.fileStoreConfig.address)
-          Right(v)
-        case Left (err) =>
-          logger.error ("JDBC Error when trying to copy data into Vertica: " + err.msg)
-          fileStoreLayer.removeDir (config.fileStoreConfig.address)
-          Left(ConnectorError(CommitError))
-      }
+      rowsCopied <- performCopy(copyStatement, config.tablename)
 
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName) match {
         case Right (b) => Right (b)
@@ -224,6 +244,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         Left(err)
     }
 
+    fileStoreLayer.removeDir(config.fileStoreConfig.address)
     jdbcLayer.close()
     result
   }
