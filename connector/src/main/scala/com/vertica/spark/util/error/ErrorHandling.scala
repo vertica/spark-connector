@@ -67,6 +67,8 @@ object ConnectorErrorType extends Enumeration {
   val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
   val ViewExistsError: Value = Value("Table name provided cannot refer to an existing view in Vertica.")
   val FaultToleranceTestFail: Value = Value("Failed row count is above error tolerance threshold. Operation aborted.")
+  val JobStatusCreateError: Value = Value("Failed to create job status table.")
+  val JobStatusUpdateError: Value = Value("Failed to update job status table.")
 }
 import ConnectorErrorType._
 

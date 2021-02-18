@@ -1,13 +1,21 @@
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, SchemaConversionError, TableCheckError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.vertica.spark.util.table.TableUtilsInterface
 
-class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val dataSize: Int = 1) extends VerticaPipeInterface with VerticaPipeWriteInterface {
+class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig,
+                                            val fileStoreLayer: FileStoreLayerInterface,
+                                            val jdbcLayer: JdbcLayerInterface,
+                                            val schemaTools: SchemaToolsInterface,
+                                            val tableUtils: TableUtilsInterface,
+                                            val dataSize: Int = 1)
+          extends VerticaPipeInterface with VerticaPipeWriteInterface {
+
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
   // No write metadata required for configuration as of yet
@@ -15,129 +23,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
 
-  private def viewExists(view: TableName, jdbcLayer: JdbcLayerInterface): Either[ConnectorError, Boolean] = {
-    val dbschema = view.dbschema.getOrElse("public")
-    val query = "select count(*) from views where table_schema ILIKE '" +
-     dbschema + "' and table_name ILIKE '" + view.name + "'"
 
-    jdbcLayer.query(query) match {
-      case Left(err) =>
-        logger.error("JDBC Error when checking if view exists: ", err.msg)
-        Left(ConnectorError(TableCheckError))
-      case Right(rs) =>
-        if(!rs.next()) {
-          logger.error("View check: empty result")
-          Left(ConnectorError(TableCheckError))
-        }
-        else {
-          try{
-            Right(rs.getInt(1) >= 1)
-          }
-          catch {
-            case e: Throwable =>
-              jdbcLayer.handleJDBCException(e)
-              Left(ConnectorError(TableCheckError))
-          }
-          finally {
-            rs.close()
-          }
-        }
-    }
-  }
-
-  private def tableExists(table: TableName, jdbcLayer: JdbcLayerInterface): Either[ConnectorError, Boolean] = {
-    val dbschema = table.dbschema.getOrElse("public")
-    val query = "select count(*) from v_catalog.tables where table_schema ILIKE '" +
-      dbschema + "' and table_name ILIKE '" + table.name + "'"
-
-    jdbcLayer.query(query) match {
-      case Left(err) =>
-        logger.error("JDBC Error when checking if table exists: ", err.msg)
-        Left(ConnectorError(TableCheckError))
-      case Right(rs) =>
-        try{
-          if(!rs.next()) {
-            logger.error("Table check: empty result")
-            Left(ConnectorError(TableCheckError))
-          }
-          else {
-            Right(rs.getInt(1) >= 1)
-          }
-        }
-        catch {
-          case e: Throwable =>
-            jdbcLayer.handleJDBCException(e)
-            Left(ConnectorError(TableCheckError))
-        }
-        finally {
-          rs.close()
-        }
-    }
-  }
-
-  private def createTable(config: DistributedFilesystemWriteConfig): Either[ConnectorError, Unit] = {
-    // Either get the user-supplied statement to create the table, or build our own
-    val statement: String = config.targetTableSql match {
-      case Some(sql) => sql
-      case None =>
-        val sb = new StringBuilder()
-        sb.append("CREATE table ")
-        config.tablename.dbschema match {
-          case Some(dbschema) =>
-            sb.append("\"" + dbschema + "\"" + "." +
-              "\"" + config.tablename.name + "\"")
-          case None => sb.append("\"" + config.tablename.name + "\"")
-        }
-        sb.append(" (")
-
-        var first = true
-        config.schema.foreach(s => {
-          logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
-          if (!first) { sb.append(",\n") }
-          first = false
-          sb.append("\"" + s.name + "\" ")
-
-          // remains empty unless we have a DecimalType with precision/scale
-          var decimal_qualifier: String = ""
-          if (s.dataType.toString.contains("DecimalType")) {
-
-            // has precision only
-            val p = "DecimalType\\((\\d+)\\)".r
-            if (s.dataType.toString.matches(p.toString)) {
-              val p(prec) = s.dataType.toString
-              decimal_qualifier = "(" + prec + ")"
-            }
-
-            // has precision and scale
-            val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
-            if (s.dataType.toString.matches(ps.toString)) {
-              val ps(prec,scale) = s.dataType.toString
-              decimal_qualifier = "(" + prec + "," + scale + ")"
-            }
-          }
-
-          val col = schemaTools.getVerticaTypeFromSparkType(s.dataType, config.strlen) match {
-            case Left(err) =>
-              logger.error("Schema error: " + err)
-              return Left(ConnectorError(SchemaConversionError))
-            case Right(datatype) => datatype + decimal_qualifier
-          }
-          sb.append(col)
-          if (!s.nullable) { sb.append(" NOT NULL") }
-        })
-
-        sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
-        sb.toString
-    }
-
-    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
-    jdbcLayer.execute(statement) match {
-      case Right(_) => Right(())
-      case Left(err) =>
-        logger.error("JDBC Error creating table: " + err)
-        Left(ConnectorError(CreateTableError))
-    }
-  }
 
   /**
    * Initial setup for the intermediate-based write operation.
@@ -150,17 +36,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // TODO: Write modes
     for {
       // Create the table if it doesn't exist
-      tableExistsPre <- tableExists(config.tablename, jdbcLayer)
-      viewExists <- viewExists(config.tablename, jdbcLayer)
+      tableExistsPre <- tableUtils.tableExists(config.tablename)
+      viewExists <- tableUtils.viewExists(config.tablename)
       _ <- if(viewExists) Left(ConnectorError(ViewExistsError)) else Right(())
-      _ <- if(!tableExistsPre) createTable(config) else Right(())
+      _ <- if(!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
-      tableExistsPost <- tableExists(config.tablename, jdbcLayer)
+      tableExistsPost <- tableUtils.tableExists(config.tablename)
       _ <- if(tableExistsPost) Right(()) else Left(ConnectorError(CreateTableError))
 
       // Create the directory to export files to
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
+
+      // Create job status table / entry
+      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId)
     } yield ()
   }
 
@@ -223,7 +112,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
   }
 
-  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, Boolean] = {
+  private case class FaultToleranceTestResult(success: Boolean, failedRowsPercent: Double)
+
+  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, FaultToleranceTestResult] = {
     // verify rejects to see if this falls within user tolerance.
     val rejectsQuery = "SELECT COUNT(*) as count FROM " + rejectsTable
     logger.info(s"Checking number of rejected rows via statement: " + rejectsQuery)
@@ -265,7 +156,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
         jdbcLayer.execute(dropRejectsTableStatement)
       } else Right(())
-    } yield passedFaultToleranceTest
+
+      testResult = FaultToleranceTestResult(passedFaultToleranceTest, failedRowsPercent)
+    } yield testResult
   }
 
   def commit(): Either[ConnectorError, Unit] = {
@@ -297,31 +190,41 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           Left(ConnectorError(CommitError))
       }
 
-      passedFaultToleranceTest <- testFaultTolerance(rowsCopied, rejectsTableName) match {
+      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName) match {
         case Right (b) => Right (b)
         case Left (err) =>
           logger.error ("JDBC Error when trying to determine fault tolerance: " + err.msg)
           Left(ConnectorError(CommitError))
       }
 
-      _ <- if(passedFaultToleranceTest) {
-          jdbcLayer.commit() match {
-            case Right(()) => Right(())
-            case Left(err) =>
-              logger.error ("JDBC Error when trying to commit: " + err.msg)
-              Left(ConnectorError(CommitError))
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.username, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+
+      _ <- if(faultToleranceResults.success) {
+            Right(())
           }
-        }
-        else {
-          jdbcLayer.rollback() match {
-            case Right(()) => ()
-            case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+          else {
+            Left(ConnectorError(FaultToleranceTestFail))
           }
-          Left(ConnectorError(FaultToleranceTestFail))
-        }
     } yield ()
 
+    // Commit or rollback
+    val result = ret match {
+      case Right(_) =>
+        jdbcLayer.commit() match {
+          case Right(()) => Right(())
+          case Left(err) =>
+            logger.error ("JDBC Error when trying to commit: " + err.msg)
+            Left(ConnectorError(CommitError))
+        }
+      case Left(err) =>
+        jdbcLayer.rollback() match {
+          case Right(()) => ()
+          case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+        }
+        Left(err)
+    }
+
     jdbcLayer.close()
-    ret
+    result
   }
 }
