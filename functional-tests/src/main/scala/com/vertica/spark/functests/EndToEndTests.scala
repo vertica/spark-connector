@@ -872,7 +872,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
   }
 
-  // TODO: Fix this test if we decide to support array/map/struct types
   it should "DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -895,7 +894,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    assert (failureMessage.contains(expectedMessage))
+    assert (failureMessage.nonEmpty)
   }
 
   it should "save date types over Vertica partitioned table." in {
@@ -1889,8 +1888,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         val d = rs.getDouble(1)
         assert(inputData.exists(p => {
             val diff = (p-d).abs
-            println("Comparing doubles: " + p + " AND " + d + ", diff: " + diff)
-            diff < (p/1000.0)
+            val threshold = (max(p,d)/1000.0).abs
+            println("Comparing doubles: " + p + " AND " + d + ", diff: " + diff + ", threshold: " + threshold)
+            diff <= threshold
           })
         )
       }
