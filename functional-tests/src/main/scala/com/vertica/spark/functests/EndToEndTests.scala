@@ -1890,7 +1890,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         assert(inputData.exists(p => {
             val diff = (p-d).abs
             println("Comparing doubles: " + p + " AND " + d + ", diff: " + diff)
-            diff < 0.1
+            diff < (p/1000.0)
           })
         )
       }
