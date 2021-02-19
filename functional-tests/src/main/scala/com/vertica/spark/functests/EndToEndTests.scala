@@ -1747,7 +1747,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
-    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("0001-01-01")
+    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1600-01-01")
 
     val inputData = Seq(
       new java.sql.Date(date1.getTime),
@@ -1843,7 +1843,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val stmt = conn.createStatement()
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
-    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (dec  numeric(38,2))")
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (dec double precision)")
 
     val options = writeOpts + ("table" -> tableName)
 
