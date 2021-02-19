@@ -386,4 +386,20 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000) == Right("VARCHAR(65000)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000) == Right("LONG VARCHAR(100000)"))
   }
+
+  it should "Return a list of column names to use for copy statement" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    val schema = new StructType(Array(StructField("col1", DateType, nullable = true), StructField("col2", IntegerType, nullable = true)))
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DATE, "DATE", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.INTEGER, "INTEGER", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 2)
+
+    val schemaTools = new SchemaTools(logProvider)
+
+    schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
+      case Left(err) => fail(err.msg)
+      case Right(str) => assert(str == "(\"col1\",\"col2\")")
+    }
+  }
 }

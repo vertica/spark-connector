@@ -15,6 +15,7 @@ package com.vertica.spark.datasource.core
 
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.v2.PushdownFilter
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 

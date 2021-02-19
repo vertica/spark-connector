@@ -25,6 +25,7 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
+import com.vertica.spark.datasource.v2.PushdownFilter
 
 
 /**
@@ -91,6 +92,13 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getFailedRowsPercentTolerance(config: Map[String, String]): ValidationResult[Float] = {
+    Try {config.getOrElse("failed_rows_percent_tolerance","0.00").toFloat} match {
+      case Success(f) => if (f >= 0.00 && f <= 1.00) f.validNec else ConnectorError(InvalidFailedRowsTolerance).invalidNec
+      case Failure(_) => ConnectorError(InvalidFailedRowsTolerance).invalidNec
+    }
+  }
+
   def getDb(config: Map[String, String]): ValidationResult[String] = {
     config.get("db") match {
       case Some(db) => db.validNec
@@ -132,6 +140,10 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
+  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("copy_column_list").validNec
+  }
+
   // Optional param, if not specified the partition count will be decided as part of the inital steps
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
@@ -163,14 +175,14 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
 
-  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level, sessionIdProvider: SessionIdInterface): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level, sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
     DSConfigSetupUtils.getStagingFsUrl(config).map(
       address => {
         val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
-        val uniqueSessionId = sessionIdProvider.getId
+        val uniqueSessionId = sessionId
 
         // Create unique directory for session
-        val uniqueAddress = address + delimiter + uniqueSessionId
+        val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
 
         FileStoreConfig(uniqueAddress, logLevel)
       }
@@ -184,6 +196,7 @@ object DSConfigSetupUtils {
 
 }
 
+
 /**
   * Implementation for parsing user option map and getting read config
   */
@@ -194,8 +207,10 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     * @return Either [[ReadConfig]] or sequence of [[ConnectorError]]
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
+    val sessionId = sessionIdInterface.getId
+
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionIdProvider = sessionIdInterface).andThen { fileStoreConfig =>
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>
         DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
             (jdbcConfig.logLevel.validNec,
             jdbcConfig.validNec,
@@ -238,6 +253,18 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   }
 }
 
+class DSReadConfigSetupWithFilters(dsReadConfigSetup: DSReadConfigSetup, pushdownFilters: List[PushdownFilter]) extends DSConfigSetupInterface[ReadConfig] {
+  override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = dsReadConfigSetup.validateAndGetConfig(config)
+  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
+    val readPipe = this.dsReadConfigSetup.pipeFactory.getReadPipe(config)
+    readPipe.doPreReadSteps() match {
+      case Right(partitionInfo) => Right(Some(partitionInfo))
+      case Left(err) => Left(err)
+    }
+  }
+  override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] = dsReadConfigSetup.getTableSchema(config)
+}
+
 /**
   * Implementation for parsing user option map and getting write config
   */
@@ -248,11 +275,11 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     * @return Either [[WriteConfig]] or [[ConnectorError]]
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
-
+    val sessionId = sessionIdInterface.getId
 
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionIdInterface).andThen { fileStoreConfig =>
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>
         DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
           schema match {
             case Some(passedInSchema) =>
@@ -262,7 +289,10 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
                 tableName.validNec,
                 passedInSchema.validNec,
                 DSConfigSetupUtils.getStrLen(config),
-                DSConfigSetupUtils.getTargetTableSQL(config)
+                DSConfigSetupUtils.getTargetTableSQL(config),
+                DSConfigSetupUtils.getCopyColumnList(config),
+                sessionId.validNec,
+                DSConfigSetupUtils.getFailedRowsPercentTolerance(config)
                 ).mapN(DistributedFilesystemWriteConfig)
             case None =>
               ConnectorError(MissingSchemaError).invalidNec
