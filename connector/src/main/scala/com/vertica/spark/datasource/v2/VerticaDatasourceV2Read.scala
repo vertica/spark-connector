@@ -70,12 +70,12 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
 
   private def wrapText(value: Any): String = {
     value match {
-      case d: java.lang.Number => {
-        if(d.doubleValue.isInfinite)
+      case d: java.lang.Number =>
+        if (d.doubleValue.isInfinite) {
           "'" + value.toString + "'"
-        else
+        } else {
           value.toString
-      }
+        }
       case _ => "'" + value.toString + "'"
     }
   }
