@@ -1863,8 +1863,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val inputData = Seq(
       1.23456,
       -1.23456,
-      12345678901234567890.123,
-      null
+      12345678901234567890.123
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
@@ -1904,10 +1903,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "Verify long type works correctly." in {
-    val tableName = "s2vdevtest38"
+    val tableName = "s2vdevtestlong"
     val schema = StructType(StructField("longs", LongType, nullable=true)::Nil)
+    val l = 9223372036854775807L
     val inputData = Seq(
-      9223372036854775807L
+      l
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
     val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
@@ -1930,7 +1930,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val rs = stmt.executeQuery(query)
       if (rs.next) {
         count += 1
-        assert(rs.getInt(1) == inputData.head)
+        assert(rs.getInt(1) == l)
       }
     }
     finally {
@@ -1940,7 +1940,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "Verify short type works correctly." in {
-    val tableName = "s2vdevtest38"
+    val tableName = "s2vdevtestshort"
     val schema = StructType(StructField("longs", ShortType, nullable=true)::Nil)
     val sh : Short = 123
     val inputData = Seq(
