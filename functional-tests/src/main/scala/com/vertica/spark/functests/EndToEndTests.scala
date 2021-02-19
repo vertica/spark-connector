@@ -18,9 +18,10 @@ import java.sql.{Connection, Date}
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
-import org.scalactic.TolerantNumerics
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalactic.TripleEquals._
+import org.scalactic.Tolerance._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
@@ -36,8 +37,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     spark.close()
     conn.close()
   }
-
-  implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.01)
 
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
@@ -1747,7 +1746,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
-    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1600-01-01")
+    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1999-01-01")
 
     val inputData = Seq(
       new java.sql.Date(date1.getTime),
@@ -1857,7 +1856,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       while (rs.next) {
         count += 1
         val d = rs.getDouble(1)
-        assert(inputData.exists(p => p === d))
+        assert(inputData.exists(p => p === d +- 0.01))
       }
     }
     finally {
