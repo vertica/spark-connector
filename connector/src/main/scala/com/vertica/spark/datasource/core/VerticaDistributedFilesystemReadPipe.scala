@@ -384,7 +384,7 @@ class VerticaDistributedFilesystemReadPipeWithFilters(
   private def addPushdownFilters(pushdownFilters: List[PushdownFilter]): String = {
     pushdownFilters match {
       case Nil => ""
-      case _ => "WHERE " + pushdownFilters.map(_.getFilterString).mkString(" AND ")
+      case _ => " WHERE " + pushdownFilters.map(_.getFilterString).mkString(" AND ")
     }
   }
 
