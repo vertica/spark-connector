@@ -899,7 +899,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "save date types over Vertica partitioned table." in {
-
     val log = Logger.getLogger(getClass.getName)
     val stmt = conn.createStatement()
 
@@ -1889,9 +1888,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         count += 1
         val d = rs.getDouble(1)
         assert(inputData.exists(p => {
-            // TODO: temp
-            println("Comparing doubles: " + p + " AND " + d)
-            p === d +- 0.1
+            val diff = (p-d).abs
+            println("Comparing doubles: " + p + " AND " + d + ", diff: " + diff)
+            diff < 0.1
           })
         )
       }
