@@ -253,18 +253,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   }
 }
 
-class DSReadConfigSetupWithFilters(dsReadConfigSetup: DSReadConfigSetup, pushdownFilters: List[PushdownFilter]) extends DSConfigSetupInterface[ReadConfig] {
-  override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = dsReadConfigSetup.validateAndGetConfig(config)
-  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
-    val readPipe = this.dsReadConfigSetup.pipeFactory.getReadPipe(config)
-    readPipe.doPreReadSteps() match {
-      case Right(partitionInfo) => Right(Some(partitionInfo))
-      case Left(err) => Left(err)
-    }
-  }
-  override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] = dsReadConfigSetup.getTableSchema(config)
-}
-
 /**
   * Implementation for parsing user option map and getting write config
   */
