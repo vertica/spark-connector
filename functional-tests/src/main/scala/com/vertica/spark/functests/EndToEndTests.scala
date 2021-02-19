@@ -1891,7 +1891,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         assert(inputData.exists(p => {
             // TODO: temp
             println("Comparing doubles: " + p + " AND " + d)
-            p === d +- 0.01
+            p === d +- 0.1
           })
         )
       }
@@ -1930,7 +1930,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val rs = stmt.executeQuery(query)
       if (rs.next) {
         count += 1
-        assert(rs.getInt(1) == l)
+        assert(rs.getLong(1) == l)
       }
     }
     finally {
