@@ -13,7 +13,7 @@
 
 package com.vertica.spark.functests
 
-import java.sql.{Connection, Date}
+import java.sql.{Connection, Date, Timestamp}
 
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
@@ -1750,7 +1750,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       null
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1785,11 +1785,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val timestampInMicros = System.currentTimeMillis() * 1000
 
     val inputData = Seq(
-      timestampInMicros,
-      null
+      Timestamp.valueOf("2014-01-01 23:00:01")
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1890,7 +1889,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       while (rs.next) {
         count += 1
         val d = rs.getDouble(1)
-        assert(inputData.exists(p => p === d +- 0.01))
+        assert(inputData.exists(p => {
+            // TODO: temp
+            println("Comparing doubles: " + p + " AND " + d)
+            p === d +- 0.01
+          })
+        )
       }
     }
     finally {
@@ -1906,7 +1910,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       9223372036854775807L
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -1943,7 +1947,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       sh
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
