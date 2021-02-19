@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date}
 
 import org.apache.log4j.Logger
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -1731,17 +1731,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "Verify writing dateType works" in {
-
-    // java.lang.ClassCastException: [I cannot be cast to java.lang.Byte at scala.runtime.BoxesRunTime.unboxToByte(BoxesRunTime.java:98)
-    // ERROR: java.sql.SQLDataException: [Vertica][VJDBC](6726) ERROR: Datatype mismatch: column 1 in the orc source [webhdfs://qadr-005:50070/I_dont_exist/S2V_job3899775852140326860/part-r-00071-e12751aa-d17a-4bed-bf86-0ea8763722f0.orc] has type TINYINT, expected varbinary(65000
-    // https://github.com/apache/spark/blob/v1.6.2/sql/catalyst/src/main/scala/org/apache/spark/sql/types/ByteType.scala
-
     val tableName = "s2vdevtest35"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
     // jeff
     val c = java.util.Calendar.getInstance()
-    c.set(1,1,1, 1,1,1)
+    c.set(1965,1,1, 1,1,1)
     val ms = new java.util.Date(c.getTimeInMillis)
 
     //hua
@@ -1763,6 +1758,45 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val stmt = conn.createStatement()
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
     TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a date)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var rowsLoaded = 0
+    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert ( rowsLoaded == numDfRows )
+  }
+
+  it should "Verify writing timestamp type works" in {
+    val tableName = "s2vdevtest35"
+    val schema = StructType(StructField("dt", TimestampType, nullable=true)::Nil)
+
+    val timestampInMicros = System.currentTimeMillis() * 1000
+
+    val inputData = Seq(
+      timestampInMicros,
+      null
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    df.show
+    df.schema
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a timestamp)")
 
     val options = writeOpts + ("table" -> tableName)
 
@@ -1835,7 +1869,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -1887,11 +1921,49 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
 
     var count = 0
-    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    val query = "SELECT * FROM \"" + options("table") + "\""
     try {
       val rs = stmt.executeQuery(query)
       if (rs.next) {
-        count = rs.getInt("cnt")
+        count += 1
+        assert(rs.getInt(1) == inputData.head)
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert (count == numDfRows)
+  }
+
+  it should "Verify short type works correctly." in {
+    val tableName = "s2vdevtest38"
+    val schema = StructType(StructField("longs", ShortType, nullable=true)::Nil)
+    val sh : Short = 123
+    val inputData = Seq(
+      sh
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema)
+    df.show
+    println("df.schema=" + df.schema)
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (shorts SMALLINT)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Append
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var count = 0
+    val query = "SELECT * FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        count += 1
+        assert(rs.getInt(1) == inputData.head)
       }
     }
     finally {
