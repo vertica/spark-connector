@@ -18,6 +18,7 @@ import java.sql.{Connection, Date}
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.scalactic.TolerantNumerics
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -35,6 +36,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     spark.close()
     conn.close()
   }
+
+  implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.01)
 
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
@@ -1589,7 +1592,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(1)
     val numDfRows = df.count()
 
 
@@ -1630,7 +1633,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val data = Seq(input1, input2)
     val schema = StructType(StructField("a_binary_type_of_col", BinaryType, nullable=true)::Nil)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
     df.show
 
     val numDfRows = df.count()
@@ -1662,7 +1665,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("a", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
 
     val stmt = conn.createStatement()
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
@@ -1701,7 +1704,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val b = -128.toByte
     val data = spark.sparkContext.parallelize(Seq(a,b))
     val rowRDD = data.map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
 
     df.show
     df.schema
@@ -1728,7 +1731,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
   }
 
-  it should "Verify dateType works" in {
+  it should "Verify writing dateType works" in {
 
     // java.lang.ClassCastException: [I cannot be cast to java.lang.Byte at scala.runtime.BoxesRunTime.unboxToByte(BoxesRunTime.java:98)
     // ERROR: java.sql.SQLDataException: [Vertica][VJDBC](6726) ERROR: Datatype mismatch: column 1 in the orc source [webhdfs://qadr-005:50070/I_dont_exist/S2V_job3899775852140326860/part-r-00071-e12751aa-d17a-4bed-bf86-0ea8763722f0.orc] has type TINYINT, expected varbinary(65000
@@ -1753,7 +1756,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       null
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1781,7 +1784,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
   }
 
-  it should "Verify decimal type works." in {
+  it should "Verify writing decimal type works." in {
 
     val tableName = "s2vdevtest37"
     val schema = StructType(StructField("dec", DecimalType(38,2), nullable=true)::Nil)
@@ -1813,6 +1816,48 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val rs = stmt.executeQuery(query)
       if (rs.next) {
         count = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert (count == numDfRows)
+  }
+
+  it should "Verify writing double type works." in {
+
+    val tableName = "s2vdevtest37"
+    val schema = StructType(StructField("dec", DoubleType, nullable=true)::Nil)
+    val inputData = Seq(
+      1.23456,
+      -1.23456,
+      12345678901234567890.123,
+      null
+    )
+
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    df.show
+    println("df.schema=" + df.schema)
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (dec  numeric(38,2))")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var count = 0
+    val query = "SELECT * FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      while (rs.next) {
+        count += 1
+        val d = rs.getDouble(1)
+        assert(inputData.exists(p => p === d))
       }
     }
     finally {
