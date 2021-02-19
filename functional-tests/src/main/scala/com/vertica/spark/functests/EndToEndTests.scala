@@ -1559,7 +1559,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
     val numDfRows = df.count()
 
 
@@ -1793,7 +1793,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
