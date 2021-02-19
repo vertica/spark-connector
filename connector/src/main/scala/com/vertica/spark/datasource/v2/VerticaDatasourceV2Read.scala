@@ -148,7 +148,8 @@ class VerticaScan(config: ReadConfig, pushdownFilters: List[PushdownFilter]) ext
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
   override def planInputPartitions(): Array[InputPartition] = {
-    (new DSReadConfigSetupWithFilters(new DSReadConfigSetup(pipeFactory = VerticaPipeFactoryWithFilters(this.pushdownFilters)), this.pushdownFilters)).performInitialSetup(config) match {
+    new DSReadConfigSetup(pipeFactory = VerticaPipeFactoryWithFilters(this.pushdownFilters))
+      .performInitialSetup(config) match {
       case Left(err) => throw new Exception(err.msg)
       case Right(opt) => opt match {
         case None =>
