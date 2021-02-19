@@ -18,6 +18,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.schema.SchemaTools
+import com.vertica.spark.util.table.TableUtils
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
@@ -47,7 +48,14 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
-        new VerticaDistributedFilesystemWritePipe(cfg, new HadoopFileStoreLayer(cfg.logProvider, Some(cfg.schema)), new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(logProvider = cfg.logProvider))
+        val schemaTools = new SchemaTools(logProvider = cfg.logProvider)
+        val jdbcLayer = new VerticaJdbcLayer(cfg.jdbcConfig)
+        new VerticaDistributedFilesystemWritePipe(cfg,
+          new HadoopFileStoreLayer(cfg.logProvider, Some(cfg.schema)),
+          jdbcLayer,
+          schemaTools,
+          new TableUtils(config.logProvider, schemaTools, jdbcLayer)
+        )
     }
   }
 }

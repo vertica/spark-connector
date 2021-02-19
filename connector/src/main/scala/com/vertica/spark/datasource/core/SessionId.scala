@@ -21,5 +21,5 @@ trait SessionIdInterface {
 }
 
 object SessionId extends SessionIdInterface {
-  def getId : String = java.util.UUID.randomUUID.toString
+  def getId : String = java.util.UUID.randomUUID.toString.replace("-", "_")
 }

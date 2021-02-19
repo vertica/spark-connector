@@ -90,7 +90,14 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   *
   * @return Spark struct type representing a table schema.
   */
-  override def schema(): StructType = this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
+  override def schema(): StructType = {
+    // Check if there's a valid read config with schema for the table, if not return empty schema
+    (new DSReadConfigSetup).validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
+      case Invalid(_) => new StructType()
+      case Valid(_) => this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
+    }
+
+  }
 
 /**
   * Returns a list of capabilities that the table supports.
@@ -98,7 +105,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   * @return Set of [[TableCapability]] representing the functions this source supports.
   */
   override def capabilities(): util.Set[TableCapability] =
-    Set(TableCapability.BATCH_READ).asJava  // Update this set with any capabilities this table supports
+    Set(TableCapability.BATCH_READ, TableCapability.BATCH_WRITE, TableCapability.OVERWRITE_BY_FILTER,
+      TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava  // Update this set with any capabilities this table supports
 
 /**
   * Returns a scan builder for reading from Vertica
@@ -132,7 +140,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    val config = (new DSWriteConfigSetup(schema = Some(info.schema))).validateAndGetConfig(info.options.asScala.toMap) match {
+    val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
       case Invalid(errList) =>
         val errMsgList = for (err <- errList) yield err.msg
         val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
