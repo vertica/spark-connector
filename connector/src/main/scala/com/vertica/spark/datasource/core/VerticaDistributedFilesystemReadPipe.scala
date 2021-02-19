@@ -21,6 +21,7 @@ import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
+import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.cleanup.{CleanupUtils, CleanupUtilsInterface, FileCleanupInfo}
 
 /**
@@ -41,39 +42,7 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Option[Map[String, Int]] = None) extends VerticaPartition
 
-
-/**
-  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
-  *
-  * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
-  */
-class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemReadConfig, val fileStoreLayer: FileStoreLayerInterface, val jdbcLayer: JdbcLayerInterface, val schemaTools: SchemaToolsInterface, val cleanupUtils: CleanupUtilsInterface = CleanupUtils, val dataSize: Int = 1)  extends VerticaPipeInterface with VerticaPipeReadInterface {
-  private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
-
-  private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
-    schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
-      case Right(schema) => Right(VerticaReadMetadata(schema))
-      case Left(errList) =>
-        for(err <- errList) logger.error(err.msg)
-        Left(ConnectorError(SchemaDiscoveryError))
-    }
-  }
-
-  /**
-    * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
-    */
-  override def getMetadata: Either[ConnectorError, VerticaMetadata] = {
-    this.config.metadata match {
-      case Some(data) => Right(data)
-      case None => this.retrieveMetadata()
-    }
-  }
-
-  /**
-    * Returns the default number of rows to read/write from this pipe at a time.
-    */
-  override def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
-
+object ReadPipeUtils {
   /**
    * Increments a count for a given file and returns an index (count - 1)
    */
@@ -135,14 +104,16 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       PartitionInfo(partitions.toArray)
     )
   }
-  /**
-    * Initial setup for the whole read operation. Called by driver.
-    */
-  override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
-    getMetadata match {
-      case Left(err) => return Left(err)
-      case Right(_) => ()
-    }
+
+  def preReadSteps(
+    config: DistributedFilesystemReadConfig,
+    fileStoreLayer: FileStoreLayerInterface,
+    jdbcLayer: JdbcLayerInterface,
+    schemaTools: SchemaToolsInterface,
+    cleanupUtils: CleanupUtilsInterface = CleanupUtils,
+    pushdownFilterString: String,
+    logger: Logger
+  ): Either[ConnectorError, PartitionInfo] = {
 
     val fileStoreConfig = config.fileStoreConfig
 
@@ -192,7 +163,7 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
     }
 
     val exportStatement = "EXPORT TO PARQUET(directory = '" + hdfsPath + "', fileSizeMB = " + maxFileSize + ", rowGroupSizeMB = " + maxRowGroupSize + ", fileMode = '" + filePermissions + "', dirMode = '" + filePermissions  + "') AS " +
-      "SELECT " + cols + " FROM " + config.tablename.getFullTableName + ";"
+      "SELECT " + cols + " FROM " + config.tablename.getFullTableName + pushdownFilterString + ";"
 
     jdbcLayer.execute(exportStatement) match {
       case Right(_) =>
@@ -239,6 +210,64 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
       case Right(_) => ()
     }
     ret
+  }
+
+}
+
+/**
+  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
+  *
+  * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
+  */
+class VerticaDistributedFilesystemReadPipe(
+                                            val config: DistributedFilesystemReadConfig,
+                                            val fileStoreLayer: FileStoreLayerInterface,
+                                            val jdbcLayer: JdbcLayerInterface,
+                                            val schemaTools: SchemaToolsInterface,
+                                            val cleanupUtils: CleanupUtilsInterface = CleanupUtils,
+                                            val dataSize: Int = 1
+                                          ) extends VerticaPipeInterface with VerticaPipeReadInterface {
+  private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+
+  private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
+    schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
+      case Right(schema) => Right(VerticaReadMetadata(schema))
+      case Left(errList) =>
+        for(err <- errList) logger.error(err.msg)
+        Left(ConnectorError(SchemaDiscoveryError))
+    }
+  }
+
+  /**
+    * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
+    */
+  override def getMetadata: Either[ConnectorError, VerticaMetadata] = {
+    this.config.metadata match {
+      case Some(data) => Right(data)
+      case None => this.retrieveMetadata()
+    }
+  }
+
+  /**
+    * Returns the default number of rows to read/write from this pipe at a time.
+    */
+  override def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
+
+  /**
+    * Initial setup for the whole read operation. Called by driver.
+    */
+  override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
+    getMetadata match {
+      case Left(err) => Left(err)
+      case Right(_) => ReadPipeUtils.preReadSteps(
+        config,
+        fileStoreLayer,
+        jdbcLayer,
+        schemaTools,
+        cleanupUtils,
+        "",
+        logger)
+    }
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
@@ -339,3 +368,37 @@ class VerticaDistributedFilesystemReadPipe(val config: DistributedFilesystemRead
 
 }
 
+class VerticaDistributedFilesystemReadPipeWithFilters(
+                                                       readPipe: VerticaDistributedFilesystemReadPipe,
+                                                       pushdownFilters: List[PushdownFilter]
+                                                     ) extends VerticaPipeInterface with VerticaPipeReadInterface {
+  private val logger: Logger = this.readPipe.config.getLogger(classOf[VerticaDistributedFilesystemReadPipeWithFilters])
+
+  private def addPushdownFilters(pushdownFilters: List[PushdownFilter]): String = {
+    pushdownFilters match {
+      case Nil => ""
+      case _ => "WHERE " + pushdownFilters.map(_.getFilterString).mkString(" AND ")
+    }
+  }
+
+  override def getMetadata: Either[ConnectorError, VerticaMetadata] = this.readPipe.getMetadata
+  override def getDataBlockSize: scala.Either[ConnectorError, Long] = this.readPipe.getDataBlockSize
+  override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
+    getMetadata match {
+      case Left(err) => Left(err)
+      case Right(_) => ReadPipeUtils.preReadSteps(
+        this.readPipe.config,
+        this.readPipe.fileStoreLayer,
+        this.readPipe.jdbcLayer,
+        this.readPipe.schemaTools,
+        this.readPipe.cleanupUtils,
+        addPushdownFilters(this.pushdownFilters),
+        logger)
+    }
+  }
+
+  def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] =
+    this.readPipe.startPartitionRead(verticaPartition)
+  def readData: Either[ConnectorError, DataBlock] = this.readPipe.readData
+  def endPartitionRead(): Either[ConnectorError, Unit] = this.readPipe.endPartitionRead()
+}

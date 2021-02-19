@@ -362,6 +362,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val r = df.filter("a = 'abc'").count
     val r2 = df.filter("a = 'cde'").count
+
+    df.filter("a = 'abc'").explain
+
     assert(r == n)
     assert(r2 == (n + 1))
 

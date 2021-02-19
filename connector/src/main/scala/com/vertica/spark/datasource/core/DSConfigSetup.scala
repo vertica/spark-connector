@@ -25,6 +25,7 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
+import com.vertica.spark.datasource.v2.PushdownFilter
 
 
 /**
@@ -184,6 +185,7 @@ object DSConfigSetupUtils {
 
 }
 
+
 /**
   * Implementation for parsing user option map and getting read config
   */
@@ -238,6 +240,18 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   }
 }
 
+class DSReadConfigSetupWithFilters(dsReadConfigSetup: DSReadConfigSetup, pushdownFilters: List[PushdownFilter]) extends DSConfigSetupInterface[ReadConfig] {
+  override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = dsReadConfigSetup.validateAndGetConfig(config)
+  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
+    val readPipe = this.dsReadConfigSetup.pipeFactory.getReadPipe(config)
+    readPipe.doPreReadSteps() match {
+      case Right(partitionInfo) => Right(Some(partitionInfo))
+      case Left(err) => Left(err)
+    }
+  }
+  override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] = dsReadConfigSetup.getTableSchema(config)
+}
+
 /**
   * Implementation for parsing user option map and getting write config
   */
@@ -248,8 +262,6 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     * @return Either [[WriteConfig]] or [[ConnectorError]]
     */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
-
-
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionIdInterface).andThen { fileStoreConfig =>
