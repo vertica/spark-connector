@@ -1888,7 +1888,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         val d = rs.getDouble(1)
         assert(inputData.exists(p => {
             val diff = (p-d).abs
-            val threshold = (max(p,d)/1000.0).abs
+            val threshold = (scala.math.max(p,d)/1000.0).abs
             println("Comparing doubles: " + p + " AND " + d + ", diff: " + diff + ", threshold: " + threshold)
             diff <= threshold
           })
