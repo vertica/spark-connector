@@ -2236,6 +2236,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "load data successfully using a custom DDL and a custom COPY column list together." in {
     val tableName = "s2vdevtest49"
 
+    TestUtils.dropTable(conn, tableName)
+
     val options = writeOpts + ("table" -> tableName,
     "target_table_ddl" -> "CREATE TABLE s2vdevtest49(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtestORC49_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest49 SEGMENTED BY HASH(key) ALL NODES;",
     "copy_column_list" -> "firstname FILLER VARCHAR(1024),middlename FILLER VARCHAR(1024),lastname FILLER VARCHAR(1024),fullname AS firstname||' '|| NVL(middlename,'') ||' '||lastname,age as NULL,hiredate,region")
@@ -2276,6 +2278,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "load data successfully using a custom DDL and a default COPY column list (Load by Name)." in {
     // Load by name requires all dataframe column names to exist in target table
     val tableName = "s2vdevtest50"
+
+    TestUtils.dropTable(conn, tableName)
 
     val options = writeOpts + ("table" -> tableName,
       "target_table_ddl" -> "CREATE TABLE s2vdevtest50(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest50_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest50 SEGMENTED BY HASH(key) ALL NODES;")
@@ -2323,6 +2327,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "load data successfully using a custom DDL and a default COPY column list (Load by Position)." in {
     // Load by position requires number of columns in the DF equals to number of columns in target table
     val tableName = "s2vdevtest51"
+
+    TestUtils.dropTable(conn, tableName)
 
     val options = writeOpts + ("table" -> tableName,
       "target_table_ddl" -> "CREATE TABLE s2vdevtest51(FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest51_p(fullname, hiredate) AS SELECT fullname, hiredate FROM s2vdevtest51 SEGMENTED BY HASH(fullname) ALL NODES;"
