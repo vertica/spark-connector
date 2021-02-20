@@ -339,17 +339,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
       .options(readOpts + ("table" -> tableName1)).load()
 
-    val dfFiltered1 = df.filter("a < cast('2001-01-01' as DATE)")
-
-    val r = dfFiltered1.count
+    val dfFiltered1 = df.filter("a < '2001-01-01'")
 
     assert(dfFiltered1
       .queryExecution
       .executedPlan
       .toString()
       .contains("Filter"))
-
-    assert(r == n)
 
     stmt.execute("drop table " + tableName1)
   }
