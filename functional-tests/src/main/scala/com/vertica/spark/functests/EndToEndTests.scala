@@ -2203,7 +2203,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableDDL = "CREATE TABLE " + tableName + "(age1 integer, age2 integer, age3 integer, age4 integer, age5 integer)"
 
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> tableDDL
+      "target_table_sql" -> tableDDL
       )
 
     // Spark won't allow you to save a DF with duplicate column names in parquet format
@@ -2239,7 +2239,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     val options = writeOpts + ("table" -> tableName,
-    "target_table_ddl" -> "CREATE TABLE s2vdevtest49(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtestORC49_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest49 SEGMENTED BY HASH(key) ALL NODES;",
+    "target_table_sql" -> "CREATE TABLE s2vdevtest49(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtestORC49_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest49 SEGMENTED BY HASH(key) ALL NODES;",
     "copy_column_list" -> "firstname FILLER VARCHAR(1024),middlename FILLER VARCHAR(1024),lastname FILLER VARCHAR(1024),fullname AS firstname||' '|| NVL(middlename,'') ||' '||lastname,age as NULL,hiredate,region")
 
     val schema = StructType(Array(
@@ -2282,7 +2282,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> "CREATE TABLE s2vdevtest50(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest50_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest50 SEGMENTED BY HASH(key) ALL NODES;")
+      "target_table_sql" -> "CREATE TABLE s2vdevtest50(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest50_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest50 SEGMENTED BY HASH(key) ALL NODES;")
 
     // It will load by name because all dataframe column names match target column names.
     // Columns order doesn't matter.
@@ -2331,7 +2331,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> "CREATE TABLE s2vdevtest51(FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest51_p(fullname, hiredate) AS SELECT fullname, hiredate FROM s2vdevtest51 SEGMENTED BY HASH(fullname) ALL NODES;"
+      "target_table_sql" -> "CREATE TABLE s2vdevtest51(FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest51_p(fullname, hiredate) AS SELECT fullname, hiredate FROM s2vdevtest51 SEGMENTED BY HASH(fullname) ALL NODES;"
     )
 
     // It will load by position because not all dataframe column names match target column names.
@@ -2478,12 +2478,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (totalRows == numDfRows)
   }
 
-  it should "fail to save a DF if target_table_ddl doesn't generate the right table" in {
+  it should "fail to save a DF if target_table_sql doesn't generate the right table" in {
     // table name is inconsistent with the DDL
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TABLE peopleTable (name varchar(65000) not null, age integer not null);"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl
+      "target_table_sql" -> target_table_ddl
       )
 
     val rows = spark.sparkContext.parallelize(Array(
@@ -2518,7 +2518,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TBLE targetTable (name varchar(65000) not null, age integer not null);"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl
+      "target_table_sql" -> target_table_ddl
     )
 
     val rows = spark.sparkContext.parallelize(Array(
@@ -2550,7 +2550,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val target_table_ddl = "CREATE TABLE " + tableName + "(a int, b varchar(100))"
     val copy_column_list = "(b, a)"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl,
+      "target_table_sql" -> target_table_ddl,
       "copy_column_list" -> copy_column_list
       )
 
@@ -2585,7 +2585,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TABLE " + tableName + "(name varchar(65000), age integer, flag boolean, area varchar(50))"
     val options = writeOpts + ("table" -> tableName,
-    "target_table_ddl" -> target_table_ddl)
+    "target_table_sql" -> target_table_ddl)
 
     val rows = spark.sparkContext.parallelize(Array(
       Row("name1", 30, "west")
