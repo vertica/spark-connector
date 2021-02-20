@@ -25,7 +25,6 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
-import com.vertica.spark.datasource.v2.PushdownFilter
 
 
 /**
