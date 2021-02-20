@@ -1974,6 +1974,37 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (count == numDfRows)
   }
 
+  it should "Fail if schema doesn't match table data type" in {
+    val tableName = "s2vdevtestshort"
+    val schema = StructType(StructField("fl", ShortType, nullable=true)::Nil)
+    val sh : Short = 123
+    val inputData = Seq(
+      sh
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    df.show
+    println("df.schema=" + df.schema)
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (fl FLOAT)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Append
+
+    var failureMessage = ""
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+    }
+    catch {
+      case e: java.lang.Exception => failureMessage = e.toString
+    }
+    println("failureMessage=" + failureMessage)
+    assert (failureMessage.nonEmpty)
+  }
+
   it should "Reject 1/5 of rows, and hence not pass failed_rows_percent_tolerance.  Append mode." in {
 
     val tableName = "s2vdevtest39"
