@@ -16,7 +16,6 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
-import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
 
