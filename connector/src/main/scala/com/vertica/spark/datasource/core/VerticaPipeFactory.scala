@@ -59,23 +59,3 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
     }
   }
 }
-
-case class VerticaPipeFactoryWithFilters(pushdownFilters: List[PushdownFilter]) extends VerticaPipeFactoryInterface {
-  override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
-    config match {
-      case cfg: DistributedFilesystemReadConfig =>
-        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
-          case Some(metadata) => Some(metadata.schema)
-          case None => None
-        })
-        new VerticaDistributedFilesystemReadPipeWithFilters(
-          new VerticaDistributedFilesystemReadPipe(
-            cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider)),
-          pushdownFilters)
-    }
-  }
-
-  override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface =
-    VerticaPipeFactory.getWritePipe(config)
-}
-

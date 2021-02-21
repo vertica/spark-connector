@@ -324,32 +324,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "not push down filter" in {
-    val tableName1 = "dftest1"
-    val stmt = conn.createStatement()
-    val n = 3
-
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a DATE, b float)")
-
-    var insert = "insert into "+ tableName1 + " values('1977-02-01', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-    insert = "insert into "+ tableName1 + " values('2077-02-01', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n + 1)
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-      .options(readOpts + ("table" -> tableName1)).load()
-
-    val dfFiltered1 = df.filter("a < '2001-01-01'")
-
-    assert(dfFiltered1
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("Filter"))
-
-    stmt.execute("drop table " + tableName1)
-  }
-
   it should "load data from Vertica with a DATE-type pushdown filter" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
@@ -443,7 +417,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
     val r = dr.count
 
-    assert(dr
+    assert(!dr
       .queryExecution
       .executedPlan
       .toString()

@@ -17,7 +17,7 @@ import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils, VerticaPipeFactoryWithFilters}
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
 import org.apache.spark.sql.sources.Filter
@@ -44,7 +44,8 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
-    new VerticaScan(config, this.pushFilters)
+    config.setPushdownFilters(this.pushFilters)
+    new VerticaScan(config)
   }
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
@@ -76,7 +77,7 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
   *
   * Extends mixin class to represent type of read. Options are Batch or Stream, we are doing a batch read.
   */
-class VerticaScan(config: ReadConfig, pushdownFilters: List[PushdownFilter]) extends Scan with Batch {
+class VerticaScan(config: ReadConfig) extends Scan with Batch {
   /**
   * Schema of scan (can be different than full table schema)
   */
@@ -97,7 +98,7 @@ class VerticaScan(config: ReadConfig, pushdownFilters: List[PushdownFilter]) ext
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
   override def planInputPartitions(): Array[InputPartition] = {
-    new DSReadConfigSetup(pipeFactory = VerticaPipeFactoryWithFilters(this.pushdownFilters))
+    new DSReadConfigSetup()
       .performInitialSetup(config) match {
       case Left(err) => throw new Exception(err.msg)
       case Right(opt) => opt match {

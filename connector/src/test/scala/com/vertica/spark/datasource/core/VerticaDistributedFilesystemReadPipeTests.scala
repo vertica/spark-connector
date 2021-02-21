@@ -749,9 +749,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (mockSchemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(List(columnDef)))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
-    val pipeWithFilters = new VerticaDistributedFilesystemReadPipeWithFilters(pipe, List())
 
-    pipeWithFilters.doPreReadSteps() match {
+    pipe.doPreReadSteps() match {
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
@@ -786,10 +785,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val pipe = new VerticaDistributedFilesystemReadPipe(
       config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
-    val pipeWithFilters = new VerticaDistributedFilesystemReadPipeWithFilters(pipe, List(
+
+    config.setPushdownFilters(List(
       PushFilter(EqualTo("col1", 2), "(\"col1\" = 2)")))
 
-    pipeWithFilters.doPreReadSteps() match {
+    pipe.doPreReadSteps() match {
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
@@ -825,11 +825,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val pipe = new VerticaDistributedFilesystemReadPipe(
       config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
-    val pipeWithFilters = new VerticaDistributedFilesystemReadPipeWithFilters(pipe, List(
+
+    config.setPushdownFilters(List(
       PushFilter(LessThan("col1", 6), "(\"col1\" < 6)"),
       PushFilter(GreaterThan("col1", 2), "(\"col1\" > 2)")))
 
-    pipeWithFilters.doPreReadSteps() match {
+    pipe.doPreReadSteps() match {
       case Left(err) => fail(err.msg)
       case Right(_) => ()
     }
