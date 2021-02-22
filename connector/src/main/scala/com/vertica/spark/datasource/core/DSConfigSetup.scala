@@ -263,8 +263,6 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
     val sessionId = sessionIdInterface.getId
 
-
-
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>

@@ -340,8 +340,24 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val r = df.filter("a < cast('2001-01-01' as DATE)").count
-    val r2 = df.filter("a > cast('2001-01-01' as DATE)").count
+    val dfFiltered1 = df.filter("a < cast('2001-01-01' as DATE)")
+    val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
+
+    val r = dfFiltered1.count
+    val r2 = dfFiltered2.count
+
+    assert(!dfFiltered1
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(!dfFiltered2
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
     assert(r == n)
     assert(r2 == (n + 1))
 
@@ -362,16 +378,31 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val r = df.filter("a = 'abc'").count
-    val r2 = df.filter("a = 'cde'").count
+    val dfFiltered1 = df.filter("a = 'abc'")
+    val dfFiltered2 = df.filter("a = 'cde'")
+
+    val r = dfFiltered1.count
+    val r2 = dfFiltered2.count
+
+    assert(!dfFiltered1
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(!dfFiltered2
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
     assert(r == n)
     assert(r2 == (n + 1))
 
     stmt.execute("drop table " + tableName1)
   }
 
-  // TODO: Re-enable when pushdown is supported
-  ignore should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
+  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
     val n = 3
@@ -387,6 +418,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
     val r = dr.count
+
+    assert(!dr
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
     assert(r == n + 1)
 
     dr.show

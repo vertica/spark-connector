@@ -14,7 +14,25 @@
 package com.vertica.spark.config
 
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.v2.PushdownFilter
 
-trait ReadConfig extends GenericConfig
+trait ReadConfig extends GenericConfig {
+  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit
+}
 
-final case class DistributedFilesystemReadConfig(override val logLevel: Level, jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, tablename: TableName, partitionCount: Option[Int], metadata: Option[VerticaReadMetadata]) extends ReadConfig
+final case class DistributedFilesystemReadConfig(
+                                                  override val logLevel: Level,
+                                                  jdbcConfig: JDBCConfig,
+                                                  fileStoreConfig: FileStoreConfig,
+                                                  tablename: TableName,
+                                                  partitionCount: Option[Int],
+                                                  metadata: Option[VerticaReadMetadata]
+                                                ) extends ReadConfig {
+  private var pushdownFilters: List[PushdownFilter] = Nil
+
+  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
+    this.pushdownFilters = pushdownFilters
+  }
+
+  def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
+}

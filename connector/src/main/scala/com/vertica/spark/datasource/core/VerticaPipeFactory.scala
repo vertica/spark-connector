@@ -58,4 +58,3 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
     }
   }
 }
-
