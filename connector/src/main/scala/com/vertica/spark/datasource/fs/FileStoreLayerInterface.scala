@@ -431,7 +431,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     val path = new Path(s"$filename")
     val fs = path.getFileSystem(hdfsConfig)
     val result = fsAction(fs, path)
-    fs.close()
     result
   }
 }

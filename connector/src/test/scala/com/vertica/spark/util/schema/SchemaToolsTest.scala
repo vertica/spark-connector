@@ -42,7 +42,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
 
-    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Right(resultSet))
+    (jdbcLayer.query _).expects("SELECT * FROM \"" + tablename + "\" WHERE 1=0").returning(Right(resultSet))
     (resultSet.getMetaData _).expects().returning(rsmd)
     (resultSet.close _).expects()
 
@@ -349,7 +349,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.query _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
       case Left(errList) =>

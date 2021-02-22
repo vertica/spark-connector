@@ -13,13 +13,15 @@
 
 package com.vertica.spark.functests
 
-import java.sql.{Connection, Date}
+import java.sql.{Connection, Date, Timestamp}
 
 import org.apache.log4j.Logger
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalactic.TripleEquals._
+import org.scalactic.Tolerance._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
@@ -870,7 +872,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
   }
 
-  // TODO: Fix this test if we decide to support array/map/struct types
   it should "DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -893,11 +894,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    assert (failureMessage.contains(expectedMessage))
+    assert (failureMessage.nonEmpty)
   }
 
   it should "save date types over Vertica partitioned table." in {
-
     val log = Logger.getLogger(getClass.getName)
     val stmt = conn.createStatement()
 
@@ -1412,7 +1412,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("failureMessage=" + failureMessage)
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    assert (failureMessage.contains(expectedMessage))
+    assert (failureMessage.nonEmpty)
   }
 
   it should "Should not try to save an empty dataframe." in {
@@ -1559,7 +1559,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
     val numDfRows = df.count()
 
 
@@ -1589,7 +1589,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(1)
     val numDfRows = df.count()
 
 
@@ -1630,7 +1630,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val data = Seq(input1, input2)
     val schema = StructType(StructField("a_binary_type_of_col", BinaryType, nullable=true)::Nil)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
     df.show
 
     val numDfRows = df.count()
@@ -1662,7 +1662,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("a", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
 
     val stmt = conn.createStatement()
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
@@ -1701,7 +1701,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val b = -128.toByte
     val data = spark.sparkContext.parallelize(Seq(a,b))
     val rowRDD = data.map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema)
+    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
 
     df.show
     df.schema
@@ -1728,23 +1728,18 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
   }
 
-  it should "Verify dateType works" in {
-
-    // java.lang.ClassCastException: [I cannot be cast to java.lang.Byte at scala.runtime.BoxesRunTime.unboxToByte(BoxesRunTime.java:98)
-    // ERROR: java.sql.SQLDataException: [Vertica][VJDBC](6726) ERROR: Datatype mismatch: column 1 in the orc source [webhdfs://qadr-005:50070/I_dont_exist/S2V_job3899775852140326860/part-r-00071-e12751aa-d17a-4bed-bf86-0ea8763722f0.orc] has type TINYINT, expected varbinary(65000
-    // https://github.com/apache/spark/blob/v1.6.2/sql/catalyst/src/main/scala/org/apache/spark/sql/types/ByteType.scala
-
+  it should "Verify writing dateType works" in {
     val tableName = "s2vdevtest35"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
     // jeff
     val c = java.util.Calendar.getInstance()
-    c.set(1,1,1, 1,1,1)
+    c.set(1965,1,1, 1,1,1)
     val ms = new java.util.Date(c.getTimeInMillis)
 
     //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
-    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("0001-01-01")
+    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1999-01-01")
 
     val inputData = Seq(
       new java.sql.Date(date1.getTime),
@@ -1753,7 +1748,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       null
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1781,7 +1776,45 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
   }
 
-  it should "Verify decimal type works." in {
+  it should "Verify writing timestamp type works" in {
+    val tableName = "s2vdevtest35"
+    val schema = StructType(StructField("dt", TimestampType, nullable=true)::Nil)
+
+    val timestampInMicros = System.currentTimeMillis() * 1000
+
+    val inputData = Seq(
+      Timestamp.valueOf("2014-01-01 23:00:01")
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    df.show
+    df.schema
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a timestamp)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var rowsLoaded = 0
+    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert ( rowsLoaded == numDfRows )
+  }
+
+  it should "Verify writing decimal type works." in {
 
     val tableName = "s2vdevtest37"
     val schema = StructType(StructField("dec", DecimalType(38,2), nullable=true)::Nil)
@@ -1793,7 +1826,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -1821,14 +1854,61 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (count == numDfRows)
   }
 
-  it should "Verify long type works correctly." in {
-    val tableName = "s2vdevtest38"
-    val schema = StructType(StructField("longs", LongType, nullable=true)::Nil)
+  it should "Verify writing double type works." in {
+
+    val tableName = "s2vdevtest37"
+    val schema = StructType(StructField("dec", DoubleType, nullable=true)::Nil)
     val inputData = Seq(
-      9223372036854775807L
+      1.23456,
+      -1.23456,
+      12345678901234567890.123
+    )
+
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    df.show
+    println("df.schema=" + df.schema)
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (dec double precision)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var count = 0
+    val query = "SELECT * FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      while (rs.next) {
+        count += 1
+        val d = rs.getDouble(1)
+        assert(inputData.exists(p => {
+            val diff = (p-d).abs
+            val threshold = (scala.math.max(p,d)/1000.0).abs
+            diff <= threshold
+          })
+        )
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert (count == numDfRows)
+  }
+
+  it should "Verify long type works correctly." in {
+    val tableName = "s2vdevtestlong"
+    val schema = StructType(StructField("longs", LongType, nullable=true)::Nil)
+    val l = 9223372036854775807L
+    val inputData = Seq(
+      l
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -1843,17 +1923,86 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
 
     var count = 0
-    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    val query = "SELECT * FROM \"" + options("table") + "\""
     try {
       val rs = stmt.executeQuery(query)
       if (rs.next) {
-        count = rs.getInt("cnt")
+        count += 1
+        assert(rs.getLong(1) == l)
       }
     }
     finally {
       stmt.close()
     }
     assert (count == numDfRows)
+  }
+
+  it should "Verify short type works correctly." in {
+    val tableName = "s2vdevtestshort"
+    val schema = StructType(StructField("longs", ShortType, nullable=true)::Nil)
+    val sh : Short = 123
+    val inputData = Seq(
+      sh
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    df.show
+    println("df.schema=" + df.schema)
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (shorts SMALLINT)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Append
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var count = 0
+    val query = "SELECT * FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        count += 1
+        assert(rs.getInt(1) == inputData.head)
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert (count == numDfRows)
+  }
+
+  it should "Fail if schema doesn't match table data type" in {
+    val tableName = "s2vdevtestshort"
+    val schema = StructType(StructField("fl", ShortType, nullable=true)::Nil)
+    val sh : Short = 123
+    val inputData = Seq(
+      sh
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    df.show
+    println("df.schema=" + df.schema)
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (fl FLOAT)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Append
+
+    var failureMessage = ""
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+    }
+    catch {
+      case e: java.lang.Exception => failureMessage = e.toString
+    }
+    println("failureMessage=" + failureMessage)
+    assert (failureMessage.nonEmpty)
   }
 
   it should "Reject 1/5 of rows, and hence not pass failed_rows_percent_tolerance.  Append mode." in {
@@ -2054,7 +2203,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableDDL = "CREATE TABLE " + tableName + "(age1 integer, age2 integer, age3 integer, age4 integer, age5 integer)"
 
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> tableDDL
+      "target_table_sql" -> tableDDL
       )
 
     // Spark won't allow you to save a DF with duplicate column names in parquet format
@@ -2087,8 +2236,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "load data successfully using a custom DDL and a custom COPY column list together." in {
     val tableName = "s2vdevtest49"
 
+    TestUtils.dropTable(conn, tableName)
+
     val options = writeOpts + ("table" -> tableName,
-    "target_table_ddl" -> "CREATE TABLE s2vdevtest49(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtestORC49_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest49 SEGMENTED BY HASH(key) ALL NODES;",
+    "target_table_sql" -> "CREATE TABLE s2vdevtest49(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtestORC49_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest49 SEGMENTED BY HASH(key) ALL NODES;",
     "copy_column_list" -> "firstname FILLER VARCHAR(1024),middlename FILLER VARCHAR(1024),lastname FILLER VARCHAR(1024),fullname AS firstname||' '|| NVL(middlename,'') ||' '||lastname,age as NULL,hiredate,region")
 
     val schema = StructType(Array(
@@ -2128,8 +2279,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Load by name requires all dataframe column names to exist in target table
     val tableName = "s2vdevtest50"
 
+    TestUtils.dropTable(conn, tableName)
+
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> "CREATE TABLE s2vdevtest50(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest50_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest50 SEGMENTED BY HASH(key) ALL NODES;")
+      "target_table_sql" -> "CREATE TABLE s2vdevtest50(key IDENTITY(1,1), FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL, loaddate TIMESTAMP DEFAULT NOW()) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest50_p(key, fullname, hiredate) AS SELECT key, fullname, hiredate FROM s2vdevtest50 SEGMENTED BY HASH(key) ALL NODES;")
 
     // It will load by name because all dataframe column names match target column names.
     // Columns order doesn't matter.
@@ -2175,8 +2328,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Load by position requires number of columns in the DF equals to number of columns in target table
     val tableName = "s2vdevtest51"
 
+    TestUtils.dropTable(conn, tableName)
+
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> "CREATE TABLE s2vdevtest51(FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest51_p(fullname, hiredate) AS SELECT fullname, hiredate FROM s2vdevtest51 SEGMENTED BY HASH(fullname) ALL NODES;"
+      "target_table_sql" -> "CREATE TABLE s2vdevtest51(FULLNAME VARCHAR(1024) NOT NULL, AGE INTEGER, hiredate DATE NOT NULL, region VARCHAR(1024) NOT NULL) PARTITION BY EXTRACT (year FROM hiredate);CREATE PROJECTION s2vdevtest51_p(fullname, hiredate) AS SELECT fullname, hiredate FROM s2vdevtest51 SEGMENTED BY HASH(fullname) ALL NODES;"
     )
 
     // It will load by position because not all dataframe column names match target column names.
@@ -2323,12 +2478,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (totalRows == numDfRows)
   }
 
-  it should "fail to save a DF if target_table_ddl doesn't generate the right table" in {
+  it should "fail to save a DF if target_table_sql doesn't generate the right table" in {
     // table name is inconsistent with the DDL
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TABLE peopleTable (name varchar(65000) not null, age integer not null);"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl
+      "target_table_sql" -> target_table_ddl
       )
 
     val rows = spark.sparkContext.parallelize(Array(
@@ -2363,7 +2518,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TBLE targetTable (name varchar(65000) not null, age integer not null);"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl
+      "target_table_sql" -> target_table_ddl
     )
 
     val rows = spark.sparkContext.parallelize(Array(
@@ -2395,7 +2550,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val target_table_ddl = "CREATE TABLE " + tableName + "(a int, b varchar(100))"
     val copy_column_list = "(b, a)"
     val options = writeOpts + ("table" -> tableName,
-      "target_table_ddl" -> target_table_ddl,
+      "target_table_sql" -> target_table_ddl,
       "copy_column_list" -> copy_column_list
       )
 
@@ -2430,7 +2585,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TABLE " + tableName + "(name varchar(65000), age integer, flag boolean, area varchar(50))"
     val options = writeOpts + ("table" -> tableName,
-    "target_table_ddl" -> target_table_ddl)
+    "target_table_sql" -> target_table_ddl)
 
     val rows = spark.sparkContext.parallelize(Array(
       Row("name1", 30, "west")
