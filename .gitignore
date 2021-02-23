@@ -13,4 +13,12 @@ functional-tests/project/project/
 functional-tests/project/target/
 functional-tests/target/
 functional-tests/.idea/
+examples/*/lib/
+examples/*/project/build.properties
+examples/*/project/project/
+examples/*/project/target/
+examples/*/target
+examples/*/.idea/
+/target/
+/.idea/
 .DS_Store
