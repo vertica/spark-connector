@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
@@ -35,10 +35,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def doPreWriteSteps(): Either[ConnectorError, Unit] = {
     // TODO: Write modes
     for {
+      // If overwrite mode, remove table and force creation of new one before writing
+      _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
+
       // Create the table if it doesn't exist
       tableExistsPre <- tableUtils.tableExists(config.tablename)
+
+      // Overwrite safety check
+      _ <- if(config.isOverwrite && tableExistsPre) Left(ConnectorError(DropTableError)) else Right(())
+
+      // Check if a view exists by this name
       viewExists <- tableUtils.viewExists(config.tablename)
       _ <- if(viewExists) Left(ConnectorError(ViewExistsError)) else Right(())
+
       _ <- if(!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql

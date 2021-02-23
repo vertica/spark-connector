@@ -85,6 +85,34 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     }
   }
 
+  it should "Drop the table first if in overwrite mode" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    config.setOverwrite(true)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.dropTable _).expects(tablename).returning(Right(()))
+    (tableUtils.tableExists _).expects(*).returning(Right(false))
+    (tableUtils.viewExists _).expects(*).returning(Right(false))
+    (tableUtils.createTable _).expects(*, *, *, *).returning(Right())
+    (tableUtils.tableExists _).expects(*).returning(Right(true))
+    (tableUtils.createAndInitJobStatusTable _).expects(*,*,*).returning(Right(true))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.doPreWriteSteps() match {
+      case Left(err) => fail(err.msg)
+      case Right(_) => ()
+    }
+  }
+
   it should "Create a table using custom logic if it doesn't exist" in {
     val createTableStatement = "CREATE table dummy(col1 INTEGER);"
 

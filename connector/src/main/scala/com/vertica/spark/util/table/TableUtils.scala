@@ -15,7 +15,7 @@ package com.vertica.spark.util.table
 
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
@@ -24,6 +24,7 @@ trait TableUtilsInterface {
   def viewExists(view: TableName): Either[ConnectorError, Boolean]
   def tableExists(table: TableName): Either[ConnectorError, Boolean]
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
+  def dropTable(tablename: TableName): Either[ConnectorError, Unit]
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
   def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit]
 }
@@ -152,6 +153,15 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
       case Left(err) =>
         logger.error("JDBC Error creating table: " + err)
         Left(ConnectorError(CreateTableError))
+    }
+  }
+
+  def dropTable(tablename: TableName): Either[ConnectorError, Unit] = {
+    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName) match {
+      case Right(_) => Right(())
+      case Left(err) =>
+        logger.error("JDBC Error dropping table: " + err)
+        Left(ConnectorError(DropTableError))
     }
   }
 
