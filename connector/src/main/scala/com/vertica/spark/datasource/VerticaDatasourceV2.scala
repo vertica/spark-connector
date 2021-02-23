@@ -63,7 +63,8 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
 
 
   override def extractIdentifier(options: CaseInsensitiveStringMap): Identifier = {
-    Identifier.of(Array[String](), "VerticaTable")
+    val name = options.asScala.toMap.getOrElse("table", "")
+    Identifier.of(Array[String](), name)
   }
 
   private val CATALOG_NAME = "vertica"
