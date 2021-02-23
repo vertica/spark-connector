@@ -29,11 +29,9 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
     val opt = options.getOrElse(throw new NoSuchTableException(ident))
 
     val table = new VerticaTable(opt)
-    /*
     val schema = table.schema()
 
     if(schema.isEmpty) throw new NoSuchTableException(ident)
-    */
 
     table
   }
