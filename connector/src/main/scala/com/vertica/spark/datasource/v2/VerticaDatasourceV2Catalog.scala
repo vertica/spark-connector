@@ -12,36 +12,38 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
 
   var options: Option[CaseInsensitiveStringMap] = None
 
-  def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
+  override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
     println("CATALOG OPTIONS: ")
     options.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
     this.options = Some(options)
   }
 
-  def name: String = "VerticaCatalog"
-
-  @throws[NoSuchNamespaceException]
-  def listTables(namespace: Array[String]): Array[Identifier] = ???
-
-
-  @throws[NoSuchTableException]
-  def loadTable(ident: Identifier): Table = {
+  override def tableExists(ident: Identifier): Boolean = {
     val opt = options.getOrElse(throw new NoSuchTableException(ident))
 
     val table = new VerticaTable(opt)
     val schema = table.schema()
 
-    if(schema.isEmpty) throw new NoSuchTableException(ident)
+    schema.nonEmpty
+  }
 
-    table
+  override def name: String = "VerticaCatalog"
+
+  @throws[NoSuchNamespaceException]
+  override def listTables(namespace: Array[String]): Array[Identifier] = ???
+
+
+  @throws[NoSuchTableException]
+  override def loadTable(ident: Identifier): Table = {
+    val opt = options.getOrElse(throw new NoSuchTableException(ident))
+
+    new VerticaTable(opt)
   }
 
   @throws[TableAlreadyExistsException]
   @throws[NoSuchNamespaceException]
   def createTable(ident: Identifier, schema: StructType, partitions: Array[Transform], properties: java.util.Map[String, String]): Table = {
-    println("OPTIONS: " + options)
-    val opt = options.getOrElse(throw new NoSuchTableException(ident))
-    new VerticaTable(opt)
+    loadTable(ident)
   }
 
 
