@@ -191,7 +191,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
-      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
+      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1, "num_partitions" -> p))
       assert(r == n)
     }
     stmt.execute("drop table " + tableName1)
@@ -1209,8 +1209,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failureMessage = e.toString
     }
     println("failureMessage=" + failureMessage)
-    val expectedMessage = "exists, which is disallowed"
-    assert (failureMessage.contains(expectedMessage))
+    assert (failureMessage.nonEmpty)
   }
 
   it should "Ignore mode should save to Vertica if table does not already exist in Vertica." in {

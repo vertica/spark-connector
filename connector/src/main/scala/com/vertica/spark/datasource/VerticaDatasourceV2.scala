@@ -76,10 +76,13 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
     SparkSession.getActiveSession.get.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
 
     // Add all passed in options to spark catalog options
+    /*
     options.asScala.toMap.foreach(p => {
       SparkSession.getActiveSession.get.conf.set("spark.sql.catalog." + CATALOG_NAME + "." + p._1,
         p._2)
     })
+     */
+    VerticaDatasourceV2Catalog.setOptions(options)
 
     CATALOG_NAME
   }
