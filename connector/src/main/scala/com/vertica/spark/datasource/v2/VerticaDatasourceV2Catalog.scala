@@ -13,6 +13,8 @@
 
 package com.vertica.spark.datasource.v2
 
+import java.util
+
 import org.apache.spark.sql.catalyst.analysis.{NoSuchNamespaceException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.connector.catalog.{Identifier, Table, TableCatalog, TableChange}
 import org.apache.spark.sql.connector.expressions.Transform
@@ -58,6 +60,9 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   override def loadTable(ident: Identifier): Table = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
 
+    println("Loading table with OPTIONS: ")
+    opt.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
+
     new VerticaTable(opt)
   }
 
@@ -93,9 +98,10 @@ object VerticaDatasourceV2Catalog {
   def getOptions: Option[CaseInsensitiveStringMap] = {
     (catalogOptions, operationOptions) match {
       case (Some(cat), Some(op)) =>
-        val cp = new CaseInsensitiveStringMap(cat)
-        cp.putAll(op)
-        Some(cp)
+        val m = new util.HashMap[String, String]()
+        m.putAll(cat)
+        m.putAll(op)
+        Some(new CaseInsensitiveStringMap(cat))
       case (Some(cat), None) => Some(cat)
       case (None, Some(op)) => Some(op)
       case (None, None) => None
