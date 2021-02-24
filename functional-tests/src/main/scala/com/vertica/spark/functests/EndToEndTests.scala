@@ -191,7 +191,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     for (p <- 1 until numSparkPartitions) {
       info("Number of Partition : " + p)
-      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1, "num_partitions" -> p))
+      val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1, "num_partitions" -> p.toString))
       assert(r == n)
     }
     stmt.execute("drop table " + tableName1)
