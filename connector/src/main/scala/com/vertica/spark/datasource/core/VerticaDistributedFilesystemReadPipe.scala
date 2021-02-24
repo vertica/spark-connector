@@ -19,10 +19,11 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.vertica.spark.util.schema.{ColumnDef, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.cleanup.{CleanupUtils, CleanupUtilsInterface, FileCleanupInfo}
+import org.apache.spark.sql.types.StructType
 
 /**
  * Represents a portion of a parquet file
@@ -151,6 +152,37 @@ class VerticaDistributedFilesystemReadPipe(
     )
   }
 
+  private def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: Option[StructType]): String = {
+    val requiredColumnDefs: Seq[ColumnDef] = requiredSchema match {
+      case Some(schema) => columnDefs.filter(cd => schema.fields.exists(field => field.name == cd.label))
+      case None => columnDefs
+    }
+
+    requiredColumnDefs.map(info => {
+      info.colType match {
+        case java.sql.Types.OTHER =>
+          val typenameNormalized = info.colTypeName.toLowerCase()
+          if (typenameNormalized.startsWith("interval") ||
+            typenameNormalized.startsWith("uuid")) {
+            castToVarchar(info.label)
+          } else {
+            info.label
+          }
+        case java.sql.Types.TIME => castToVarchar(info.label)
+        case _ => info.label
+      }
+    }).mkString(",")
+  }
+
+  private def getColumnNames(requiredSchema: Option[StructType]): Either[ConnectorError, String] = {
+    schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+      case Left(err) =>
+        logger.error(err.msg)
+        Left(ConnectorError(CastingSchemaReadError))
+      case Right(columnDefs) => Right(makeColumnsString(columnDefs, requiredSchema))
+    }
+  }
+
   private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
 
   /**
@@ -194,24 +226,7 @@ class VerticaDistributedFilesystemReadPipe(
       // TODO: Add file permission option w/ default value '700'
       filePermissions = "777"
 
-      cols <- schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
-        case Left(err) =>
-          logger.error(err.msg)
-          Left(ConnectorError(CastingSchemaReadError))
-        case Right(columnDefs) => Right(columnDefs.map(info => {
-          info.colType match {
-            case java.sql.Types.OTHER =>
-              val typenameNormalized = info.colTypeName.toLowerCase()
-              if (typenameNormalized.startsWith("interval") ||
-                typenameNormalized.startsWith("uuid"))
-                castToVarchar(info.label)
-              else
-                info.label
-            case java.sql.Types.TIME => castToVarchar(info.label)
-            case _ => info.label
-          }
-        }).mkString(","))
-      }
+      cols <- getColumnNames(this.config.getRequiredSchema)
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +

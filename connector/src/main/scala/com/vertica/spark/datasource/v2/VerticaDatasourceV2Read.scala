@@ -35,8 +35,10 @@ case class NonPushFilter(filter: Filter) extends AnyVal
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPushDownFilters {
+class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with
+  SupportsPushDownFilters with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
+  private var requiredSchema: Option[StructType] = None
 
 /**
   * Builds the class representing a scan of a Vertica table
@@ -45,6 +47,7 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
   */
   override def build(): Scan = {
     config.setPushdownFilters(this.pushFilters)
+    config.setRequiredSchema(this.requiredSchema)
     new VerticaScan(config)
   }
 
@@ -69,6 +72,10 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
     this.pushFilters.map(_.filter).toArray
   }
 
+  override def pruneColumns(requiredSchema: StructType): Unit = {
+    requiredSchema
+
+  }
 }
 
 
