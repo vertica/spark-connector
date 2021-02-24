@@ -101,7 +101,7 @@ object VerticaDatasourceV2Catalog {
         val m = new util.HashMap[String, String]()
         m.putAll(cat)
         m.putAll(op)
-        Some(new CaseInsensitiveStringMap(cat))
+        Some(new CaseInsensitiveStringMap(m))
       case (Some(cat), None) => Some(cat)
       case (None, Some(op)) => Some(op)
       case (None, None) => None
