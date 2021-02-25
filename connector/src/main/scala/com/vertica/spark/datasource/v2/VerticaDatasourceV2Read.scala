@@ -35,8 +35,10 @@ case class NonPushFilter(filter: Filter) extends AnyVal
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPushDownFilters {
+class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with
+  SupportsPushDownFilters with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
+  private var requiredSchema: StructType = StructType(Nil)
 
 /**
   * Builds the class representing a scan of a Vertica table
@@ -45,6 +47,7 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
   */
   override def build(): Scan = {
     config.setPushdownFilters(this.pushFilters)
+    config.setRequiredSchema(this.requiredSchema)
     new VerticaScan(config)
   }
 
@@ -69,6 +72,9 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with SupportsPu
     this.pushFilters.map(_.filter).toArray
   }
 
+  override def pruneColumns(requiredSchema: StructType): Unit = {
+    this.requiredSchema = requiredSchema
+  }
 }
 
 
@@ -82,9 +88,9 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    (new DSReadConfigSetup).getTableSchema(config) match {
-      case Right(schema) => schema
-      case Left(err) => throw new Exception(err.msg)
+    ((new DSReadConfigSetup).getTableSchema(config), config.getRequiredSchema) match {
+      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+      case (Left(err), _) => throw new Exception(err.msg)
     }
   }
 

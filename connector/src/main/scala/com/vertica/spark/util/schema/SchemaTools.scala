@@ -45,6 +45,8 @@ trait SchemaToolsInterface {
   def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String]
 
   def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String]
+
+  def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 }
 
 class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
@@ -250,6 +252,31 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         }
       }
     } yield columnList
+  }
+
+  private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+
+  def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String = {
+    val requiredColumnDefs: Seq[ColumnDef] = if (requiredSchema.nonEmpty) {
+      columnDefs.filter(cd => requiredSchema.fields.exists(field => field.name == cd.label))
+    } else {
+      columnDefs
+    }
+
+    requiredColumnDefs.map(info => {
+      info.colType match {
+        case java.sql.Types.OTHER =>
+          val typenameNormalized = info.colTypeName.toLowerCase()
+          if (typenameNormalized.startsWith("interval") ||
+            typenameNormalized.startsWith("uuid")) {
+            castToVarchar(info.label)
+          } else {
+            info.label
+          }
+        case java.sql.Types.TIME => castToVarchar(info.label)
+        case _ => info.label
+      }
+    }).mkString(",")
   }
 }
 
