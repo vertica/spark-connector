@@ -73,6 +73,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.tableExists _).expects(tablename).returning(Right(false))
     (tableUtils.viewExists _).expects(tablename).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right())
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
     (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.username, "id").returning(Right(true))
@@ -101,6 +102,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.dropTable _).expects(tablename).returning(Right(()))
     (tableUtils.tableExists _).expects(*).returning(Right(false))
     (tableUtils.viewExists _).expects(*).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(*, *, *, *).returning(Right())
     (tableUtils.tableExists _).expects(*).returning(Right(true))
     (tableUtils.createAndInitJobStatusTable _).expects(*,*,*).returning(Right(true))
@@ -129,6 +131,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.tableExists _).expects(tablename).returning(Right(false))
     (tableUtils.viewExists _).expects(tablename).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(tablename, Some(createTableStatement), schema, strlen).returning(Right())
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
     (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.username, "id").returning(Right(true))
@@ -175,6 +178,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.tableExists _).expects(*).returning(Right(false))
     (tableUtils.viewExists _).expects(*).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(*, *, *, *).returning(Right())
     (tableUtils.tableExists _).expects(*).returning(Right(true))
     (tableUtils.createAndInitJobStatusTable _).expects(*, *, *).returning(Right(true))

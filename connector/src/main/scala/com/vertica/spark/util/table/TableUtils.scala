@@ -16,6 +16,7 @@ package com.vertica.spark.util.table
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.JdbcErrorType.DataTypeError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
@@ -23,6 +24,7 @@ import org.apache.spark.sql.types.StructType
 trait TableUtilsInterface {
   def viewExists(view: TableName): Either[ConnectorError, Boolean]
   def tableExists(table: TableName): Either[ConnectorError, Boolean]
+  def tempTableExists(table: TableName): Either[ConnectorError, Boolean]
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
   def dropTable(tablename: TableName): Either[ConnectorError, Unit]
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
@@ -31,6 +33,22 @@ trait TableUtilsInterface {
 
 class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = logProvider.getLogger(classOf[TableUtils])
+
+  override def tempTableExists(table: TableName): Either[ConnectorError, Boolean] = {
+    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + table.dbschema + "'"
+    val ret = for {
+      rs <- jdbcLayer.query(query)
+      is_temp <- if (rs.next) {Right(rs.getBoolean("t")) } else Left(JDBCLayerError(DataTypeError))
+      _ = rs.close()
+    } yield (is_temp)
+
+    ret match {
+      case Left(err) =>
+        logger.error(" Cannot append to a temporary table: " + table.getFullTableName + " , JDBC error: " + err.msg)
+        Left(ConnectorError(TableCheckError))
+      case Right(v) => Right(v)
+    }
+  }
 
   override def viewExists(view: TableName): Either[ConnectorError, Boolean] = {
     val dbschema = view.dbschema.getOrElse("public")

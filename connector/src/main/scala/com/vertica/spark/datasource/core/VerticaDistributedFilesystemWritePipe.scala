@@ -5,7 +5,7 @@ import java.sql.Struct
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
@@ -57,9 +57,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Overwrite safety check
       _ <- if(config.isOverwrite && tableExistsPre) Left(ConnectorError(DropTableError)) else Right(())
 
-      // Check if a view exists by this name
+      // Check if a view exists or temp table exits by this name
       viewExists <- tableUtils.viewExists(config.tablename)
       _ <- if(viewExists) Left(ConnectorError(ViewExistsError)) else Right(())
+      tempTableExists <- tableUtils.tempTableExists(config.tablename)
+      _ <- if(tempTableExists) Left(ConnectorError(TempTableExistsError)) else Right(())
 
       _ <- if(!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
