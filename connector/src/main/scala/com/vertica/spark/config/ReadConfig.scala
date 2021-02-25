@@ -19,7 +19,8 @@ import org.apache.spark.sql.types.StructType
 
 trait ReadConfig extends GenericConfig {
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit
-  def setRequiredSchema(requiredSchema: Option[StructType]): Unit
+  def setRequiredSchema(requiredSchema: StructType): Unit
+  def getRequiredSchema: StructType
 }
 
 final case class DistributedFilesystemReadConfig(
@@ -31,16 +32,16 @@ final case class DistributedFilesystemReadConfig(
                                                   metadata: Option[VerticaReadMetadata]
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
-  private var requiredSchema: Option[StructType] = None
+  private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
     this.pushdownFilters = pushdownFilters
   }
 
-  def setRequiredSchema(requiredSchema: Option[StructType]): Unit = {
+  def setRequiredSchema(requiredSchema: StructType): Unit = {
     this.requiredSchema = requiredSchema
   }
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
-  def getRequiredSchema: Option[StructType] = this.requiredSchema
+  def getRequiredSchema: StructType = this.requiredSchema
 }

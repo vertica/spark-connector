@@ -756,10 +756,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "push down multiple filters" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
+    val lowerBound = 2
+    val upperBound = 6
     val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
       "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
       "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy " +
-      "WHERE (\"col1\" < 6) AND (\"col1\" > 2);")
+      "WHERE (\"col1\" < " + upperBound + ") AND (\"col1\" > " + lowerBound + ");")
 
     val columnDef = this.makeIntColumnDef
     val mockSchemaTools = this.mockSchemaTools(List(columnDef))
@@ -767,8 +769,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
 
     config.setPushdownFilters(List(
-      PushFilter(LessThan("col1", 6), "(\"col1\" < 6)"),
-      PushFilter(GreaterThan("col1", 2), "(\"col1\" > 2)")))
+      PushFilter(LessThan("col1", upperBound), "(\"col1\" < " + upperBound + ")"),
+      PushFilter(GreaterThan("col1", lowerBound), "(\"col1\" > " + lowerBound + ")")))
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -785,7 +787,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(
       config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
 
-    config.setRequiredSchema(Some(StructType(StructField("col1", LongType) :: Nil)))
+    config.setRequiredSchema(StructType(StructField("col1", LongType) :: Nil))
     this.failOnError(pipe.doPreReadSteps())
   }
 
@@ -803,10 +805,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(
       config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
 
-    config.setRequiredSchema(Some(StructType(
+    config.setRequiredSchema(StructType(
       StructField("col1", LongType) ::
       StructField("col3", StringType) ::
-      Nil)))
+      Nil))
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -825,7 +827,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(
       config, fileStoreLayer, jdbcLayer, schemaTools, mock[CleanupUtilsInterface])
 
-    config.setRequiredSchema(None)
+    config.setRequiredSchema(StructType(Nil))
     this.failOnError(pipe.doPreReadSteps())
   }
 }

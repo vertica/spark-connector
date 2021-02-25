@@ -19,7 +19,7 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.{ColumnDef, SchemaToolsInterface}
+import com.vertica.spark.util.schema.{ColumnDef, SchemaTools, SchemaToolsInterface}
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.cleanup.{CleanupUtils, CleanupUtilsInterface, FileCleanupInfo}
@@ -152,38 +152,15 @@ class VerticaDistributedFilesystemReadPipe(
     )
   }
 
-  private def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: Option[StructType]): String = {
-    val requiredColumnDefs: Seq[ColumnDef] = requiredSchema match {
-      case Some(schema) => columnDefs.filter(cd => schema.fields.exists(field => field.name == cd.label))
-      case None => columnDefs
-    }
-
-    requiredColumnDefs.map(info => {
-      info.colType match {
-        case java.sql.Types.OTHER =>
-          val typenameNormalized = info.colTypeName.toLowerCase()
-          if (typenameNormalized.startsWith("interval") ||
-            typenameNormalized.startsWith("uuid")) {
-            castToVarchar(info.label)
-          } else {
-            info.label
-          }
-        case java.sql.Types.TIME => castToVarchar(info.label)
-        case _ => info.label
-      }
-    }).mkString(",")
-  }
-
-  private def getColumnNames(requiredSchema: Option[StructType]): Either[ConnectorError, String] = {
+  private def getColumnNames(requiredSchema: StructType): Either[ConnectorError, String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
       case Left(err) =>
         logger.error(err.msg)
         Left(ConnectorError(CastingSchemaReadError))
-      case Right(columnDefs) => Right(makeColumnsString(columnDefs, requiredSchema))
+      case Right(columnDefs) => Right(new SchemaTools(this.config.logProvider)
+        .makeColumnsString(columnDefs, requiredSchema))
     }
   }
-
-  private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
 
   /**
    * Initial setup for the whole read operation. Called by driver.

@@ -251,5 +251,30 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
       }
     } yield columnList
   }
+
+  private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+
+  def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String = {
+    val requiredColumnDefs: Seq[ColumnDef] = if (requiredSchema.nonEmpty) {
+      columnDefs.filter(cd => requiredSchema.fields.exists(field => field.name == cd.label))
+    } else {
+      columnDefs
+    }
+
+    requiredColumnDefs.map(info => {
+      info.colType match {
+        case java.sql.Types.OTHER =>
+          val typenameNormalized = info.colTypeName.toLowerCase()
+          if (typenameNormalized.startsWith("interval") ||
+            typenameNormalized.startsWith("uuid")) {
+            castToVarchar(info.label)
+          } else {
+            info.label
+          }
+        case java.sql.Types.TIME => castToVarchar(info.label)
+        case _ => info.label
+      }
+    }).mkString(",")
+  }
 }
 
