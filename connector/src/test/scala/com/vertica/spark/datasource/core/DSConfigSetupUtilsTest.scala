@@ -185,7 +185,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "parse full table name with schema" in {
     val opts = Map("dbschema" -> "test", "table" -> "table")
     val schema = getResultOrAssert[TableName](DSConfigSetupUtils.validateAndGetFullTableName(opts))
-    assert(schema.getFullTableName == "test.table")
+    assert(schema.getFullTableName == "\"test\".\"table\"")
   }
 
   it should "fail with missing table name" in {

@@ -125,7 +125,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
     // Query for an empty result set from Vertica.
     // This is simply so we can load the metadata of the result set
     // and use this to retrieve the name and type information of each column
-    jdbcLayer.query("SELECT * FROM \"" + tablename + "\" WHERE 1=0") match {
+    jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0") match {
       case Left(err) => Left(SchemaError(JdbcError, err.msg))
       case Right(rs) =>
         try {

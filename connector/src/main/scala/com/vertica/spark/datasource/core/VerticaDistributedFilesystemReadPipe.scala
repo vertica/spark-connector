@@ -159,7 +159,7 @@ class VerticaDistributedFilesystemReadPipe(
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.name
     logger.debug("Export path: " + hdfsPath)
 
     val ret = for {

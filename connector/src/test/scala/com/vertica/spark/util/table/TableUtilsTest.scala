@@ -284,7 +284,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val tablename = "dummy"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS dummy").returning(Right(1))
+    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"").returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 

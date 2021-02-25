@@ -42,7 +42,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
 
-    (jdbcLayer.query _).expects("SELECT * FROM \"" + tablename + "\" WHERE 1=0").returning(Right(resultSet))
+    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Right(resultSet))
     (resultSet.getMetaData _).expects().returning(rsmd)
     (resultSet.close _).expects()
 
@@ -63,7 +63,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
-  val tablename = "testtable"
+  val tablename = "\"testtable\""
 
   it should "parse a single-column double schema" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
