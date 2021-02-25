@@ -70,6 +70,7 @@ object ConnectorErrorType extends Enumeration {
   val FaultToleranceTestFail: Value = Value("Failed row count is above error tolerance threshold. Operation aborted.")
   val JobStatusCreateError: Value = Value("Failed to create job status table.")
   val JobStatusUpdateError: Value = Value("Failed to update job status table.")
+  val DuplicateColumnsError: Value = Value("Schema contains duplicate columns, can't write this data.")
 }
 import ConnectorErrorType._
 

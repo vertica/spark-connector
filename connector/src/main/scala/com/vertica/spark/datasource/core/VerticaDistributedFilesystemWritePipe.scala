@@ -1,12 +1,15 @@
 package com.vertica.spark.datasource.core
 
+import java.sql.Struct
+
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, ViewExistsError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import org.apache.spark.sql.types.StructType
 
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig,
                                             val fileStoreLayer: FileStoreLayerInterface,
@@ -24,6 +27,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
 
 
+  def checkSchemaForDuplicates(schema: StructType): Either[ConnectorError, Unit] = {
+    val names = schema.fields.map(f => f.name)
+    if(names.distinct.size != names.size) {
+      Left(ConnectorError(DuplicateColumnsError))
+    }
+    else Right(())
+  }
 
   /**
    * Initial setup for the intermediate-based write operation.
@@ -35,6 +45,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def doPreWriteSteps(): Either[ConnectorError, Unit] = {
     // TODO: Write modes
     for {
+      // Check if schema is valid
+      _ <- checkSchemaForDuplicates(config.schema)
+
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
 
@@ -209,7 +222,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       tableName = config.tablename.name
       sessionId = config.sessionId
-      rejectsTableName = tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS"
+      rejectsTableName = "\"" + tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS" + "\""
 
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
