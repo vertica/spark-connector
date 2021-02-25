@@ -157,8 +157,7 @@ class VerticaDistributedFilesystemReadPipe(
       case Left(err) =>
         logger.error(err.msg)
         Left(ConnectorError(CastingSchemaReadError))
-      case Right(columnDefs) => Right(new SchemaTools(this.config.logProvider)
-        .makeColumnsString(columnDefs, requiredSchema))
+      case Right(columnDefs) => Right(schemaTools.makeColumnsString(columnDefs, requiredSchema))
     }
   }
 

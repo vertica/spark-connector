@@ -45,6 +45,8 @@ trait SchemaToolsInterface {
   def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String]
 
   def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String]
+
+  def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 }
 
 class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
