@@ -38,7 +38,7 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + table.dbschema + "'"
     val ret = for {
       rs <- jdbcLayer.query(query)
-      is_temp <- if (rs.next) {Right(rs.getBoolean("t")) } else Left(JDBCLayerError(DataTypeError))
+      is_temp = if (rs.next) {rs.getBoolean("t") } else false
       _ = rs.close()
     } yield (is_temp)
 
