@@ -57,7 +57,7 @@ object TestUtils {
 
   def dropTable(conn: Connection, tableName: String): Unit = {
     val stmt = conn.createStatement()
-    stmt.execute("drop table if exists " + tableName + " cascade")
+    stmt.execute("drop table if exists \"" + tableName + "\" cascade")
   }
 
   def createTable(conn: Connection, tableName: String, isSegmented: Boolean = true, numOfRows: Int = 10): Unit = {
