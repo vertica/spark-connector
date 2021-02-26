@@ -43,7 +43,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): Either[ConnectorError, Unit] = {
-    // TODO: Write modes
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)

@@ -241,11 +241,10 @@ class VerticaDistributedFilesystemReadPipe(
         totalRowGroups
       } else requestedPartitionCount
 
+
       // Get room per partition for row groups in order to split the groups up evenly
-      rowGroupRoom = {
-          val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-          (totalRowGroups / partitionCount) + extraSpace
-      }
+      extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+      rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
 
       partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
     } yield partitionInfo
