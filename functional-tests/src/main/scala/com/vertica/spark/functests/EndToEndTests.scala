@@ -431,6 +431,91 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
+  it should "load data from Vertica with a column projection pushdown" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (includeMe TIMESTAMP, excludeMe float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("includeMe")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(!executedPlanString.contains("excludeMe"))
+    assert(executedPlanString.contains("includeMe"))
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with multiple column projection pushdowns" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (includeMe TIMESTAMP, excludeMe float, meToo VARCHAR)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2, 'hello')"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2, 'oatmeal')"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("includeMe", "meToo")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(!executedPlanString.contains("excludeMe"))
+    assert(executedPlanString.contains("includeMe"))
+    assert(executedPlanString.contains("meToo"))
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with no column projection pushdown" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (includeMe TIMESTAMP, meToo float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("*")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(executedPlanString.contains("includeMe"))
+    assert(executedPlanString.contains("meToo"))
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
   it should "fetch the correct results when startsWith and endsWith functions are used" in {
     val tableName1 = "dftest1"
 
