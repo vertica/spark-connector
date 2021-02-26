@@ -58,7 +58,7 @@ object TestUtils {
   def dropTable(conn: Connection, tableName: String, schema: Option[String] = None): Unit = {
     val stmt = conn.createStatement()
     schema match {
-      case Some(dbschema) => stmt.execute("drop table if exists \"" + dbschema + "\".\"" + tableName +" cascade")
+      case Some(dbschema) => stmt.execute("drop table if exists \"" + dbschema + "\".\"" + tableName + "\" cascade")
       case None => stmt.execute("drop table if exists \"" + tableName + "\" cascade")
     }
   }
