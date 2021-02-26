@@ -32,8 +32,6 @@ object Main extends App {
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
 
-  //val conn: Connection = TestUtils.getJDBCConnection(writeOpts("host"), db = writeOpts("db"), user = writeOpts("user"), password = writeOpts("password"))
-
   val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -52,6 +50,5 @@ object Main extends App {
 
   } finally {
     spark.close()
-    //conn.close()
   }
 }
