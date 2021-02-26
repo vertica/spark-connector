@@ -35,7 +35,8 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
   private val logger = logProvider.getLogger(classOf[TableUtils])
 
   override def tempTableExists(table: TableName): Either[ConnectorError, Boolean] = {
-    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + table.dbschema + "'"
+    val dbschema = table.dbschema.getOrElse("public")
+    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + dbschema + "'"
     val ret = for {
       rs <- jdbcLayer.query(query)
       is_temp = if (rs.next) {rs.getBoolean("t") } else false
