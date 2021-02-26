@@ -167,7 +167,7 @@ class VerticaDistributedFilesystemReadPipe(
   override def doPreReadSteps(): Either[ConnectorError, PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.getFullTableName
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.name
     logger.debug("Export path: " + hdfsPath)
 
     val ret = for {
@@ -222,7 +222,7 @@ class VerticaDistributedFilesystemReadPipe(
 
       // Retrieve all parquet files created by Vertica
       fileList <- fileStoreLayer.getFileList(hdfsPath)
-      partitionCount <- if(fileList.isEmpty){
+      requestedPartitionCount <- if(fileList.isEmpty){
         logger.error("Returned file list was empty, so cannot create valid partition info")
         Left(ConnectorError(PartitioningError))
       }
@@ -234,16 +234,18 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       fileMetadata <- fileList.map(filename => fileStoreLayer.getParquetFileMetadata(filename)).toList.sequence
+      totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
+
+      partitionCount = if(totalRowGroups < requestedPartitionCount) {
+        logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)
+        totalRowGroups
+      } else requestedPartitionCount
+
+
       // Get room per partition for row groups in order to split the groups up evenly
-      rowGroupRoom <- {
-        val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
-        if(totalRowGroups < partitionCount) {
-          Left(ConnectorError(PartitioningError))
-        } else  {
-          val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-          Right((totalRowGroups / partitionCount) + extraSpace)
-        }
-      }
+      extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+      rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
+
       partitionInfo <- getPartitionInfo(fileMetadata, rowGroupRoom)
     } yield partitionInfo
 

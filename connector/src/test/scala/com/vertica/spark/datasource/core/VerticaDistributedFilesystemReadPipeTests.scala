@@ -39,6 +39,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   private val metadata = new MetadataBuilder().putString("name", "col1").build()
   private val size = 32
   private val scale = 32
+  private val expectedAddress = fileStoreConfig.address + "/" + tablename.name
 
   override def afterAll(): Unit = {
   }
@@ -68,7 +69,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private def mockFileStoreLayer(config: DistributedFilesystemReadConfig): FileStoreLayerInterface = {
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
@@ -82,7 +82,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
                                requiredSchema: StructType = StructType(Nil)
                              ): SchemaToolsInterface = {
     val schemaTools = mock[SchemaToolsInterface]
-    (schemaTools.getColumnInfo _).expects(*,tablename.name).returning(Right(columnDefs))
+    (schemaTools.getColumnInfo _).expects(*,tablename.getFullTableName).returning(Right(columnDefs))
     (schemaTools.makeColumnsString _).expects(columnDefs, requiredSchema).returning(columnsString)
     schemaTools
   }
@@ -98,7 +98,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-    (mockSchemaTools.readSchema _).expects(*,tablename.name).returning(Right(new StructType()))
+    (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Right(new StructType()))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
@@ -113,7 +113,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, partitionCount = None, tablename = fullTablename, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-    (mockSchemaTools.readSchema _).expects(*,"schema.table").returning(Right(new StructType()))
+    (mockSchemaTools.readSchema _).expects(*,fullTablename.getFullTableName).returning(Right(new StructType()))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
@@ -149,14 +149,13 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy;"
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
     (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
@@ -221,7 +220,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
@@ -269,7 +267,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
@@ -324,7 +321,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
@@ -372,7 +368,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    val expectedAddress = fileStoreConfig.address + "/" + config.tablename.getFullTableName
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
@@ -696,12 +691,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "cast TIMEs to strings" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
-    val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
-      "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, " +
-      "fileMode = '777', dirMode = '777') AS SELECT col1::varchar AS col1 FROM dummy;")
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1::varchar AS col1 FROM \"dummy\";"
+    val jdbcLayer = this.mockJdbcLayer(expectedJdbcCommand)
 
     val columnDef = ColumnDef("col1", java.sql.Types.TIME, "TIME", size, scale, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1::varchar AS col1")
+
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -709,24 +704,25 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "cast UUIDs to strings" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
-    val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
-      "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, " +
-      "fileMode = '777', dirMode = '777') AS SELECT col1::varchar AS col1 FROM dummy;")
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1::varchar AS col1 FROM \"dummy\";"
+    val jdbcLayer = this.mockJdbcLayer(expectedJdbcCommand)
     val columnDef = ColumnDef("col1", java.sql.Types.OTHER, "UUID", size, scale, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1::varchar AS col1")
+
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+
     this.failOnError(pipe.doPreReadSteps())
   }
 
   it should "not push down an empty list of filters" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
-    val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
-      "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, " +
-      "rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy;")
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
+    val jdbcLayer = this.mockJdbcLayer(expectedJdbcCommand)
 
     val columnDef = makeIntColumnDef
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
+
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -734,18 +730,18 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "push down a filter" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
-    val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
-      "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
-      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy " +
-      "WHERE (\"col1\" = 2);")
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
+      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\" WHERE (\"col1\" = 2);"
+    val jdbcLayer = this.mockJdbcLayer(expectedJdbcCommand)
 
     val columnDef = this.makeIntColumnDef
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
-    val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
 
     config.setPushdownFilters(List(
       PushFilter(EqualTo("col1", 2), "(\"col1\" = 2)")))
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(
+      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -757,7 +753,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val upperBound = 6
     val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
       "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
-      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy " +
+      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\" " +
       "WHERE (\"col1\" < " + upperBound + ") AND (\"col1\" > " + lowerBound + ");")
 
     val columnDef = this.makeIntColumnDef
@@ -775,8 +771,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "push down a column projection" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
-    val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
-      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM dummy;")
+    val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
+      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
+    val jdbcLayer = this.mockJdbcLayer(expectedJdbcCommand)
 
     val columnDef1 = ColumnDef("col1", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
     val columnDef2 = ColumnDef("col2", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
@@ -794,7 +791,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = this.mockFileStoreLayer(config)
     val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
       "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
-      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1,col3 FROM dummy;")
+      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1,col3 FROM \"dummy\";")
 
     val columnDef1 = ColumnDef("col1", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
     val columnDef2 = ColumnDef("col2", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
@@ -823,7 +820,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = this.mockFileStoreLayer(config)
     val jdbcLayer = this.mockJdbcLayer("EXPORT TO PARQUET(" +
       "directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', " +
-      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1,col2,col3 FROM dummy;")
+      "fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1,col2,col3 FROM \"dummy\";")
 
     val columnDef1 = ColumnDef("col1", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
     val columnDef2 = ColumnDef("col2", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)

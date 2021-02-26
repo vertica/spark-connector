@@ -11,13 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.config
+scalaVersion := "2.12.12"
+name := "spark-vertica-connector-functional-tests"
+organization := "com.vertica"
+version := "1.0"
 
-final case class TableName(name: String, dbschema: Option[String]) {
-  def getFullTableName : String = {
-    dbschema match {
-      case None => "\"" + name + "\""
-      case Some(schema) => "\"" + schema + "\".\"" + name + "\""
-    }
-  }
-}
+resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
+resolvers += "jitpack" at "https://jitpack.io"
+
+libraryDependencies += "com.typesafe" % "config" % "1.4.1"

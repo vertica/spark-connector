@@ -279,4 +279,17 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     checkResult(utils.updateJobStatusTable(TableName(tablename,None), user, 0.2, sessionId, success = false))
   }
+
+  it should "Drop a table" in {
+    val tablename = "dummy"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"").returning(Right(1))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.dropTable(TableName(tablename, None)))
+  }
 }
