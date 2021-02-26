@@ -632,7 +632,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = new StructType(Array(StructField("col1", IntegerType)))
 
     val data = Seq(Row(77))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     println(df.toString())
     val mode = SaveMode.Overwrite
 
@@ -663,7 +663,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     ))
 
     val data = Seq(Row(77, 77, "hello"), Row(88, 0, "goodbye"))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(2)
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
@@ -939,7 +939,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert ( rowsLoaded == (rows_exist + numDfRows) )
 
-    TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
   it should "save a dataframe under specified schema in Append mode" in {
@@ -995,7 +995,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rows == (rows_exist + numDfRows) )
-    TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
   it should "DataFrame with Complex type array" in {
@@ -1548,6 +1548,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
     assert (failureMessage.nonEmpty)
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "Should not try to save an empty dataframe." in {
@@ -1697,7 +1698,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
+    val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
 
 
@@ -1728,7 +1729,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("abc", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
 
 
@@ -1770,7 +1771,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val data = Seq(input1, input2)
     val schema = StructType(StructField("a_binary_type_of_col", BinaryType, nullable=true)::Nil)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
+    val df = spark.createDataFrame(rowRDD,schema)
     df.show
 
     val numDfRows = df.count()
@@ -1803,7 +1804,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("a", BooleanType, nullable=true)::Nil)
     val data = Seq(true, false, null)
     val rowRDD = spark.sparkContext.parallelize(data).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema).coalesce(3)
+    val df = spark.createDataFrame(rowRDD,schema)
 
     val stmt = conn.createStatement()
     stmt.execute("DROP TABLE IF EXISTS "+ tableName)
@@ -1842,7 +1843,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val b = -128.toByte
     val data = spark.sparkContext.parallelize(Seq(a,b))
     val rowRDD = data.map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD,schema).coalesce(2)
+    val df = spark.createDataFrame(rowRDD,schema)
 
     df.show
     df.schema
@@ -1890,7 +1891,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       null
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1929,7 +1930,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       Timestamp.valueOf("2014-01-01 23:00:01")
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     df.schema
     val numDfRows = df.count()
@@ -1970,7 +1971,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(4)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -2010,7 +2011,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     )
 
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -2054,7 +2055,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       l
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -2092,7 +2093,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       sh
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
     val numDfRows = df.count()
@@ -2129,7 +2130,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       sh
     )
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(1)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
 
@@ -2159,7 +2160,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("i", IntegerType, nullable=true)::Nil)
     val inputData: Seq[Any] = List(500, -500, 2147483647, -2147483648, null)
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(5)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
 
@@ -2191,7 +2192,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = StructType(StructField("i", IntegerType, nullable=true)::Nil)
     val inputData: Seq[Any] = List(500, -500, 2147483647, -2147483648, null)
     val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema).coalesce(5)
+    val df = spark.createDataFrame(rowRDD, schema)
     df.show
     println("df.schema=" + df.schema)
     val numBadRows = 1  // the null due to "NOT NULL" in create DDL
