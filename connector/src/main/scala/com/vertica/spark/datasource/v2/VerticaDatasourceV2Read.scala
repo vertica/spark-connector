@@ -16,23 +16,64 @@ package com.vertica.spark.datasource.v2
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-
 import com.vertica.spark.config.ReadConfig
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader}
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
+import org.apache.spark.sql.sources.Filter
+
+trait PushdownFilter {
+  def getFilterString: String
+}
+
+case class PushFilter(filter: Filter, filterString: String) extends PushdownFilter {
+  def getFilterString: String = this.filterString
+}
+
+case class NonPushFilter(filter: Filter) extends AnyVal
 
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder {
+class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with
+  SupportsPushDownFilters with SupportsPushDownRequiredColumns {
+  private var pushFilters: List[PushFilter] = Nil
+  private var requiredSchema: StructType = StructType(Nil)
+
 /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
+    config.setPushdownFilters(this.pushFilters)
+    config.setRequiredSchema(this.requiredSchema)
     new VerticaScan(config)
+  }
+
+  override def pushFilters(filters: Array[Filter]): Array[Filter] = {
+    val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())
+    val (nonPushFilters, pushFilters): (List[NonPushFilter], List[PushFilter]) = filters
+      .map(PushdownUtils.genFilter)
+      .foldLeft(initialLists)((acc, filter) => {
+        val (nonPushFilters, pushFilters) = acc
+        filter match {
+          case Left(nonPushFilter) => (nonPushFilter :: nonPushFilters, pushFilters)
+          case Right(pushFilter) => (nonPushFilters, pushFilter :: pushFilters)
+        }
+      })
+
+    this.pushFilters = pushFilters
+
+    nonPushFilters.map(_.filter).toArray
+  }
+
+  override def pushedFilters(): Array[Filter] = {
+    this.pushFilters.map(_.filter).toArray
+  }
+
+  override def pruneColumns(requiredSchema: StructType): Unit = {
+    this.requiredSchema = requiredSchema
   }
 }
 
@@ -43,16 +84,13 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder {
   * Extends mixin class to represent type of read. Options are Batch or Stream, we are doing a batch read.
   */
 class VerticaScan(config: ReadConfig) extends Scan with Batch {
-
-
-
   /**
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    (new DSReadConfigSetup).getTableSchema(config) match {
-      case Right(schema) => schema
-      case Left(err) => throw new Exception(err.msg)
+    ((new DSReadConfigSetup).getTableSchema(config), config.getRequiredSchema) match {
+      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+      case (Left(err), _) => throw new Exception(err.msg)
     }
   }
 
@@ -66,9 +104,10 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
   override def planInputPartitions(): Array[InputPartition] = {
-    (new DSReadConfigSetup).performInitialSetup(config) match {
+    new DSReadConfigSetup()
+      .performInitialSetup(config) match {
       case Left(err) => throw new Exception(err.msg)
-      case Right(opt) => opt match  {
+      case Right(opt) => opt match {
         case None =>
           val err = ConnectorError(PartitioningError)
           throw new Exception(err.msg)

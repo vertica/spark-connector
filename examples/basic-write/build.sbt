@@ -11,15 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.core
+scalaVersion := "2.12.12"
+name := "spark-vertica-connector-functional-tests"
+organization := "com.vertica"
+version := "1.0"
 
-/**
- * Interface for getting a unique session ID
- */
-trait SessionIdInterface {
-  def getId : String
-}
+resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
+resolvers += "jitpack" at "https://jitpack.io"
 
-object SessionId extends SessionIdInterface {
-  def getId : String = java.util.UUID.randomUUID.toString.replace("-", "_")
-}
+libraryDependencies += "com.typesafe" % "config" % "1.4.1"

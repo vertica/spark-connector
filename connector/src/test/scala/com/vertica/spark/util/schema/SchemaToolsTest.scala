@@ -63,7 +63,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
-  val tablename = "testtable"
+  val tablename = "\"testtable\""
 
   it should "parse a single-column double schema" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
@@ -349,7 +349,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.query _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
       case Left(errList) =>
@@ -385,5 +385,21 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000) == Right("VARCHAR(5000)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000) == Right("VARCHAR(65000)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000) == Right("LONG VARCHAR(100000)"))
+  }
+
+  it should "Return a list of column names to use for copy statement" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    val schema = new StructType(Array(StructField("col1", DateType, nullable = true), StructField("col2", IntegerType, nullable = true)))
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DATE, "DATE", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.INTEGER, "INTEGER", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 2)
+
+    val schemaTools = new SchemaTools(logProvider)
+
+    schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
+      case Left(err) => fail(err.msg)
+      case Right(str) => assert(str == "(\"col1\",\"col2\")")
+    }
   }
 }

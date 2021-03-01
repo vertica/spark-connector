@@ -24,7 +24,7 @@ object WriteFailed extends WriterCommitMessage
 /**
   * Builds the class for use in writing to Vertica
   */
-class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder {
+class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with SupportsTruncate {
 /**
   * Builds the class representing a write operation to a Vertica table
   *
@@ -33,6 +33,12 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder {
   override def buildForBatch(): BatchWrite = {
     new VerticaBatchWrite(config)
   }
+
+  def truncate: WriteBuilder = {
+    config.setOverwrite(true)
+    this
+  }
+
 }
 
 /**
@@ -62,7 +68,13 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
-  override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
+  override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
+    val writer = new DSWriter(config, "")
+    writer.commitRows() match {
+      case Left(err) => throw new Exception(err.msg)
+      case Right(_) => ()
+    }
+  }
 
 /**
   * Responsible for cleaning up a failed write operation.
@@ -70,7 +82,9 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after one or more worker nodes report that they have failed.
   */
-  override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {}
+  override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
+    throw new Exception("Writing job aborted. Check spark worker log for specific error.")
+  }
 }
 
 /**
@@ -131,7 +145,9 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
 /**
   * Initiates final stages of writing for a failed write of this partition.
   */
-  override def abort(): Unit = {}
+  override def abort(): Unit = {
+    writer.closeWrite()
+  }
 
 /**
   * Called when all rows have been written.

@@ -14,7 +14,34 @@
 package com.vertica.spark.config
 
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.v2.PushdownFilter
+import org.apache.spark.sql.types.StructType
 
-trait ReadConfig extends GenericConfig
+trait ReadConfig extends GenericConfig {
+  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit
+  def setRequiredSchema(requiredSchema: StructType): Unit
+  def getRequiredSchema: StructType
+}
 
-final case class DistributedFilesystemReadConfig(override val logLevel: Level, jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, tablename: TableName, partitionCount: Option[Int], metadata: Option[VerticaReadMetadata]) extends ReadConfig
+final case class DistributedFilesystemReadConfig(
+                                                  override val logLevel: Level,
+                                                  jdbcConfig: JDBCConfig,
+                                                  fileStoreConfig: FileStoreConfig,
+                                                  tablename: TableName,
+                                                  partitionCount: Option[Int],
+                                                  metadata: Option[VerticaReadMetadata]
+                                                ) extends ReadConfig {
+  private var pushdownFilters: List[PushdownFilter] = Nil
+  private var requiredSchema: StructType = StructType(Nil)
+
+  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
+    this.pushdownFilters = pushdownFilters
+  }
+
+  def setRequiredSchema(requiredSchema: StructType): Unit = {
+    this.requiredSchema = requiredSchema
+  }
+
+  def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
+  def getRequiredSchema: StructType = this.requiredSchema
+}

@@ -21,7 +21,7 @@ import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.parquet.hadoop.{ParquetFileReader, ParquetWriter}
+import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.parquet.{ParquetReadSupport, ParquetWriteSupport}
 import org.apache.spark.sql.internal.SQLConf
@@ -171,6 +171,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   }
 
   def openWriteParquetFile(filename: String): Either[ConnectorError, Unit] = {
+    logger.debug("Opening write to file: " + filename)
     val builder = new VerticaParquetBuilder(new Path(s"$filename"))
 
     val writerOrError = for {
@@ -179,7 +180,10 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
         case Left(ConnectorError(RemoveFileDoesNotExistError)) => Right(())
         case Left(err) => Left(err)
       }
-      writer <- Try{builder.withConf(hdfsConfig).enableValidation().build()} match {
+      writer <- Try{builder.withConf(hdfsConfig)
+        .enableValidation()
+        .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+        .build()} match {
         case Success(writer) => Right(writer)
         case Failure(exception) =>
           logger.error("Error opening write to HDFS.", exception)
@@ -427,7 +431,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     val path = new Path(s"$filename")
     val fs = path.getFileSystem(hdfsConfig)
     val result = fsAction(fs, path)
-    fs.close()
     result
   }
 }

@@ -22,6 +22,8 @@ import com.vertica.spark.config.TableName
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
+import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
+import org.scalactic.TolerantNumerics
 
 class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
@@ -38,6 +40,8 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
       case Valid(_) => fail
     }
   }
+
+  implicit val floatEquality = TolerantNumerics.tolerantFloatEquality(0.01f)
 
   it should "parse the logging level" in {
     var opts = Map("logging_level" -> "ERROR")
@@ -103,6 +107,24 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(err.toNonEmptyList.head.err == InvalidPortError)
   }
 
+  it should "parse the failed row tolerance" in {
+    val opts = Map("failed_rows_percent_tolerance" -> "0.05")
+    val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(tol === 0.05f)
+  }
+
+  it should "default to zero failed row tolerance" in {
+    val opts = Map[String, String]()
+    val tol = getResultOrAssert[Float](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(tol === 0.00f)
+  }
+
+  it should "error on invalid failed row tolerance" in {
+    val opts = Map("failed_rows_percent_tolerance" -> "1.5")
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
+    assert(err.toNonEmptyList.head.err == InvalidFailedRowsTolerance)
+  }
+
   it should "parse the db name" in {
     val opts = Map("db" -> "testdb")
     val db = getResultOrAssert[String](DSConfigSetupUtils.getDb(opts))
@@ -163,7 +185,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "parse full table name with schema" in {
     val opts = Map("dbschema" -> "test", "table" -> "table")
     val schema = getResultOrAssert[TableName](DSConfigSetupUtils.validateAndGetFullTableName(opts))
-    assert(schema.getFullTableName == "test.table")
+    assert(schema.getFullTableName == "\"test\".\"table\"")
   }
 
   it should "fail with missing table name" in {
@@ -223,6 +245,18 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val opts = Map("target_table_sql" -> stmt)
 
     val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getTargetTableSQL(opts))
+
+    res match {
+      case Some(str) => assert(str == stmt)
+      case None => fail
+    }
+  }
+
+  it should "parse custom column copy list" in {
+    val stmt = "col1"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
       case Some(str) => assert(str == stmt)
