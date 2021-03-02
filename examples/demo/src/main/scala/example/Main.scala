@@ -37,10 +37,6 @@ class DemoCases(conf: Config) {
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()
 
-  def noCase(): Unit = {
-    println("DEMO: No case defined with that name")
-  }
-
   def basicRead(): Unit = {
     println("DEMO: Reading.")
 
@@ -55,7 +51,7 @@ class DemoCases(conf: Config) {
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
-      df.rdd.foreach(println)
+      df.rdd.foreach(x => println("DEMO: Read value " + x))
     } finally {
       spark.close()
       conn.close()
@@ -78,7 +74,7 @@ class DemoCases(conf: Config) {
 
       val dfCol = df.select("b")
 
-      dfCol.rdd.foreach(println)
+      dfCol.rdd.foreach(x => println("DEMO: Read value " + x))
     } finally {
       spark.close()
       conn.close()
@@ -97,14 +93,15 @@ class DemoCases(conf: Config) {
       val insert = "insert into " + tableName + " values(2, 3)"
       TestUtils.populateTableBySQL(stmt, insert, n)
       val insert2 = "insert into " + tableName + " values(5, 1)"
+      TestUtils.populateTableBySQL(stmt, insert, n)
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
       val dfGreater = df.filter("b > 4")
-      dfGreater.rdd.foreach(println)
+      dfGreater.rdd.foreach(x => println("DEMO: Read value " + x))
 
       val dfEqual = df.filter("a == 1")
-      dfGreater.rdd.foreach(println)
+      dfEqual.rdd.foreach(x => println("DEMO: Read value " + x))
     } finally {
       spark.close()
       conn.close()
@@ -118,14 +115,16 @@ object Main extends App {
   val demoCases = new DemoCases(conf)
 
   val m: Map[String, () => Unit] = Map(
-    "basicRead" -> demoCases.basicRead
+    "basicRead" -> demoCases.basicRead,
+    "columnPushdown" -> demoCases.columnPushdown,
+    "filterPushdown" -> demoCases.filterPushdown
   )
 
   if(args.size != 1) {
     println("DEMO: Please enter name of demo case to run.")
   }
   else {
-    val f: () => Unit = m.getOrElse(args.head, demoCases.noCase)
+    val f: () => Unit = m.getOrElse(args.head, println("DEMO: No case defined with that name"))
     f()
   }
 
