@@ -97,10 +97,10 @@ class DemoCases(conf: Config) {
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
-      val dfGreater = df.filter("b > 4")
+      val dfGreater = df.filter("a > 4")
       dfGreater.rdd.foreach(x => println("DEMO: Read value " + x))
 
-      val dfEqual = df.filter("a == 1")
+      val dfEqual = df.filter("b == 1")
       dfEqual.rdd.foreach(x => println("DEMO: Read value " + x))
     } finally {
       spark.close()
