@@ -110,7 +110,7 @@ class DemoCases(conf: Config) {
 }
 
 object Main extends App {
-  def noCase: Unit = println("DEMO: No case defined with that name")
+  def noCase(): Unit = println("DEMO: No case defined with that name")
 
   val conf: Config = ConfigFactory.load()
 
