@@ -110,6 +110,8 @@ class DemoCases(conf: Config) {
 }
 
 object Main extends App {
+  def noCase: Unit = println("DEMO: No case defined with that name")
+
   val conf: Config = ConfigFactory.load()
 
   val demoCases = new DemoCases(conf)
@@ -124,7 +126,7 @@ object Main extends App {
     println("DEMO: Please enter name of demo case to run.")
   }
   else {
-    val f: () => Unit = m.getOrElse(args.head, println("DEMO: No case defined with that name"))
+    val f: () => Unit = m.getOrElse(args.head, noCase)
     f()
   }
 
