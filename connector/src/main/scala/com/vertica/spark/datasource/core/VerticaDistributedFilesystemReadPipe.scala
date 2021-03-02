@@ -276,7 +276,7 @@ class VerticaDistributedFilesystemReadPipe(
       _ = this.fileIdx = 0
 
       // Check if empty and initialize with first file range
-      ret = part.fileRanges.headOption match {
+      ret <- part.fileRanges.headOption match {
         case None =>
           logger.warn("No files to read set on partition.")
           Left(ConnectorError(DoneReading))
