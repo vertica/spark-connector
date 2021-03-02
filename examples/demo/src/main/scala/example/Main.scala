@@ -93,7 +93,7 @@ class DemoCases(conf: Config) {
       val insert = "insert into " + tableName + " values(2, 3)"
       TestUtils.populateTableBySQL(stmt, insert, n)
       val insert2 = "insert into " + tableName + " values(5, 1)"
-      TestUtils.populateTableBySQL(stmt, insert, n)
+      TestUtils.populateTableBySQL(stmt, insert2, n)
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
