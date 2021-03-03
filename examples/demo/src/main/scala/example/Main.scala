@@ -198,7 +198,7 @@ class DemoCases(conf: Config) {
 
     try {
       val tableName = "dftest"
-      val customCreate = "CREATE TABLE dftest(col1 integer, col2 string, col3 float);"
+      val customCreate = "CREATE TABLE dftest(col1 integer, col2 varchar(2345), col3 float);"
       val copyList = "col1, col2"
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
 
