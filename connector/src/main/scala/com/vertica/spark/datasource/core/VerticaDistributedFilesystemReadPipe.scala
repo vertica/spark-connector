@@ -30,7 +30,7 @@ import org.apache.spark.sql.types.StructType
  *
  * @param filename Full path with name of the parquet file
  * @param minRowGroup First row group to read from parquet file
- * @param maxRowGroup Lasst row group to read from parquet file
+ * @param maxRowGroup Last row group to read from parquet file
  * @param rangeIdx Range index for this file. Used to track access to this file / cleanup among different nodes. If there are three ranges for a given file this will be a value between 0 and 2
  */
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Option[Int] = None)
@@ -47,7 +47,7 @@ final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFi
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
  *
- * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instatitated here.
+ * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instantiated here.
  */
 class VerticaDistributedFilesystemReadPipe(
                                             val config: DistributedFilesystemReadConfig,
@@ -58,6 +58,12 @@ class VerticaDistributedFilesystemReadPipe(
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
   private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+
+  // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
+  // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
+  private val maxFileSize = 512
+  private val maxRowGroupSize = 64
+
 
   private def retrieveMetadata(): Either[ConnectorError, VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
@@ -123,7 +129,7 @@ class VerticaDistributedFilesystemReadPipe(
           partitions = partitions :+ partition
           curFileRanges = List[ParquetFileRange]()
           i = 0
-          low = j+1
+          low = j + 1
         }
         else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
@@ -193,11 +199,6 @@ class VerticaDistributedFilesystemReadPipe(
       // Safety check: Remove export directory if it exists (Vertica must create this dir)
       _ <- fileStoreLayer.removeDir(hdfsPath)
 
-      // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
-      // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
-      maxFileSize = 512
-      maxRowGroupSize = 64
-
       // File permissions.
       // TODO: Add file permission option w/ default value '700'
       filePermissions = "777"
@@ -236,11 +237,12 @@ class VerticaDistributedFilesystemReadPipe(
       fileMetadata <- fileList.map(filename => fileStoreLayer.getParquetFileMetadata(filename)).toList.sequence
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
-      partitionCount = if(totalRowGroups < requestedPartitionCount) {
+      partitionCount = if (totalRowGroups < requestedPartitionCount) {
         logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)
         totalRowGroups
-      } else requestedPartitionCount
-
+      } else {
+        requestedPartitionCount
+      }
 
       // Get room per partition for row groups in order to split the groups up evenly
       extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
@@ -265,49 +267,56 @@ class VerticaDistributedFilesystemReadPipe(
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] = {
-    val part = verticaPartition match {
-      case p: VerticaDistributedFilesystemPartition => p
-      case _ => return Left(ConnectorError(InvalidPartition))
-    }
-    this.partition = Some(part)
-    this.fileIdx = 0
+    for {
+      part <- verticaPartition match {
+          case p: VerticaDistributedFilesystemPartition => Right(p)
+          case _ => Left(ConnectorError(InvalidPartition))
+        }
+      _ = this.partition = Some(part)
+      _ = this.fileIdx = 0
 
-    // Check if empty and initialize with first file range
-    part.fileRanges.headOption match {
-      case None =>
-        logger.warn("No files to read set on partition.")
-        Left(ConnectorError(DoneReading))
-      case Some(head) =>
-        fileStoreLayer.openReadParquetFile(head)
-    }
+      // Check if empty and initialize with first file range
+      ret <- part.fileRanges.headOption match {
+        case None =>
+          logger.warn("No files to read set on partition.")
+          Left(ConnectorError(DoneReading))
+        case Some(head) =>
+          fileStoreLayer.openReadParquetFile(head)
+      }
+    } yield ret
   }
 
   private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
-    if(curIdx >= part.fileRanges.size) {
-      logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
-      return None
-    }
+    for {
+      _ <- if (curIdx >= part.fileRanges.size) {
+        logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
+        None
+      } else {
+        Some(())
+      }
 
-    val curRange = part.fileRanges(curIdx)
-    part.rangeCountMap match {
-      case Some(rangeCountMap) if rangeCountMap.contains(curRange.filename) => curRange.rangeIdx match {
-        case Some(rangeIdx) => Some(FileCleanupInfo(curRange.filename,rangeIdx,rangeCountMap(curRange.filename)))
+      curRange = part.fileRanges(curIdx)
+      ret <- part.rangeCountMap match {
+        case Some (rangeCountMap) if rangeCountMap.contains (curRange.filename) => curRange.rangeIdx match {
+          case Some (rangeIdx) => Some (FileCleanupInfo (curRange.filename, rangeIdx, rangeCountMap (curRange.filename)))
+          case None =>
+            logger.warn ("Missing range count index. Not performing any cleanup for file " + curRange.filename)
+            None
+        }
         case None =>
-          logger.warn("Missing range count index. Not performing any cleanup for file " + curRange.filename)
+          logger.warn ("Missing range count map. Not performing any cleanup for file " + curRange.filename)
+          None
+        case _ =>
+          logger.warn ("Missing value in range count map. Not performing any cleanup for file " + curRange.filename)
           None
       }
-      case None =>
-        logger.warn("Missing range count map. Not performing any cleanup for file " + curRange.filename)
-        None
-      case _ =>
-        logger.warn("Missing value in range count map. Not performing any cleanup for file " + curRange.filename)
-        None
-    }
+    } yield ret
   }
 
   /**
    * Reads a block of data to the underlying source. Called by executor.
    */
+  // scalastyle:off
   def readData: Either[ConnectorError, DataBlock] = {
     val part = this.partition match {
       case None => return Left(ConnectorError(UninitializedReadError))

@@ -41,7 +41,7 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
    * @return The table's schema in spark StructType format
    */
   override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap): StructType = {
-    val table = getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
+    val table = getTable(schema = StructType(Nil), partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
     table.schema()
   }
 
@@ -67,9 +67,6 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
 
   private val CATALOG_NAME = "vertica"
   override def extractCatalog(options: CaseInsensitiveStringMap): String = {
-    println("EXTRACT CATALOG OPTIONS: ")
-    options.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
-
     // Set the spark conf for catalog class
     SparkSession.getActiveSession.get.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
 

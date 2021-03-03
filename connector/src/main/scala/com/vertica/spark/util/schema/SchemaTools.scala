@@ -58,8 +58,6 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
     scale: Int,
     signed: Boolean,
     typename: String): Either[SchemaError, DataType] = {
-    println("The type is: " + sqlType)
-    println("The type name is: " + typename)
     val answer = sqlType match {
       // scalastyle:off
       case java.sql.Types.ARRAY => null
