@@ -37,8 +37,6 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
 
 
   override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
-    println("CATALOG OPTIONS: ")
-    options.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
     VerticaDatasourceV2Catalog.catalogOptions = Some(options)
   }
 
@@ -59,9 +57,6 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   @throws[NoSuchTableException]
   override def loadTable(ident: Identifier): Table = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
-
-    println("Loading table with OPTIONS: ")
-    opt.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
 
     new VerticaTable(opt)
   }
@@ -91,7 +86,7 @@ object VerticaDatasourceV2Catalog {
   private var catalogOptions: Option[CaseInsensitiveStringMap] = None
   private var operationOptions: Option[CaseInsensitiveStringMap] = None
 
-  def setOptions(opts: CaseInsensitiveStringMap) = {
+  def setOptions(opts: CaseInsensitiveStringMap): Unit = {
     this.operationOptions = Some(opts)
   }
 

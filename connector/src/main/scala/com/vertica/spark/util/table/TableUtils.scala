@@ -152,14 +152,16 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
             }
           }
 
-          val col = schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
-            case Left(err) =>
-              logger.error("Schema error: " + err)
-              return Left(ConnectorError(SchemaConversionError))
-            case Right(datatype) => datatype + decimal_qualifier
-          }
-          sb.append(col)
-          if (!s.nullable) { sb.append(" NOT NULL") }
+          for {
+            col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
+              case Left(err) =>
+                logger.error("Schema error: " + err)
+                Left(ConnectorError(SchemaConversionError))
+              case Right(datatype) => Right(datatype + decimal_qualifier)
+            }
+            _ = sb.append(col)
+            _ = if (!s.nullable) { sb.append(" NOT NULL") }
+          } yield ()
         })
 
         sb.append(")  INCLUDE SCHEMA PRIVILEGES ")

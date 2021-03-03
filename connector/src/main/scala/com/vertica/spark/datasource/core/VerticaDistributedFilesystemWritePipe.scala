@@ -1,6 +1,17 @@
-package com.vertica.spark.datasource.core
+// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import java.sql.Struct
+package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
@@ -29,10 +40,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def checkSchemaForDuplicates(schema: StructType): Either[ConnectorError, Unit] = {
     val names = schema.fields.map(f => f.name)
-    if(names.distinct.size != names.size) {
+    if(names.distinct.length != names.length) {
       Left(ConnectorError(DuplicateColumnsError))
+    } else {
+      Right(())
     }
-    else Right(())
   }
 
   /**
@@ -152,10 +164,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           0
         }
 
-      failedRowsPercent = {
-        if (rowsCopied > 0) rejectedCount.toDouble / (rowsCopied.toDouble + rejectedCount.toDouble)
-        else 1.0
+      failedRowsPercent = if (rowsCopied > 0) {
+        rejectedCount.toDouble / (rowsCopied.toDouble + rejectedCount.toDouble)
+      } else {
+        1.0
       }
+
 
       passedFaultToleranceTest = failedRowsPercent <= config.failedRowPercentTolerance.toDouble
 
@@ -170,15 +184,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       _ = logger.info(s"Verifying rows saved to Vertica is within user tolerance...")
       _ = logger.info(tolerance_message + {
-        if(passedFaultToleranceTest) "...PASSED.  OK to commit to database."
-        else "...FAILED.  NOT OK to commit to database"
+        if (passedFaultToleranceTest) {
+          "...PASSED.  OK to commit to database."
+        } else {
+          "...FAILED.  NOT OK to commit to database"
+        }
       })
 
-      _ <- if(rejectedCount == 0) {
+      _ <- if (rejectedCount == 0) {
         val dropRejectsTableStatement = "DROP TABLE IF EXISTS " + rejectsTable  + " CASCADE"
         logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
         jdbcLayer.execute(dropRejectsTableStatement)
-      } else Right(())
+      } else {
+        Right(())
+      }
 
       testResult = FaultToleranceTestResult(passedFaultToleranceTest, failedRowsPercent)
     } yield testResult
@@ -217,13 +236,15 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
 
+    val tableNameMaxLength = 30
+
     val ret = for {
       // Get columnList
       columnList <- getColumnList
 
       tableName = config.tablename.name
       sessionId = config.sessionId
-      rejectsTableName = "\"" + tableName.substring(0,Math.min(30,tableName.length)) + "_" + sessionId + "_COMMITS" + "\""
+      rejectsTableName = "\"" + tableName.substring(0,Math.min(tableNameMaxLength,tableName.length)) + "_" + sessionId + "_COMMITS" + "\""
 
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,

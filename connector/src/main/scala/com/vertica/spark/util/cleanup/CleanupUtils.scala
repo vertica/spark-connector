@@ -81,16 +81,19 @@ object CleanupUtils extends CleanupUtilsInterface {
       allExist <- Right(filesExist.forall(identity))
 
       // Delete all portions
-      _ <- if(allExist){
-          (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-                fileStoreLayer.removeFile(recordFileName(filename, idx))
-              ).toList.sequence
-           } else Right(())
+      _ <- if (allExist) {
+        (0 until fileCleanupInfo.fileRangeCount).map(idx =>
+        fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
+      } else {
+        Right(())
+      }
 
       // Delete the original file
-      _ <- if(allExist) {
-            fileStoreLayer.removeFile(filename)
-          } else Right(())
+      _ <- if (allExist) {
+        fileStoreLayer.removeFile(filename)
+      } else {
+        Right(())
+      }
     } yield ()
   }
 }
