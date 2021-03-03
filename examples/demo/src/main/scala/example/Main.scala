@@ -17,11 +17,20 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{FloatType, IntegerType, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 class DemoCases(conf: Config) {
   val readOpts = Map(
+    "host" -> conf.getString("functional-tests.host"),
+    "user" -> conf.getString("functional-tests.user"),
+    "db" -> conf.getString("functional-tests.db"),
+    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "password" -> conf.getString("functional-tests.password"),
+    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+  )
+
+  val writeOpts = Map(
     "host" -> conf.getString("functional-tests.host"),
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
@@ -105,6 +114,104 @@ class DemoCases(conf: Config) {
     } finally {
       spark.close()
       conn.close()
+    }
+  }
+
+  def writeAppendMode: Unit = {
+    println("DEMO: Writing in append mode")
+
+    try {
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+      val data = Seq(Row(77))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Append
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeOverwriteMode: Unit = {
+    println("DEMO: Writing in overwrite mode")
+
+    try {
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", StringType)))
+
+      val data = Seq(Row("hello"), Row("world"))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Overwrite
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeErrorIfExistsMode: Unit = {
+    println("DEMO: Writing in error if exists mode")
+
+    try {
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", FloatType)))
+
+      val data = (1 to 1000).map(x => Row(x.toFloat))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.ErrorIfExists
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeCustomStatement: Unit = {
+    println("DEMO: Writing with custom create table statement and copy list")
+
+    try {
+      val tableName = "dftest"
+      val customCreate = "CREATE TABLE dftest(col1 integer, col2 string, col3 float);"
+      val copyList = "col1, col2"
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
+
+      val data = (1 to 1000000).map(x => Row(x))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Ignore
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts +
+        ("table" -> tableName, "target_table_sql" -> customCreate, "copy_column_list" -> copyList)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeIgnoreMode: Unit = {
+    println("DEMO: Writing in ignore mode")
+
+    try {
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+      val data = (1 to 1000000).map(x => Row(x))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Ignore
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    } finally {
+      spark.close()
     }
   }
 }
