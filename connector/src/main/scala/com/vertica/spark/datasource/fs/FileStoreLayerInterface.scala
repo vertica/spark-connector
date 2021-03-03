@@ -154,6 +154,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   val hdfsConfig: Configuration = new Configuration()
   schema match {
     case Some(schema) =>
+      logger.debug("Read and write support schema: " + schema)
       hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
       hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
     case None => ()

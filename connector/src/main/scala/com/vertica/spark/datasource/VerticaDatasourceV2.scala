@@ -40,9 +40,7 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
    * @param caseInsensitiveStringMap A string map of options that was passed in by user to datasource
    * @return The table's schema in spark StructType format
    */
-  override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap):
-  StructType = {
-
+  override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap): StructType = {
     val table = getTable(schema = StructType(Nil), partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
     table.schema()
   }

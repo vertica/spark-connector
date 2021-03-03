@@ -18,6 +18,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
+import org.apache.spark.sql.types.StructType
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
@@ -38,8 +39,12 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
     config match {
       case cfg: DistributedFilesystemReadConfig =>
         val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
-          case Some(metadata) => Some(metadata.schema)
-          case None => None
+          case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
+            Some(cfg.getRequiredSchema)
+          } else {
+            Some(metadata.schema)
+          }
+          case _ => None
         })
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
     }

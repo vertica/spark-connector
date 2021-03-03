@@ -516,6 +516,66 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
+  it should "load data from Vertica with a column projection pushdown with the correct values" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (excludeMe INTEGER, includeMe INTEGER)")
+
+    var insert = "insert into "+ tableName1 + " values(1, 2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(5, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("includeMe")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(!executedPlanString.contains("excludeMe"))
+    assert(executedPlanString.contains("includeMe"))
+
+    assert(dr.collect().mkString(",") == "[2],[2],[2],[3],[3],[3],[3]")
+
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a filter pushdown with the correct values" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a INTEGER, b INTEGER)")
+
+    var insert = "insert into "+ tableName1 + " values(4, 6)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(23, 7)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfFiltered = df.filter("a < 10")
+
+    val r = dfFiltered.count
+
+    assert(!dfFiltered
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(r == n)
+
+    assert(dfFiltered.collect().mkString(",") == "[4,6],[4,6],[4,6]")
+
+    stmt.execute("drop table " + tableName1)
+  }
+
   it should "fetch the correct results when startsWith and endsWith functions are used" in {
     val tableName1 = "dftest1"
 
