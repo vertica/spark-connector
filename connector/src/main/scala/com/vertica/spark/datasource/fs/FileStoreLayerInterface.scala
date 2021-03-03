@@ -281,7 +281,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       val parquetFileMetadata = fileReader.getFooter.getFileMetaData
       val fileSchema = parquetFileMetadata.getSchema
-      println("nejnejnejnop: " + fileSchema)
       val fileMetadata = parquetFileMetadata.getKeyValueMetaData
       val readContext = readSupport.init(new InitContext(hdfsConfig, toSetMultiMap(fileMetadata), fileSchema))
 
@@ -290,7 +289,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       // Set readers requested schema from read context
       val requestedSchema = readContext.getRequestedSchema
-      println("nejnejnej: " + requestedSchema)
       fileReader.setRequestedSchema(requestedSchema)
 
       // Column IO for record conversion
@@ -298,7 +296,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
-      columnIO.getColumnNames.asScala.foreach(arr => println(arr.length))
 
       HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
     } match {
