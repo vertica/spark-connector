@@ -87,8 +87,6 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
       } else {
         ()
       }
-
-      _ = logger.debug("DSREADER ROW: " + row)
     } yield Some(row)
 
     ret match {
