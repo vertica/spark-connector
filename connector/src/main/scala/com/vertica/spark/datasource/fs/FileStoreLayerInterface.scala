@@ -312,24 +312,28 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   }
 
   override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = {
-    if (this.done){
-      println("DONE SET; DONE READING")
-      return Left(ConnectorError(DoneReading))
-    }
+    val dataBlock = for {
+      _ <- if (this.done) {
+        Left(ConnectorError(DoneReading))
+      } else {
+        Right(())
+      }
 
-    val dataBlock = for{
-      reader <- this.reader match {
-        case Some (reader) => Right (reader)
-        case None =>
-          logger.error ("Error reading parquet file from HDFS: Reader was not initialized.")
-          Left(ConnectorError(IntermediaryStoreReadError))
-        }
-      dataBlock <- reader.read(blockSize)
+      dataBlock <- for {
+          reader <- this.reader match {
+            case Some(reader) => Right(reader)
+            case None =>
+              logger.error("Error reading parquet file from HDFS: Reader was not initialized.")
+              Left(ConnectorError(IntermediaryStoreReadError))
+          }
+          dataBlock <- reader.read(blockSize)
+        } yield dataBlock
+
     } yield dataBlock
 
     dataBlock match {
       case Left(_) => ()
-      case Right(block) => if(block.data.size < blockSize) {
+      case Right(block) => if (block.data.size < blockSize) {
         this.done = true
       }
     }

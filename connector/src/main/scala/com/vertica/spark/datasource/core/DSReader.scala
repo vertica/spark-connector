@@ -59,35 +59,43 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
   }
 
   def readRow(): Either[ConnectorError, Option[InternalRow]] = {
-    // Get current or next data block
-    val dataBlock: DataBlock = block match {
-      case None =>
-        pipe.readData match {
-          case Left(err) =>
-            err.err match {
-              case DoneReading => return Right(None) // If there's no more data to be read, return nothing for row
-              case _ => return Left(err) // If something else went wrong, return error
-            }
-          case Right(data) =>
-            block = Some(data)
-            data
-        }
-      case Some(block) => block
-    }
+    val ret = for {
+      // Get current or next data block
+      dataBlock <- block match {
+        case None =>
+          pipe.readData match {
+            case Left(err) => Left(err)
+            case Right(data) =>
+              block = Some(data)
+              Right(data)
+          }
+        case Some(block) => Right(block)
+      }
 
-    // Get row from block. If this is the last row of the block, reset the block
-    if(dataBlock.data.isEmpty){
-      return Right(None)
-    }
+      // Get row from block. If this is the last row of the block, reset the block
+      _ <- if (dataBlock.data.isEmpty) {
+        Left(ConnectorError(DoneReading))
+      } else {
+        Right(())
+      }
 
-    val row = dataBlock.data(i)
-    i += 1
-    if(i >= dataBlock.data.size) {
-      block = None
-      i = 0
-    }
+      row = dataBlock.data(i)
+      _ = i += 1
+      _ = if (i >= dataBlock.data.size) {
+        block = None
+        i = 0
+      } else {
+        ()
+      }
+    } yield Some(row)
 
-    Right(Some(row))
+    ret match {
+      case Right(optRow) => Right(optRow)
+      case Left(err) => err.err match {
+        case DoneReading => Right(None) // If there's no more data to be read, return nothing for row
+        case _ => Left(err) // If something else went wrong, return error
+      }
+    }
   }
 
   def closeRead(): Either[ConnectorError, Unit] = {
