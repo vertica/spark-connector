@@ -34,6 +34,7 @@ import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
+import org.apache.parquet.schema.MessageType
 import org.apache.spark.sql.types.StructType
 
 import collection.JavaConverters._
@@ -154,6 +155,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   val hdfsConfig: Configuration = new Configuration()
   schema match {
     case Some(schema) =>
+      logger.debug("Read and write support schema: " + schema)
       hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
       hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
     case None => ()
@@ -279,6 +281,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       val parquetFileMetadata = fileReader.getFooter.getFileMetaData
       val fileSchema = parquetFileMetadata.getSchema
+      println("nejnejnejnop: " + fileSchema)
       val fileMetadata = parquetFileMetadata.getKeyValueMetaData
       val readContext = readSupport.init(new InitContext(hdfsConfig, toSetMultiMap(fileMetadata), fileSchema))
 
@@ -287,6 +290,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       // Set readers requested schema from read context
       val requestedSchema = readContext.getRequestedSchema
+      println("nejnejnej: " + requestedSchema)
       fileReader.setRequestedSchema(requestedSchema)
 
       // Column IO for record conversion
@@ -294,6 +298,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
+      columnIO.getColumnNames.asScala.foreach(arr => println(arr.length))
 
       HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
     } match {

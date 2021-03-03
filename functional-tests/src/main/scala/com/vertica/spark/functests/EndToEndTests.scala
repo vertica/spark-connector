@@ -38,6 +38,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
+  /*
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -458,7 +459,46 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     dr.show
     stmt.execute("drop table " + tableName1)
   }
+   */
 
+  it should "load data from Vertica with a column projection pushdown with the correct values" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (excludeMe INTEGER, includeMe INTEGER)")
+
+    var insert = "insert into "+ tableName1 + " values(1, 2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(5, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("includeMe")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(!executedPlanString.contains("excludeMe"))
+    assert(executedPlanString.contains("includeMe"))
+
+    assert(dr.count() == 7)
+
+    dr.collect()
+
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a filter pushdown with the correct values" in {
+
+  }
+
+  /*
   it should "load data from Vertica with multiple column projection pushdowns" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
@@ -2766,4 +2806,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
+
+   */
 }
