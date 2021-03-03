@@ -174,6 +174,25 @@ class DemoCases(conf: Config) {
     }
   }
 
+  def writeIgnoreMode(): Unit = {
+    println("DEMO: Writing in ignore mode")
+
+    try {
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+      val data = (1 to 50000).map(x => Row(x))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Ignore
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
   def writeCustomStatement(): Unit = {
     println("DEMO: Writing with custom create table statement and copy list")
 
@@ -183,7 +202,7 @@ class DemoCases(conf: Config) {
       val copyList = "col1, col2"
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
 
-      val data = (1 to 1000000).map(x => Row(x, "test"))
+      val data = (1 to 1000).map(x => Row(x, "test"))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
       val mode = SaveMode.Ignore
@@ -196,24 +215,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeIgnoreMode(): Unit = {
-    println("DEMO: Writing in ignore mode")
 
-    try {
-      val tableName = "dftest"
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-
-      val data = (1 to 1000000).map(x => Row(x))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      println(df.toString())
-      val mode = SaveMode.Ignore
-
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
-
-    } finally {
-      spark.close()
-    }
-  }
 }
 
 object Main extends App {
