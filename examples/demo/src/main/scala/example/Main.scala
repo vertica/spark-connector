@@ -244,34 +244,4 @@ object Main extends App {
     f()
   }
 
-  /*
-  val writeOpts = Map(
-    "host" -> conf.getString("functional-tests.host"),
-    "user" -> conf.getString("functional-tests.user"),
-    "db" -> conf.getString("functional-tests.db"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "password" -> conf.getString("functional-tests.password"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
-  )
-
-  val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .getOrCreate()
-
-  try {
-    val tableName = "dftest"
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-
-    val data = Seq(Row(77))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    println(df.toString())
-    val mode = SaveMode.ErrorIfExists
-
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
-
-  } finally {
-    spark.close()
-  }
-   */
 }
