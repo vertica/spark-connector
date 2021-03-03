@@ -34,7 +34,6 @@ import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
-import org.apache.parquet.schema.MessageType
 import org.apache.spark.sql.types.StructType
 
 import collection.JavaConverters._
