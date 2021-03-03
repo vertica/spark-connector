@@ -50,7 +50,7 @@ class DemoCases(conf: Config) {
     println("DEMO: Reading.")
 
     try {
-      val tableName = "dftest"
+      val tableName = "readtest"
       val stmt = conn.createStatement
       val n = 20
       TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
@@ -71,7 +71,7 @@ class DemoCases(conf: Config) {
     println("DEMO: Reading with column pushdown.")
 
     try {
-      val tableName = "dftest"
+      val tableName = "readtest"
       val stmt = conn.createStatement
       val n = 20
       TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b int)")
@@ -94,7 +94,7 @@ class DemoCases(conf: Config) {
     println("DEMO: Reading with column pushdown.")
 
     try {
-      val tableName = "dftest"
+      val tableName = "readtest"
       val stmt = conn.createStatement
       val n = 20
       TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b int)")
@@ -117,7 +117,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeAppendMode: Unit = {
+  def writeAppendMode(): Unit = {
     println("DEMO: Writing in append mode")
 
     try {
@@ -136,7 +136,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeOverwriteMode: Unit = {
+  def writeOverwriteMode(): Unit = {
     println("DEMO: Writing in overwrite mode")
 
     try {
@@ -155,7 +155,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeErrorIfExistsMode: Unit = {
+  def writeErrorIfExistsMode(): Unit = {
     println("DEMO: Writing in error if exists mode")
 
     try {
@@ -174,7 +174,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeCustomStatement: Unit = {
+  def writeCustomStatement(): Unit = {
     println("DEMO: Writing with custom create table statement and copy list")
 
     try {
@@ -196,7 +196,7 @@ class DemoCases(conf: Config) {
     }
   }
 
-  def writeIgnoreMode: Unit = {
+  def writeIgnoreMode(): Unit = {
     println("DEMO: Writing in ignore mode")
 
     try {
@@ -226,7 +226,12 @@ object Main extends App {
   val m: Map[String, () => Unit] = Map(
     "basicRead" -> demoCases.basicRead,
     "columnPushdown" -> demoCases.columnPushdown,
-    "filterPushdown" -> demoCases.filterPushdown
+    "filterPushdown" -> demoCases.filterPushdown,
+    "writeAppendMode" -> demoCases.writeAppendMode,
+    "writeOverwriteMode" -> demoCases.writeOverwriteMode,
+    "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,
+    "writeIgnoreMode" -> demoCases.writeIgnoreMode,
+    "writeCustomStatement" -> demoCases.writeCustomStatement
   )
 
   if(args.size != 1) {
