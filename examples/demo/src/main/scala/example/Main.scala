@@ -162,7 +162,7 @@ class DemoCases(conf: Config) {
       val tableName = "dftest"
       val schema = new StructType(Array(StructField("col1", FloatType)))
 
-      val data = (1 to 1000).map(x => Row(x.toFloat))
+      val data = (1 to 1000).map(x => Row(x.toFloat + 0.5f))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
       val mode = SaveMode.ErrorIfExists
@@ -183,7 +183,7 @@ class DemoCases(conf: Config) {
       val copyList = "col1, col2"
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
 
-      val data = (1 to 1000000).map(x => Row(x))
+      val data = (1 to 1000000).map(x => Row(x, "test"))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
       val mode = SaveMode.Ignore
