@@ -181,7 +181,7 @@ class DemoCases(conf: Config) {
       val tableName = "dftest"
       val schema = new StructType(Array(StructField("col1", IntegerType)))
 
-      val data = (1 to 50000).map(x => Row(x))
+      val data = (1 to 10000).map(x => Row(x))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
       val mode = SaveMode.Ignore
