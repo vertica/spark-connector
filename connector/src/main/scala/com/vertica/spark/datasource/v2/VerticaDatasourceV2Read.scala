@@ -151,7 +151,10 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   val reader = new DSReader(config, partition)
 
   // Open the read
-  reader.openRead()
+  reader.openRead() match {
+    case Right(_) => ()
+    case Left(err) => throw new Exception(err.msg)
+  }
 
   var row: Option[InternalRow] = None
 
