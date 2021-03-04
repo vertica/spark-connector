@@ -205,6 +205,9 @@ class VerticaDistributedFilesystemReadPipe(
       cols <- getColumnNames(this.config.getRequiredSchema)
       _ = logger.info("Columns requested: " + cols)
 
+      pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
+      _ = logger.info("Pushdown filters: " + pushdownSql)
+
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
@@ -212,7 +215,7 @@ class VerticaDistributedFilesystemReadPipe(
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
         "') AS " + "SELECT " + cols + " FROM " +
-        config.tablename.getFullTableName + this.addPushdownFilters(this.config.getPushdownFilters) + ";"
+        config.tablename.getFullTableName + pushdownSql + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {
