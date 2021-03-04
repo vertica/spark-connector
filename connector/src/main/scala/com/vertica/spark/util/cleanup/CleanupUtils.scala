@@ -71,8 +71,9 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
   }
 
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
-    logger.info("Doing partition cleanup of file: " + filename)
     val filename = fileCleanupInfo.filename
+    logger.info("Doing partition cleanup of file: " + filename)
+
     val p = new Path(s"$filename")
     val parent = p.getParent
 
