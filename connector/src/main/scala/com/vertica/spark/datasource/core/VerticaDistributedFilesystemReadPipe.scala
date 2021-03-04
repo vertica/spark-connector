@@ -297,6 +297,7 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
+    logger.info("Getting cleanup info for partition with idx " + curIdx)
     for {
       _ <- if (curIdx >= part.fileRanges.size) {
         logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
@@ -362,7 +363,7 @@ class VerticaDistributedFilesystemReadPipe(
     // If there was an underlying error, call cleanup
     (ret, getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
-      case _ => ()
+      case _ => logger.warn("No cleanup info found")
     }
     ret
   }
