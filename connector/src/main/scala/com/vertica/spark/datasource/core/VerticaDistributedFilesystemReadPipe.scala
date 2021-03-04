@@ -54,7 +54,7 @@ class VerticaDistributedFilesystemReadPipe(
                                             val fileStoreLayer: FileStoreLayerInterface,
                                             val jdbcLayer: JdbcLayerInterface,
                                             val schemaTools: SchemaToolsInterface,
-                                            val cleanupUtils: CleanupUtilsInterface = CleanupUtils,
+                                            val cleanupUtils: CleanupUtilsInterface,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
   private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])

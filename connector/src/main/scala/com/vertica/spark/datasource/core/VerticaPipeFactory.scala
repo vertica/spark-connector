@@ -16,6 +16,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
+import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
 import org.apache.spark.sql.types.StructType
@@ -46,7 +47,11 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
           }
           case _ => None
         })
-        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
+        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
+          new VerticaJdbcLayer(cfg.jdbcConfig),
+          new SchemaTools(cfg.logProvider),
+          new CleanupUtils(cfg.logProvider)
+        )
     }
   }
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {

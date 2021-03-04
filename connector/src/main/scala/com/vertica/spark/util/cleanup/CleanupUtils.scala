@@ -14,6 +14,7 @@
 package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ConnectorError
 import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
@@ -52,7 +53,8 @@ trait CleanupUtilsInterface {
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit]
 }
 
-object CleanupUtils extends CleanupUtilsInterface {
+class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
+  private val logger = logProvider.getLogger(classOf[CleanupUtils])
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = {
@@ -70,6 +72,7 @@ object CleanupUtils extends CleanupUtilsInterface {
 
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
     val filename = fileCleanupInfo.filename
+    logger.info("Doing partition cleanup of file: " + filename)
     for {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
