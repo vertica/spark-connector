@@ -336,6 +336,7 @@ class VerticaDistributedFilesystemReadPipe(
     val ret = fileStoreLayer.readDataFromParquetFile(dataSize) match {
       case Left(err) => err.err match {
         case DoneReading =>
+          logger.info("Hit done reading for file segment.")
 
           // Cleanup old file if required
           getCleanupInfo(part,this.fileIdx) match {
@@ -364,7 +365,7 @@ class VerticaDistributedFilesystemReadPipe(
     (ret, getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
       case (Left(_), None) => logger.warn("No cleanup info found")
-      case _ => ()
+      case (Right(_), _) => ()
     }
     ret
   }
@@ -374,6 +375,7 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): Either[ConnectorError, Unit] = {
+    logger.info("Ending partition read.")
     jdbcLayer.close()
     fileStoreLayer.closeReadParquetFile()
   }
