@@ -17,7 +17,7 @@ import cats.implicits.toTraverseOps
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
+import com.vertica.spark.util.error.ConnectorErrorType.{CleanupError, FileSystemError}
 import org.apache.hadoop.fs.Path
 
 /**
@@ -71,8 +71,11 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
   }
 
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
-    val filename = fileCleanupInfo.filename
     logger.info("Doing partition cleanup of file: " + filename)
+    val filename = fileCleanupInfo.filename
+    val p = new Path(s"$filename")
+    val parent = p.getParent
+
     for {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
@@ -97,6 +100,11 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       } else {
         Right(())
       }
+
+      // Delete the directory if empty
+      parentPath <- if(parent != null) Right(parent.toString) else Left(ConnectorError(FileSystemError))
+      allFiles <- fileStoreLayer.getFileList(parentPath)
+      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(parentPath) else Right(())
     } yield ()
   }
 }
