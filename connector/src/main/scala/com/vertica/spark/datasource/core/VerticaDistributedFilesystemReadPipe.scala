@@ -363,7 +363,8 @@ class VerticaDistributedFilesystemReadPipe(
     // If there was an underlying error, call cleanup
     (ret, getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
-      case _ => logger.warn("No cleanup info found")
+      case (Left(_), None) => logger.warn("No cleanup info found")
+      case _ => ()
     }
     ret
   }
