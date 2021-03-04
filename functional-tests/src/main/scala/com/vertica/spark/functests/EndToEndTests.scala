@@ -115,7 +115,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("Joining")
     val joined_df = df_as1.join(
       df_as2, col("df1.a") === col("df2.b"), "inner")
-    assert(joined_df.count == n)
+    assert(joined_df.collect().length == n*n)
   }
 
   it should "collect results" in {
@@ -166,7 +166,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
     TestUtils.populateTableBySQL(stmt, insert2, n)
     val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
-    TestUtils.populateTableBySQL(stmt, insert2, n)
+    TestUtils.populateTableBySQL(stmt, insert3, n)
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
