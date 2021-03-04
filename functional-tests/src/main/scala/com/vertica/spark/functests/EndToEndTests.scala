@@ -102,8 +102,17 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
+    println("Getting count")
+    println("Count: " + df.count())
+
+
+    println("Getting as1")
     val df_as1 = df.as("df1")
+
+    println("Getting as2")
     val df_as2 = df.as("df2")
+
+    println("Joining")
     val joined_df = df_as1.join(
       df_as2, col("df1.a") === col("df2.b"), "inner")
     assert(joined_df.count == n)
