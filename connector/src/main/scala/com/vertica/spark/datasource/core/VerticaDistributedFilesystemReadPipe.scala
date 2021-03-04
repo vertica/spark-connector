@@ -203,6 +203,7 @@ class VerticaDistributedFilesystemReadPipe(
       filePermissions = "777"
 
       cols <- getColumnNames(this.config.getRequiredSchema)
+      _ = logger.info("Columns requested: " + cols)
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
@@ -341,7 +342,7 @@ class VerticaDistributedFilesystemReadPipe(
               case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.msg)
               case Right(_) => ()
             }
-            case None => ()
+            case None => logger.warn("No cleanup info found.")
           }
 
           // Next file
