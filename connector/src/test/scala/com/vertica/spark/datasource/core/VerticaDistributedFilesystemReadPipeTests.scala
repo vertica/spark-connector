@@ -70,7 +70,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   private def mockFileStoreLayer(config: DistributedFilesystemReadConfig): FileStoreLayerInterface = {
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
+    (fileStoreLayer.fileExists _).expects(expectedAddress).returning(Right(false))
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
     fileStoreLayer
@@ -148,11 +148,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "call Vertica to export parquet files on pre read steps" in {
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
 
-    val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
-    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
-    (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
+    val fileStoreLayer = mockFileStoreLayer(config)
 
     val jdbcLayer = mock[JdbcLayerInterface]
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
@@ -173,7 +169,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+    (fileStoreLayer.fileExists _).expects(*).returning(Left(ConnectorError(FileSystemError)))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.close _).expects().returning()
@@ -194,7 +190,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
@@ -221,7 +217,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet", expectedAddress+"/t1p2.parquet", expectedAddress+"/t1p3.parquet")
@@ -268,7 +264,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet")
@@ -322,7 +318,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -369,7 +365,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -414,7 +410,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.execute _).expects(*).returning(Right(()))
@@ -442,7 +438,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String]()

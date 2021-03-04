@@ -195,9 +195,8 @@ class VerticaDistributedFilesystemReadPipe(
         case Right(_) => Right(())
       }
 
-
-      // Safety check: Remove export directory if it exists (Vertica must create this dir)
-      _ <- fileStoreLayer.removeDir(hdfsPath)
+      // Check if export is already done (previous call of this function)
+      exportDone <- fileStoreLayer.fileExists(hdfsPath)
 
       // File permissions.
       // TODO: Add file permission option w/ default value '700'
@@ -214,11 +213,18 @@ class VerticaDistributedFilesystemReadPipe(
         "') AS " + "SELECT " + cols + " FROM " +
         config.tablename.getFullTableName + this.addPushdownFilters(this.config.getPushdownFilters) + ";"
 
-      _ <- jdbcLayer.execute(exportStatement) match {
-        case Right(_) => Right(())
-        case Left(err) =>
-          logger.error(err.msg)
-          Left(ConnectorError(ExportFromVerticaError))
+      // Export if not already exported
+      _ <- if(exportDone) {
+        logger.info("Export already done, skipping export step.")
+        Right(())
+      } else {
+        logger.info("Exporting.")
+        jdbcLayer.execute(exportStatement) match {
+          case Right(_) => Right(())
+          case Left(err) =>
+            logger.error(err.msg)
+            Left(ConnectorError(ExportFromVerticaError))
+        }
       }
 
       // Retrieve all parquet files created by Vertica
@@ -253,7 +259,9 @@ class VerticaDistributedFilesystemReadPipe(
 
     // If there's an error, cleanup
     ret match {
-      case Left(_) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      case Left(_) =>
+        logger.info("Cleaning up all files in path: " + hdfsPath)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
       case _ => ()
     }
     jdbcLayer.close()
