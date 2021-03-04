@@ -267,6 +267,7 @@ class VerticaDistributedFilesystemReadPipe(
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): Either[ConnectorError, Unit] = {
+    logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
           case p: VerticaDistributedFilesystemPartition => Right(p)
