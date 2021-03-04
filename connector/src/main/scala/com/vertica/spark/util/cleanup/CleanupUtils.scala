@@ -70,6 +70,13 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
     }
   }
 
+  private def cleanupDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {
+    for {
+      allFiles <- fileStoreLayer.getFileList(path)
+      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(path) else Right(())
+    } yield ()
+  }
+
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
     val filename = fileCleanupInfo.filename
     logger.info("Doing partition cleanup of file: " + filename)
@@ -104,8 +111,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
       // Delete the directory if empty
       parentPath <- if(parent != null) Right(parent.toString) else Left(ConnectorError(FileSystemError))
-      allFiles <- fileStoreLayer.getFileList(parentPath)
-      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(parentPath) else Right(())
+      _ <- if(allExist) this.cleanupDirIfEmpty(fileStoreLayer, parentPath) else Right(())
     } yield ()
   }
 }
