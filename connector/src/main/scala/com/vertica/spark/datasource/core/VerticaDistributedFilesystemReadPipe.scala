@@ -365,7 +365,8 @@ class VerticaDistributedFilesystemReadPipe(
     (ret, getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
       case (Left(_), None) => logger.warn("No cleanup info found")
-      case (Right(_), _) => ()
+      case (Right(dataBlock), Some(cleanupInfo)) => if(dataBlock.data.isEmpty) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
+      case (Right(_), None) => ()
     }
     ret
   }
