@@ -210,7 +210,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Real copy
       rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
-    } yield (rowsCopied)
+    } yield rowsCopied
 
     ret match {
       case Left(err) =>
