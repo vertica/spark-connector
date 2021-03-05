@@ -199,7 +199,28 @@ class DemoCases(conf: Config) {
     try {
       val tableName = "dftest"
       val customCreate = "CREATE TABLE dftest(col1 integer, col2 varchar(2345), col3 float);"
-      val copyList = "col1, col2"
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
+
+      val data = (1 to 1000).map(x => Row(x, "test"))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Overwrite
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts +
+        ("table" -> tableName, "target_table_sql" -> customCreate)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeCustomCopyList(): Unit = {
+    println("DEMO: Writing with custom create table statement and copy list")
+
+    try {
+      val tableName = "dftest"
+      val customCreate = "CREATE TABLE dftest(a integer, b varchar(2345), c integer);"
+      val copyList = "a, b"
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
 
       val data = (1 to 1000).map(x => Row(x, "test"))
@@ -214,8 +235,6 @@ class DemoCases(conf: Config) {
       spark.close()
     }
   }
-
-
 }
 
 object Main extends App {
@@ -233,7 +252,8 @@ object Main extends App {
     "writeOverwriteMode" -> demoCases.writeOverwriteMode,
     "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,
     "writeIgnoreMode" -> demoCases.writeIgnoreMode,
-    "writeCustomStatement" -> demoCases.writeCustomStatement
+    "writeCustomStatement" -> demoCases.writeCustomStatement,
+    "writeCustomCopyList" -> demoCases.writeCustomCopyList
   )
 
   if(args.size != 1) {
