@@ -119,9 +119,6 @@ class DemoCases(conf: Config) {
       val dfOr = df.filter("a = 2 or a > 8")
       dfOr.rdd.foreach(x => println("DEMO: Read value " + x))
 
-      val dfScalar = df.filter("abs(a) == 10")
-      dfOr.rdd.foreach(x => println("DEMO: Read value " + x))
-
     } finally {
       spark.close()
       conn.close()
