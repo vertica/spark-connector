@@ -41,7 +41,7 @@ class DemoCases(conf: Config) {
 
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
-  val spark = SparkSession.builder()
+  private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()
@@ -91,7 +91,7 @@ class DemoCases(conf: Config) {
   }
 
   def filterPushdown(): Unit = {
-    println("DEMO: Reading with column pushdown.")
+    println("DEMO: Reading with filter pushdown.")
 
     try {
       val tableName = "readtest"
@@ -256,6 +256,7 @@ object Main extends App {
     "basicRead" -> demoCases.basicRead,
     "columnPushdown" -> demoCases.columnPushdown,
     "filterPushdown" -> demoCases.filterPushdown,
+    "filterPushdownDate" -> demoCases.filterPushdownDate,
     "writeAppendMode" -> demoCases.writeAppendMode,
     "writeOverwriteMode" -> demoCases.writeOverwriteMode,
     "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,
@@ -264,7 +265,7 @@ object Main extends App {
     "writeCustomCopyList" -> demoCases.writeCustomCopyList
   )
 
-  if(args.size != 1) {
+  if(args.length != 1) {
     println("DEMO: Please enter name of demo case to run.")
   }
   else {

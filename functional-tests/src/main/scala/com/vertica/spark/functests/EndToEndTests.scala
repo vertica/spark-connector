@@ -175,7 +175,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(df.sort("c").head.get(0) == 3)
   }
 
-  /*
   it should "support data frame schema" in {
 
     val tableName1 = "dftest1"
@@ -448,7 +447,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val dfFiltered1 = df.filter("a < cast('2001-01-01' as DATE)")
+    val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
     val r = dfFiltered1.count
@@ -2935,5 +2934,4 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
-   */
 }
