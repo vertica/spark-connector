@@ -103,14 +103,25 @@ class DemoCases(conf: Config) {
       TestUtils.populateTableBySQL(stmt, insert, n)
       val insert2 = "insert into " + tableName + " values(5, 1)"
       TestUtils.populateTableBySQL(stmt, insert2, n)
+      val insert3 = "insert into " + tableName + " values(10, 1)"
+      TestUtils.populateTableBySQL(stmt, insert3, n)
+      val insert4 = "insert into " + tableName + " values(-10, 0)"
+      TestUtils.populateTableBySQL(stmt, insert4, n)
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
       val dfGreater = df.filter("a > 4")
       dfGreater.rdd.foreach(x => println("DEMO: Read value " + x))
 
-      val dfEqual = df.filter("b == 1")
-      dfEqual.rdd.foreach(x => println("DEMO: Read value " + x))
+      val dfAnd = df.filter("b == 1 and a > 8")
+      dfAnd.rdd.foreach(x => println("DEMO: Read value " + x))
+
+      val dfOr = df.filter("a = 2 or a > 8")
+      dfOr.rdd.foreach(x => println("DEMO: Read value " + x))
+
+      val dfScalar = df.filter("abs(a) == 10")
+      dfOr.rdd.foreach(x => println("DEMO: Read value " + x))
+
     } finally {
       spark.close()
       conn.close()
