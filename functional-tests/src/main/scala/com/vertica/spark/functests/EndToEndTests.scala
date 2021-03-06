@@ -209,7 +209,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     val dfMinusCols = df.drop("a").drop("c")
-    assert(dfMinusCols.distinct().sort().take(1)(0).get(0) == 3)
+    assert(dfMinusCols.distinct().sort("b").take(1)(0).get(0) == 2)
   }
 
   it should "support data frame schema" in {
