@@ -175,6 +175,63 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(df.sort("c").head.get(0) == 3)
   }
 
+  it should "get distinct elements" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.distinct().count() == 3)
+  }
+
+  it should "drop and take" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfMinusCols = df.drop("a").drop("c")
+    assert(dfMinusCols.distinct().sort().take(1)(0).get(0) == 3)
+  }
+
+  it should "drop and take" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfMinusCols = df.drop("a").drop("c")
+    assert(dfMinusCols.distinct().sort().take(1)(0).get(0) == 3)
+  }
+
+
   it should "support data frame schema" in {
 
     val tableName1 = "dftest1"
