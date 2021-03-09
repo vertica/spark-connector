@@ -161,7 +161,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     getPreparedStatement(query) match {
       case Right(stmt) =>
         try{
-          val rs = stmt.executeQuery(query)
+          val rs = stmt.executeQuery()
           Right(rs)
         }
         catch{
@@ -179,7 +179,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     getPreparedStatement(statement) match {
       case Right(stmt) =>
         try {
-          stmt.execute(statement)
+          stmt.execute()
           Right()
         }
         catch{
@@ -194,7 +194,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     getPreparedStatement(statement) match {
       case Right(stmt) =>
         try {
-          Right(stmt.executeUpdate(statement))
+          Right(stmt.executeUpdate())
         }
         catch{
           case e: Throwable => Left(handleJDBCException(e))
