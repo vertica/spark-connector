@@ -158,53 +158,53 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     */
   def query(query: String): Either[JDBCLayerError, ResultSet] = {
     logger.debug("Attempting to send query: " + query)
-    getPreparedStatement(query) match {
-      case Right(stmt) =>
-        try{
-          val rs = stmt.executeQuery()
-          Right(rs)
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
-      case Left(err) => Left(err)
+    try{
+      getPreparedStatement(query) match {
+        case Right(stmt) =>
+            val rs = stmt.executeQuery()
+            Right(rs)
+        case Left(err) => Left(err)
+      }
+    }
+    catch{
+      case e: Throwable => Left(handleJDBCException(e))
     }
   }
 
   /**
-    * Executes a statement
+   * Executes a statement
     */
   def execute(statement: String): Either[JDBCLayerError, Unit]= {
     logger.debug("Attempting to execute statement: " + statement)
-    getPreparedStatement(statement) match {
-      case Right(stmt) =>
-        try {
-          stmt.execute()
-          Right()
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
-      case Left(err) => Left(err)
+    try {
+      getPreparedStatement(statement) match {
+        case Right(stmt) =>
+            stmt.execute()
+            Right()
+        case Left(err) => Left(err)
+      }
+    }
+    catch{
+      case e: Throwable => Left(handleJDBCException(e))
     }
   }
 
   def executeUpdate(statement: String): Either[JDBCLayerError, Int] = {
     logger.debug("Attempting to execute statement: " + statement)
-    getPreparedStatement(statement) match {
-      case Right(stmt) =>
-        try {
-          Right(stmt.executeUpdate())
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
-      case Left(err) => Left(err)
+    try {
+      getPreparedStatement(statement) match {
+        case Right(stmt) =>
+            Right(stmt.executeUpdate())
+        case Left(err) => Left(err)
+      }
+    }
+    catch{
+      case e: Throwable => Left(handleJDBCException(e))
     }
   }
 
   /**
-    * Closes the connection
+   * Closes the connection
     */
   def close(): Unit = {
     logger.debug("Closing connection.")
