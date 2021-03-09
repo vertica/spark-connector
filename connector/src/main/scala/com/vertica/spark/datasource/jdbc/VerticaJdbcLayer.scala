@@ -22,8 +22,8 @@ import com.vertica.spark.config.JDBCConfig
 
 trait JdbcLayerParam
 
-class JdbcLayerStringParam(val value: String) extends JdbcLayerParam
-class JdbcLayerIntParam(val value: Int) extends JdbcLayerParam
+case class JdbcLayerStringParam(value: String) extends JdbcLayerParam
+case class JdbcLayerIntParam(value: Int) extends JdbcLayerParam
 
 /**
   * Interface for communicating with a JDBC source

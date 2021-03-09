@@ -234,7 +234,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def commit(): Either[ConnectorError, Unit] = {
     val globPattern: String = "*.parquet"
-    val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
+
+    // Create url string, escape any ' characters as those surround the url
+    val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern".replace("'", "''")
 
     val tableNameMaxLength = 30
 
@@ -244,7 +246,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       tableName = config.tablename.name
       sessionId = config.sessionId
-      rejectsTableName = "\"" + tableName.substring(0,Math.min(tableNameMaxLength,tableName.length)) + "_" + sessionId + "_COMMITS" + "\""
+      rejectsTableName = "\"" +
+        tableName.substring(0,Math.min(tableNameMaxLength,tableName.length)).replace("\"", "\"\"") +
+        "_" +
+        sessionId +
+        "_COMMITS" +
+        "\""
 
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,

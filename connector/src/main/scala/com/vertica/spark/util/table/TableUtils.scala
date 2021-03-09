@@ -15,6 +15,7 @@ package com.vertica.spark.util.table
 
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.datasource.jdbc.JdbcLayerStringParam
 import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.error.JdbcErrorType.DataTypeError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
@@ -36,9 +37,10 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
 
   override def tempTableExists(table: TableName): Either[ConnectorError, Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
-    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + dbschema + "'"
+    val query = " select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?"
+    val params = Seq(JdbcLayerStringParam(table.name), JdbcLayerStringParam(dbschema))
     val ret = for {
-      rs <- jdbcLayer.query(query)
+      rs <- jdbcLayer.query(query, params)
       is_temp = if (rs.next) {rs.getBoolean("t") } else false
       _ = rs.close()
     } yield (is_temp)
@@ -53,10 +55,9 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
 
   override def viewExists(view: TableName): Either[ConnectorError, Boolean] = {
     val dbschema = view.dbschema.getOrElse("public")
-    val query = "select count(*) from views where table_schema ILIKE '" +
-      dbschema + "' and table_name ILIKE '" + view.name + "'"
-
-    jdbcLayer.query(query) match {
+    val query = "select count(*) from views where table_schema ILIKE ? and table_name ILIKE ?"
+    val params = Seq(JdbcLayerStringParam(dbschema), JdbcLayerStringParam(view.name))
+    jdbcLayer.query(query, params) match {
       case Left(err) =>
         logger.error("JDBC Error when checking if view exists: ", err.msg)
         Left(ConnectorError(TableCheckError))
@@ -83,10 +84,10 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
 
   override def tableExists(table: TableName): Either[ConnectorError, Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
-    val query = "select count(*) from v_catalog.tables where table_schema ILIKE '" +
-      dbschema + "' and table_name ILIKE '" + table.name + "'"
+    val query = "select count(*) from v_catalog.tables where table_schema ILIKE ? and table_name ILIKE ?"
+    val params = Seq(JdbcLayerStringParam(dbschema), JdbcLayerStringParam(table.name))
 
-    jdbcLayer.query(query) match {
+    jdbcLayer.query(query, params) match {
       case Left(err) =>
         logger.error("JDBC Error when checking if table exists: ", err.msg)
         Left(ConnectorError(TableCheckError))
