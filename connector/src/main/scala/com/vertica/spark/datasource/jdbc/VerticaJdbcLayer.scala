@@ -14,13 +14,8 @@
 package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
-
-import java.sql.Connection
-import java.sql.Statement
-import java.sql.ResultSet
-
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, Statement}
 import java.util
-import java.sql.DriverManager
 
 import com.vertica.spark.util.error.JdbcErrorType._
 import com.vertica.spark.config.JDBCConfig
@@ -122,6 +117,25 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
+  private def getPreparedStatement(sql: String): Either[JDBCLayerError, PreparedStatement] = {
+    connection match {
+      case Some(conn) =>
+        if(conn.isValid(0))
+        {
+          val stmt = conn.prepareStatement(sql)
+
+          Right(stmt)
+        }
+        else {
+          logger.error("Can't connect to Vertica: connection down.")
+          Left(JDBCLayerError(ConnectionError))
+        }
+      case None =>
+        logger.error("Can't connect to Vertica: initial connection failed.")
+        Left(JDBCLayerError(ConnectionError))
+    }
+  }
+
   /**
     * Turns exception from driver into error and logs.
     */
@@ -144,7 +158,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     */
   def query(query: String): Either[JDBCLayerError, ResultSet] = {
     logger.debug("Attempting to send query: " + query)
-    getStatement match {
+    getPreparedStatement(query) match {
       case Right(stmt) =>
         try{
           val rs = stmt.executeQuery(query)
@@ -162,7 +176,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     */
   def execute(statement: String): Either[JDBCLayerError, Unit]= {
     logger.debug("Attempting to execute statement: " + statement)
-    getStatement match {
+    getPreparedStatement(statement) match {
       case Right(stmt) =>
         try {
           stmt.execute(statement)
@@ -177,7 +191,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def executeUpdate(statement: String): Either[JDBCLayerError, Int] = {
     logger.debug("Attempting to execute statement: " + statement)
-    getStatement match {
+    getPreparedStatement(statement) match {
       case Right(stmt) =>
         try {
           Right(stmt.executeUpdate(statement))

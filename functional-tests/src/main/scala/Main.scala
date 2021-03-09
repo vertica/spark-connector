@@ -57,5 +57,5 @@ object Main extends App {
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
   val writeOpts = readOpts
-  new EndToEndTests(readOpts, writeOpts).execute()
+  //new EndToEndTests(readOpts, writeOpts).execute()
 }
