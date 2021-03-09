@@ -20,6 +20,11 @@ import java.util
 import com.vertica.spark.util.error.JdbcErrorType._
 import com.vertica.spark.config.JDBCConfig
 
+trait JdbcLayerParam
+
+class JdbcLayerStringParam(val value: String) extends JdbcLayerParam
+class JdbcLayerIntParam(val value: Int) extends JdbcLayerParam
+
 /**
   * Interface for communicating with a JDBC source
   */
@@ -28,19 +33,19 @@ trait JdbcLayerInterface {
   /**
     * Runs a query that should return a ResultSet
     */
-  def query(query: String): Either[JDBCLayerError, ResultSet]
+  def query(query: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, ResultSet]
 
   /**
     * Executes a statement
     *
     * Used for ddl or dml statements.
     */
-  def execute(statement: String): Either[JDBCLayerError, Unit]
+  def execute(statement: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, Unit]
 
   /**
    * Executes a statement returning a row count
    */
-  def executeUpdate(statement: String): Either[JDBCLayerError, Int]
+  def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, Int]
 
   /**
     * Close and cleanup
@@ -153,16 +158,28 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
+  private def addParamsToStatement(statement: PreparedStatement, params: Seq[JdbcLayerParam]): Unit = {
+    var i = 0
+    for(param <- params) {
+      i += 1
+      param match {
+        case p: JdbcLayerStringParam => statement.setString(i, p.value)
+        case p: JdbcLayerIntParam => statement.setInt(i, p.value)
+      }
+    }
+  }
+
   /**
     * Runs a query against Vertica that should return a ResultSet
     */
-  def query(query: String): Either[JDBCLayerError, ResultSet] = {
+  def query(query: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, ResultSet] = {
     logger.debug("Attempting to send query: " + query)
     try{
       getPreparedStatement(query) match {
         case Right(stmt) =>
-            val rs = stmt.executeQuery()
-            Right(rs)
+          addParamsToStatement(stmt, params)
+          val rs = stmt.executeQuery()
+          Right(rs)
         case Left(err) => Left(err)
       }
     }
@@ -170,17 +187,19 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case e: Throwable => Left(handleJDBCException(e))
     }
   }
+
 
   /**
    * Executes a statement
     */
-  def execute(statement: String): Either[JDBCLayerError, Unit]= {
+  def execute(statement: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, Unit]= {
     logger.debug("Attempting to execute statement: " + statement)
     try {
       getPreparedStatement(statement) match {
         case Right(stmt) =>
-            stmt.execute()
-            Right()
+          addParamsToStatement(stmt, params)
+          stmt.execute()
+          Right()
         case Left(err) => Left(err)
       }
     }
@@ -189,12 +208,13 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
-  def executeUpdate(statement: String): Either[JDBCLayerError, Int] = {
+  def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, Int] = {
     logger.debug("Attempting to execute statement: " + statement)
     try {
       getPreparedStatement(statement) match {
         case Right(stmt) =>
-            Right(stmt.executeUpdate())
+          addParamsToStatement(stmt, params)
+          Right(stmt.executeUpdate())
         case Left(err) => Left(err)
       }
     }

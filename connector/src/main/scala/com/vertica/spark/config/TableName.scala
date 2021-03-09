@@ -14,10 +14,14 @@
 package com.vertica.spark.config
 
 final case class TableName(name: String, dbschema: Option[String]) {
+  private def doubleAnyQuotes(str: String): String = {
+    str.replace("\"", "\"\"")
+  }
+
   def getFullTableName : String = {
     dbschema match {
-      case None => "\"" + name + "\""
-      case Some(schema) => "\"" + schema + "\".\"" + name + "\""
+      case None => "\"" + doubleAnyQuotes(name) + "\""
+      case Some(schema) => "\"" + doubleAnyQuotes(schema) + "\".\"" + doubleAnyQuotes(name) + "\""
     }
   }
 }

@@ -21,7 +21,7 @@ import com.vertica.spark.util.schema._
 import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
@@ -29,7 +29,7 @@ import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.util.error.SchemaErrorType._
 import com.vertica.spark.util.error.JdbcErrorType._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{EqualTo, Filter, GreaterThan, LessThan}
+import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -60,9 +60,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     ColumnDef("col1", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
   }
 
-  private def mockJdbcLayer(expectedJdbcCommand: String): JdbcLayerInterface = {
+  private def mockJdbcLayer(expectedJdbcCommand: String, expectedJdbcParams: Seq[JdbcLayerParam] = Seq()): JdbcLayerInterface = {
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
+    (jdbcLayer.execute _).expects(expectedJdbcCommand, expectedJdbcParams).returning(Right())
     (jdbcLayer.close _).expects().returning()
     jdbcLayer
   }
@@ -156,7 +156,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
-    (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
+    (jdbcLayer.execute _).expects(expectedJdbcCommand, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -197,7 +197,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.execute _).expects(*, *).returning(Left(JDBCLayerError(ConnectionError)))
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -232,7 +232,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -279,7 +279,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -336,7 +336,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -383,7 +383,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -417,7 +417,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.removeDir _).expects(*).returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right(()))
+    (jdbcLayer.execute _).expects(*, *).returning(Right(()))
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -449,7 +449,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.getFileList _).expects(*).returning(Right(exportedFiles))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)

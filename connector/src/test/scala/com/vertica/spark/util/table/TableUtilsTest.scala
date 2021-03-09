@@ -17,7 +17,7 @@ import java.sql.ResultSet
 
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
 import com.vertica.spark.util.error.ConnectorErrorType.{JobStatusCreateError, TableCheckError}
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.error.JdbcErrorType.ConnectionError
@@ -53,7 +53,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'"
+      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'",
+      *
     ).returning(Right(getTableResultSet(exists = true)))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -71,7 +72,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'"
+      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'",
+      *
     ).returning(Right(getTableResultSet(exists = false)))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -89,7 +91,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'"
+      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE 'dummy'",
+      *
     ).returning(Left(JDBCLayerError(ConnectionError)))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -107,7 +110,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'"
+      "select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'",
+      *
     ).returning(Right(getTableResultSet(exists = true)))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -125,7 +129,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'"
+      "select count(*) from views where table_schema ILIKE 'public' and table_name ILIKE 'dummy'",
+      *
     ).returning(Right(getTableResultSet(exists = false)))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -145,7 +150,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.execute _).expects(
-      "CREATE table \"dummy\" (\"col1\" INTEGER)  INCLUDE SCHEMA PRIVILEGES "
+      "CREATE table \"dummy\" (\"col1\" INTEGER)  INCLUDE SCHEMA PRIVILEGES ",
+      *
     ).returning(Right(()))
 
     val schemaTools = mock[SchemaToolsInterface]
@@ -168,7 +174,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.execute _).expects(
-      stmt
+      stmt,
+      *
     ).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -190,11 +197,12 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE '" + jobStatusTableName + "'"
+      "select count(*) from v_catalog.tables where table_schema ILIKE 'public' and table_name ILIKE '" + jobStatusTableName + "'",
+      *
     ).returning(Right(getTableResultSet(exists = false)))
-    (jdbcLayerInterface.execute _).expects("CREATE TABLE IF NOT EXISTS \"public\".\"S2V_JOB_STATUS_USER_USER\"(target_table_schema VARCHAR(128), target_table_name VARCHAR(128), save_mode VARCHAR(128), job_name VARCHAR(256), start_time TIMESTAMPTZ, all_done BOOLEAN NOT NULL, success BOOLEAN NOT NULL, percent_failed_rows DOUBLE PRECISION)").returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects("CREATE TABLE IF NOT EXISTS \"public\".\"S2V_JOB_STATUS_USER_USER\"(target_table_schema VARCHAR(128), target_table_name VARCHAR(128), save_mode VARCHAR(128), job_name VARCHAR(256), start_time TIMESTAMPTZ, all_done BOOLEAN NOT NULL, success BOOLEAN NOT NULL, percent_failed_rows DOUBLE PRECISION)", *).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -213,11 +221,11 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      *
+      *, *
     ).returning(Right(getTableResultSet(exists = false)))
-    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*).returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(where { stmt: String =>
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(where { (stmt: String, params: Seq[JdbcLayerParam]) =>
       stmt.startsWith("INSERT into public.S2V_JOB_STATUS_USER_USER VALUES ('public','dummy','OVERWRITE','session_id',")
     }).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
@@ -236,9 +244,9 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects(
-      *
+      *,*
     ).returning(Right(getTableResultSet(exists = false)))
-    (jdbcLayerInterface.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Left(JDBCLayerError(ConnectionError)))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -256,7 +264,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val sessionId = "session_id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=true,percent_failed_rows=0.1 WHERE job_name='session_id' AND all_done=false").returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=true,percent_failed_rows=0.1 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -271,7 +279,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val sessionId = "session_id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=false,percent_failed_rows=0.2 WHERE job_name='session_id' AND all_done=false").returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=false,percent_failed_rows=0.2 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -284,7 +292,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val tablename = "dummy"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"").returning(Right(1))
+    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"", *).returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 

@@ -253,13 +253,13 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   }
 
   it should "parse custom column copy list" in {
-    val stmt = "col1"
+    val stmt = "col1,col2"
     val opts = Map("copy_column_list" -> stmt)
 
     val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
-      case Some(str) => assert(str == stmt)
+      case Some(str) => assert(str == "\"col1\",\"col2\"")
       case None => fail
     }
   }

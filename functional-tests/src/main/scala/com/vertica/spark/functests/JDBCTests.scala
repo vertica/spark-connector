@@ -68,10 +68,40 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     }
   }
 
+  it should "Insert integer data with param" in {
+    jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerIntParam(123)))
+
+    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+      case Right(rs) =>
+        assert(rs.next())
+        assert(rs.getInt(1) == 123)
+      case Left(err) =>
+        fail
+    }
+  }
+
   it should "Insert string data to table and load" in {
     jdbcLayer.execute("CREATE TABLE " + tablename + "(name varchar(64));")
 
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');")
+
+    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+      case Right(rs) => {
+        assert(rs.next())
+        assert(rs.getString(1) == "abc123")
+      }
+      case Left(err) => {
+        assert(false)
+      }
+    }
+  }
+
+  it should "Insert string data to table with param" in {
+    jdbcLayer.execute("CREATE TABLE " + tablename + "(name varchar(64));")
+
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerStringParam("abc123")))
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
       case Right(rs) => {
