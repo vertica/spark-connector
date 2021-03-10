@@ -119,12 +119,7 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
       case None =>
         val sb = new StringBuilder()
         sb.append("CREATE table ")
-        tablename.dbschema match {
-          case Some(dbschema) =>
-            sb.append("\"" + dbschema + "\"" + "." +
-              "\"" + tablename.name + "\"")
-          case None => sb.append("\"" + tablename.name + "\"")
-        }
+        sb.append(tablename.getFullTableName)
         sb.append(" (")
 
         var first = true
