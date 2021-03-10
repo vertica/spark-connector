@@ -215,6 +215,22 @@ class DemoCases(conf: Config) {
     }
   }
 
+  def testJdbcBug(): Unit = {
+    conn.createStatement()
+    val tableName = "jdbc_test"
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
+
+    val stmt = conn.createStatement()
+    var count = stmt.executeUpdate("INSERT INTO " + tableName + " VALUES(1);")
+    println("COUNT: " + count)
+
+    val sql = "INSERT INTO " + tableName + " VALUES(?);"
+    val pstmt = conn.prepareStatement(sql)
+    pstmt.setInt(1, 2)
+    count = pstmt.executeUpdate()
+    println("COUNT PREPARED: " + count)
+  }
+
 
 }
 
@@ -233,7 +249,8 @@ object Main extends App {
     "writeOverwriteMode" -> demoCases.writeOverwriteMode,
     "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,
     "writeIgnoreMode" -> demoCases.writeIgnoreMode,
-    "writeCustomStatement" -> demoCases.writeCustomStatement
+    "writeCustomStatement" -> demoCases.writeCustomStatement,
+    "testJdbcBug" -> demoCases.testJdbcBug
   )
 
   if(args.size != 1) {
