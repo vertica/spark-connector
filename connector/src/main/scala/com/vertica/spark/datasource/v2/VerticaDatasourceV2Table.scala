@@ -18,6 +18,7 @@ import java.util
 import cats.data.Validated.{Invalid, Valid}
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
+import com.vertica.spark.util.error.{ConnectorException, ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -78,10 +79,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
       case Some(builder) => builder
       case None =>
         val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
-          case Invalid(errList) =>
-            val errMsgList = for (err <- errList) yield err.msg
-            val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-            throw new Exception(msg)
+          case Invalid(errList) => throw new ConnectorException(ErrorList(errList.toNonEmptyList))
           case Valid(cfg) => cfg
         }
         config.getLogger(classOf[VerticaTable]).debug("Config loaded")
@@ -100,10 +98,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
     val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
-      case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
+      case Invalid(errList) => throw new ConnectorException(ErrorList(errList.toNonEmptyList))
       case Valid(cfg) => cfg
     }
     config.getLogger(classOf[VerticaTable]).debug("Config loaded")

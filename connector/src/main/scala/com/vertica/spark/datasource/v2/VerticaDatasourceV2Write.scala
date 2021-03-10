@@ -15,6 +15,7 @@ package com.vertica.spark.datasource.v2
 
 import com.vertica.spark.config.WriteConfig
 import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
+import com.vertica.spark.util.error.ConnectorException
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
@@ -50,7 +51,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
 
   // Perform initial setup for the write operation
   new DSWriteConfigSetup(None).performInitialSetup(config) match {
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => throw new ConnectorException(err)
     case Right(_) => ()
   }
 
@@ -71,7 +72,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
     val writer = new DSWriter(config, "")
     writer.commitRows() match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => throw new ConnectorException(err)
       case Right(_) => ()
     }
   }
@@ -115,7 +116,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   val writer = new DSWriter(config, uniqueId)
   writer.openWrite() match {
     case Right(_) => ()
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => throw new ConnectorException(err)
   }
 
   /**
@@ -126,7 +127,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   override def write(record: InternalRow): Unit = {
     writer.writeRow(record) match {
       case Right(_) => ()
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => throw new ConnectorException(err)
     }
   }
 
@@ -137,7 +138,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   */
   override def commit(): WriterCommitMessage = {
     writer.closeWrite() match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => throw new ConnectorException(err)
       case Right(_) => WriteSucceeded
     }
   }

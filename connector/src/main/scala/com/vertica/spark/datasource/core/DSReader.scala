@@ -13,10 +13,11 @@
 
 package com.vertica.spark.datasource.core
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
-import com.vertica.spark.util.error.ConnectorErrorType.{DoneReading, InvalidPartition}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
@@ -29,14 +30,14 @@ trait DSReaderInterface {
   /**
     * Called by spark to read an individual row
     */
-  def readRow(): Either[ConnectorError, Option[InternalRow]]
+  def readRow(): ConnectorResult[Option[InternalRow]]
 
   /**
    * Called when all reading is done, to perform any needed cleanup operations.
    *
    * Returns None for row if this is there are no more rows to read.
    */
-  def closeRead(): Either[ConnectorError, Unit]
+  def closeRead(): ConnectorResult[Unit]
 }
 
 
@@ -48,17 +49,16 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
   private var block: Option[DataBlock] = None
   private var i: Int = 0
 
-  def openRead(): Either[ConnectorError, Unit] = {
+  def openRead(): ConnectorResult[Unit] = {
     i = 0
     partition match {
       case verticaPartition: VerticaPartition => pipe.startPartitionRead(verticaPartition)
-      case _ =>
-        logger.error("Unexpected state: partition of type 'VerticaPartition' was expected but not received")
-        Left(ConnectorError(InvalidPartition))
+      case _ => Left(InvalidPartition().context(
+          "Unexpected state: partition of type 'VerticaPartition' was expected but not received"))
     }
   }
 
-  def readRow(): Either[ConnectorError, Option[InternalRow]] = {
+  def readRow(): ConnectorResult[Option[InternalRow]] = {
     val ret = for {
       // Get current or next data block
       dataBlock <- block match {
@@ -74,7 +74,7 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
 
       // Get row from block. If this is the last row of the block, reset the block
       _ <- if (dataBlock.data.isEmpty) {
-        Left(ConnectorError(DoneReading))
+        Left(DoneReading())
       } else {
         Right(())
       }
@@ -91,14 +91,14 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
 
     ret match {
       case Right(optRow) => Right(optRow)
-      case Left(err) => err.err match {
-        case DoneReading => Right(None) // If there's no more data to be read, return nothing for row
+      case Left(err) => err match {
+        case DoneReading() => Right(None) // If there's no more data to be read, return nothing for row
         case _ => Left(err) // If something else went wrong, return error
       }
     }
   }
 
-  def closeRead(): Either[ConnectorError, Unit] = {
+  def closeRead(): ConnectorResult[Unit] = {
     pipe.endPartitionRead()
   }
 }

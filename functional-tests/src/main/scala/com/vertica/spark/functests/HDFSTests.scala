@@ -69,7 +69,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     unitOrError match {
       case Right(_) => ()
-      case Left(error) => fail(error.msg)
+      case Left(error) => fail(error.getFullContext)
     }
   }
 
@@ -92,7 +92,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
           .sorted
           .zipWithIndex
           .foreach { case (rowValue, idx) => assert(rowValue == idx.toLong) }
-      case Left(error) => fail(error.msg)
+      case Left(error) => fail(error.getFullContext)
     }
 
   }
@@ -132,7 +132,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     fsLayer.openWriteParquetFile(filename)
     fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList)) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
     fsLayer.closeWriteParquetFile()
@@ -152,7 +152,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
         .sorted
         .zipWithIndex
         .foreach { case (rowValue, idx) => assert(rowValue == idx.toInt) }
-      case Left(error) => fail(error.msg)
+      case Left(error) => fail(error.getFullContext)
     }
 
   }
@@ -166,7 +166,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     fsLayer.openWriteParquetFile(filename)
     fsLayer.writeDataToParquetFile(DataBlock((0 until 100).map(a => InternalRow(a)).toList)) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
     fsLayer.closeWriteParquetFile()
@@ -180,7 +180,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
     jdbcLayer.execute(copyStmt) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
 
@@ -214,7 +214,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     fsLayer.openWriteParquetFile(filename)
     fsLayer.writeDataToParquetFile(DataBlock(List(InternalRow(timestampInMicros)))) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
     fsLayer.closeWriteParquetFile()
@@ -228,7 +228,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
     jdbcLayer.execute(copyStmt) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
 

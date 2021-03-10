@@ -18,8 +18,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
+import com.vertica.spark.util.error.{ConnectorException, PartitioningError}
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
@@ -90,7 +89,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   override def readSchema(): StructType = {
     ((new DSReadConfigSetup).getTableSchema(config), config.getRequiredSchema) match {
       case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
-      case (Left(err), _) => throw new Exception(err.msg)
+      case (Left(err), _) => throw new ConnectorException(err)
     }
   }
 
@@ -106,11 +105,11 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   override def planInputPartitions(): Array[InputPartition] = {
     new DSReadConfigSetup()
       .performInitialSetup(config) match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => throw new ConnectorException(err)
       case Right(opt) => opt match {
         case None =>
-          val err = ConnectorError(PartitioningError)
-          throw new Exception(err.msg)
+          val err = PartitioningError()
+          throw new ConnectorException(err)
         case Some(partitionInfo) => partitionInfo.partitionSeq
       }
     }
@@ -153,7 +152,7 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   // Open the read
   reader.openRead() match {
     case Right(_) => ()
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => throw new ConnectorException(err)
   }
 
   var row: Option[InternalRow] = None
@@ -165,7 +164,7 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   {
     reader.readRow() match {
       case Left(err) =>
-        throw new Exception(err.msg)
+        throw new ConnectorException(err)
       case Right(r) =>
         row = r
     }
