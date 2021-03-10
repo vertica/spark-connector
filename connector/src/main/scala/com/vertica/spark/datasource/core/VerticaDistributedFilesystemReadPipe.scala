@@ -207,14 +207,14 @@ class VerticaDistributedFilesystemReadPipe(
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
-        "', fileSizeMB = ?" +
-        ", rowGroupSizeMB = ?" +
-        ", fileMode = ?" +
-        ", dirMode = ?" +
-        ") AS " + "SELECT " + cols + " FROM " +
+        "', fileSizeMB = " + maxFileSize +
+        ", rowGroupSizeMB = " + maxRowGroupSize +
+        ", fileMode = '" + filePermissions +
+        "', dirMode = '" + filePermissions +
+        "') AS " + "SELECT " + cols + " FROM " +
         config.tablename.getFullTableName + this.addPushdownFilters(this.config.getPushdownFilters) + ";"
 
-      _ <- jdbcLayer.execute(exportStatement, Seq(JdbcLayerIntParam(maxFileSize), JdbcLayerIntParam(maxRowGroupSize), JdbcLayerStringParam(filePermissions), JdbcLayerStringParam(filePermissions))) match {
+      _ <- jdbcLayer.execute(exportStatement) match {
         case Right(_) => Right(())
         case Left(err) =>
           logger.error(err.msg)
