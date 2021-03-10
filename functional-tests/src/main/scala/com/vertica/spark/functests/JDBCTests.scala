@@ -88,13 +88,11 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');")
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
+      case Right(rs) =>
         assert(rs.next())
         assert(rs.getString(1) == "abc123")
-      }
-      case Left(err) => {
+      case Left(err) =>
         assert(false)
-      }
     }
   }
 
@@ -168,9 +166,8 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
-      case Left(err) => {
+      case Left(err) =>
         assert(err.err == ConnectionError)
-      }
     }
   }
 
