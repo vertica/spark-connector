@@ -13,15 +13,21 @@
 
 package com.vertica.spark.config
 
-final case class TableName(name: String, dbschema: Option[String]) {
-  private def doubleAnyQuotes(str: String): String = {
+object EscapeUtils {
+  def sqlEscape(str: String): String = {
     str.replace("\"", "\"\"")
   }
 
+  def sqlEscapeAndQuote(str: String): String = {
+    "\"" + sqlEscape(str) + "\""
+  }
+}
+
+final case class TableName(name: String, dbschema: Option[String]) {
   def getFullTableName : String = {
     dbschema match {
-      case None => "\"" + doubleAnyQuotes(name) + "\""
-      case Some(schema) => "\"" + doubleAnyQuotes(schema) + "\".\"" + doubleAnyQuotes(name) + "\""
+      case None => EscapeUtils.sqlEscapeAndQuote(name)
+      case Some(schema) => EscapeUtils.sqlEscapeAndQuote(schema) + "." + EscapeUtils.sqlEscapeAndQuote(name)
     }
   }
 }

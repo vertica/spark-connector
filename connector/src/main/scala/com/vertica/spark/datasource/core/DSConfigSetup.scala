@@ -145,10 +145,7 @@ object DSConfigSetupUtils {
       case Some(listStr) =>
         // Surround columns in quotes and escape any quotes in the string
         val copyList = listStr.split(",")
-        val escapedList = copyList.map(x =>
-          "\"" +
-            x.replace("\"", "\"\"") +
-              "\"")
+        val escapedList = copyList.map(x => EscapeUtils.sqlEscapeAndQuote(x))
         Some(escapedList.mkString(","))
     }
     res.validNec

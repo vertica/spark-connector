@@ -28,7 +28,7 @@ trait TableUtilsInterface {
   def tempTableExists(table: TableName): Either[ConnectorError, Boolean]
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
   def dropTable(tablename: TableName): Either[ConnectorError, Unit]
-  def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
+  def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): Either[ConnectorError, Unit]
   def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit]
 }
 
@@ -187,15 +187,18 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     }
   }
 
-  override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit] = {
+  override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): Either[ConnectorError, Unit] = {
     val dbschema = tablename.dbschema match {
       case Some(schema) => schema
       case None => "public"
     }
 
-    // Create job status table for the user if it doesn't exist
     val table = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
-    val createStatement = "CREATE TABLE IF NOT EXISTS \"" + dbschema + "\".\"" + table + "\"" +
+
+    val jobStatusTableName = TableName(table, Some(dbschema))
+
+    // Create job status table for the user if it doesn't exist
+    val createStatement = "CREATE TABLE IF NOT EXISTS " + jobStatusTableName.getFullTableName +
       "(target_table_schema VARCHAR(128), " +
       "target_table_name VARCHAR(128), " +
       "save_mode VARCHAR(128), " +
@@ -210,13 +213,12 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     val timestamp = new java.sql.Timestamp(date.getTime)
     val randJobName = sessionId
 
-    val comment = "COMMENT ON TABLE "  + dbschema + "." +  table + " IS 'Persistent job status table showing all jobs, serving as permanent record of data loaded from Spark to Vertica. Creation time:" + jobStartTime + "'"
+    val comment = "COMMENT ON TABLE "  + jobStatusTableName.getFullTableName + " IS 'Persistent job status table showing all jobs, serving as permanent record of data loaded from Spark to Vertica. Creation time:" + jobStartTime + "'"
 
-    // TODO: handle save modes
-    val insertStatement = "INSERT into " + dbschema + "." + table + " VALUES ('" + dbschema + "','" + tablename.name + "','" + "OVERWRITE" + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
+    val insertStatement = "INSERT into " + jobStatusTableName.getFullTableName + " VALUES ('" + dbschema + "','" + tablename.name + "','" + saveMode + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
 
     val ret = for {
-      tableExists <- tableExists(TableName(table, Some(dbschema)))
+      tableExists <- tableExists(jobStatusTableName)
       _ <- if(!tableExists) jdbcLayer.execute(createStatement) else Right(())
       _ <- if(!tableExists) jdbcLayer.execute(comment) else Right(())
       _ <- jdbcLayer.execute(insertStatement)
@@ -238,23 +240,25 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     val dbschema = mainTableName.dbschema.getOrElse("public")
     val tablename = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
 
+    val jobStatusTableName = TableName(tablename, Some(dbschema))
+
     val updateStatusTable = ("UPDATE "
-      + dbschema + "." + tablename + " "
-      + "SET all_done=" + true + ","
+      + jobStatusTableName.getFullTableName
+      + " SET all_done=" + true + ","
       + "success=" + success + ","
       + "percent_failed_rows=" + failedRowsPercent.toString + " "
       + "WHERE job_name='" + sessionId + "' "
       + "AND all_done=" + false)
 
     // update the S2V_JOB_STATUS table, and commit the final operation.
-    logger.info(s"Updating " + dbschema + "." + tablename + " next...")
+    logger.info(s"Updating " + jobStatusTableName.getFullTableName + " next...")
     jdbcLayer.executeUpdate(updateStatusTable) match {
       case Left(err) =>
         logger.error("JDBC Error when updating status table: " + err.msg)
         Left(ConnectorError(JobStatusUpdateError))
       case Right(c) =>
         if(c == 1) {
-          logger.info(s"Update of " + dbschema + "." + tablename + " succeeded.")
+          logger.info(s"Update of " + jobStatusTableName.getFullTableName + " succeeded.")
           Right(())
         }
         else {

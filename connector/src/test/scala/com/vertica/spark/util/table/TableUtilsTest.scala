@@ -209,7 +209,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
 
-    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId))
+    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE"))
   }
 
   it should "Add initial entry to job status table" in {
@@ -226,7 +226,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.execute _).expects(where { (stmt: String, params: Seq[JdbcLayerParam]) =>
-      stmt.startsWith("INSERT into public.S2V_JOB_STATUS_USER_USER VALUES ('public','dummy','OVERWRITE','session_id',")
+      stmt.startsWith("INSERT into \"public\".\"S2V_JOB_STATUS_USER_USER\" VALUES ('public','dummy','APPEND','session_id',")
     }).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -234,7 +234,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
 
-    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId))
+    checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "APPEND"))
   }
 
   it should "Pass on error from job status init" in {
@@ -252,7 +252,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
 
-    utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId) match {
+    utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE") match {
       case Right(_) => fail
       case Left(err) => assert(err.err == JobStatusCreateError)
     }
@@ -264,7 +264,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val sessionId = "session_id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=true,percent_failed_rows=0.1 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE \"public\".\"S2V_JOB_STATUS_USER_USER\" SET all_done=true,success=true,percent_failed_rows=0.1 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -279,7 +279,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val sessionId = "session_id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.executeUpdate _).expects("UPDATE public.S2V_JOB_STATUS_USER_USER SET all_done=true,success=false,percent_failed_rows=0.2 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("UPDATE \"public\".\"S2V_JOB_STATUS_USER_USER\" SET all_done=true,success=false,percent_failed_rows=0.2 WHERE job_name='session_id' AND all_done=false", *).returning(Right(1))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
