@@ -139,8 +139,27 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
+  private def checkStringForUnquotedSemicolon(str: String): Boolean = {
+    var i = 0
+    var inQuote = false
+    var isUnquotedSemi = false
+    for(c <- str) {
+      if(c == '"') inQuote = !inQuote
+      if(c == ';' && !inQuote) isUnquotedSemi = true
+      i += 1
+    }
+
+    isUnquotedSemi
+  }
+
   def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("copy_column_list").validNec
+    config.get("copy_column_list") match {
+      case None => None.validNec
+      case Some(listStr) =>
+        // Check for unquoted semicolons (prevent worst cases of sql injection)
+        if(checkStringForUnquotedSemicolon(listStr)) ConnectorError(UnquotedSemiInColumns).invalidNec
+        else Some(listStr).validNec
+    }
   }
 
   // Optional param, if not specified the partition count will be decided as part of the inital steps

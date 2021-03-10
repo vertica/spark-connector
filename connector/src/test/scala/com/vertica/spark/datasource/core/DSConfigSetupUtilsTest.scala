@@ -263,4 +263,24 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
       case None => fail
     }
   }
+
+  it should "fail on unquoted semicolon" in {
+    val stmt = "col1,fasd;,fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getCopyColumnList(opts))
+    assert(err.toNonEmptyList.head.err == UnquotedSemiInColumns)
+  }
+
+  it should "don't fail on quoted semicolon" in {
+    val stmt = "col1,\"fa;sd\",fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
+
+    res match {
+      case Some(str) => assert(str == stmt)
+      case None => fail
+    }
+  }
 }

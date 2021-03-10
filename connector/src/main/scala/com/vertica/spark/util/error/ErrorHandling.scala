@@ -72,6 +72,7 @@ object ConnectorErrorType extends Enumeration {
   val JobStatusCreateError: Value = Value("Failed to create job status table.")
   val JobStatusUpdateError: Value = Value("Failed to update job status table.")
   val DuplicateColumnsError: Value = Value("Schema contains duplicate columns, can't write this data.")
+  val UnquotedSemiInColumns: Value = Value("Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability.")
 }
 import ConnectorErrorType._
 

@@ -209,12 +209,12 @@ class VerticaDistributedFilesystemReadPipe(
         "directory = '" + hdfsPath +
         "', fileSizeMB = ?" +
         ", rowGroupSizeMB = ?" +
-        ", fileMode = '" + filePermissions +
-        "', dirMode = '" + filePermissions +
-        "') AS " + "SELECT " + cols + " FROM " +
+        ", fileMode = ?" +
+        ", dirMode = ?" +
+        ") AS " + "SELECT " + cols + " FROM " +
         config.tablename.getFullTableName + this.addPushdownFilters(this.config.getPushdownFilters) + ";"
 
-      _ <- jdbcLayer.execute(exportStatement, Seq(JdbcLayerIntParam(maxFileSize), JdbcLayerIntParam(maxRowGroupSize))) match {
+      _ <- jdbcLayer.execute(exportStatement, Seq(JdbcLayerIntParam(maxFileSize), JdbcLayerIntParam(maxRowGroupSize), JdbcLayerStringParam(filePermissions), JdbcLayerStringParam(filePermissions))) match {
         case Right(_) => Right(())
         case Left(err) =>
           logger.error(err.msg)
