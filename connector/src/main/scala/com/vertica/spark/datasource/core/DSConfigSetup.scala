@@ -140,15 +140,7 @@ object DSConfigSetupUtils {
   }
 
   def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
-    val res = config.get("copy_column_list") match {
-      case None => None
-      case Some(listStr) =>
-        // Surround columns in quotes and escape any quotes in the string
-        val copyList = listStr.split(",")
-        val escapedList = copyList.map(x => EscapeUtils.sqlEscapeAndQuote(x))
-        Some(escapedList.mkString(","))
-    }
-    res.validNec
+    config.get("copy_column_list").validNec
   }
 
   // Optional param, if not specified the partition count will be decided as part of the inital steps
