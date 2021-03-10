@@ -210,16 +210,18 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): Either[JDBCLayerError, Int] = {
     logger.debug("Attempting to execute statement: " + statement)
-    try {
-      getPreparedStatement(statement) match {
-        case Right(stmt) =>
-          addParamsToStatement(stmt, params)
-          Right(stmt.executeUpdate())
-        case Left(err) => Left(err)
+    if(params.nonEmpty) Left(JDBCLayerError(ParamsNotSupported))
+    else {
+      try {
+        getStatement match {
+          case Right(stmt) =>
+            Right(stmt.executeUpdate(statement))
+          case Left(err) => Left(err)
+        }
       }
-    }
-    catch{
-      case e: Throwable => Left(handleJDBCException(e))
+      catch{
+        case e: Throwable => Left(handleJDBCException(e))
+      }
     }
   }
 

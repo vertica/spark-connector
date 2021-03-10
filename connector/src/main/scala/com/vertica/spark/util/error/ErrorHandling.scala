@@ -93,6 +93,7 @@ object JdbcErrorType extends Enumeration {
   val DataTypeError: Value = Value("Wrong data type")
   val SyntaxError: Value = Value("Syntax error")
   val GenericError: Value = Value("JDBC error")
+  val ParamsNotSupported: Value = Value("Params not supported for this operation.")
 }
 import JdbcErrorType._
 
