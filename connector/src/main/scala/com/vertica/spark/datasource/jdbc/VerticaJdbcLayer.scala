@@ -14,16 +14,16 @@
 package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
-
 import java.sql.Connection
 import java.sql.Statement
 import java.sql.ResultSet
-
 import java.util
 import java.sql.DriverManager
 
-import com.vertica.spark.util.error.JdbcErrorType._
 import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, JdbcResult}
+
+import scala.util.Try
 
 /**
   * Interface for communicating with a JDBC source
@@ -33,19 +33,19 @@ trait JdbcLayerInterface {
   /**
     * Runs a query that should return a ResultSet
     */
-  def query(query: String): Either[JDBCLayerError, ResultSet]
+  def query(query: String): ConnectorResult[ResultSet]
 
   /**
     * Executes a statement
     *
     * Used for ddl or dml statements.
     */
-  def execute(statement: String): Either[JDBCLayerError, Unit]
+  def execute(statement: String): ConnectorResult[Unit]
 
   /**
    * Executes a statement returning a row count
    */
-  def executeUpdate(statement: String): Either[JDBCLayerError, Int]
+  def executeUpdate(statement: String): ConnectorResult[Int]
 
   /**
     * Close and cleanup
@@ -56,17 +56,17 @@ trait JdbcLayerInterface {
   /**
    * Converts and logs JDBC exception to our error format
    */
-  def handleJDBCException(e: Throwable): JDBCLayerError
+  def handleJDBCException(e: Throwable): ConnectorError
 
   /**
    * Commit transaction
    */
-  def commit(): Either[JDBCLayerError, Unit]
+  def commit(): ConnectorResult[Unit]
 
   /**
    * Rollback transaction
    */
-  def rollback(): Either[JDBCLayerError, Unit]
+  def rollback(): ConnectorResult[Unit]
 }
 
 /**
@@ -103,56 +103,39 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
     * Gets a statement object or connection error if something is wrong.
     */
-  private def getStatement: Either[JDBCLayerError, Statement] = {
+  private def getStatement: JdbcResult[Statement] = {
     connection match {
       case Some(conn) =>
-        if(conn.isValid(0))
-        {
+        if (conn.isValid(0)) {
           val stmt = conn.createStatement()
-
           Right(stmt)
-        }
-        else {
-          logger.error("Can't connect to Vertica: connection down.")
-          Left(JDBCLayerError(ConnectionError))
+        } else {
+          Left(ConnectionDownError())
         }
       case None =>
-        logger.error("Can't connect to Vertica: initial connection failed.")
-        Left(JDBCLayerError(ConnectionError))
+        Left(ConnectionError())
     }
   }
 
   /**
     * Turns exception from driver into error and logs.
     */
-  def handleJDBCException(e: Throwable): JDBCLayerError = {
+  def handleJDBCException(e: Throwable): ConnectorError = {
     e match {
-      case ex: java.sql.SQLSyntaxErrorException =>
-        logger.error("Syntax Error.", ex)
-        JDBCLayerError(SyntaxError, ex.getMessage)
-      case ex: java.sql.SQLDataException =>
-        logger.error("Data Type Error.", ex)
-        JDBCLayerError(DataTypeError, ex.getMessage)
-      case _: Throwable =>
-        logger.error("Unexpected SQL Error.", e)
-        JDBCLayerError(GenericError, e.getMessage)
+      case ex: java.sql.SQLSyntaxErrorException => SyntaxError(ex)
+      case ex: java.sql.SQLDataException => DataTypeError(ex)
+      case _: Throwable => GenericError(e).context("Unexpected SQL Error.")
     }
   }
 
   /**
     * Runs a query against Vertica that should return a ResultSet
     */
-  def query(query: String): Either[JDBCLayerError, ResultSet] = {
+  def query(query: String): ConnectorResult[ResultSet] = {
     logger.debug("Attempting to send query: " + query)
     getStatement match {
-      case Right(stmt) =>
-        try{
-          val rs = stmt.executeQuery(query)
-          Right(rs)
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
+      case Right(stmt) => Try { stmt.executeQuery(query) }.toEither.left.map(e => handleJDBCException(e)
+        .context("Error when sending query"))
       case Left(err) => Left(err)
     }
   }
@@ -160,31 +143,20 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
     * Executes a statement
     */
-  def execute(statement: String): Either[JDBCLayerError, Unit]= {
+  def execute(statement: String): ConnectorResult[Unit] = {
     logger.debug("Attempting to execute statement: " + statement)
     getStatement match {
-      case Right(stmt) =>
-        try {
-          stmt.execute(statement)
-          Right()
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
+      case Right(stmt) => Try { stmt.execute(statement); () }.toEither.left.map(e => handleJDBCException(e)
+        .context("Error when executing query"))
       case Left(err) => Left(err)
     }
   }
 
-  def executeUpdate(statement: String): Either[JDBCLayerError, Int] = {
+  def executeUpdate(statement: String): ConnectorResult[Int] = {
     logger.debug("Attempting to execute statement: " + statement)
     getStatement match {
-      case Right(stmt) =>
-        try {
-          Right(stmt.executeUpdate(statement))
-        }
-        catch{
-          case e: Throwable => Left(handleJDBCException(e))
-        }
+      case Right(stmt) => Try { stmt.executeUpdate(statement) }.toEither.left.map(e => handleJDBCException(e)
+        .context("Error when executing update"))
       case Left(err) => Left(err)
     }
   }
@@ -203,45 +175,27 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
-  def commit(): Either[JDBCLayerError, Unit] = {
+  def commit(): ConnectorResult[Unit] = {
     logger.debug("Commiting.")
-    connection match {
-      case Some(conn) =>
-        if(conn.isValid(0)){
-          try {
-            conn.commit()
-            Right(())
-          }
-          catch {
-            case e: Throwable => Left(handleJDBCException(e))
-          }
-        }
-        else {
-          Left(JDBCLayerError(ConnectionError))
-        }
-      case None =>
-        Left(JDBCLayerError(ConnectionError))
-    }
+    this.useConnection(conn => conn.commit())
+      .left.map(err => err.context("Error getting connection while commiting"))
   }
 
-  def rollback(): Either[JDBCLayerError, Unit] = {
-    logger.debug("Commiting.")
+  def rollback(): ConnectorResult[Unit] = {
+    logger.debug("Rolling back.")
+    this.useConnection(conn => conn.rollback())
+      .left.map(err => err.context("Error getting connection while rolling back"))
+  }
+
+  private def useConnection(action: Connection => Unit): ConnectorResult[Unit] = {
     connection match {
       case Some(conn) =>
-        if(conn.isValid(0)){
-          try {
-            conn.rollback()
-            Right(())
-          }
-          catch {
-            case e: Throwable => Left(handleJDBCException(e))
-          }
+        if (conn.isValid(0)){
+          Try { action(conn) }.toEither.left.map(e => handleJDBCException(e))
+        } else {
+          Left(ConnectionDownError())
         }
-        else {
-          Left(JDBCLayerError(ConnectionError))
-        }
-      case None =>
-        Left(JDBCLayerError(ConnectionError))
+      case None => Left(ConnectionError())
     }
   }
 }

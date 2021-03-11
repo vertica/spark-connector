@@ -16,8 +16,8 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
-import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.types.StructType
@@ -33,15 +33,15 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
   // No write metadata required for configuration as of yet
-  def getMetadata: Either[ConnectorError, VerticaMetadata] = Right(VerticaWriteMetadata())
+  def getMetadata: ConnectorResult[VerticaMetadata] = Right(VerticaWriteMetadata())
 
-  def getDataBlockSize: Either[ConnectorError, Long] = Right(dataSize)
+  def getDataBlockSize: ConnectorResult[Long] = Right(dataSize)
 
 
-  def checkSchemaForDuplicates(schema: StructType): Either[ConnectorError, Unit] = {
+  def checkSchemaForDuplicates(schema: StructType): ConnectorResult[Unit] = {
     val names = schema.fields.map(f => f.name)
     if(names.distinct.length != names.length) {
-      Left(ConnectorError(DuplicateColumnsError))
+      Left(DuplicateColumnsError())
     } else {
       Right(())
     }
@@ -54,7 +54,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - If not, creates the table (based on user supplied statement or the one we build)
    * - Creates the directory that files will be exported to
    */
-  def doPreWriteSteps(): Either[ConnectorError, Unit] = {
+  def doPreWriteSteps(): ConnectorResult[Unit] = {
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -66,19 +66,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tableExistsPre <- tableUtils.tableExists(config.tablename)
 
       // Overwrite safety check
-      _ <- if(config.isOverwrite && tableExistsPre) Left(ConnectorError(DropTableError)) else Right(())
+      _ <- if (config.isOverwrite && tableExistsPre) Left(DropTableError(None)) else Right(())
 
       // Check if a view exists or temp table exits by this name
       viewExists <- tableUtils.viewExists(config.tablename)
-      _ <- if(viewExists) Left(ConnectorError(ViewExistsError)) else Right(())
+      _ <- if (viewExists) Left(ViewExistsError()) else Right(())
       tempTableExists <- tableUtils.tempTableExists(config.tablename)
-      _ <- if(tempTableExists) Left(ConnectorError(TempTableExistsError)) else Right(())
+      _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
-      _ <- if(!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      _ <- if (!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
-      _ <- if(tableExistsPost) Right(()) else Left(ConnectorError(CreateTableError))
+      _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
@@ -88,7 +88,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield ()
   }
 
-  def startPartitionWrite(uniqueId: String): Either[ConnectorError, Unit] = {
+  def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
     val address = config.fileStoreConfig.address
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".parquet"
@@ -96,11 +96,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     fileStoreLayer.openWriteParquetFile(filename)
   }
 
-  def writeData(data: DataBlock): Either[ConnectorError, Unit] = {
+  def writeData(data: DataBlock): ConnectorResult[Unit] = {
     fileStoreLayer.writeDataToParquetFile(data)
   }
 
-  def endPartitionWrite(): Either[ConnectorError, Unit] = {
+  def endPartitionWrite(): ConnectorResult[Unit] = {
     jdbcLayer.close()
     fileStoreLayer.closeWriteParquetFile()
   }
@@ -118,7 +118,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Column list built for a subset of rows in the table that match our schema
    * - Empty string, load by position rather than column list
    */
-  private def getColumnList: Either[ConnectorError, String] = {
+  private def getColumnList: ConnectorResult[String] = {
     config.copyColumnList match {
       case Some(list) =>
         logger.info(s"Using custom COPY column list. " + "Target table: " + config.tablename.getFullTableName +
@@ -137,19 +137,16 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
         else {
           logger.info(s"Building default copy column list")
-          schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema) match {
-            case Left(err) =>
-              logger.error("Schema tools error: " + err.msg)
-              Left(ConnectorError(SchemaColumnListError))
-            case Right(str) => Right(str)
-          }
+          schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema)
+            .left.map(err => SchemaColumnListError(err)
+              .context("getColumnList: Error building default copy column list"))
         }
     }
   }
 
   private case class FaultToleranceTestResult(success: Boolean, failedRowsPercent: Double)
 
-  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : Either[JDBCLayerError, FaultToleranceTestResult] = {
+  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : ConnectorResult[FaultToleranceTestResult] = {
     // verify rejects to see if this falls within user tolerance.
     val rejectsQuery = "SELECT COUNT(*) as count FROM " + rejectsTable
     logger.info(s"Checking number of rejected rows via statement: " + rejectsQuery)
@@ -208,7 +205,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    *
    * @return rows copied
    */
-  def performCopy(copyStatement: String, tablename: TableName): Either[ConnectorError, Int]= {
+  def performCopy(copyStatement: String, tablename: TableName): ConnectorResult[Int] = {
     // Empty copy to make sure a projection is created if it hasn't been yet
     // This will error out, but create the projection
     val emptyCopy = "COPY " + tablename.getFullTableName + " FROM '';"
@@ -222,17 +219,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Real copy
       rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
-    } yield (rowsCopied)
+    } yield rowsCopied
 
-    ret match {
-      case Left(err) =>
-        logger.error("JDBC error when trying to copy: " + err)
-        Left(ConnectorError(CommitError))
-      case Right(v) => Right(v)
-    }
+    ret.left.map(err => CommitError(err).context("performCopy: JDBC error when trying to copy"))
   }
 
-  def commit(): Either[ConnectorError, Unit] = {
+  def commit(): ConnectorResult[Unit] = {
     val globPattern: String = "*.parquet"
     val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
 
@@ -240,7 +232,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     val ret = for {
       // Get columnList
-      columnList <- getColumnList
+      columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 
       tableName = config.tablename.name
       sessionId = config.sessionId
@@ -253,40 +245,25 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         "parquet"
       )
 
-      rowsCopied <- performCopy(copyStatement, config.tablename)
+      rowsCopied <- performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows"))
 
-      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName) match {
-        case Right (b) => Right (b)
-        case Left (err) =>
-          logger.error ("JDBC Error when trying to determine fault tolerance: " + err.msg)
-          Left(ConnectorError(CommitError))
-      }
+      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
+        .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.username, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
 
-      _ <- if(faultToleranceResults.success) {
-            Right(())
-          }
-          else {
-            Left(ConnectorError(FaultToleranceTestFail))
-          }
+      _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
     } yield ()
 
     // Commit or rollback
-    val result = ret match {
+    val result: ConnectorResult[Unit] = ret match {
       case Right(_) =>
-        jdbcLayer.commit() match {
-          case Right(()) => Right(())
-          case Left(err) =>
-            logger.error ("JDBC Error when trying to commit: " + err.msg)
-            Left(ConnectorError(CommitError))
-        }
-      case Left(err) =>
+        jdbcLayer.commit().left.map(err => CommitError(err).context("JDBC Error when trying to commit"))
+      case Left(retError) =>
         jdbcLayer.rollback() match {
-          case Right(()) => ()
-          case Left(err) => logger.error ("JDBC Error when trying to rollback: " + err.msg)
+          case Right(_) => Left(retError)
+          case Left(err) => Left(retError.context("JDBC Error when trying to rollback: " + err.getFullContext))
         }
-        Left(err)
     }
 
     fileStoreLayer.removeDir(config.fileStoreConfig.address)

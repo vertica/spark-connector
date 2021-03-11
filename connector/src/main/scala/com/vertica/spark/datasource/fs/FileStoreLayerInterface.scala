@@ -17,8 +17,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType._
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileDoesNotExistError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
@@ -29,6 +28,7 @@ import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.LogProvider
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
@@ -51,23 +51,23 @@ final case class ParquetFileMetadata(filename: String, rowGroupCount: Int)
 trait FileStoreLayerInterface {
 
   // Write
-  def openWriteParquetFile(filename: String) : Either[ConnectorError, Unit]
-  def writeDataToParquetFile(data: DataBlock): Either[ConnectorError, Unit]
-  def closeWriteParquetFile(): Either[ConnectorError, Unit]
+  def openWriteParquetFile(filename: String) : ConnectorResult[Unit]
+  def writeDataToParquetFile(data: DataBlock): ConnectorResult[Unit]
+  def closeWriteParquetFile(): ConnectorResult[Unit]
 
   // Read
-  def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata]
-  def openReadParquetFile(file: ParquetFileRange) : Either[ConnectorError, Unit]
-  def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock]
-  def closeReadParquetFile(): Either[ConnectorError, Unit]
+  def getParquetFileMetadata(filename: String) : ConnectorResult[ParquetFileMetadata]
+  def openReadParquetFile(file: ParquetFileRange) : ConnectorResult[Unit]
+  def readDataFromParquetFile(blockSize: Int): ConnectorResult[DataBlock]
+  def closeReadParquetFile(): ConnectorResult[Unit]
 
   // Other FS
-  def getFileList(filename: String): Either[ConnectorError, Seq[String]]
-  def removeFile(filename: String) : Either[ConnectorError, Unit]
-  def removeDir(filename: String) : Either[ConnectorError, Unit]
-  def createFile(filename: String) : Either[ConnectorError, Unit]
-  def createDir(filename: String) : Either[ConnectorError, Unit]
-  def fileExists(filename: String) : Either[ConnectorError, Boolean]
+  def getFileList(filename: String): ConnectorResult[Seq[String]]
+  def removeFile(filename: String) : ConnectorResult[Unit]
+  def removeDir(filename: String) : ConnectorResult[Unit]
+  def createFile(filename: String) : ConnectorResult[Unit]
+  def createDir(filename: String) : ConnectorResult[Unit]
+  def fileExists(filename: String) : ConnectorResult[Boolean]
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
@@ -111,7 +111,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 
   }
 
-  def read(blockSize: Int) : Either[ConnectorError, DataBlock] = {
+  def read(blockSize: Int) : ConnectorResult[DataBlock] = {
     (0 until blockSize).map(_ => Try {
       this.checkUpdateRecordReader()
       recordReader match {
@@ -119,26 +119,19 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
         case Some(reader) => Some(reader.read().copy())
       }
     } match {
-      case Failure(exception) =>
-        logger.error("Error reading parquet file from HDFS.", exception)
-        Left(ConnectorError(IntermediaryStoreReadError))
-      case Success(v) =>
-        Right(v)
+      case Failure(exception) => Left(IntermediaryStoreReadError(exception)
+        .context("Error reading parquet file from HDFS."))
+      case Success(v) => Right(v)
     }).toList.sequence match {
       case Left(err) => Left(err)
       case Right(list) => Right(DataBlock(list.flatten))
     }
   }
 
-  def close() : Either[ConnectorError, Unit] = {
-    Try{
-      this.reader.close()
-    } match {
-      case Success (_) => Right (())
-      case Failure (exception) =>
-        logger.error ("Error closing read of parquet file from HDFS.", exception)
-        Left (ConnectorError (CloseReadError))
-    }
+  def close(): ConnectorResult[Unit] = {
+    Try { this.reader.close() }
+      .toEither
+      .left.map(exception => CloseReadError(exception).context("Error closing read of parquet file from HDFS."))
   }
 }
 
@@ -171,25 +164,22 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     protected def getWriteSupport(conf: Configuration) = new ParquetWriteSupport
   }
 
-  def openWriteParquetFile(filename: String): Either[ConnectorError, Unit] = {
+  def openWriteParquetFile(filename: String): ConnectorResult[Unit] = {
     logger.debug("Opening write to file: " + filename)
     val builder = new VerticaParquetBuilder(new Path(s"$filename"))
 
     val writerOrError = for {
       _ <- removeFile(filename) match {
         case Right(_) => Right(())
-        case Left(ConnectorError(RemoveFileDoesNotExistError)) => Right(())
-        case Left(err) => Left(err)
+        case Left(err) => err.getError match {
+          case RemoveFileDoesNotExistError() => Right(())
+          case _ => Left(err)
+        }
       }
-      writer <- Try{builder.withConf(hdfsConfig)
+      writer <- Try { builder.withConf(hdfsConfig)
         .enableValidation()
         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
-        .build()} match {
-        case Success(writer) => Right(writer)
-        case Failure(exception) =>
-          logger.error("Error opening write to HDFS.", exception)
-          Left(ConnectorError(OpenWriteError))
-      }
+        .build()}.toEither.left.map(exception => OpenWriteError(exception).context("Error opening write to HDFS."))
     } yield writer
 
     writerOrError match {
@@ -200,37 +190,28 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     }
   }
 
-  override def writeDataToParquetFile(dataBlock: DataBlock): Either[ConnectorError, Unit] = {
-    for {
-      writer <- this.writer match {
-        case Some (reader) => Right (reader)
-        case None =>
-          logger.error ("Error writing parquet file from HDFS: Writer was not initialized.")
-          Left(ConnectorError(IntermediaryStoreWriteError))
-      }
-      _ <- dataBlock.data.map(record => Try{writer.write(record)} match {
-        case Failure(exception) =>
-          logger.error("Error writing parquet file to HDFS.", exception)
-          Left(ConnectorError(IntermediaryStoreWriteError))
-        case Success(_) => Right(())
-      }).sequence
-    } yield ()
-  }
-
-  override def closeWriteParquetFile(): Either[ConnectorError, Unit] = {
+  override def writeDataToParquetFile(dataBlock: DataBlock): ConnectorResult[Unit] = {
     for {
       writer <- this.writer match {
         case Some(reader) => Right(reader)
-        case None =>
-          logger.error("Error writing parquet file from HDFS: Writer was not initialized.")
-          Left(ConnectorError(IntermediaryStoreWriteError))
+        case None => Left(IntermediaryStoreWriterNotInitializedError()
+          .context("Error writing parquet file from HDFS"))
       }
-      _ <- Try {writer.close()} match {
-        case Success (_) => Right (())
-        case Failure (exception) =>
-          logger.error ("Error closing write of parquet file to HDFS.", exception)
-          Left(ConnectorError (CloseWriteError))
+      _ <- dataBlock.data.traverse(record => Try{writer.write(record)}
+        .toEither.left.map(exception => IntermediaryStoreWriteError(exception)
+          .context("Error writing parquet file to HDFS.")))
+    } yield ()
+  }
+
+  override def closeWriteParquetFile(): ConnectorResult[Unit] = {
+    for {
+      writer <- this.writer match {
+        case Some(reader) => Right(reader)
+        case None => Left(IntermediaryStoreWriterNotInitializedError()
+          .context("Error closing write of parquet file from HDFS"))
       }
+      _ <- Try {writer.close()}.toEither.left.map(exception => CloseWriteError(exception)
+        .context("Error closing write of parquet file to HDFS."))
     } yield ()
   }
 
@@ -242,7 +223,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     Collections.unmodifiableMap(setMultiMap)
   }
 
-  override def getParquetFileMetadata(filename: String) : Either[ConnectorError, ParquetFileMetadata] = {
+  override def getParquetFileMetadata(filename: String) : ConnectorResult[ParquetFileMetadata] = {
 
     val path = new Path(s"$filename")
 
@@ -254,15 +235,11 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
 
       reader.close()
       ParquetFileMetadata(filename, rowGroupCount)
-    } match {
-      case Success(metadata) => Right(metadata)
-      case Failure(exception) =>
-        logger.error(s"Error getting metadata for file $filename.", exception)
-        Left(ConnectorError(FileListError))
-    }
+    }.toEither.left.map(exception => FileListError(exception)
+      .context(s"Error getting metadata for file $filename."))
   }
 
-  override def openReadParquetFile(file: ParquetFileRange): Either[ConnectorError, Unit] = {
+  override def openReadParquetFile(file: ParquetFileRange): ConnectorResult[Unit] = {
     this.done = false
     val filename = file.filename
 
@@ -297,12 +274,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
       HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
-    } match {
-      case Success(r) => Right(r)
-      case Failure(exception) =>
-        logger.error("Error creating Parquet Reader", exception)
-        Left(ConnectorError(OpenReadError))
-    }
+    }.toEither.left.map(exception => OpenReadError(exception).context("Error creating Parquet Reader"))
 
     readerOrError match {
       case Right(reader) =>
@@ -312,10 +284,10 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     }
   }
 
-  override def readDataFromParquetFile(blockSize: Int): Either[ConnectorError, DataBlock] = {
+  override def readDataFromParquetFile(blockSize: Int): ConnectorResult[DataBlock] = {
     val dataBlock = for {
       _ <- if (this.done) {
-        Left(ConnectorError(DoneReading))
+        Left(DoneReading())
       } else {
         Right(())
       }
@@ -323,9 +295,8 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
       dataBlock <- for {
           reader <- this.reader match {
             case Some(reader) => Right(reader)
-            case None =>
-              logger.error("Error reading parquet file from HDFS: Reader was not initialized.")
-              Left(ConnectorError(IntermediaryStoreReadError))
+            case None => Left(IntermediaryStoreReaderNotInitializedError()
+              .context("Error reading parquet file from HDFS"))
           }
           dataBlock <- reader.read(blockSize)
         } yield dataBlock
@@ -342,93 +313,74 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     dataBlock
   }
 
-  override def closeReadParquetFile(): Either[ConnectorError, Unit] = {
+  override def closeReadParquetFile(): ConnectorResult[Unit] = {
     val r = for {
       reader <- this.reader match {
         case Some(reader) => Right(reader)
-        case None =>
-          logger.error("Error reading parquet file from HDFS: Reader was not initialized.")
-          Left(ConnectorError(CloseReadError))
-        }
+        case None => Left(IntermediaryStoreReaderNotInitializedError()
+          .context("Error closing read of parquet file from HDFS"))
+      }
       _ <- reader.close()
     } yield ()
     this.reader = None
     r
   }
 
-  override def getFileList(filename: String): Either[ConnectorError, Seq[String]] = {
+  override def getFileList(filename: String): ConnectorResult[Seq[String]] = {
     this.useFileSystem(filename, (fs, path) =>
       Try {fs.listStatus(path)} match {
         case Success(fileStatuses) => Right(fileStatuses.map(_.getPath.toString).toSeq)
-        case Failure(exception) =>
-          logger.error("Error getting file list from HDFS.", exception)
-          Left(ConnectorError(FileListError))
+        case Failure(exception) => Left(FileListError(exception).context("Error getting file list from HDFS."))
       })
   }
 
-  override def removeFile(filename: String): Either[ConnectorError, Unit] = {
+  override def removeFile(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (fs.exists(path)) {
-        Try{fs.delete(path, true)} match {
-          case Success(_) => Right(())
-          case Failure(exception) =>
-            logger.error("Error removing HDFS file.", exception)
-            Left(ConnectorError(RemoveFileError))
-        }
+        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveFileError(exception)
+          .context("Error removing HDFS file."))
       } else {
         Right(())
       })
   }
 
-  override def removeDir(filename: String): Either[ConnectorError, Unit] = {
+  override def removeDir(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (fs.exists(path)) {
-        Try{fs.delete(path, true)} match {
-          case Success(_) => Right(())
-          case Failure(exception) =>
-            logger.error("Error removing HDFS directory.", exception)
-            Left(ConnectorError(RemoveDirectoryError))
-        }
+        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveDirectoryError(exception)
+          .context("Error removing HDFS directory."))
       } else {
         Right(())
       })
   }
 
-  override def createFile(filename: String): Either[ConnectorError, Unit] = {
+  override def createFile(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.create(path)} match {
-          case Success(_) => Right(())
-          case Failure(exception) =>
-            logger.error("Error creating HDFS file.", exception)
-            Left(ConnectorError(CreateFileError))
-        }
+        Try {fs.create(path); ()}.toEither.left.map(exception => CreateFileError(exception)
+          .context("Error creating HDFS file."))
       } else {
-        Left(ConnectorError(CreateFileAlreadyExistsError))
+        Left(CreateFileAlreadyExistsError())
       })
   }
 
-  override def createDir(filename: String): Either[ConnectorError, Unit] = {
+  override def createDir(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.mkdirs(path)} match {
-          case Success(_) => Right(())
-          case Failure(exception) =>
-            logger.error("Error creating HDFS directory.", exception)
-            Left(ConnectorError(CreateDirectoryError))
-        }
+        Try {fs.mkdirs(path); ()}.toEither.left.map(exception => CreateDirectoryError(exception)
+          .context("Error creating HDFS directory."))
       } else {
-        Left(ConnectorError(CreateDirectoryAlreadyExistsError))
+        Left(CreateDirectoryAlreadyExistsError())
       })
   }
 
-  def fileExists(filename: String) : Either[ConnectorError, Boolean] = {
+  def fileExists(filename: String) : ConnectorResult[Boolean] = {
     this.useFileSystem(filename, (fs, path) =>
       Right(fs.exists(path)))
   }
 
   private def useFileSystem[T](filename: String,
-                               fsAction: (FileSystem, Path) => Either[ConnectorError, T]): Either[ConnectorError, T] = {
+                               fsAction: (FileSystem, Path) => ConnectorResult[T]): ConnectorResult[T] = {
     // Path for directory of files
     logger.debug("Filestore path: " + filename)
 
