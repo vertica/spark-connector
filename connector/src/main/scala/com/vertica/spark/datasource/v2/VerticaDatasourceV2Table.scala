@@ -82,7 +82,9 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
       case Some(builder) => builder
       case None =>
         val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
-          case Invalid(errList) => throw new ConnectorException(ErrorList(errList.toNonEmptyList))
+          case Invalid(errList) =>
+            val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+            ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
           case Valid(cfg) => cfg
         }
         config.getLogger(classOf[VerticaTable]).debug("Config loaded")
