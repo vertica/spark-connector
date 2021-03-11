@@ -168,9 +168,7 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   override def next: Boolean =
   {
     reader.readRow() match {
-      case Left(err) =>
-        logger.error(err.getFullContext)
-        throw new ConnectorException(err)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(r) =>
         row = r
     }
