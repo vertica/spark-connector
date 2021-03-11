@@ -20,6 +20,9 @@ trait SessionIdInterface {
   def getId : String
 }
 
+/**
+ * Implementation generating unique session ID
+ */
 object SessionId extends SessionIdInterface {
   def getId : String = java.util.UUID.randomUUID.toString.replace("-", "_")
 }

@@ -27,6 +27,10 @@ final case class DataBlock(data: List[InternalRow])
  */
 class VerticaPartition extends InputPartition
 
+/**
+ * Partitioning information.
+ * @param partitionSeq Sequence of InputPartitions, where each InputPartition contains info for reading one partition of the data.
+ */
 final case class PartitionInfo(partitionSeq: Array[InputPartition])
 
 /**

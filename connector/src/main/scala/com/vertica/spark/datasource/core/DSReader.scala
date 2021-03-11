@@ -26,20 +26,28 @@ import org.apache.spark.sql.connector.read.InputPartition
   * This class is initiated and called from each spark worker.
   */
 trait DSReaderInterface {
+
   /**
-    * Called by spark to read an individual row
-    */
+   * Called by spark to read an individual row
+   *
+   * @return The next row if it exists, if the read is done None will be returned.
+   */
   def readRow(): Either[ConnectorError, Option[InternalRow]]
 
   /**
    * Called when all reading is done, to perform any needed cleanup operations.
-   *
-   * Returns None for row if this is there are no more rows to read.
    */
   def closeRead(): Either[ConnectorError, Unit]
 }
 
 
+/**
+ * Reader class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
+ *
+ * @param config Configuration data for the operation.
+ * @param partition Information representing what this reader needs to read. Will be a portion of the overall read operation.
+ * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for read.
+ */
 class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
   private val logger: Logger = config.getLogger(classOf[DSReader])
 

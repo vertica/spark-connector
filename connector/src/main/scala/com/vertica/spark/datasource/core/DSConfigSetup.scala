@@ -233,6 +233,11 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
+  /**
+   * Calls read pipe implementation to perform initial setup for the read operation.
+   *
+   * @return List of partitioning information for the operation to pass down to readers.
+   */
   override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
     pipeFactory.getReadPipe(config).doPreReadSteps() match {
       case Right(partitionInfo) => Right(Some(partitionInfo))
@@ -240,6 +245,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
+  /**
+   * Returns the schema of the table being read
+   */
   override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
@@ -288,6 +296,11 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
+  /**
+   * Performs initial steps for write operation.
+   *
+   * @return None, partitioning info not needed for write operation.
+   */
   override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Option[PartitionInfo]] = {
     val pipe = pipeFactory.getWritePipe(config)
     pipe.doPreWriteSteps() match {
@@ -296,6 +309,9 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
+  /**
+   * Returns the same schema that was passed in to this class.
+   */
   override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = schema match {
     case Some(schem) => Right(schem)
     case None => Left(ConnectorError(SchemaDiscoveryError))

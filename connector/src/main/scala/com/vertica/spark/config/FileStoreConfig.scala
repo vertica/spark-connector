@@ -15,4 +15,9 @@ package com.vertica.spark.config
 
 import ch.qos.logback.classic.Level
 
+/**
+ * Represents configuration for a filestore used by the connector.
+ *
+ * There is not currently much user configuration for the filestore beyond the address to connect to.
+ */
 final case class FileStoreConfig(address: String, override val logLevel: Level) extends GenericConfig

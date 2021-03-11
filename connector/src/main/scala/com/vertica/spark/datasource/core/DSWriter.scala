@@ -20,7 +20,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 /**
   * Interface responsible for writing to the Vertica source.
   *
-  * This class is initiated and called from each spark worker.
+  * This interface is initiated and called from each spark worker.
   */
 trait DSWriterInterface {
   /**
@@ -44,6 +44,13 @@ trait DSWriterInterface {
   def commitRows(): Either[ConnectorError, Unit]
 }
 
+/**
+ * Writer class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
+ *
+ * @param config Configuration data definining the write operation.
+ * @param uniqueId Unique identifier for this specific writer. The writer for each partition should have a different ID.
+ * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for write.
+ */
 class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSWriterInterface {
 
   private val pipe = pipeFactory.getWritePipe(config)
