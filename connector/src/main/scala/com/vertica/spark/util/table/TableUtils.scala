@@ -13,7 +13,7 @@
 
 package com.vertica.spark.util.table
 
-import com.vertica.spark.config.{LogProvider, TableName}
+import com.vertica.spark.config.{EscapeUtils, LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerStringParam
 import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
@@ -210,7 +210,7 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
 
     val comment = "COMMENT ON TABLE "  + jobStatusTableName.getFullTableName + " IS 'Persistent job status table showing all jobs, serving as permanent record of data loaded from Spark to Vertica. Creation time:" + jobStartTime + "'"
 
-    val insertStatement = "INSERT into " + jobStatusTableName.getFullTableName + " VALUES ('" + dbschema + "','" + tablename.name + "','" + saveMode + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
+    val insertStatement = "INSERT into " + jobStatusTableName.getFullTableName + " VALUES ('" + EscapeUtils.sqlEscape(dbschema,'\'') + "','" + EscapeUtils.sqlEscape(tablename.name, '\'') + "','" + saveMode + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
 
     val ret = for {
       tableExists <- tableExists(jobStatusTableName)
