@@ -14,6 +14,7 @@
 package com.vertica.spark.util.error
 
 import cats.data.NonEmptyList
+import com.typesafe.scalalogging.Logger
 
 trait ConnectorError {
   // Adds context to an error
@@ -23,16 +24,16 @@ trait ConnectorError {
   def getFullContext: String
 
   // Get the underlying error object. This can be used to determine what kind of error occurred.
-  def getError: ConnectorError
+  def getError: ConnectorError = this
 
   // Gets a user-friendly error message.
-  def getUserMessage: String
+  def getUserMessage: String = this.getFullContext
 }
 
 case class ContextError(ctxt: String, error: ConnectorError) extends ConnectorError {
   def getFullContext: String = this.ctxt + "\n" + error.getFullContext
-  def getError: ConnectorError = this.error.getError
-  def getUserMessage: String = this.error.getUserMessage
+  override def getError: ConnectorError = this.error.getError
+  override def getUserMessage: String = this.error.getUserMessage
 }
 
 class ConnectorException(val error: ConnectorError) extends Exception {
@@ -57,6 +58,11 @@ object ErrorHandling {
   def appendErrors(errorText1: String, errorText2: String): String = {
     errorText1 + "\n" + errorText2
   }
+
+  def logAndThrowError(logger: Logger, error: ConnectorError): Nothing = {
+    logger.error(error.getFullContext)
+    throw new ConnectorException(error)
+  }
 }
 
 case class SchemaDiscoveryError(error: Option[ConnectorError]) extends ConnectorError {
@@ -67,8 +73,7 @@ case class SchemaDiscoveryError(error: Option[ConnectorError]) extends Connector
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.error match {
+  override def getUserMessage: String = this.error match {
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getUserMessage)
     case None => this.message
   }
@@ -78,103 +83,59 @@ case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
     "due to mismatch with the existing table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class SchemaConversionError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to convert the schema of the table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class ExportFromVerticaError(error: ConnectorError) extends ConnectorError {
   private val message = "There was an error when attempting to export from Vertica: " +
     "connection error with JDBC."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class ParquetMetadataError() extends ConnectorError {
-  private val message = "There was an error retrieving parquet file metadata."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "There was an error retrieving parquet file metadata."
 }
 case class PartitioningError() extends ConnectorError {
-  private val message = "Failure when retrieving partitioning information for operation."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Failure when retrieving partitioning information for operation."
 }
 case class InvalidPartition() extends ConnectorError {
-  private val message = "Input Partition was not valid for the given operation."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Input Partition was not valid for the given operation."
 }
 
 // TODO: Remove
 case class DoneReading() extends ConnectorError {
-  private val message = "No more data to read from source."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "No more data to read from source."
 }
 
 case class UninitializedReadCloseError() extends ConnectorError {
-  private val message = "Error while closing read: The reader was not initialized."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Error while closing read: The reader was not initialized."
 }
 case class UninitializedReadError() extends ConnectorError {
-  private val message = "Error while reading: The reader was not initialized."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Error while reading: The reader was not initialized."
 }
 case class MissingMetadata() extends ConnectorError {
-  private val message = "Metadata was missing from config."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Metadata was missing from config."
 }
 case class TooManyPartitions() extends ConnectorError {
-  private val message = "More partitions specified than is possible to divide the operation."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "More partitions specified than is possible to divide the operation."
 }
 case class CastingSchemaReadError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to get table schema when checking for fields that need casts."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CleanupError() extends ConnectorError {
-  private val message = "Unexpected error when attempting to clean up files."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Unexpected error when attempting to clean up files."
 }
 case class MissingSchemaError() extends ConnectorError {
-  private val message = "Expected to be passed in schema for this configuration. No schema found."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Expected to be passed in schema for this configuration. No schema found."
 }
 case class TableCheckError(error: Option[ConnectorError]) extends ConnectorError {
   private val message = "Error checking if table exists: connection error with JDBC."
@@ -183,8 +144,7 @@ case class TableCheckError(error: Option[ConnectorError]) extends ConnectorError
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CreateTableError(error: Option[ConnectorError]) extends ConnectorError {
   private val message = "Error when trying to create table. Check 'target_table_sql' option for issues."
@@ -193,8 +153,7 @@ case class CreateTableError(error: Option[ConnectorError]) extends ConnectorErro
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class DropTableError(error: Option[ConnectorError]) extends ConnectorError {
   private val message = "Error when trying to drop table. Check 'target_table_sql' option for issues."
@@ -203,44 +162,29 @@ case class DropTableError(error: Option[ConnectorError]) extends ConnectorError 
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CommitError(error: ConnectorError) extends ConnectorError {
   private val message = "Error in commit step of write to Vertica. " +
     "There was a failure copying data from the intermediary into Vertica."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class ViewExistsError() extends ConnectorError {
-  private val message = "Table name provided cannot refer to an existing view in Vertica."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Table name provided cannot refer to an existing view in Vertica."
 }
 case class TempTableExistsError() extends ConnectorError {
-  private val message = "Table name provided cannot refer to a temporary tt"
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Table name provided cannot refer to a temporary tt"
 }
 case class FaultToleranceTestFail() extends ConnectorError {
-  private val message = "Failed row count is above error tolerance threshold. Operation aborted."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Failed row count is above error tolerance threshold. Operation aborted."
 }
 case class JobStatusCreateError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to create job status table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class JobStatusUpdateError(error: Option[ConnectorError]) extends ConnectorError {
   private val message = "Failed to update job status table."
@@ -249,240 +193,147 @@ case class JobStatusUpdateError(error: Option[ConnectorError]) extends Connector
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class DuplicateColumnsError() extends ConnectorError {
-  private val message = "Schema contains duplicate columns, can't write this data."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Schema contains duplicate columns, can't write this data."
 }
 case class InvalidLoggingLevel() extends ConnectorError {
-  private val message = "logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "logging_level is incorrect. Use ERROR, INFO, DEBUG, or WARNING instead."
 }
 case class ConfigBuilderError() extends ConnectorError {
-  private val message = "There was an unexpected problem building the configuration object. " +
+  def getFullContext: String = "There was an unexpected problem building the configuration object. " +
     "Mandatory value missing."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class HostMissingError() extends ConnectorError {
-  private val message = "The 'host' param is missing. Please specify the IP address " +
+  def getFullContext: String = "The 'host' param is missing. Please specify the IP address " +
     "or hostname of the Vertica server to connect to."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class DbMissingError() extends ConnectorError {
-  private val message = "The 'db' param is missing. Please specify the name of the Vertica " +
+  def getFullContext: String = "The 'db' param is missing. Please specify the name of the Vertica " +
     "database to connect to."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class UserMissingError() extends ConnectorError {
-  private val message = "The 'user' param is missing. Please specify the username to use " +
+  def getFullContext: String = "The 'user' param is missing. Please specify the username to use " +
     "for authenticating with Vertica."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class PasswordMissingError() extends ConnectorError {
-  private val message = "The 'password' param is missing. Please specify the password to use " +
+  def getFullContext: String = "The 'password' param is missing. Please specify the password to use " +
     "for authenticating with Vertica."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class TablenameMissingError() extends ConnectorError {
-  private val message = "The 'table' param is missing. Please specify the name of the table to use."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "The 'table' param is missing. Please specify the name of the table to use."
 }
 case class InvalidPortError() extends ConnectorError {
-  private val message = "The 'port' param specified is invalid. " +
+  def getFullContext: String = "The 'port' param specified is invalid. " +
     "Please specify a valid integer between 1 and 65535."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class InvalidFailedRowsTolerance() extends ConnectorError {
-  private val message = "The 'failed_rows_percent_tolerance' param specified is invalid. " +
+  def getFullContext: String = "The 'failed_rows_percent_tolerance' param specified is invalid. " +
     "Please specify ad valid float between 0 and 1, representing a percent between 0 and 100."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class InvalidStrlenError() extends ConnectorError {
-  private val message = "The 'strlen' param specified is invalid. " +
+  def getFullContext: String = "The 'strlen' param specified is invalid. " +
     "Please specify a valid integer between 1 and 32000000."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class InvalidPartitionCountError() extends ConnectorError {
-  private val message = "The 'num_partitions' param specified is invalid. " +
+  def getFullContext: String = "The 'num_partitions' param specified is invalid. " +
     "Please specify a valid integer above 0."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class StagingFsUrlMissingError() extends ConnectorError {
-  private val message = "The 'staging_fs_url' option is missing. " +
+  def getFullContext: String = "The 'staging_fs_url' option is missing. " +
     "Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
 }
 case class FileSystemError() extends ConnectorError {
-  private val message = "There was an error communicating with the intermediary filesystem."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "There was an error communicating with the intermediary filesystem."
 }
 case class FileListError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error listing files in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CreateFileError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error creating a file in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CreateDirectoryError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error creating a directory in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class RemoveFileError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error removing the specified file in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class RemoveDirectoryError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error removing the specified directory in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class RemoveFileDoesNotExistError() extends ConnectorError {
-  private val message = "The specified file to remove does not exist in the intermediary filesystem."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "The specified file to remove does not exist in the intermediary filesystem."
 }
 case class RemoveDirectoryDoesNotExistError() extends ConnectorError {
-  private val message = "The specified directory to remove does not exist in the intermediary filesystem."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "The specified directory to remove does not exist in the intermediary filesystem."
 }
 case class CreateFileAlreadyExistsError() extends ConnectorError {
-  private val message = "The specified file to create already exists in the intermediary filesystem."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "The specified file to create already exists in the intermediary filesystem."
 }
 case class CreateDirectoryAlreadyExistsError() extends ConnectorError {
-  private val message = "The specified directory to create already exists in the intermediary filesystem."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "The specified directory to create already exists in the intermediary filesystem."
 }
 case class OpenWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error opening a write to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class IntermediaryStoreWriterNotInitializedError() extends ConnectorError {
-  private val message = "Intermediary filesystem write error: The writer was not initialized."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Intermediary filesystem write error: The writer was not initialized."
 }
 case class IntermediaryStoreWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error writing to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CloseWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error closing the write to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class OpenReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error opening a read from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class IntermediaryStoreReaderNotInitializedError() extends ConnectorError {
-  private val message = "Intermediary filesystem read error: The reader was not initialized."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Intermediary filesystem read error: The reader was not initialized."
 }
 case class IntermediaryStoreReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error reading from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class CloseReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error closing the read from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorError {
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
+  override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
 }
 
 /**
@@ -491,39 +342,28 @@ case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorErro
 trait JdbcError extends ConnectorError
 
 case class ConnectionError() extends JdbcError {
-  private val message = "Failed to connect to the JDBC source"
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Failed to connect to the JDBC source"
 }
 case class ConnectionDownError() extends JdbcError {
-  private val message = "Connection to the JDBC source is down or invalid"
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Connection to the JDBC source is down or invalid"
 }
 case class DataTypeError(cause: Throwable) extends JdbcError {
   private val message = "JDBC Error: Wrong data type"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message + ": " + this.cause.toString
+  override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class SyntaxError(cause: Throwable) extends JdbcError {
   private val message = "JDBC Error: syntax error occurred"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message + ": " + this.cause.toString
+  override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class GenericError(cause: Throwable) extends JdbcError {
   private val message = "Generic JDBC error occurred"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message + ": " + this.cause.toString
+  override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 
 /**
@@ -532,30 +372,20 @@ case class GenericError(cause: Throwable) extends JdbcError {
 trait SchemaError extends ConnectorError
 
 case class MissingConversionError(value: String) extends SchemaError {
-  private val message = "Could not find conversion for unsupported SQL type: " + value
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Could not find conversion for unsupported SQL type: " + value
 }
 case class UnexpectedExceptionError(cause: Throwable) extends SchemaError {
   private val message = "Unexpected exception while retrieving schema"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
   private val message = "JDBC failure when trying to retrieve schema"
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 case class TableNotEnoughRowsError() extends SchemaError {
-  private val message = "Attempting to write to a table with less columns than the spark schema."
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
 }

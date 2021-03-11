@@ -16,6 +16,9 @@ package com.vertica.spark.datasource.v2
 import java.util
 
 import cats.data.Validated.{Invalid, Valid}
+import ch.qos.logback.classic.Level
+import com.typesafe.scalalogging.Logger
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ConnectorException, ErrorHandling, ErrorList}
@@ -98,7 +101,9 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
     val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
-      case Invalid(errList) => throw new ConnectorException(ErrorList(errList.toNonEmptyList))
+      case Invalid(errList) =>
+        val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+        ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
       case Valid(cfg) => cfg
     }
     config.getLogger(classOf[VerticaTable]).debug("Config loaded")

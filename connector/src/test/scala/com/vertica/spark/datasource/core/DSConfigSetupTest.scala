@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import cats.data.Validated.{Invalid, Valid}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec

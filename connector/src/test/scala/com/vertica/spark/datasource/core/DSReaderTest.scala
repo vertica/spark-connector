@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._

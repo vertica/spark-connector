@@ -13,9 +13,8 @@
 
 package com.vertica.spark.util.cleanup
 
-import cats.data.NonEmptyList
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.{ConnectorError, CreateFileError, RemoveFileError}
+import com.vertica.spark.util.error.{CreateFileError, RemoveFileError}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec

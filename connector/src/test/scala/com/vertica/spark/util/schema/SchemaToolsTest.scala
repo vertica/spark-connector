@@ -19,7 +19,6 @@ import org.scalamock.scalatest.MockFactory
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 
-import cats.data.NonEmptyList
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc._

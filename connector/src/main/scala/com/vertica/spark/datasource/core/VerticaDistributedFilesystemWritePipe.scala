@@ -13,12 +13,11 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, JdbcResult}
-import com.vertica.spark.util.error.{CommitError, ConnectorError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.types.StructType

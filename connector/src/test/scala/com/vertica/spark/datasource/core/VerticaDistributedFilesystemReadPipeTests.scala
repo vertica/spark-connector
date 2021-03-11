@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory

@@ -13,7 +13,6 @@
 
 package com.vertica.spark.util.cleanup
 
-import cats.data.NonEmptyList
 import cats.implicits.toTraverseOps
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.CleanupError
