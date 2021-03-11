@@ -21,19 +21,14 @@ trait TestError extends ConnectorError
 
 
 case class MyError() extends TestError {
-  private val message = "My test error"
-
-  def getFullContext: String = this.message
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  def getFullContext: String = "My test error"
 }
 
 case class InterceptError(error: ConnectorError) extends TestError {
   private val message = "Intercept test error"
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  def getError: ConnectorError = this
-  def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message
 }
 
 class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
