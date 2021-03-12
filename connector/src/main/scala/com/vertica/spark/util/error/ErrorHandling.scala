@@ -374,7 +374,7 @@ case class GenericError(cause: Throwable) extends JdbcError {
   override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class ParamsNotSupported(operation: String) extends JdbcError {
-  private val message = "Params not supported for operation: "
+  private val message = "Params not supported for operation: " + operation
 
   def getFullContext: String = message
 }
