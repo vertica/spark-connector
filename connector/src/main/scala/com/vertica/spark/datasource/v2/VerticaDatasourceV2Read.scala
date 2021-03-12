@@ -13,13 +13,13 @@
 
 package com.vertica.spark.datasource.v2
 
+import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.PartitioningError
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, PartitioningError}
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
@@ -31,6 +31,10 @@ case class PushFilter(filter: Filter, filterString: String) extends PushdownFilt
 }
 
 case class NonPushFilter(filter: Filter) extends AnyVal
+
+case class ExpectedRowDidNotExistError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: expected row did not exist"
+}
 
 /**
   * Builds the scan class for use in reading of Vertica
@@ -84,13 +88,14 @@ class VerticaScanBuilder(config: ReadConfig) extends ScanBuilder with
   * Extends mixin class to represent type of read. Options are Batch or Stream, we are doing a batch read.
   */
 class VerticaScan(config: ReadConfig) extends Scan with Batch {
+  private val logger: Logger = config.getLogger(classOf[VerticaScan])
   /**
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
     ((new DSReadConfigSetup).getTableSchema(config), config.getRequiredSchema) match {
       case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
-      case (Left(err), _) => throw new Exception(err.msg)
+      case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
   }
 
@@ -106,11 +111,9 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   override def planInputPartitions(): Array[InputPartition] = {
     new DSReadConfigSetup()
       .performInitialSetup(config) match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
-        case None =>
-          val err = ConnectorError(PartitioningError)
-          throw new Exception(err.msg)
+        case None => ErrorHandling.logAndThrowError(logger, PartitioningError())
         case Some(partitionInfo) => partitionInfo.partitionSeq
       }
     }
@@ -147,13 +150,14 @@ class VerticaReaderFactory(config: ReadConfig) extends PartitionReaderFactory {
   * Reader class that reads rows from the underlying datasource
   */
 class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends PartitionReader[InternalRow] {
+  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   val reader = new DSReader(config, partition)
 
   // Open the read
   reader.openRead() match {
     case Right(_) => ()
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
   }
 
   var row: Option[InternalRow] = None
@@ -164,8 +168,7 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   override def next: Boolean =
   {
     reader.readRow() match {
-      case Left(err) =>
-        throw new Exception(err.msg)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(r) =>
         row = r
     }
@@ -180,7 +183,7 @@ class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends 
   */
   override def get: InternalRow = {
     row match {
-      case None => throw new Exception("Fatal error: expected row did not exist")
+      case None => ErrorHandling.logAndThrowError(logger, ExpectedRowDidNotExistError())
       case Some(v) => v
     }
   }

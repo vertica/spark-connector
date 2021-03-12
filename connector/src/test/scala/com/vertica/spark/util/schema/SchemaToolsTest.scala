@@ -24,8 +24,6 @@ import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.SchemaErrorType._
-import com.vertica.spark.util.error.JdbcErrorType._
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -325,7 +323,10 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 4)
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) => assert(errList.size == 4)
+      case Left(err) => assert(err.getError match {
+          case ErrorList(errors) => errors.size == 4
+          case _ => false
+        })
       case Right(_) => fail
     }
   }
@@ -338,10 +339,25 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 2)
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) =>
-        assert(errList.size == 2)
-        assert(errList.head.err == MissingConversionError)
-        assert(errList(1).err == MissingConversionError)
+      case Left(err) =>
+        assert(err.getError match {
+          case ErrorList(errors) => errors.size == 2
+          case _ => false
+        })
+        assert(err.getError match {
+          case ErrorList(errors) => errors.head match {
+            case MissingConversionError(_) => true
+            case _ => false
+          }
+          case _ => false
+        })
+        assert(err.getError match {
+          case ErrorList(errors) => errors.tail.head match {
+            case MissingConversionError(_) => true
+            case _ => false
+          }
+          case _ => false
+        })
       case Right(_) => fail
     }
   }
@@ -349,12 +365,14 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    (jdbcLayer.query _).expects(*,*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.query _).expects(*,*).returning(Left(ConnectionError()))
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) =>
-        assert(errList.size == 1)
-        assert(errList.head.err == JdbcError)
+      case Left(err) =>
+        assert(err.getError match {
+          case JdbcSchemaError(_) => true
+          case _ => false
+        })
       case Right(_) => fail
     }
   }
@@ -398,7 +416,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val schemaTools = new SchemaTools(logProvider)
 
     schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(str) => assert(str == "(\"col1\",\"col2\")")
     }
   }

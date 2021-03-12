@@ -16,8 +16,7 @@ package com.vertica.spark.config
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.UnquotedSemiInColumns
+import com.vertica.spark.util.error.UnquotedSemiInColumns
 import org.apache.spark.sql.types.StructType
 
 trait WriteConfig extends GenericConfig {
@@ -46,7 +45,7 @@ object ValidColumnList {
     if (!checkStringForUnquotedSemicolon(value)) {
       Some((new ValidColumnList(value))).validNec
     } else {
-      ConnectorError(UnquotedSemiInColumns).invalidNec
+      UnquotedSemiInColumns().invalidNec
     }
   }
 }

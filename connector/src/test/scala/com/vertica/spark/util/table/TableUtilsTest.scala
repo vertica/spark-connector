@@ -17,10 +17,10 @@ import java.sql.ResultSet
 
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
-import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam, JdbcLayerStringParam}
-import com.vertica.spark.util.error.ConnectorErrorType.{JobStatusCreateError, TableCheckError}
-import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
-import com.vertica.spark.util.error.JdbcErrorType.ConnectionError
+import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
+import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.{ConnectionError, JobStatusCreateError, TableCheckError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
@@ -32,9 +32,9 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
   private val logProvider = LogProvider(Level.ERROR)
   private val strlen = 1024
 
-  private def checkResult(eith: Either[ConnectorError, Unit]): Unit= {
-    eith match {
-      case Left(err) => fail(err.msg)
+  private def checkResult(result: ConnectorResult[Unit]): Unit= {
+    result match {
+      case Left(errors) => fail(errors.getFullContext)
       case Right(_) => ()
     }
   }
@@ -62,7 +62,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
-      case Left(err) => fail(err.msg)
+      case Left(errors) => fail(errors.getFullContext)
       case Right(v) => assert(v)
     }
   }
@@ -81,7 +81,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
-      case Left(err) => fail(err.msg)
+      case Left(errors) => fail(errors.getFullContext)
       case Right(v) => assert(!v)
     }
   }
@@ -93,15 +93,18 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.query _).expects(
       *,
       *
-    ).returning(Left(JDBCLayerError(ConnectionError)))
+    ).returning(Left(ConnectionError()))
 
     val schemaTools = mock[SchemaToolsInterface]
 
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
-      case Left(err) => assert(err.err == TableCheckError)
-      case Right(v) => fail
+      case Left(err) => assert(err.getError match {
+        case TableCheckError(_) => true
+        case _ => false
+      })
+      case Right(_) => fail
     }
   }
 
@@ -119,7 +122,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.viewExists(TableName(tablename, None)) match {
-      case Left(err) => fail(err.msg)
+      case Left(errors) => fail(errors.getFullContext)
       case Right(v) => assert(v)
     }
   }
@@ -138,7 +141,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.viewExists(TableName(tablename, None)) match {
-      case Left(err) => fail(err.msg)
+      case Left(errors) => fail(errors.getFullContext)
       case Right(v) => assert(!v)
     }
   }
@@ -160,8 +163,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
 
     utils.createTable(TableName(tablename, None), None, schema, strlen) match {
-      case Left(err) => fail(err.msg)
-      case Right(v) => ()
+      case Left(errors) => fail(errors.getFullContext)
+      case Right(_) => ()
     }
   }
 
@@ -183,8 +186,8 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
 
     utils.createTable(TableName(tablename, None), Some(stmt), schema, strlen) match {
-      case Left(err) => fail(err.msg)
-      case Right(v) => ()
+      case Left(errors) => fail(errors.getFullContext)
+      case Right(_) => ()
     }
   }
 
@@ -246,7 +249,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.query _).expects(
       *,*
     ).returning(Right(getTableResultSet(exists = false)))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Left(ConnectionError()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -254,7 +257,10 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE") match {
       case Right(_) => fail
-      case Left(err) => assert(err.err == JobStatusCreateError)
+      case Left(errors) => assert(errors.getError match {
+        case JobStatusCreateError(_) => true
+        case _ => false
+      })
     }
   }
 
@@ -292,7 +298,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val tablename = "dummy"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"", *).returning(Right(1))
+    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy\"", *).returning(Right())
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
