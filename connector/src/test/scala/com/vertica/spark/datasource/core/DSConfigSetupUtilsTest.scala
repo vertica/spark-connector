@@ -18,7 +18,7 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.TableName
+import com.vertica.spark.config.{TableName, ValidColumnList}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ConnectorErrorType._
@@ -256,10 +256,10 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val stmt = "col1"
     val opts = Map("copy_column_list" -> stmt)
 
-    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
-      case Some(str) => assert(str == stmt)
+      case Some(list) => assert(list.toString == stmt)
       case None => fail
     }
   }
@@ -276,10 +276,10 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val stmt = "col1,\"fa;sd\",fda"
     val opts = Map("copy_column_list" -> stmt)
 
-    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
-      case Some(str) => assert(str == stmt)
+      case Some(list) => assert(list.toString == stmt)
       case None => fail
     }
   }

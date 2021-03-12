@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.core
 import java.sql.ResultSet
 
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName, ValidColumnList}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ConnectorErrorType.{CommitError, FaultToleranceTestFail, OpenWriteError, SchemaConversionError, ViewExistsError}
@@ -297,7 +297,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "call vertica copy upon commit with a custom copy list" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = Some("col1 INTEGER, col2 FLOAT"), sessionId = "id", 0.0f)
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = ValidColumnList("col1 INTEGER, col2 FLOAT").getOrElse(None), sessionId = "id", 0.0f)
 
     val uniqueId = "unique-id"
 
@@ -383,7 +383,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   it should "use specified custom copy columns if specified" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None,
-      copyColumnList = Some("col1,col3,col2"), sessionId = "id", 0.0f)
+      copyColumnList = ValidColumnList("col1,col3,col2").getOrElse(None), sessionId = "id", 0.0f)
 
     val uniqueId = "unique-id"
 

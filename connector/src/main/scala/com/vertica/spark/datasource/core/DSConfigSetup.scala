@@ -139,26 +139,12 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
-  private def checkStringForUnquotedSemicolon(str: String): Boolean = {
-    var i = 0
-    var inQuote = false
-    var isUnquotedSemi = false
-    for(c <- str) {
-      if(c == '"') inQuote = !inQuote
-      if(c == ';' && !inQuote) isUnquotedSemi = true
-      i += 1
-    }
 
-    isUnquotedSemi
-  }
 
-  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
+  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
     config.get("copy_column_list") match {
       case None => None.validNec
-      case Some(listStr) =>
-        // Check for unquoted semicolons (prevent worst cases of sql injection)
-        if(checkStringForUnquotedSemicolon(listStr)) ConnectorError(UnquotedSemiInColumns).invalidNec
-        else Some(listStr).validNec
+      case Some(listStr) => ValidColumnList(listStr)
     }
   }
 
