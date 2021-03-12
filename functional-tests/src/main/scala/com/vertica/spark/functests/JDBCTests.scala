@@ -16,11 +16,10 @@ package com.vertica.spark.functests
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
-
 import com.vertica.spark.util.error.JdbcErrorType._
-
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.util.error.{ConnectionError, DataTypeError, SyntaxError}
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
@@ -107,7 +106,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(false)
       }
       case Left(err) => {
-        assert(err.err == SyntaxError)
+        assert(err.getError match {
+          case SyntaxError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -119,7 +121,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == DataTypeError)
+        assert(err.getError match {
+          case DataTypeError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -128,7 +133,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("CREATE TABLE " + tablename + ";") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == SyntaxError)
+        assert(err.getError match {
+          case SyntaxError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -139,7 +147,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == ConnectionError)
+        assert(err.getError match {
+          case ConnectionError() => true
+          case _ => false
+        })
       }
     }
   }

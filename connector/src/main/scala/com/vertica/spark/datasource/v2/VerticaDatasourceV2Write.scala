@@ -13,13 +13,19 @@
 
 package com.vertica.spark.datasource.v2
 
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.WriteConfig
 import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
+import com.vertica.spark.util.error.{ConnectorError, ErrorHandling}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
 object WriteSucceeded extends WriterCommitMessage
 object WriteFailed extends WriterCommitMessage
+
+case class JobAbortedError() extends ConnectorError {
+  def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
+}
 
 /**
   * Builds the class for use in writing to Vertica
@@ -47,10 +53,11 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with Support
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
 class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
+  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
   new DSWriteConfigSetup(None).performInitialSetup(config) match {
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
     case Right(_) => ()
   }
 
@@ -71,7 +78,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
     val writer = new DSWriter(config, "")
     writer.commitRows() match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
     }
   }
@@ -83,7 +90,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * Called after one or more worker nodes report that they have failed.
   */
   override def abort(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    throw new Exception("Writing job aborted. Check spark worker log for specific error.")
+    ErrorHandling.logAndThrowError(logger, JobAbortedError())
   }
 }
 
@@ -108,6 +115,7 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   * Writer class that passes rows to be written to the underlying datasource
   */
 class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) extends DataWriter[InternalRow] {
+  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
   val uniqueId : String = partitionId + "-" + taskId
@@ -115,7 +123,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   val writer = new DSWriter(config, uniqueId)
   writer.openWrite() match {
     case Right(_) => ()
-    case Left(err) => throw new Exception(err.msg)
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
   }
 
   /**
@@ -126,7 +134,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   override def write(record: InternalRow): Unit = {
     writer.writeRow(record) match {
       case Right(_) => ()
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
     }
   }
 
@@ -137,7 +145,7 @@ class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) ex
   */
   override def commit(): WriterCommitMessage = {
     writer.closeWrite() match {
-      case Left(err) => throw new Exception(err.msg)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => WriteSucceeded
     }
   }

@@ -16,8 +16,8 @@ package com.vertica.spark.util.cleanup
 import cats.implicits.toTraverseOps
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.{CleanupError, FileSystemError}
+import com.vertica.spark.util.error.{CleanupError, ConnectorError, FileSystemError}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
 /**
@@ -42,7 +42,7 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param fileCleanupInfo Cleanup information for a portion of the file.
    */
-  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : Either[ConnectorError, Unit]
+  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : ConnectorResult[Unit]
 
   /**
    * Cleanup all files
@@ -50,14 +50,14 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param path Path of directory
    */
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit]
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit]
 }
 
 class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
   private val logger = logProvider.getLogger(classOf[CleanupUtils])
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = {
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
     // Cleanup parent dir (unique id)
     val p = new Path(s"$path")
     val parent = p.getParent
@@ -66,7 +66,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       Right(())
     }
     else {
-      Left(ConnectorError(CleanupError))
+      Left(CleanupError())
     }
   }
 
@@ -77,7 +77,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
     } yield ()
   }
 
-  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
+  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): ConnectorResult[Unit] = {
     val filename = fileCleanupInfo.filename
     logger.info("Doing partition cleanup of file: " + filename)
 
@@ -110,7 +110,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       }
 
       // Delete the directory if empty
-      parentPath <- if(parent != null) Right(parent.toString) else Left(ConnectorError(FileSystemError))
+      parentPath <- if(parent != null) Right(parent.toString) else Left(FileSystemError())
       _ <- if(allExist) this.cleanupDirIfEmpty(fileStoreLayer, parentPath) else Right(())
     } yield ()
   }

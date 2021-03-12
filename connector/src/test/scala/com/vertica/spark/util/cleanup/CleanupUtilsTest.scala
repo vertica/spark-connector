@@ -16,8 +16,7 @@ package com.vertica.spark.util.cleanup
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType._
+import com.vertica.spark.util.error.{CreateFileError, RemoveFileError}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -92,34 +91,43 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val filename = "file.parquet"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createFile _).expects(filename+".cleanup0").returning(Left(ConnectorError(CreateFileError)))
+    (fileStoreLayer.createFile _).expects(filename+".cleanup0").returning(Left(CreateFileError(new Exception())))
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 0, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.err == CreateFileError)
+      case Left(err) => assert(err.getError match {
+        case CreateFileError(_) => true
+        case _ => false
+      })
     }
 
     (fileStoreLayer.createFile _).expects(filename+".cleanup1").returning(Right(()))
-    (fileStoreLayer.fileExists _).expects(filename+".cleanup0").returning(Left(ConnectorError(CreateFileError)))
+    (fileStoreLayer.fileExists _).expects(filename+".cleanup0").returning(Left(CreateFileError(new Exception())))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup1").returning(Right(true))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup2").returning(Right(true))
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 1, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.err == CreateFileError)
+      case Left(err) => assert(err.getError match {
+        case CreateFileError(_) => true
+        case _ => false
+      })
     }
 
     (fileStoreLayer.createFile _).expects(filename+".cleanup2").returning(Right(()))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup0").returning(Right(true))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup1").returning(Right(true))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup2").returning(Right(true))
-    (fileStoreLayer.removeFile _).expects(filename+".cleanup0").returning(Left(ConnectorError(RemoveFileError)))
-    (fileStoreLayer.removeFile _).expects(filename+".cleanup1").returning(Left(ConnectorError(RemoveFileError)))
-    (fileStoreLayer.removeFile _).expects(filename+".cleanup2").returning(Left(ConnectorError(RemoveFileError)))
+    (fileStoreLayer.removeFile _).expects(filename+".cleanup0").returning(Left(RemoveFileError(new Exception())))
+    (fileStoreLayer.removeFile _).expects(filename+".cleanup1").returning(Left(RemoveFileError(new Exception())))
+    (fileStoreLayer.removeFile _).expects(filename+".cleanup2").returning(Left(RemoveFileError(new Exception())))
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 2, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.err == RemoveFileError)
+      case Left(err) => assert(err.getError match {
+        case RemoveFileError(_) => true
+        case _ => false
+      })
     }
   }
 }

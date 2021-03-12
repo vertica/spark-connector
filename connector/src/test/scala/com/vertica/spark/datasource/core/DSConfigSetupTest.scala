@@ -20,7 +20,6 @@ import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.types._
 
@@ -126,8 +125,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 2)
-    assert(errSeq.exists(err => err.err == InvalidPortError))
-    assert(errSeq.exists(err => err.err == InvalidLoggingLevel))
+    assert(errSeq.contains(InvalidPortError()))
+    assert(errSeq.contains(InvalidLoggingLevel()))
   }
 
   it should "Return error when there's a problem retrieving metadata" in {
@@ -144,7 +143,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Left(ConnectorError(SchemaDiscoveryError))).once()
+    (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError(None))).once()
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
@@ -152,7 +151,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 1)
-    assert(errSeq.exists(err => err.err == SchemaDiscoveryError))
+    assert(errSeq.map(_.getError).contains(SchemaDiscoveryError(None)))
   }
 
   it should "parse a valid write config" in {
@@ -201,7 +200,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
     assert(errSeq.size == 2)
-    assert(errSeq.exists(err => err.err == InvalidPortError))
-    assert(errSeq.exists(err => err.err == InvalidLoggingLevel))
+    assert(errSeq.map(_.getError).contains(InvalidPortError()))
+    assert(errSeq.map(_.getError).contains(InvalidLoggingLevel()))
   }
 }

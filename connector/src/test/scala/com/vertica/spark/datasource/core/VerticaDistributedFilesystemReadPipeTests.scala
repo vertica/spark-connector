@@ -25,11 +25,9 @@ import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.util.error.SchemaErrorType._
-import com.vertica.spark.util.error.JdbcErrorType._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{EqualTo, Filter, GreaterThan, LessThan}
+import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -87,9 +85,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     schemaTools
   }
 
-  private def failOnError[T](either: Either[ConnectorError, T]): Unit = {
-    either match {
-      case Left(err) => fail(err.msg)
+  private def failOnError[T](result: ConnectorResult[T]): Unit = {
+    result match {
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
   }
@@ -135,12 +133,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
+      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(MissingConversionError("unknown")))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
     pipe.getMetadata match {
-      case Left(err) => assert(err.err == SchemaDiscoveryError)
+      case Left(err) => assert(err.getError match {
+        case SchemaDiscoveryError(_) => true
+        case _ => false
+      })
       case Right(_) => fail
     }
   }
@@ -169,7 +170,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+    (fileStoreLayer.fileExists _).expects(*).returning(Left(FileSystemError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.close _).expects().returning()
@@ -180,7 +181,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == FileSystemError)
+      case Left(err) => assert(err.getError == FileSystemError())
       case Right(_) => fail
     }
   }
@@ -193,7 +194,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.execute _).expects(*).returning(Left(ConnectionError()))
     (jdbcLayer.close _).expects().returning()
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
@@ -206,7 +207,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == ExportFromVerticaError)
+      case Left(err) => assert(err.getError match {
+        case ExportFromVerticaError(_) => true
+        case _ => false
+      })
       case Right(_) => fail
     }
   }
@@ -425,10 +429,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
-    (fileStoreLayer.getFileList _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+    (fileStoreLayer.getFileList _).expects(*).returning(Left(FileSystemError()))
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == FileSystemError)
+      case Left(err) => assert(err.getError == FileSystemError())
       case Right(_) => fail
     }
   }
@@ -458,7 +462,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == PartitioningError)
+      case Left(err) => assert(err.getError == PartitioningError())
       case Right(_) => fail
     }
   }
@@ -515,11 +519,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -549,7 +553,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     pipe.readData match {
-      case Left(err) => assert(err.err == DoneReading)
+      case Left(err) => assert(err.getError == DoneReading())
       case Right(_) => fail
     }
 
@@ -577,11 +581,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     // Should be called to clean up 2 files
@@ -609,7 +613,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.err == InvalidPartition)
+      case Left(err) => assert(err.getError == InvalidPartition())
       case Right(_) => fail
     }
   }
@@ -621,14 +625,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.openReadParquetFile _).expects(*).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.openReadParquetFile _).expects(*).returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
@@ -641,7 +645,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
@@ -650,7 +654,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.startPartitionRead(partition))
 
     pipe.readData match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
@@ -668,7 +672,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data))
-    (fileStoreLayer.closeReadParquetFile _).expects().returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.closeReadParquetFile _).expects().returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.close _).expects().returning()
@@ -679,7 +683,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.readData)
 
     pipe.endPartitionRead() match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
