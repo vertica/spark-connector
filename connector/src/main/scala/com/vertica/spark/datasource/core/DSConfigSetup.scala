@@ -139,8 +139,13 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
-  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("copy_column_list").validNec
+
+
+  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
+    config.get("copy_column_list") match {
+      case None => None.validNec
+      case Some(listStr) => ValidColumnList(listStr)
+    }
   }
 
   // Optional param, if not specified the partition count will be decided as part of the inital steps

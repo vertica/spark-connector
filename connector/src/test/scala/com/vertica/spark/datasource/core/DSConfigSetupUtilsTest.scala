@@ -18,7 +18,7 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.TableName
+import com.vertica.spark.config.{TableName, ValidColumnList}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import org.scalactic.{Equality, TolerantNumerics}
@@ -254,10 +254,30 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val stmt = "col1"
     val opts = Map("copy_column_list" -> stmt)
 
-    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
-      case Some(str) => assert(str == stmt)
+      case Some(list) => assert(list.toString == stmt)
+      case None => fail
+    }
+  }
+
+  it should "fail on unquoted semicolon" in {
+    val stmt = "col1,fasd;,fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getCopyColumnList(opts))
+    assert(err.toNonEmptyList.head.isInstanceOf[UnquotedSemiInColumns])
+  }
+
+  it should "don't fail on quoted semicolon" in {
+    val stmt = "col1,\"fa;sd\",fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
+
+    res match {
+      case Some(list) => assert(list.toString == stmt)
       case None => fail
     }
   }

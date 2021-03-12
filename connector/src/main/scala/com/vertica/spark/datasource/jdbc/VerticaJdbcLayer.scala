@@ -14,16 +14,23 @@
 package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
+import java.sql.{DriverManager, PreparedStatement}
 import java.sql.Connection
 import java.sql.Statement
 import java.sql.ResultSet
 import java.util
-import java.sql.DriverManager
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, JdbcResult}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
+
+trait JdbcLayerParam
+
+case class JdbcLayerStringParam(value: String) extends JdbcLayerParam
+case class JdbcLayerIntParam(value: Int) extends JdbcLayerParam
 
 /**
   * Interface for communicating with a JDBC source
@@ -33,19 +40,19 @@ trait JdbcLayerInterface {
   /**
     * Runs a query that should return a ResultSet
     */
-  def query(query: String): ConnectorResult[ResultSet]
+  def query(query: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[ResultSet]
 
   /**
     * Executes a statement
     *
     * Used for ddl or dml statements.
     */
-  def execute(statement: String): ConnectorResult[Unit]
+  def execute(statement: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[Unit]
 
   /**
    * Executes a statement returning a row count
    */
-  def executeUpdate(statement: String): ConnectorResult[Int]
+  def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[Int]
 
   /**
     * Close and cleanup
@@ -103,13 +110,30 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
     * Gets a statement object or connection error if something is wrong.
     */
-  private def getStatement: JdbcResult[Statement] = {
+  private def getStatement: ConnectorResult[Statement] = {
     connection match {
       case Some(conn) =>
         if (conn.isValid(0)) {
           val stmt = conn.createStatement()
           Right(stmt)
         } else {
+          Left(ConnectionDownError())
+        }
+      case None =>
+        Left(ConnectionError())
+    }
+  }
+
+  private def getPreparedStatement(sql: String): ConnectorResult[PreparedStatement] = {
+    connection match {
+      case Some(conn) =>
+        if(conn.isValid(0))
+        {
+          val stmt = conn.prepareStatement(sql)
+
+          Right(stmt)
+        }
+        else {
           Left(ConnectionDownError())
         }
       case None =>
@@ -128,42 +152,83 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
+  private def addParamsToStatement(statement: PreparedStatement, params: Seq[JdbcLayerParam]): Unit = {
+    params.zipWithIndex.foreach {
+      case (param, idx) =>
+        val i = idx + 1
+        param match {
+          case p: JdbcLayerStringParam => statement.setString(i, p.value)
+          case p: JdbcLayerIntParam => statement.setInt(i, p.value)
+        }
+    }
+  }
+
   /**
     * Runs a query against Vertica that should return a ResultSet
     */
-  def query(query: String): ConnectorResult[ResultSet] = {
+  def query(query: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[ResultSet] = {
     logger.debug("Attempting to send query: " + query)
-    getStatement match {
-      case Right(stmt) => Try { stmt.executeQuery(query) }.toEither.left.map(e => handleJDBCException(e)
-        .context("Error when sending query"))
-      case Left(err) => Left(err)
+    Try{
+      getPreparedStatement(query) match {
+        case Right(stmt) =>
+          addParamsToStatement(stmt, params)
+          Right(stmt.executeQuery())
+        case Left(err) => Left(err)
+      }
+    } match {
+      case Success(v) => v
+      case Failure(e) => Left(handleJDBCException(e).context("Error when sending query"))
+    }
+  }
+
+
+  /**
+   * Executes a statement
+    */
+  def execute(statement: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[Unit] = {
+    logger.debug("Attempting to execute statement: " + statement)
+    Try {
+      if(params.nonEmpty) {
+        getPreparedStatement(statement) match {
+          case Right(stmt) =>
+            addParamsToStatement(stmt, params)
+            stmt.execute()
+            Right()
+          case Left(err) => Left(err)
+        }
+      }
+      else {
+        getStatement match {
+          case Right(stmt) =>
+            stmt.execute(statement)
+            Right()
+          case Left(err) => Left(err)
+        }
+      }
+    } match {
+      case Success(v) => v
+      case Failure(e) => Left(handleJDBCException(e))
+    }
+  }
+
+  def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[Int] = {
+    logger.debug("Attempting to execute statement: " + statement)
+    if(params.nonEmpty) {
+      Left(ParamsNotSupported("executeUpdate"))
+    }
+    else {
+      Try {
+        getStatement.map(stmt => stmt.executeUpdate(statement))
+      } match {
+        case Success(v) => v
+        case Failure(e) => Left(handleJDBCException(e))
+      }
     }
   }
 
   /**
-    * Executes a statement
-    */
-  def execute(statement: String): ConnectorResult[Unit] = {
-    logger.debug("Attempting to execute statement: " + statement)
-    getStatement match {
-      case Right(stmt) => Try { stmt.execute(statement); () }.toEither.left.map(e => handleJDBCException(e)
-        .context("Error when executing query"))
-      case Left(err) => Left(err)
-    }
-  }
-
-  def executeUpdate(statement: String): ConnectorResult[Int] = {
-    logger.debug("Attempting to execute statement: " + statement)
-    getStatement match {
-      case Right(stmt) => Try { stmt.executeUpdate(statement) }.toEither.left.map(e => handleJDBCException(e)
-        .context("Error when executing update"))
-      case Left(err) => Left(err)
-    }
-  }
-
-  /**
-    * Closes the connection
-    */
+   * Closes the connection
+   */
   def close(): Unit = {
     logger.debug("Closing connection.")
     connection match {

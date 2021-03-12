@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -84,7 +84,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
 
       // Create job status table / entry
-      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId)
+      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
     } yield ()
   }
 
@@ -226,7 +226,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def commit(): ConnectorResult[Unit] = {
     val globPattern: String = "*.parquet"
-    val url: String = s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern"
+
+    // Create url string, escape any ' characters as those surround the url
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
 
     val tableNameMaxLength = 30
 
@@ -236,7 +238,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       tableName = config.tablename.name
       sessionId = config.sessionId
-      rejectsTableName = "\"" + tableName.substring(0,Math.min(tableNameMaxLength,tableName.length)) + "_" + sessionId + "_COMMITS" + "\""
+      rejectsTableName = "\"" +
+        EscapeUtils.sqlEscape(tableName.substring(0,Math.min(tableNameMaxLength,tableName.length))) +
+        "_" +
+        sessionId +
+        "_COMMITS" +
+        "\""
 
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
