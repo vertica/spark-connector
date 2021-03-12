@@ -16,7 +16,6 @@ package com.vertica.spark.functests
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.util.error.JdbcErrorType._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.JDBCConfig
 import com.vertica.spark.util.error.{ConnectionError, DataTypeError, SyntaxError}
@@ -63,7 +62,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.next())
         assert(rs.getInt(1) == 123)
       case Left(err) =>
-        fail
+        fail(err.getFullContext)
     }
   }
 
@@ -77,7 +76,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.next())
         assert(rs.getInt(1) == 123)
       case Left(err) =>
-        fail
+        fail(err.getFullContext)
     }
   }
 
@@ -91,7 +90,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.next())
         assert(rs.getString(1) == "abc123")
       case Left(err) =>
-        assert(false)
+        fail(err.getFullContext)
     }
   }
 
@@ -106,7 +105,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.getString(1) == "abc123")
       }
       case Left(err) => {
-        assert(false)
+        fail(err.getFullContext)
       }
     }
   }
@@ -123,7 +122,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.getInt(2) == 5)
       }
       case Left(err) => {
-        assert(false)
+        fail(err.getFullContext)
       }
     }
   }

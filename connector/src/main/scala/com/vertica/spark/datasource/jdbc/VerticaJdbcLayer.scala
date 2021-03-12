@@ -134,11 +134,9 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           Right(stmt)
         }
         else {
-          logger.error("Can't connect to Vertica: connection down.")
-          Left(ConnectionError())
+          Left(ConnectionDownError())
         }
       case None =>
-        logger.error("Can't connect to Vertica: initial connection failed.")
         Left(ConnectionError())
     }
   }
@@ -155,13 +153,13 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   private def addParamsToStatement(statement: PreparedStatement, params: Seq[JdbcLayerParam]): Unit = {
-    var i = 0
-    for(param <- params) {
-      i += 1
-      param match {
-        case p: JdbcLayerStringParam => statement.setString(i, p.value)
-        case p: JdbcLayerIntParam => statement.setInt(i, p.value)
-      }
+    params.zipWithIndex.foreach {
+      case (param, idx) =>
+        val i = idx + 1
+        param match {
+          case p: JdbcLayerStringParam => statement.setString(i, p.value)
+          case p: JdbcLayerIntParam => statement.setInt(i, p.value)
+        }
     }
   }
 
@@ -220,11 +218,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
     else {
       Try {
-        getStatement match {
-          case Right(stmt) =>
-            Right(stmt.executeUpdate(statement))
-          case Left(err) => Left(err)
-        }
+        getStatement.map(stmt => stmt.executeUpdate(statement))
       } match {
         case Success(v) => v
         case Failure(e) => Left(handleJDBCException(e))
@@ -234,7 +228,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   /**
    * Closes the connection
-    */
+   */
   def close(): Unit = {
     logger.debug("Closing connection.")
     connection match {
