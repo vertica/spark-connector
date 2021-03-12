@@ -174,17 +174,12 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
-<<<<<<< HEAD
-      case Left(err) =>
-        assert(err.err == ConnectionError)
-=======
       case Left(err) => {
         assert(err.getError match {
           case ConnectionError() => true
           case _ => false
         })
       }
->>>>>>> f1a334e4e419cd7a04444154452bde5b33847fd6
     }
   }
 
