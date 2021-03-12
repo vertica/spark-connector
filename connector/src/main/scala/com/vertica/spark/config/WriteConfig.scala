@@ -23,7 +23,7 @@ trait WriteConfig extends GenericConfig {
   def setOverwrite(overwrite: Boolean): Unit
 }
 
-class ValidColumnList private (value: String) {
+class ValidColumnList private (value: String) extends Serializable {
   override def toString: String = value
 }
 
@@ -43,7 +43,7 @@ object ValidColumnList {
 
   final def apply(value: String): ValidationResult[Option[ValidColumnList]] = {
     if (!checkStringForUnquotedSemicolon(value)) {
-      Some((new ValidColumnList(value))).validNec
+      Some(new ValidColumnList(value)).validNec
     } else {
       UnquotedSemiInColumns().invalidNec
     }

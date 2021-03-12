@@ -20,7 +20,6 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
-import org.apache.commons.lang.StringEscapeUtils
 import org.apache.spark.sql.types.StructType
 
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig,

@@ -14,14 +14,14 @@
 package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, Statement}
+import java.sql.{DriverManager, PreparedStatement}
 import java.sql.Connection
 import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, JdbcResult}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import scala.util.Try
 import scala.util.Success
@@ -215,7 +215,9 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def executeUpdate(statement: String, params: Seq[JdbcLayerParam] = Seq()): ConnectorResult[Int] = {
     logger.debug("Attempting to execute statement: " + statement)
-    if(params.nonEmpty) Left(ParamsNotSupported("executeUpdate"))
+    if(params.nonEmpty) {
+      Left(ParamsNotSupported("executeUpdate"))
+    }
     else {
       Try {
         getStatement match {

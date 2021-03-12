@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -41,8 +40,6 @@ trait DSReaderInterface {
 
 
 class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
-  private val logger: Logger = config.getLogger(classOf[DSReader])
-
   private val pipe = pipeFactory.getReadPipe(config)
 
   private var block: Option[DataBlock] = None

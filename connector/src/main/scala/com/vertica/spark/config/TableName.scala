@@ -16,7 +16,7 @@ package com.vertica.spark.config
 object EscapeUtils {
   def sqlEscape(str: String, char: Char = '\"'): String = {
     val c = char.toString
-    str.replace(c, c+c)
+    str.replace(c, c + c)
   }
 
   def sqlEscapeAndQuote(str: String): String = {
