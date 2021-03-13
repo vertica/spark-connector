@@ -77,12 +77,35 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
     } yield ()
   }
 
+  /**
+   * Uses java-based hadoop path to retrieve the parent path. Checks for null safety here.
+   */
+  private def getParentHadoopPath(path: String): ConnectorResult[String] = {
+    val p = new Path(s"$path")
+    val parent = p.getParent
+    if(parent != null) Right(parent.toString) else Left(FileSystemError().context("Could not retrieve parent path of file: " + path))
+  }
+
+  private def performCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo ): ConnectorResult[Unit] = {
+    val filename = fileCleanupInfo.filename
+
+    for {
+      // Delete all portions
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
+          fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
+
+      // Delete the original file
+      _ <- fileStoreLayer.removeFile(filename)
+
+      // Delete the directory if empty
+      parentPath <- getParentHadoopPath(filename)
+      _ <- this.cleanupDirIfEmpty(fileStoreLayer, parentPath)
+    } yield ()
+  }
+
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): ConnectorResult[Unit] = {
     val filename = fileCleanupInfo.filename
     logger.info("Doing partition cleanup of file: " + filename)
-
-    val p = new Path(s"$filename")
-    val parent = p.getParent
 
     for {
       // Create the file for this portion
@@ -94,24 +117,8 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
         ).toList.sequence
       allExist <- Right(filesExist.forall(identity))
 
-      // Delete all portions
-      _ <- if (allExist) {
-        (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-        fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
-      } else {
-        Right(())
-      }
+      _ <- if(allExist) performCleanup(fileStoreLayer, fileCleanupInfo) else Right(())
 
-      // Delete the original file
-      _ <- if (allExist) {
-        fileStoreLayer.removeFile(filename)
-      } else {
-        Right(())
-      }
-
-      // Delete the directory if empty
-      parentPath <- if(parent != null) Right(parent.toString) else Left(FileSystemError())
-      _ <- if(allExist) this.cleanupDirIfEmpty(fileStoreLayer, parentPath) else Right(())
     } yield ()
   }
 }
