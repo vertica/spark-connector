@@ -13,7 +13,10 @@
 
 package com.vertica.spark.config
 
+import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
+import com.vertica.spark.util.error.UnquotedSemiInColumns
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -26,6 +29,36 @@ trait WriteConfig extends GenericConfig {
    * If not set, default is to append to the existing table.
    */
   def setOverwrite(overwrite: Boolean): Unit
+}
+
+/**
+ * Column list, validated on the type level to escape unquoted semicolons (SQL Injection prevention)
+ */
+class ValidColumnList private (value: String) extends Serializable {
+  override def toString: String = value
+}
+
+object ValidColumnList {
+  private def checkStringForUnquotedSemicolon(str: String): Boolean = {
+    var i = 0
+    var inQuote = false
+    var isUnquotedSemi = false
+    for(c <- str) {
+      if(c == '"') inQuote = !inQuote
+      if(c == ';' && !inQuote) isUnquotedSemi = true
+      i += 1
+    }
+
+    isUnquotedSemi
+  }
+
+  final def apply(value: String): ValidationResult[Option[ValidColumnList]] = {
+    if (!checkStringForUnquotedSemicolon(value)) {
+      Some(new ValidColumnList(value)).validNec
+    } else {
+      UnquotedSemiInColumns().invalidNec
+    }
+  }
 }
 
 /**
@@ -49,7 +82,7 @@ final case class DistributedFilesystemWriteConfig(override val logLevel: Level,
                                                   schema: StructType,
                                                   strlen: Long,
                                                   targetTableSql: Option[String],
-                                                  copyColumnList: Option[String],
+                                                  copyColumnList: Option[ValidColumnList],
                                                   sessionId: String,
                                                   failedRowPercentTolerance: Float
                                                  ) extends WriteConfig {

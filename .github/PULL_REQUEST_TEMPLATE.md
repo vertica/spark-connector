@@ -11,6 +11,5 @@
 <!--- Link to issue where this is tracked -->
 
 ### Additional Reviewers
-@kylepbit
-@rayl-bitquill
+
 <!-- Any additional reviewers -->

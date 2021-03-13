@@ -13,11 +13,11 @@
 
 package com.vertica.spark.util.table
 
-import com.vertica.spark.config.{LogProvider, TableName}
+import com.vertica.spark.config.{EscapeUtils, LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
-import com.vertica.spark.util.error.JdbcErrorType.DataTypeError
-import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
+import com.vertica.spark.datasource.jdbc.JdbcLayerStringParam
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.{ConnectorError, CreateTableError, DropTableError, JdbcError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
 
@@ -28,17 +28,17 @@ trait TableUtilsInterface {
   /**
    * Checks if a view exists by a given name.
    */
-  def viewExists(view: TableName): Either[ConnectorError, Boolean]
+  def viewExists(view: TableName): ConnectorResult[Boolean]
 
   /**
    * Checks if a view exists by a given name.
    */
-  def tableExists(table: TableName): Either[ConnectorError, Boolean]
+  def tableExists(table: TableName): ConnectorResult[Boolean]
 
   /**
    * Checks specifically if a table exists by the given name AND that table is temporary.
    */
-  def tempTableExists(table: TableName): Either[ConnectorError, Boolean]
+  def tempTableExists(table: TableName): ConnectorResult[Boolean]
 
   /**
    * Creates a table. Will either used passed in statement to create it, or generate it's own create statement here.
@@ -48,12 +48,12 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
+  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit]
 
   /**
    * Drops/Deletes a given table if it exists.
    */
-  def dropTable(tablename: TableName): Either[ConnectorError, Unit]
+  def dropTable(tablename: TableName): ConnectorResult[Unit]
 
   /**
    * Creates the job status table if it doesn't exist and adds the entry for this job.
@@ -65,7 +65,7 @@ trait TableUtilsInterface {
    * @param sessionId Unique identifier for this job.
    * @return
    */
-  def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
+  def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit]
 
   /**
    * Updates the job status table entry for the given job.
@@ -77,7 +77,7 @@ trait TableUtilsInterface {
    * @param success Whether the job succeeded.
    * @return
    */
-  def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit]
+  def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): ConnectorResult[Unit]
 }
 
 /**
@@ -86,76 +86,63 @@ trait TableUtilsInterface {
 class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = logProvider.getLogger(classOf[TableUtils])
 
-  override def tempTableExists(table: TableName): Either[ConnectorError, Boolean] = {
+  override def tempTableExists(table: TableName): ConnectorResult[Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
-    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + dbschema + "'"
+    val query = " select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?"
+    val params = Seq(JdbcLayerStringParam(table.name), JdbcLayerStringParam(dbschema))
     val ret = for {
-      rs <- jdbcLayer.query(query)
-      is_temp = if (rs.next) {rs.getBoolean("t") } else false
+      rs <- jdbcLayer.query(query, params)
+      isTemp = if (rs.next) {rs.getBoolean("t") } else false
       _ = rs.close()
-    } yield (is_temp)
+    } yield isTemp
 
-    ret match {
-      case Left(err) =>
-        logger.error(" Cannot append to a temporary table: " + table.getFullTableName + " , JDBC error: " + err.msg)
-        Left(ConnectorError(TableCheckError))
-      case Right(v) => Right(v)
-    }
+    ret.left.map(err => TableCheckError(Some(err)).context("Cannot append to a temporary table"))
   }
 
-  override def viewExists(view: TableName): Either[ConnectorError, Boolean] = {
+  override def viewExists(view: TableName): ConnectorResult[Boolean] = {
     val dbschema = view.dbschema.getOrElse("public")
-    val query = "select count(*) from views where table_schema ILIKE '" +
-      dbschema + "' and table_name ILIKE '" + view.name + "'"
+    val query = "select count(*) from views where table_schema ILIKE ? and table_name ILIKE ?"
+    val params = Seq(JdbcLayerStringParam(dbschema), JdbcLayerStringParam(view.name))
 
-    jdbcLayer.query(query) match {
-      case Left(err) =>
-        logger.error("JDBC Error when checking if view exists: ", err.msg)
-        Left(ConnectorError(TableCheckError))
+    jdbcLayer.query(query, params) match {
+      case Left(err) => Left(TableCheckError(Some(err)).context("JDBC Error when checking if view exists"))
       case Right(rs) =>
-        if(!rs.next()) {
-          logger.error("View check: empty result")
-          Left(ConnectorError(TableCheckError))
-        }
-        else {
-          try{
+        if (!rs.next()) {
+          Left(TableCheckError(None).context("View check: empty result"))
+        } else {
+          try {
             Right(rs.getInt(1) >= 1)
-          }
-          catch {
+          } catch {
             case e: Throwable =>
               jdbcLayer.handleJDBCException(e)
-              Left(ConnectorError(TableCheckError))
-          }
-          finally {
+              Left(TableCheckError(None))
+          } finally {
             rs.close()
           }
         }
     }
   }
 
-  override def tableExists(table: TableName): Either[ConnectorError, Boolean] = {
+  override def tableExists(table: TableName): ConnectorResult[Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
-    val query = "select count(*) from v_catalog.tables where table_schema ILIKE '" +
-      dbschema + "' and table_name ILIKE '" + table.name + "'"
+    val query = "select count(*) from v_catalog.tables where table_schema ILIKE ? and table_name ILIKE ?"
+    val params = Seq(JdbcLayerStringParam(dbschema), JdbcLayerStringParam(table.name))
 
-    jdbcLayer.query(query) match {
+    jdbcLayer.query(query, params) match {
       case Left(err) =>
-        logger.error("JDBC Error when checking if table exists: ", err.msg)
-        Left(ConnectorError(TableCheckError))
+        Left(TableCheckError(Some(err)).context("JDBC Error when checking if table exists"))
       case Right(rs) =>
-        try{
-          if(!rs.next()) {
-            logger.error("Table check: empty result")
-            Left(ConnectorError(TableCheckError))
-          }
-          else {
+        try {
+          if (!rs.next()) {
+            Left(TableCheckError(None).context("Table check: empty result"))
+          } else {
             Right(rs.getInt(1) >= 1)
           }
         }
         catch {
           case e: Throwable =>
             jdbcLayer.handleJDBCException(e)
-            Left(ConnectorError(TableCheckError))
+            Left(TableCheckError(None))
         }
         finally {
           rs.close()
@@ -163,19 +150,14 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     }
   }
 
-  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit] = {
+  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit] = {
     // Either get the user-supplied statement to create the table, or build our own
     val statement: String = targetTableSql match {
       case Some(sql) => sql
       case None =>
         val sb = new StringBuilder()
         sb.append("CREATE table ")
-        tablename.dbschema match {
-          case Some(dbschema) =>
-            sb.append("\"" + dbschema + "\"" + "." +
-              "\"" + tablename.name + "\"")
-          case None => sb.append("\"" + tablename.name + "\"")
-        }
+        sb.append(tablename.getFullTableName)
         sb.append(" (")
 
         var first = true
@@ -207,8 +189,7 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
           for {
             col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
               case Left(err) =>
-                logger.error("Schema error: " + err)
-                Left(ConnectorError(SchemaConversionError))
+                Left(SchemaConversionError(err).context("Schema error when trying to create table"))
               case Right(datatype) => Right(datatype + decimal_qualifier)
             }
             _ = sb.append(col)
@@ -221,32 +202,26 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     }
 
     logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
-    jdbcLayer.execute(statement) match {
-      case Right(_) => Right(())
-      case Left(err) =>
-        logger.error("JDBC Error creating table: " + err)
-        Left(ConnectorError(CreateTableError))
-    }
+    jdbcLayer.execute(statement).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
   }
 
-  def dropTable(tablename: TableName): Either[ConnectorError, Unit] = {
-    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName) match {
-      case Right(_) => Right(())
-      case Left(err) =>
-        logger.error("JDBC Error dropping table: " + err)
-        Left(ConnectorError(DropTableError))
-    }
+  def dropTable(tablename: TableName): ConnectorResult[Unit] = {
+    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
+      .left.map(err => DropTableError(Some(err)).context("JDBC Error dropping table"))
   }
 
-  override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit] = {
+  override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit] = {
     val dbschema = tablename.dbschema match {
       case Some(schema) => schema
       case None => "public"
     }
 
-    // Create job status table for the user if it doesn't exist
     val table = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
-    val createStatement = "CREATE TABLE IF NOT EXISTS \"" + dbschema + "\".\"" + table + "\"" +
+
+    val jobStatusTableName = TableName(table, Some(dbschema))
+
+    // Create job status table for the user if it doesn't exist
+    val createStatement = "CREATE TABLE IF NOT EXISTS " + jobStatusTableName.getFullTableName +
       "(target_table_schema VARCHAR(128), " +
       "target_table_name VARCHAR(128), " +
       "save_mode VARCHAR(128), " +
@@ -261,13 +236,12 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     val timestamp = new java.sql.Timestamp(date.getTime)
     val randJobName = sessionId
 
-    val comment = "COMMENT ON TABLE "  + dbschema + "." +  table + " IS 'Persistent job status table showing all jobs, serving as permanent record of data loaded from Spark to Vertica. Creation time:" + jobStartTime + "'"
+    val comment = "COMMENT ON TABLE "  + jobStatusTableName.getFullTableName + " IS 'Persistent job status table showing all jobs, serving as permanent record of data loaded from Spark to Vertica. Creation time:" + jobStartTime + "'"
 
-    // TODO: handle save modes
-    val insertStatement = "INSERT into " + dbschema + "." + table + " VALUES ('" + dbschema + "','" + tablename.name + "','" + "OVERWRITE" + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
+    val insertStatement = "INSERT into " + jobStatusTableName.getFullTableName + " VALUES ('" + EscapeUtils.sqlEscape(dbschema,'\'') + "','" + EscapeUtils.sqlEscape(tablename.name, '\'') + "','" + saveMode + "','" + randJobName +  "','" + timestamp + "'," + "false,false," + (-1.0).toString + ")"
 
     val ret = for {
-      tableExists <- tableExists(TableName(table, Some(dbschema)))
+      tableExists <- tableExists(jobStatusTableName)
       _ <- if(!tableExists) jdbcLayer.execute(createStatement) else Right(())
       _ <- if(!tableExists) jdbcLayer.execute(comment) else Right(())
       _ <- jdbcLayer.execute(insertStatement)
@@ -275,42 +249,39 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     } yield ()
 
     ret match {
-      case Left(err) => err match {
-        case er: ConnectorError => Left(er)
-        case er: JDBCLayerError =>
-          logger.error("JDBC error when trying to initialize job status table: " + er.msg)
-          Left(ConnectorError(JobStatusCreateError))
+      case Left(err) => err.getError match {
+        case er: JdbcError => Left(JobStatusCreateError(er)
+          .context("JDBC error when trying to initialize job status table"))
+        case _: ConnectorError => Left(err)
       }
       case Right(_) => Right(())
     }
   }
 
-  override def updateJobStatusTable(mainTableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit] = {
+  override def updateJobStatusTable(mainTableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): ConnectorResult[Unit] = {
     val dbschema = mainTableName.dbschema.getOrElse("public")
     val tablename = "S2V_JOB_STATUS" + "_USER_" + user.toUpperCase
 
+    val jobStatusTableName = TableName(tablename, Some(dbschema))
+
     val updateStatusTable = ("UPDATE "
-      + dbschema + "." + tablename + " "
-      + "SET all_done=" + true + ","
+      + jobStatusTableName.getFullTableName
+      + " SET all_done=" + true + ","
       + "success=" + success + ","
       + "percent_failed_rows=" + failedRowsPercent.toString + " "
       + "WHERE job_name='" + sessionId + "' "
       + "AND all_done=" + false)
 
     // update the S2V_JOB_STATUS table, and commit the final operation.
-    logger.info(s"Updating " + dbschema + "." + tablename + " next...")
+    logger.info(s"Updating " + jobStatusTableName.getFullTableName + " next...")
     jdbcLayer.executeUpdate(updateStatusTable) match {
-      case Left(err) =>
-        logger.error("JDBC Error when updating status table: " + err.msg)
-        Left(ConnectorError(JobStatusUpdateError))
+      case Left(err) => Left(JobStatusUpdateError(Some(err)).context("JDBC Error when updating status table"))
       case Right(c) =>
         if(c == 1) {
-          logger.info(s"Update of " + dbschema + "." + tablename + " succeeded.")
+          logger.info(s"Update of " + jobStatusTableName.getFullTableName + " succeeded.")
           Right(())
-        }
-        else {
-          logger.error(s"Status_table update failed.")
-          Left(ConnectorError(JobStatusUpdateError))
+        } else {
+          Left(JobStatusUpdateError(None).context("Status_table update failed."))
         }
     }
   }

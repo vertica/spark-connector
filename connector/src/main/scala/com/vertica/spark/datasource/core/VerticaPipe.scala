@@ -13,8 +13,8 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.util.error._
 import com.vertica.spark.config._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
@@ -44,12 +44,12 @@ trait VerticaPipeInterface {
     *
     * Can include schema and things like node information / segmentation -- should have caching mechanism
     */
-  def getMetadata: Either[ConnectorError, VerticaMetadata]
+  def getMetadata: ConnectorResult[VerticaMetadata]
 
   /**
     * Returns the default number of rows to read/write from this pipe at a time.
     */
-  def getDataBlockSize: Either[ConnectorError, Long]
+  def getDataBlockSize: ConnectorResult[Long]
 }
 
 /**
@@ -59,29 +59,29 @@ trait VerticaPipeWriteInterface {
   /**
     * Initial setup for the whole write operation. Called by driver.
     */
-  def doPreWriteSteps(): Either[ConnectorError, Unit]
+  def doPreWriteSteps(): ConnectorResult[Unit]
 
   /**
    * Initial setup for the write of an individual partition. Called by executor.
    *
    * @param uniqueId Unique identifier for the partition being written
    */
-  def startPartitionWrite(uniqueId: String): Either[ConnectorError, Unit]
+  def startPartitionWrite(uniqueId: String): ConnectorResult[Unit]
 
   /**
     * Write a block of data to the underlying source. Called by executor.
     */
-  def writeData(data: DataBlock): Either[ConnectorError, Unit]
+  def writeData(data: DataBlock): ConnectorResult[Unit]
 
   /**
     * Ends the write, doing any necessary cleanup. Called by executor once writing of the given partition is done.
     */
-  def endPartitionWrite(): Either[ConnectorError, Unit]
+  def endPartitionWrite(): ConnectorResult[Unit]
 
   /**
     * Commits the data being written. Called by the driver once all executors have succeeded writing.
     */
-  def commit(): Either[ConnectorError, Unit]
+  def commit(): ConnectorResult[Unit]
 }
 
 /**
@@ -94,22 +94,22 @@ trait VerticaPipeReadInterface {
    *
    * @return Partitioning information for how the read operation will be partitioned across spark nodes
    */
-  def doPreReadSteps(): Either[ConnectorError, PartitionInfo]
+  def doPreReadSteps(): ConnectorResult[PartitionInfo]
 
   /**
     * Initial setup for the read of an individual partition. Called by executor.
     */
-  def startPartitionRead(partition: VerticaPartition): Either[ConnectorError, Unit]
+  def startPartitionRead(partition: VerticaPartition): ConnectorResult[Unit]
 
 
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: Either[ConnectorError, DataBlock]
+  def readData: ConnectorResult[DataBlock]
 
 
   /**
     * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
     */
-  def endPartitionRead(): Either[ConnectorError, Unit]
+  def endPartitionRead(): ConnectorResult[Unit]
 }

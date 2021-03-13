@@ -16,11 +16,9 @@ package com.vertica.spark.functests
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
-
-import com.vertica.spark.util.error.JdbcErrorType._
-
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.util.error.{ConnectionError, DataTypeError, SyntaxError}
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
@@ -64,7 +62,21 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.next())
         assert(rs.getInt(1) == 123)
       case Left(err) =>
-        fail
+        fail(err.getFullContext)
+    }
+  }
+
+  it should "Insert integer data with param" in {
+    jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerIntParam(123)))
+
+    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+      case Right(rs) =>
+        assert(rs.next())
+        assert(rs.getInt(1) == 123)
+      case Left(err) =>
+        fail(err.getFullContext)
     }
   }
 
@@ -74,12 +86,26 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');")
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+      case Right(rs) =>
+        assert(rs.next())
+        assert(rs.getString(1) == "abc123")
+      case Left(err) =>
+        fail(err.getFullContext)
+    }
+  }
+
+  it should "Insert string data to table with param" in {
+    jdbcLayer.execute("CREATE TABLE " + tablename + "(name varchar(64));")
+
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerStringParam("abc123")))
+
+    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
       case Right(rs) => {
         assert(rs.next())
         assert(rs.getString(1) == "abc123")
       }
       case Left(err) => {
-        assert(false)
+        fail(err.getFullContext)
       }
     }
   }
@@ -96,7 +122,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(rs.getInt(2) == 5)
       }
       case Left(err) => {
-        assert(false)
+        fail(err.getFullContext)
       }
     }
   }
@@ -107,7 +133,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(false)
       }
       case Left(err) => {
-        assert(err.err == SyntaxError)
+        assert(err.getError match {
+          case SyntaxError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -119,7 +148,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == DataTypeError)
+        assert(err.getError match {
+          case DataTypeError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -128,7 +160,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("CREATE TABLE " + tablename + ";") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == SyntaxError)
+        assert(err.getError match {
+          case SyntaxError(_) => true
+          case _ => false
+        })
       }
     }
   }
@@ -139,7 +174,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
-        assert(err.err == ConnectionError)
+        assert(err.getError match {
+          case ConnectionError() => true
+          case _ => false
+        })
       }
     }
   }

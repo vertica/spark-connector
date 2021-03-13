@@ -16,8 +16,11 @@ package com.vertica.spark.datasource.v2
 import java.util
 
 import cats.data.Validated.{Invalid, Valid}
+import ch.qos.logback.classic.Level
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
+import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -79,9 +82,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
       case None =>
         val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
           case Invalid(errList) =>
-            val errMsgList = for (err <- errList) yield err.msg
-            val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-            throw new Exception(msg)
+            val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+            ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
           case Valid(cfg) => cfg
         }
         config.getLogger(classOf[VerticaTable]).debug("Config loaded")
@@ -101,9 +103,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
   {
     val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
       case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
+        val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+        ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
       case Valid(cfg) => cfg
     }
     config.getLogger(classOf[VerticaTable]).debug("Config loaded")

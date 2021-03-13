@@ -15,8 +15,8 @@ package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
+import com.vertica.spark.util.error.CleanupError
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
 /**
@@ -41,7 +41,7 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param fileCleanupInfo Cleanup information for a portion of the file.
    */
-  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : Either[ConnectorError, Unit]
+  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : ConnectorResult[Unit]
 
   /**
    * Cleanup all files
@@ -49,13 +49,13 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param path Path of directory
    */
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit]
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit]
 }
 
 object CleanupUtils extends CleanupUtilsInterface {
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = {
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
     // Cleanup parent dir (unique id)
     val p = new Path(s"$path")
     val parent = p.getParent
@@ -64,11 +64,11 @@ object CleanupUtils extends CleanupUtilsInterface {
       Right(())
     }
     else {
-      Left(ConnectorError(CleanupError))
+      Left(CleanupError())
     }
   }
 
-  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
+  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): ConnectorResult[Unit] = {
     val filename = fileCleanupInfo.filename
     for {
       // Create the file for this portion

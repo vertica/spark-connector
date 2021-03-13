@@ -13,8 +13,8 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.util.error._
 import com.vertica.spark.config._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 
 /**
@@ -26,22 +26,22 @@ trait DSWriterInterface {
   /**
     * Called before reading to perform any needed setup with the given configuration.
     */
-  def openWrite(): Either[ConnectorError, Unit]
+  def openWrite(): ConnectorResult[Unit]
 
   /**
     * Called to write an individual row to the datasource.
     */
-  def writeRow(row: InternalRow): Either[ConnectorError, Unit]
+  def writeRow(row: InternalRow): ConnectorResult[Unit]
 
   /**
     * Called from the executor to cleanup the individual write operation
     */
-  def closeWrite(): Either[ConnectorError, Unit]
+  def closeWrite(): ConnectorResult[Unit]
 
   /**
     * Called by the driver to commit all the write results
     */
-  def commitRows(): Either[ConnectorError, Unit]
+  def commitRows(): ConnectorResult[Unit]
 }
 
 /**
@@ -58,7 +58,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
 
   private var data = List[InternalRow]()
 
-  def openWrite(): Either[ConnectorError, Unit] = {
+  def openWrite(): ConnectorResult[Unit] = {
     for {
       size <- pipe.getDataBlockSize
       _ <- pipe.startPartitionWrite(uniqueId)
@@ -66,14 +66,14 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     } yield ()
   }
 
-  def writeRow(row: InternalRow): Either[ConnectorError, Unit] = {
+  def writeRow(row: InternalRow): ConnectorResult[Unit] = {
     data = data :+ row
     if(data.length >= blockSize) {
       pipe.writeData(DataBlock(data)) match {
         case Right(_) =>
           data = List[InternalRow]()
           Right(())
-        case Left(err) => Left(err)
+        case Left(errors) => Left(errors)
       }
     }
     else {
@@ -81,7 +81,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     }
   }
 
-  def closeWrite(): Either[ConnectorError, Unit] = {
+  def closeWrite(): ConnectorResult[Unit] = {
     if(data.nonEmpty) {
       for {
         _ <- pipe.writeData(DataBlock(data))
@@ -93,7 +93,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     }
   }
 
-  def commitRows(): Either[ConnectorError, Unit] = {
+  def commitRows(): ConnectorResult[Unit] = {
     pipe.commit()
   }
 }

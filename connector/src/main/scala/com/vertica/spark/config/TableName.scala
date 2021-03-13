@@ -13,6 +13,17 @@
 
 package com.vertica.spark.config
 
+object EscapeUtils {
+  def sqlEscape(str: String, char: Char = '\"'): String = {
+    val c = char.toString
+    str.replace(c, c + c)
+  }
+
+  def sqlEscapeAndQuote(str: String): String = {
+    "\"" + sqlEscape(str) + "\""
+  }
+}
+
 /**
  * Represents a fully qualified tablename in Vertica.
  *
@@ -27,8 +38,8 @@ final case class TableName(name: String, dbschema: Option[String]) {
    */
   def getFullTableName : String = {
     dbschema match {
-      case None => "\"" + name + "\""
-      case Some(schema) => "\"" + schema + "\".\"" + name + "\""
+      case None => EscapeUtils.sqlEscapeAndQuote(name)
+      case Some(schema) => EscapeUtils.sqlEscapeAndQuote(schema) + "." + EscapeUtils.sqlEscapeAndQuote(name)
     }
   }
 }

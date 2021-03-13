@@ -15,8 +15,8 @@ package com.vertica.spark.datasource.core
 
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.MissingSchemaError
+import com.vertica.spark.util.error.MissingSchemaError
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.StructType
 import org.scalamock.scalatest.MockFactory
@@ -33,9 +33,9 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
   val uniqueId = "unique-id"
 
-  private def checkResult(eith: Either[ConnectorError, Unit]): Unit= {
-    eith match {
-      case Left(err) => fail(err.msg)
+  private def checkResult(result: ConnectorResult[Unit]): Unit= {
+    result match {
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
   }
@@ -119,7 +119,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
   it should "pass on errors from pipe" in {
     val pipe = mock[DummyWritePipe]
-    (pipe.getDataBlockSize _).expects().returning(Left(ConnectorError(MissingSchemaError)))
+    (pipe.getDataBlockSize _).expects().returning(Left(MissingSchemaError()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getWritePipe _).expects(*).returning(pipe)
 
@@ -127,7 +127,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     writer.openWrite() match {
       case Right(_) => fail
-      case Left(err) => assert(err.err == MissingSchemaError)
+      case Left(err) => assert(err.getError == MissingSchemaError())
     }
   }
 

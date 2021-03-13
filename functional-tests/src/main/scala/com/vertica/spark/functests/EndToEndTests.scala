@@ -488,7 +488,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "load data from Vertica with no column projection pushdown" in {
+  it should "load data from Vertica with select * projection pushdown" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
     val n = 3
@@ -513,6 +513,32 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(executedPlanString.contains("meToo"))
 
     dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with no column projection pushdown" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (includeMe TIMESTAMP, meToo float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val executedPlanString = df
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(executedPlanString.contains("includeMe"))
+    assert(executedPlanString.contains("meToo"))
+
+    df.show
     stmt.execute("drop table " + tableName1)
   }
 
@@ -742,6 +768,92 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         assert(rs.getInt(2) == 0)
         assert(rs.getString(3) == "goodbye")
       }
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  private def escapeSql(v: String) = v.replace("\"", "\"\"")
+
+  it should "fail to inject SQL w/ tablename to drop table" in {
+    val tableName = "blah; DROP TABLE blah2; SELECT * FROM "
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + tableName + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "fail to inject SQL w/ tablename using \" to drop table" in {
+    val tableName = "blah\"; DROP TABLE blah2; SELECT * FROM \""
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + escapeSql(tableName) + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, escapeSql(tableName))
+  }
+
+  it should "fail to inject SQL w/ tablename using ' to drop table" in {
+    val tableName = "blah'; DROP TABLE blah2; SELECT * FROM '"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + tableName + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
     }
     catch{
       case err : Exception => fail(err)
