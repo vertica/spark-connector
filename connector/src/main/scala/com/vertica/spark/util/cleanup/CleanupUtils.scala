@@ -14,8 +14,9 @@
 package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.CleanupError
+import com.vertica.spark.util.error.{CleanupError, ConnectorError, FileSystemError}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
@@ -52,7 +53,8 @@ trait CleanupUtilsInterface {
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit]
 }
 
-object CleanupUtils extends CleanupUtilsInterface {
+class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
+  private val logger = logProvider.getLogger(classOf[CleanupUtils])
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
@@ -68,8 +70,43 @@ object CleanupUtils extends CleanupUtilsInterface {
     }
   }
 
+  private def cleanupDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {
+    for {
+      allFiles <- fileStoreLayer.getFileList(path)
+      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(path) else Right(())
+    } yield ()
+  }
+
+  /**
+   * Uses java-based hadoop path to retrieve the parent path. Checks for null safety here.
+   */
+  private def getParentHadoopPath(path: String): ConnectorResult[String] = {
+    val p = new Path(s"$path")
+    val parent = p.getParent
+    if(parent != null) Right(parent.toString) else Left(FileSystemError().context("Could not retrieve parent path of file: " + path))
+  }
+
+  private def performCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo ): ConnectorResult[Unit] = {
+    val filename = fileCleanupInfo.filename
+
+    for {
+      // Delete all portions
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
+          fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
+
+      // Delete the original file
+      _ <- fileStoreLayer.removeFile(filename)
+
+      // Delete the directory if empty
+      parentPath <- getParentHadoopPath(filename)
+      _ <- this.cleanupDirIfEmpty(fileStoreLayer, parentPath)
+    } yield ()
+  }
+
   override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): ConnectorResult[Unit] = {
     val filename = fileCleanupInfo.filename
+    logger.info("Doing partition cleanup of file: " + filename)
+
     for {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
@@ -80,20 +117,8 @@ object CleanupUtils extends CleanupUtilsInterface {
         ).toList.sequence
       allExist <- Right(filesExist.forall(identity))
 
-      // Delete all portions
-      _ <- if (allExist) {
-        (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-        fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
-      } else {
-        Right(())
-      }
+      _ <- if(allExist) performCleanup(fileStoreLayer, fileCleanupInfo) else Right(())
 
-      // Delete the original file
-      _ <- if (allExist) {
-        fileStoreLayer.removeFile(filename)
-      } else {
-        Right(())
-      }
     } yield ()
   }
 }
