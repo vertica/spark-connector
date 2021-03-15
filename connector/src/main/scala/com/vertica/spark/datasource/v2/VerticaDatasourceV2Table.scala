@@ -17,11 +17,10 @@ import java.util
 
 import cats.data.Validated.{Invalid, Valid}
 import ch.qos.logback.classic.Level
-import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
-import com.vertica.spark.util.error.{ConnectorException, ErrorHandling, ErrorList}
+import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}

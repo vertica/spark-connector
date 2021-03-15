@@ -13,6 +13,10 @@
 
 package com.vertica.spark.util.error
 
+/**
+  * Enumeration of the list of possible connector errors.
+  */
+
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
 
@@ -35,6 +39,7 @@ case class ContextError(ctxt: String, error: ConnectorError) extends ConnectorEr
   override def getError: ConnectorError = this.error.getError
   override def getUserMessage: String = this.error.getUserMessage
 }
+
 
 class ConnectorException(val error: ConnectorError) extends Exception {
   override def getMessage: String = this.error.getUserMessage
@@ -228,6 +233,9 @@ case class InvalidPortError() extends ConnectorError {
   def getFullContext: String = "The 'port' param specified is invalid. " +
     "Please specify a valid integer between 1 and 65535."
 }
+case class UnquotedSemiInColumns() extends ConnectorError {
+  def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
+}
 case class InvalidFailedRowsTolerance() extends ConnectorError {
   def getFullContext: String = "The 'failed_rows_percent_tolerance' param specified is invalid. " +
     "Please specify ad valid float between 0 and 1, representing a percent between 0 and 100."
@@ -364,6 +372,11 @@ case class GenericError(cause: Throwable) extends JdbcError {
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = this.message + ": " + this.cause.toString
+}
+case class ParamsNotSupported(operation: String) extends JdbcError {
+  private val message = "Params not supported for operation: " + operation
+
+  def getFullContext: String = message
 }
 
 /**

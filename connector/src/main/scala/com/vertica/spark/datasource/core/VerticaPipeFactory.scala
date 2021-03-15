@@ -19,7 +19,6 @@ import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
-import org.apache.spark.sql.types.StructType
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
