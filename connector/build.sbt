@@ -55,7 +55,6 @@ scalacOptions += "-Ypartial-unification"
 scalastyleFailOnError := true
 scalastyleFailOnWarning := true
 
-//coverageExcludedPackages := "<empty>;.*FileStoreLayerInterface;.*VerticaJdbcLayer"
 coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*"
 coverageMinimum := 65
 coverageFailOnMinimum := true
