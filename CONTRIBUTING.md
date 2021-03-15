@@ -16,7 +16,7 @@ For issues (e.g. security related issues) that are **not suitable** to be report
 
 # Feature Requests
 
-Feel free to share your ideas for how to improve the connector. You can open an [issue](https://github.com/vertica/VerticaPy/issues)
+Feel free to share your ideas for how to improve the connector. You can open an [issue](https://github.com/vertica/spark-connector/issues)
 with details describing what feature(s) you'd like to be added or changed.
 
 If you would like to implement the feature yourself, open an issue to ask before working on it. Once approved, please refer to the [Code Contributions](#code-contributions) section.
@@ -238,7 +238,7 @@ A good pull request means:
  - well-formed messages for each commit
  - documentation and tests, if needed
 
-Go to https://github.com/YOURUSERNAME/VerticaPy and [make a Pull Request](https://help.github.com/articles/creating-a-pull-request/) to `vertica:main`. 
+Go to https://github.com/YOURUSERNAME/spark-connector and [make a Pull Request](https://help.github.com/articles/creating-a-pull-request/) to `vertica:main`. 
 
 ### Sign the CLA
 
