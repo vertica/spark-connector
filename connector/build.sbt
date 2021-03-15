@@ -56,7 +56,7 @@ scalastyleFailOnError := true
 scalastyleFailOnWarning := true
 
 coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*"
-coverageMinimum := 65
+coverageMinimum := 59 
 coverageFailOnMinimum := true
 
 
