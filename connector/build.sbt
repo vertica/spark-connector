@@ -46,6 +46,7 @@ sonarProperties ++= Map(
   "sonar.coverage.exclusions" -> "**/*FileStoreLayerInterface.scala,**/*VerticaJdbcLayer.scala"
 )
 
+
 scapegoatVersion in ThisBuild := "1.3.3"
 scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
@@ -54,5 +55,8 @@ scalacOptions += "-Ypartial-unification"
 scalastyleFailOnError := true
 scalastyleFailOnWarning := true
 
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*"
+coverageMinimum := 59 
+coverageFailOnMinimum := true
 
 
