@@ -17,6 +17,8 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.util.Try
+
 trait TestError extends ConnectorError
 
 
@@ -29,6 +31,10 @@ case class InterceptError(error: ConnectorError) extends TestError {
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
   override def getUserMessage: String = this.message
+}
+
+case class StackTraceError(cause: Throwable) extends TestError {
+  def getFullContext: String = ErrorHandling.addCause("stack trace test: ", this.cause)
 }
 
 class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
@@ -50,6 +56,18 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   def addContextC(): ConnectorError = {
     interceptError().context("Failure when calling addContextC")
+  }
+
+  def addCause(): Either[StackTraceError, Unit] = {
+    Try { deferHandling() }.toEither.left.map(e => StackTraceError(e))
+  }
+
+  def deferHandling(): Nothing = {
+    throwException()
+  }
+
+  def throwException(): Nothing = {
+    throw new Exception("oh no")
   }
 
   it should "gather context for the returned error" in {
@@ -121,6 +139,17 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         "My test error"
       )
       case _ => fail("Wrong error type returned")
+    }
+  }
+
+  it should "properly add a stack trace to the error context" in {
+    addCause() match {
+      case Left(err) =>
+        val errorContext = err.getFullContext
+        assert(errorContext.startsWith("stack trace test: \n\nCaused by:\njava.lang.Exception: oh no\nStack trace:"))
+        assert(errorContext.contains("throwException"))
+        assert(errorContext.contains("deferHandling"))
+      case Right(_) => fail
     }
   }
 }
