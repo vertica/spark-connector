@@ -63,7 +63,6 @@ trait TableUtilsInterface {
    * @param tablename Table being used in this job.
    * @param user Vertica user executing this job.
    * @param sessionId Unique identifier for this job.
-   * @return
    */
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit]
 
@@ -75,7 +74,6 @@ trait TableUtilsInterface {
    * @param failedRowsPercent Percent of rows that failed to write in this job.
    * @param sessionId Unique identifier for this job.
    * @param success Whether the job succeeded.
-   * @return
    */
   def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): ConnectorResult[Unit]
 }

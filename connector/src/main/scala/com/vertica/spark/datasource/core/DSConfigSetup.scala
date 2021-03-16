@@ -241,6 +241,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   /**
    * Calls read pipe implementation to perform initial setup for the read operation.
    *
+   * @param config Configuration data for the read operation. Used to construct pipe for performing initial setup.
    * @return List of partitioning information for the operation to pass down to readers.
    */
   override def performInitialSetup(config: ReadConfig): ConnectorResult[Option[PartitionInfo]] = {
@@ -252,6 +253,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 
   /**
    * Returns the schema of the table being read
+   *
+   * @param config Configuration data for the read operation. Contains the metadata required for returning the table schema.
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
