@@ -18,7 +18,15 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
-final case class DataBlock(data: List[InternalRow])
+case class DataBlock(data: Iterator[InternalRow]) {
+  def next(): Option[InternalRow] = {
+    if (this.data.hasNext) {
+      Some(this.data.next())
+    } else {
+      None
+    }
+  }
+}
 
 /**
  * Represents a partition of the data being read
@@ -101,7 +109,7 @@ trait VerticaPipeReadInterface {
   /**
     * Reads a block of data to the underlying source. Called by executor.
     */
-  def readData: ConnectorResult[DataBlock]
+  def readData: ConnectorResult[Option[DataBlock]]
 
 
   /**

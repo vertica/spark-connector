@@ -62,7 +62,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   def writeRow(row: InternalRow): ConnectorResult[Unit] = {
     data = data :+ row
     if(data.length >= blockSize) {
-      pipe.writeData(DataBlock(data)) match {
+      pipe.writeData(DataBlock(data.toIterator)) match {
         case Right(_) =>
           data = List[InternalRow]()
           Right(())
@@ -77,7 +77,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   def closeWrite(): ConnectorResult[Unit] = {
     if(data.nonEmpty) {
       for {
-        _ <- pipe.writeData(DataBlock(data))
+        _ <- pipe.writeData(DataBlock(data.toIterator))
         _ <- pipe.endPartitionWrite()
       } yield ()
     }

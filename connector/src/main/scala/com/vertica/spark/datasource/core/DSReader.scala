@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -41,15 +40,11 @@ trait DSReaderInterface {
 
 
 class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
-  private val logger: Logger = config.getLogger(classOf[DSReader])
-
   private val pipe = pipeFactory.getReadPipe(config)
 
-  private var block: Option[DataBlock] = None
-  private var i: Int = 0
+  private var currentBlock: Option[DataBlock] = None
 
   def openRead(): ConnectorResult[Unit] = {
-    i = 0
     partition match {
       case verticaPartition: VerticaPartition => pipe.startPartitionRead(verticaPartition)
       case _ => Left(InvalidPartition().context(
@@ -57,44 +52,23 @@ class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: Verti
     }
   }
 
-  def readRow(): ConnectorResult[Option[InternalRow]] = {
-    val ret = for {
-      // Get current or next data block
-      dataBlock <- block match {
-        case None =>
-          pipe.readData match {
-            case Left(err) => Left(err)
-            case Right(data) =>
-              block = Some(data)
-              Right(data)
-          }
-        case Some(block) => Right(block)
-      }
-
-      // Get row from block. If this is the last row of the block, reset the block
-      _ <- if (dataBlock.data.isEmpty) {
-        Left(DoneReading())
-      } else {
-        Right(())
-      }
-
-      row = dataBlock.data(i)
-      _ = i += 1
-      _ = if (i >= dataBlock.data.size) {
-        block = None
-        i = 0
-      } else {
-        ()
-      }
-    } yield Some(row)
-
-    ret match {
-      case Right(optRow) => Right(optRow)
-      case Left(err) => err match {
-        case DoneReading() => Right(None) // If there's no more data to be read, return nothing for row
-        case _ => Left(err) // If something else went wrong, return error
-      }
+  def tryGetDataBlock(currentDataBlock: Option[DataBlock]): ConnectorResult[Option[DataBlock]] = {
+    currentDataBlock match {
+      case None => this.pipe.readData
+      case Some(block) => Right(Some(block))
     }
+  }
+
+  def readRow(): ConnectorResult[Option[InternalRow]] = {
+    for {
+      // Get current or next data block
+      dataBlock <- this.tryGetDataBlock(this.currentBlock)
+      optRow = dataBlock.flatMap(_.next())
+      _ = optRow match {
+        case Some(_) => ()
+        case None => this.currentBlock = None
+      }
+    } yield optRow
   }
 
   def closeRead(): ConnectorResult[Unit] = {

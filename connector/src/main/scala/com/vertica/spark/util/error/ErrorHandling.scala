@@ -107,12 +107,6 @@ case class PartitioningError() extends ConnectorError {
 case class InvalidPartition() extends ConnectorError {
   def getFullContext: String = "Input Partition was not valid for the given operation."
 }
-
-// TODO: Remove
-case class DoneReading() extends ConnectorError {
-  def getFullContext: String = "No more data to read from source."
-}
-
 case class UninitializedReadCloseError() extends ConnectorError {
   def getFullContext: String = "Error while closing read: The reader was not initialized."
 }
@@ -334,6 +328,9 @@ case class CloseReadError(cause: Throwable) extends ConnectorError {
 case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorError {
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
   override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
+}
+case class PartitionNoFilesReadError() extends ConnectorError {
+  def getFullContext: String = "No files to read set on partition."
 }
 
 /**

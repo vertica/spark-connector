@@ -17,6 +17,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartitionTemplate.{VerticaDistributedFilesystemPartition, makeVerticaDistribuedFSPartition, makeVerticaDistribuedFSPartitionIterator}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
@@ -36,7 +37,10 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   }
 
   val filename = "test.parquet"
-  val partition: VerticaDistributedFilesystemPartition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+  val partition: VerticaDistributedFilesystemPartition = makeVerticaDistribuedFSPartition(
+    makeVerticaDistribuedFSPartitionIterator(
+      ParquetFileRangeIterator(List(ParquetFileRange(filename, 0, 1)).toIterator)),
+    Map(("", 0)))
 
 
 
@@ -45,12 +49,12 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val row = InternalRow(v1, v2)
-    val data = DataBlock(List(row, row))
+    val data = DataBlock(List(row, row).toIterator)
 
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.startPartitionRead _).expects(partition).returning(Right(()))
-    (mockPipe.readData _).expects().returning(Right(data))
-    (mockPipe.readData _).expects().returning(Left(DoneReading()))
+    (mockPipe.readData _).expects().returning(Right(Some(data)))
+    (mockPipe.readData _).expects().returning(Right(None))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
@@ -107,13 +111,13 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val row = InternalRow(v1, v2)
-    val data = DataBlock(List(row))
+    val data = DataBlock(List(row).toIterator)
 
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.startPartitionRead _).expects(partition).returning(Right(()))
-    (mockPipe.readData _).expects().returning(Right(data))
-    (mockPipe.readData _).expects().returning(Right(data))
-    (mockPipe.readData _).expects().returning(Left(DoneReading()))
+    (mockPipe.readData _).expects().returning(Right(Some(data)))
+    (mockPipe.readData _).expects().returning(Right(Some(data)))
+    (mockPipe.readData _).expects().returning(Right(None))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)

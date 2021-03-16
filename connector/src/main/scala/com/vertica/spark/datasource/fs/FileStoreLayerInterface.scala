@@ -17,7 +17,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileDoesNotExistError, RemoveFileError}
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileDoesNotExistError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
@@ -58,7 +58,7 @@ trait FileStoreLayerInterface {
   // Read
   def getParquetFileMetadata(filename: String) : ConnectorResult[ParquetFileMetadata]
   def openReadParquetFile(file: ParquetFileRange) : ConnectorResult[Unit]
-  def readDataFromParquetFile(blockSize: Int): ConnectorResult[DataBlock]
+  def readDataFromParquetFile(blockSize: Int): ConnectorResult[Option[DataBlock]]
   def closeReadParquetFile(): ConnectorResult[Unit]
 
   // Other FS
@@ -71,12 +71,12 @@ trait FileStoreLayerInterface {
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
-  private val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
-
   private var recordReader: Option[RecordReader[InternalRow]] = None
   private var curRow = 0L
   private var rowCount = 0L
   private var curRowGroup = 0L
+
+  private var blockReadDone: Boolean = false
 
   private def doneReading() : Unit = {
     this.recordReader = None
@@ -111,20 +111,28 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 
   }
 
-  def read(blockSize: Int) : ConnectorResult[DataBlock] = {
-    (0 until blockSize).map(_ => Try {
-      this.checkUpdateRecordReader()
-      recordReader match {
-        case None => None
-        case Some(reader) => Some(reader.read().copy())
+  def read(blockSize: Int) : ConnectorResult[Option[DataBlock]] = {
+    if (this.blockReadDone) {
+      Right(None)
+    } else {
+      (0 until blockSize).toList.traverse(_ => Try {
+        this.checkUpdateRecordReader()
+        recordReader match {
+          case None => None
+          case Some(reader) => Some(reader.read().copy())
+        }
+      }).toEither match {
+        case Left(exception) => Left(IntermediaryStoreReadError(exception)
+          .context("Error reading parquet file from HDFS."))
+        case Right(list) =>
+          val data = list.flatten
+          if (data.length < blockSize) {
+            this.blockReadDone = true
+            Right(Some(DataBlock(data.toIterator)))
+          } else {
+            Right(Some(DataBlock(data.toIterator)))
+          }
       }
-    } match {
-      case Failure(exception) => Left(IntermediaryStoreReadError(exception)
-        .context("Error reading parquet file from HDFS."))
-      case Success(v) => Right(v)
-    }).toList.sequence match {
-      case Left(err) => Left(err)
-      case Right(list) => Right(DataBlock(list.flatten))
     }
   }
 
@@ -197,7 +205,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
         case None => Left(IntermediaryStoreWriterNotInitializedError()
           .context("Error writing parquet file from HDFS"))
       }
-      _ <- dataBlock.data.traverse(record => Try{writer.write(record)}
+      _ <- dataBlock.data.toList.traverse(record => Try{writer.write(record)}
         .toEither.left.map(exception => IntermediaryStoreWriteError(exception)
           .context("Error writing parquet file to HDFS.")))
     } yield ()
@@ -284,33 +292,15 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     }
   }
 
-  override def readDataFromParquetFile(blockSize: Int): ConnectorResult[DataBlock] = {
-    val dataBlock = for {
-      _ <- if (this.done) {
-        Left(DoneReading())
-      } else {
-        Right(())
+  override def readDataFromParquetFile(blockSize: Int): ConnectorResult[Option[DataBlock]] = {
+    for {
+      reader <- this.reader match {
+        case Some(reader) => Right(reader)
+        case None => Left(IntermediaryStoreReaderNotInitializedError()
+          .context("Error reading parquet file from HDFS"))
       }
-
-      dataBlock <- for {
-          reader <- this.reader match {
-            case Some(reader) => Right(reader)
-            case None => Left(IntermediaryStoreReaderNotInitializedError()
-              .context("Error reading parquet file from HDFS"))
-          }
-          dataBlock <- reader.read(blockSize)
-        } yield dataBlock
-
+      dataBlock <- reader.read(blockSize)
     } yield dataBlock
-
-    dataBlock match {
-      case Left(_) => ()
-      case Right(block) => if (block.data.size < blockSize) {
-        this.done = true
-      }
-    }
-
-    dataBlock
   }
 
   override def closeReadParquetFile(): ConnectorResult[Unit] = {

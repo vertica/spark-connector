@@ -44,7 +44,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
+    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)).toIterator)
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(2))
@@ -58,8 +58,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     checkResult(writer.openWrite())
 
-    checkResult(writer.writeRow(dataBlock.data(0)))
-    checkResult(writer.writeRow(dataBlock.data(1)))
+    checkResult(writer.writeRow(dataBlock.next().get))
+    checkResult(writer.writeRow(dataBlock.next().get))
 
     checkResult(writer.closeWrite())
 
@@ -69,7 +69,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
+    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)).toIterator)
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(3))
@@ -83,8 +83,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     checkResult(writer.openWrite())
 
-    checkResult(writer.writeRow(dataBlock.data(0)))
-    checkResult(writer.writeRow(dataBlock.data(1)))
+    checkResult(writer.writeRow(dataBlock.next().get))
+    checkResult(writer.writeRow(dataBlock.next().get))
 
     checkResult(writer.closeWrite())
   }
@@ -93,8 +93,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock1 = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
-    val dataBlock2 = DataBlock(List(InternalRow(v1,v3), InternalRow(v1,v2)))
+    val dataBlock1 = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)).toIterator)
+    val dataBlock2 = DataBlock(List(InternalRow(v1,v3), InternalRow(v1,v2)).toIterator)
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(2))
@@ -109,10 +109,10 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     checkResult(writer.openWrite())
 
-    checkResult(writer.writeRow(dataBlock1.data(0)))
-    checkResult(writer.writeRow(dataBlock1.data(1)))
-    checkResult(writer.writeRow(dataBlock2.data(0)))
-    checkResult(writer.writeRow(dataBlock2.data(1)))
+    checkResult(writer.writeRow(dataBlock1.next().get))
+    checkResult(writer.writeRow(dataBlock1.next().get))
+    checkResult(writer.writeRow(dataBlock2.next().get))
+    checkResult(writer.writeRow(dataBlock2.next().get))
 
     checkResult(writer.closeWrite())
   }
