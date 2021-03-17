@@ -1,5 +1,7 @@
 # Spark Connector
 
+inserting this change to test PRs
+
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
 Why is this connector desired instead of using a more generic JDBC connector? A few reasons:
