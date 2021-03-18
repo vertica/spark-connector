@@ -32,6 +32,9 @@ import org.apache.spark.sql.sources.{
   StringStartsWith
 }
 
+/**
+ * Utils class for translating Spark pushdown filters into Vertica-compatible SQL where clauses.
+ */
 object PushdownUtils {
   private def wrapText(value: Any): String = {
     value match {
@@ -45,6 +48,12 @@ object PushdownUtils {
     }
   }
 
+  /**
+   * Takes a filter, and if we support it, turns it into a format we can add to our queries, therefore pushing down said filter.
+   *
+   * @param filter Spark-defined filter class.
+   * @return A PushFilter containing a string to add to a select from Vertica, or a NonPushFilter if we don't support that filter.
+   */
   def genFilter(filter: Filter): Either[NonPushFilter, PushFilter] = {
     filter match {
       case EqualTo(attribute, value) => Right(PushFilter(filter,

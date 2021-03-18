@@ -21,16 +21,66 @@ import com.vertica.spark.util.error.{ConnectorError, CreateTableError, DropTable
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
 
+/**
+ * Interface for common functionality dealing with Vertica tables.
+ */
 trait TableUtilsInterface {
+  /**
+   * Checks if a view exists by a given name.
+   */
   def viewExists(view: TableName): ConnectorResult[Boolean]
+
+  /**
+   * Checks if a view exists by a given name.
+   */
   def tableExists(table: TableName): ConnectorResult[Boolean]
+
+  /**
+   * Checks specifically if a table exists by the given name AND that table is temporary.
+   */
   def tempTableExists(table: TableName): ConnectorResult[Boolean]
+
+  /**
+   * Creates a table. Will either used passed in statement to create it, or generate it's own create statement here.
+   *
+   * @param tablename Name of table
+   * @param targetTableSql Optional value, if specified this entire string will be used to create the table and other params will be ignored.
+   * @param schema Spark schema of data we want to write to the table
+   * @param strlen Length to use for strings in Vertica string types
+   */
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit]
+
+  /**
+   * Drops/Deletes a given table if it exists.
+   */
   def dropTable(tablename: TableName): ConnectorResult[Unit]
+
+  /**
+   * Creates the job status table if it doesn't exist and adds the entry for this job.
+   *
+   * The job status table records write jobs in Vertica and their status, so we can have an auditable record of writes from Spark to Vertica.
+   *
+   * @param tablename Table being used in this job.
+   * @param user Vertica user executing this job.
+   * @param sessionId Unique identifier for this job.
+   */
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit]
+
+  /**
+   * Updates the job status table entry for the given job.
+   *
+   * @param tableName Table being used in this job.
+   * @param user Vertica user executing this job.
+   * @param failedRowsPercent Percent of rows that failed to write in this job.
+   * @param sessionId Unique identifier for this job.
+   * @param success Whether the job succeeded.
+   */
   def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): ConnectorResult[Unit]
 }
 
+/**
+ * Implementation of TableUtils wrapping JDBC layer.
+ */
 class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = logProvider.getLogger(classOf[TableUtils])
 

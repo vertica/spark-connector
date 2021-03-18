@@ -22,6 +22,16 @@ import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.types.StructType
 
+/**
+ * Pipe for writing data to Vertica using an intermediary filesystem.
+ *
+ * @param config Configuration data for writing to Vertica
+ * @param fileStoreLayer Dependency for communication with the intermediary filesystem
+ * @param jdbcLayer Dependency for communication with the database over JDBC
+ * @param schemaTools Dependency for schema conversion between Vertica and Spark
+ * @param tableUtils Depedency on top of JDBC layer for interacting with tables
+ * @param dataSize Number of rows per data block
+ */
 class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWriteConfig,
                                             val fileStoreLayer: FileStoreLayerInterface,
                                             val jdbcLayer: JdbcLayerInterface,
@@ -32,9 +42,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
-  // No write metadata required for configuration as of yet
+  /**
+   * No write metadata required for configuration as of yet.
+   */
   def getMetadata: ConnectorResult[VerticaMetadata] = Right(VerticaWriteMetadata())
 
+  /**
+   * Returns the number of rows used per data block.
+   */
   def getDataBlockSize: ConnectorResult[Long] = Right(dataSize)
 
 

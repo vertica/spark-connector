@@ -38,15 +38,54 @@ case class ColumnDef(
                       nullable: Boolean,
                       metadata: Metadata)
 
+/**
+ * Interface for functionality around retrieving and translating schema.
+ */
 trait SchemaToolsInterface {
+  /**
+   * Retrieves the schema of Vertica table in Spark format.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of table we want the schema of.
+   * @return StructType representing table's schema converted to Spark's schema type.
+   */
   def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[StructType]
 
+  /**
+   * Retrieves the schema of Vertica table in format of list of column definitions.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of table we want the schema of.
+   * @return Sequence of ColumnDef, representing the Vertica structure of schema.
+   */
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[Seq[ColumnDef]]
 
+  /**
+   * Returns the Vertica type to use for a given Spark type.
+   *
+   * @param sparkType One of Sparks' DataTypes
+   * @param strlen Necessary if the type is StringType, string length to use for Vertica type.
+   * @return String representing Vertica type, that one could use in a create table statement
+   */
   def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String]
 
+  /**
+   * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of the table.
+   * @param schema Schema of data in spark.
+   * @return
+   */
   def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): ConnectorResult[String]
 
+  /**
+   * Matches a list of columns against a required schema, only returning the list of matches in string form.
+   *
+   * @param columnDefs List of column definitions from the Vertica table.
+   * @param requiredSchema Set of columns in Spark schema format that we want to limit the column list to.
+   * @return List of columns in matches.
+   */
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 }
 

@@ -246,6 +246,12 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
+  /**
+   * Calls read pipe implementation to perform initial setup for the read operation.
+   *
+   * @param config Configuration data for the read operation. Used to construct pipe for performing initial setup.
+   * @return List of partitioning information for the operation to pass down to readers, or error that occured in setup.
+   */
   override def performInitialSetup(config: ReadConfig): ConnectorResult[Option[PartitionInfo]] = {
     pipeFactory.getReadPipe(config).doPreReadSteps() match {
       case Right(partitionInfo) => Right(Some(partitionInfo))
@@ -253,6 +259,12 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
+  /**
+   * Returns the schema of the table being read
+   *
+   * @param config Configuration data for the read operation. Contains the metadata required for returning the table schema.
+   * @return The table schema or an error that occured trying to retrieve it
+   */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata, _) =>
@@ -301,6 +313,11 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
+  /**
+   * Performs initial steps for write operation.
+   *
+   * @return None, partitioning info not needed for write operation.
+   */
   override def performInitialSetup(config: WriteConfig): ConnectorResult[Option[PartitionInfo]] = {
     val pipe = pipeFactory.getWritePipe(config)
     pipe.doPreWriteSteps() match {
@@ -309,6 +326,9 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
+  /**
+   * Returns the same schema that was passed in to this class.
+   */
   override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
     case Some(schema) => Right(schema)
     case None => Left(SchemaDiscoveryError(None))

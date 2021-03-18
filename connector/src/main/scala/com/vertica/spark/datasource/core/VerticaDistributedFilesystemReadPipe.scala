@@ -47,7 +47,11 @@ final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFi
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
  *
- * Dependencies such as the JDBCLayerInterface may be optionally passed in, this option is in place mostly for tests. If not passed in, they will be instantiated here.
+ * @param config Specific configuration data for read using intermediary filesystem
+ * @param fileStoreLayer Dependency for communication with the intermediary filesystem
+ * @param jdbcLayer Dependency for communication with the database over JDBC
+ * @param schemaTools Dependency for schema conversion between Vertica and Spark
+ * @param cleanupUtils Depedency for handling cleanup of files used in intermediary filesystem
  */
 class VerticaDistributedFilesystemReadPipe(
                                             val config: DistributedFilesystemReadConfig,
@@ -81,6 +85,8 @@ class VerticaDistributedFilesystemReadPipe(
 
   /**
    * Gets metadata, either cached in configuration object or retrieved from Vertica if we haven't yet.
+   *
+   * At current time, the only metadata is the table schema.
    */
   override def getMetadata: ConnectorResult[VerticaMetadata] = {
     this.config.metadata match {
@@ -163,6 +169,14 @@ class VerticaDistributedFilesystemReadPipe(
 
   /**
    * Initial setup for the whole read operation. Called by driver.
+   *
+   * Will:
+   * - Create a unique directory to export to
+   * - Tell Vertica to export to a subdirectory there
+   * - Parse the list of files Vertica exported, and create a list of PartitionInfo structs representing how to split up the read.
+   *
+   * Partitioning info is composed af a group of file ranges. A file range could represent reading a whole file or part of one.
+   * This way a single file could be split up among 10 partitions to read, or a single partition could read 10 files.
    */
   override def doPreReadSteps(): ConnectorResult[PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
@@ -313,6 +327,8 @@ class VerticaDistributedFilesystemReadPipe(
 
   /**
    * Reads a block of data to the underlying source. Called by executor.
+   *
+   * May return empty block if at end of read. If attempting to read after end of read, DoneReading will be returned.
    */
   // scalastyle:off
   def readData: ConnectorResult[DataBlock] = {

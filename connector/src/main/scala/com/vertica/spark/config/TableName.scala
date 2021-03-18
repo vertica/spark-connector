@@ -24,7 +24,18 @@ object EscapeUtils {
   }
 }
 
+/**
+ * Represents a fully qualified tablename in Vertica.
+ *
+ * @param name Name of the table
+ * @param dbschema Optionally, the schema of the table. Public schema will be assumed if not specified.
+ */
 final case class TableName(name: String, dbschema: Option[String]) {
+
+  /**
+   * Returns the full name of the table, escaped and surrounded with double quotes to prevent injection
+   * and allow for special characters.
+   */
   def getFullTableName : String = {
     dbschema match {
       case None => EscapeUtils.sqlEscapeAndQuote(name)

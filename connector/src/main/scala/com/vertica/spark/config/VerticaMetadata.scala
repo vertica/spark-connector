@@ -15,7 +15,19 @@ package com.vertica.spark.config
 
 import org.apache.spark.sql.types._
 
+/**
+ * Abstract trait for passing metadata of a table retrieved from Vertica.
+ */
 trait VerticaMetadata
+
+/**
+ * Metadata for read operation.
+ * @param schema Schema of the table being read in Vertica.
+ */
 final case class VerticaReadMetadata(schema: StructType) extends VerticaMetadata
+
+/**
+ * Empty class; No metadata retrieval required for current write operation.
+ */
 final case class VerticaWriteMetadata() extends VerticaMetadata
 
