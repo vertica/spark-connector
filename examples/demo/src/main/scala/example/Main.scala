@@ -41,7 +41,7 @@ class DemoCases(conf: Config) {
 
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
-  val spark = SparkSession.builder()
+  private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()
@@ -91,7 +91,7 @@ class DemoCases(conf: Config) {
   }
 
   def filterPushdown(): Unit = {
-    println("DEMO: Reading with column pushdown.")
+    println("DEMO: Reading with filter pushdown.")
 
     try {
       val tableName = "readtest"
@@ -103,14 +103,22 @@ class DemoCases(conf: Config) {
       TestUtils.populateTableBySQL(stmt, insert, n)
       val insert2 = "insert into " + tableName + " values(5, 1)"
       TestUtils.populateTableBySQL(stmt, insert2, n)
+      val insert3 = "insert into " + tableName + " values(10, 1)"
+      TestUtils.populateTableBySQL(stmt, insert3, n)
+      val insert4 = "insert into " + tableName + " values(-10, 0)"
+      TestUtils.populateTableBySQL(stmt, insert4, n)
 
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
       val dfGreater = df.filter("a > 4")
       dfGreater.rdd.foreach(x => println("DEMO: Read value " + x))
 
-      val dfEqual = df.filter("b == 1")
-      dfEqual.rdd.foreach(x => println("DEMO: Read value " + x))
+      val dfAnd = df.filter("b == 1 and a > 8")
+      dfAnd.rdd.foreach(x => println("DEMO: Read value " + x))
+
+      val dfOr = df.filter("a = 2 or a > 8")
+      dfOr.rdd.foreach(x => println("DEMO: Read value " + x))
+
     } finally {
       spark.close()
       conn.close()
@@ -199,7 +207,28 @@ class DemoCases(conf: Config) {
     try {
       val tableName = "dftest"
       val customCreate = "CREATE TABLE dftest(col1 integer, col2 varchar(2345), col3 float);"
-      val copyList = "col1, col2"
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
+
+      val data = (1 to 1000).map(x => Row(x, "test"))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      println(df.toString())
+      val mode = SaveMode.Overwrite
+
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts +
+        ("table" -> tableName, "target_table_sql" -> customCreate)).mode(mode).save()
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  def writeCustomCopyList(): Unit = {
+    println("DEMO: Writing with custom create table statement and copy list")
+
+    try {
+      val tableName = "dftest"
+      val customCreate = "CREATE TABLE dftest(a integer, b varchar(2345), c integer);"
+      val copyList = "a, b"
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
 
       val data = (1 to 1000).map(x => Row(x, "test"))
@@ -214,24 +243,6 @@ class DemoCases(conf: Config) {
       spark.close()
     }
   }
-
-  def testJdbcBug(): Unit = {
-    conn.createStatement()
-    val tableName = "jdbc_test"
-    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
-
-    val stmt = conn.createStatement()
-    var count = stmt.executeUpdate("INSERT INTO " + tableName + " VALUES(1);")
-    println("COUNT: " + count)
-
-    val sql = "INSERT INTO " + tableName + " VALUES(?);"
-    val pstmt = conn.prepareStatement(sql)
-    pstmt.setInt(1, 2)
-    count = pstmt.executeUpdate()
-    println("COUNT PREPARED: " + count)
-  }
-
-
 }
 
 object Main extends App {
@@ -245,15 +256,16 @@ object Main extends App {
     "basicRead" -> demoCases.basicRead,
     "columnPushdown" -> demoCases.columnPushdown,
     "filterPushdown" -> demoCases.filterPushdown,
+    "filterPushdownDate" -> demoCases.filterPushdownDate,
     "writeAppendMode" -> demoCases.writeAppendMode,
     "writeOverwriteMode" -> demoCases.writeOverwriteMode,
     "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,
     "writeIgnoreMode" -> demoCases.writeIgnoreMode,
     "writeCustomStatement" -> demoCases.writeCustomStatement,
-    "testJdbcBug" -> demoCases.testJdbcBug
+    "writeCustomCopyList" -> demoCases.writeCustomCopyList
   )
 
-  if(args.size != 1) {
+  if(args.length != 1) {
     println("DEMO: Please enter name of demo case to run.")
   }
   else {

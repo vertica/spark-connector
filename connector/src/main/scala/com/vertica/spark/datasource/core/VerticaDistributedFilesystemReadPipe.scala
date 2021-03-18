@@ -18,10 +18,10 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.{ColumnDef, SchemaTools, SchemaToolsInterface}
+import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
-import com.vertica.spark.util.cleanup.{CleanupUtils, CleanupUtilsInterface, FileCleanupInfo}
+import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.types.StructType
 
@@ -58,7 +58,7 @@ class VerticaDistributedFilesystemReadPipe(
                                             val fileStoreLayer: FileStoreLayerInterface,
                                             val jdbcLayer: JdbcLayerInterface,
                                             val schemaTools: SchemaToolsInterface,
-                                            val cleanupUtils: CleanupUtilsInterface = CleanupUtils,
+                                            val cleanupUtils: CleanupUtilsInterface,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
   private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
@@ -201,15 +201,17 @@ class VerticaDistributedFilesystemReadPipe(
         case Right(_) => Right(())
       }
 
-
-      // Safety check: Remove export directory if it exists (Vertica must create this dir)
-      _ <- fileStoreLayer.removeDir(hdfsPath)
+      // Check if export is already done (previous call of this function)
+      exportDone <- fileStoreLayer.fileExists(hdfsPath)
 
       // File permissions.
-      // TODO: Add file permission option w/ default value '700'
-      filePermissions = "777"
+      filePermissions = config.filePermissions
 
       cols <- getColumnNames(this.config.getRequiredSchema)
+      _ = logger.info("Columns requested: " + cols)
+
+      pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
+      _ = logger.info("Pushdown filters: " + pushdownSql)
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
@@ -218,9 +220,16 @@ class VerticaDistributedFilesystemReadPipe(
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
         "') AS " + "SELECT " + cols + " FROM " +
-        config.tablename.getFullTableName + this.addPushdownFilters(this.config.getPushdownFilters) + ";"
+        config.tablename.getFullTableName + pushdownSql + ";"
 
-      _ <- jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+      // Export if not already exported
+      _ <- if(exportDone) {
+        logger.info("Export already done, skipping export step.")
+        Right(())
+      } else {
+        logger.info("Exporting.")
+        jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+      }
 
       // Retrieve all parquet files created by Vertica
       fileList <- fileStoreLayer.getFileList(hdfsPath)
@@ -252,7 +261,9 @@ class VerticaDistributedFilesystemReadPipe(
 
     // If there's an error, cleanup
     ret match {
-      case Left(_) => cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      case Left(_) =>
+        logger.info("Cleaning up all files in path: " + hdfsPath)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
       case _ => ()
     }
     jdbcLayer.close()
@@ -266,6 +277,7 @@ class VerticaDistributedFilesystemReadPipe(
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): ConnectorResult[Unit] = {
+    logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
           case p: VerticaDistributedFilesystemPartition => Right(p)
@@ -286,6 +298,7 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
+    logger.info("Getting cleanup info for partition with idx " + curIdx)
     for {
       _ <- if (curIdx >= part.fileRanges.size) {
         logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
@@ -326,6 +339,7 @@ class VerticaDistributedFilesystemReadPipe(
     val ret = fileStoreLayer.readDataFromParquetFile(dataSize) match {
       case Left(err) => err.getError match {
         case DoneReading() =>
+          logger.info("Hit done reading for file segment.")
 
           // Cleanup old file if required
           getCleanupInfo(part,this.fileIdx) match {
@@ -333,7 +347,7 @@ class VerticaDistributedFilesystemReadPipe(
               case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
               case Right(_) => ()
             }
-            case None => ()
+            case None => logger.warn("No cleanup info found.")
           }
 
           // Next file
@@ -353,7 +367,9 @@ class VerticaDistributedFilesystemReadPipe(
     // If there was an underlying error, call cleanup
     (ret, getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
-      case _ => ()
+      case (Left(_), None) => logger.warn("No cleanup info found")
+      case (Right(dataBlock), Some(cleanupInfo)) => if(dataBlock.data.isEmpty) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
+      case (Right(_), None) => ()
     }
     ret
   }
@@ -363,6 +379,8 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
+    logger.info("Ending partition read.")
+
     jdbcLayer.close()
     fileStoreLayer.closeReadParquetFile()
   }

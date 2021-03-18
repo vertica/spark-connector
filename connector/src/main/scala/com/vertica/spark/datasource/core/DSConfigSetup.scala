@@ -148,6 +148,13 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getFilePermissions(config: Map[String, String]): ValidationResult[ValidFilePermissions] = {
+    config.get("file_permissions") match {
+      case None => ValidFilePermissions("770") // Default to allowing user and group
+      case Some(str) => ValidFilePermissions(str)
+    }
+  }
+
   // Optional param, if not specified the partition count will be decided as part of the inital steps
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
@@ -220,7 +227,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
             fileStoreConfig.validNec,
             tableName.validNec,
             DSConfigSetupUtils.getPartitionCount(config),
-            None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+            None.validNec,
+            DSConfigSetupUtils.getFilePermissions(config)).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
               val pipe = pipeFactory.getReadPipe(initialConfig)
 
               // Then, retrieve metadata
@@ -259,7 +267,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata, _) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError(None))
           case Some(metadata) => Right(metadata.schema)

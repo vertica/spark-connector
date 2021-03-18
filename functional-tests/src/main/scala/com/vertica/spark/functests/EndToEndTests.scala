@@ -22,6 +22,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalactic.TripleEquals._
 import org.scalactic.Tolerance._
+import org.apache.spark.sql.functions._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
@@ -66,6 +67,149 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 20)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+  }
+
+  it should "perform aggregations" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(4, 7)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val sumDf = df.agg(sum("a") as "sum", avg("b") as "avg", max("b") as "max")
+    assert(sumDf.head.get(0) == 2*n + 4*n)
+    assert(sumDf.head.get(1) == 5)
+    assert(sumDf.head.get(2) == 7)
+  }
+
+
+  it should "df alias and join" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    println("Getting count")
+    println("Count: " + df.count())
+
+
+    println("Getting as1")
+    val df_as1 = df.as("df1")
+
+    println("Getting as2")
+    val df_as2 = df.as("df2")
+
+    println("Joining")
+    val joined_df = df_as1.join(
+      df_as2, col("df1.a") === col("df2.b"), "inner")
+    assert(joined_df.collect().length == n*n)
+  }
+
+  it should "collect results" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val arr = df.collect()
+
+    assert(arr.length == n*2)
+  }
+
+  it should "return column names" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val cols = df.columns
+    assert(cols(0) == "a")
+    assert(cols(1) == "b")
+    assert(cols(2) == "c")
+  }
+
+  it should "sort" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.sort("a").head.get(1) == 3)
+    assert(df.sort("b").head.get(0) == 5)
+    assert(df.sort("c").head.get(0) == 3)
+  }
+
+  it should "get distinct elements" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.distinct().count() == 3)
+  }
+
+  it should "drop and take" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfMinusCols = df.drop("a").drop("c")
+    assert(dfMinusCols.distinct().sort("b").take(1)(0).get(0) == 2)
   }
 
   it should "support data frame schema" in {
@@ -340,7 +484,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val dfFiltered1 = df.filter("a < cast('2001-01-01' as DATE)")
+    val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
     val r = dfFiltered1.count

@@ -128,10 +128,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   /**
    * Function to get column list to use for the operation
    *
-   * Three options depending on configuration and specified table:
+   * Two options depending on configuration and specified table:
    * - Custom column list provided by the user
    * - Column list built for a subset of rows in the table that match our schema
-   * - Empty string, load by position rather than column list
    */
   private def getColumnList: ConnectorResult[String] = {
     config.copyColumnList match {
@@ -141,21 +140,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         Right("(" + list + ")")
       case None =>
         // Default COPY
-        // TODO: Implement this with append mode
-        // Behavior should be default to load by position if we created the table
-        // We know this by lack of custom create statement + lack of append mode
-        //if ((params("target_table_ddl") == null) && (params("save_mode") != "Append")) {
-        if(false) {
-          //If connector created the target table no need to try to load by name, except for Append mode
-          logger.info("Load by Position")
-          Right("")
-        }
-        else {
-          logger.info(s"Building default copy column list")
-          schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema)
-            .left.map(err => SchemaColumnListError(err)
-              .context("getColumnList: Error building default copy column list"))
-        }
+        logger.info(s"Building default copy column list")
+        schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema)
+          .left.map(err => SchemaColumnListError(err)
+          .context("getColumnList: Error building default copy column list"))
     }
   }
 

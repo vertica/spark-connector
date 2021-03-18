@@ -18,7 +18,7 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{TableName, ValidColumnList}
+import com.vertica.spark.config.{TableName, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import org.scalactic.{Equality, TolerantNumerics}
@@ -280,5 +280,32 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
       case Some(list) => assert(list.toString == stmt)
       case None => fail
     }
+  }
+
+  it should "parse file permissions" in {
+    val stmt = "-rwxr-xr-x"
+    val opts = Map("file_permissions" -> stmt)
+
+    val res = getResultOrAssert[ValidFilePermissions](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(res.toString == stmt)
+  }
+
+  it should "parse octal file permissions" in {
+    val stmt = "777"
+    val opts = Map("file_permissions" -> stmt)
+
+    val res = getResultOrAssert[ValidFilePermissions](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(res.toString == stmt)
+  }
+
+  it should "fail to parse invalid file permissions" in {
+    val stmt = "777'; DROP TABLE test;"
+    val opts = Map("file_permissions" -> stmt)
+
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(err.toNonEmptyList.head.isInstanceOf[InvalidFilePermissions])
   }
 }

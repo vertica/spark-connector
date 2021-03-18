@@ -21,8 +21,6 @@ import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
-import collection.JavaConverters._
-
 final case class NoCatalogException(private val message: String = "Catalog functionality not implemented for Vertica source.")
   extends Exception(message)
 
@@ -52,7 +50,7 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   override def name: String = "VerticaCatalog"
 
   @throws[NoSuchNamespaceException]
-  override def listTables(namespace: Array[String]): Array[Identifier] = ???
+  override def listTables(namespace: Array[String]): Array[Identifier] = throw new NoCatalogException
 
   @throws[NoSuchTableException]
   override def loadTable(ident: Identifier): Table = {

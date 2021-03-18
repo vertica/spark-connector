@@ -13,9 +13,13 @@
 
 package com.vertica.spark.config
 
+import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.v2.PushdownFilter
+import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
 import org.apache.spark.sql.types.StructType
+import scala.util.{Failure, Success, Try}
 
 /**
  * Interface for configuration of a read (from Vertica) operation.
@@ -36,6 +40,38 @@ trait ReadConfig extends GenericConfig {
   def getRequiredSchema: StructType
 }
 
+
+/**
+ * File permissions class validating it's either in octal format (ie 777) or user-group-other format,
+ * ie rwxrwxrwx
+ */
+class ValidFilePermissions private (value: String) extends Serializable {
+  override def toString: String = value
+}
+
+object ValidFilePermissions {
+
+  // octal format, ie 777 or 0750
+  private def isValidOctal(str: String): Boolean = {
+    str.length <= 4 && str.forall(_.isDigit)
+  }
+
+  // user-group-other format
+  private def isValidLetterPerms(str: String): Boolean = {
+    str.forall(c => "crwxdt-".contains(c))
+  }
+
+  final def apply(value: String): ValidationResult[ValidFilePermissions] = {
+    val validOctal = isValidOctal(value)
+    val validLetterParams = isValidLetterPerms(value)
+    if (validOctal || validLetterParams) {
+      new ValidFilePermissions(value).validNec
+    } else {
+      InvalidFilePermissions().invalidNec
+    }
+  }
+}
+
 /**
  * Configuration for a read operation using a distributed filesystem as an intermediary.
  *
@@ -52,7 +88,8 @@ final case class DistributedFilesystemReadConfig(
                                                   fileStoreConfig: FileStoreConfig,
                                                   tablename: TableName,
                                                   partitionCount: Option[Int],
-                                                  metadata: Option[VerticaReadMetadata]
+                                                  metadata: Option[VerticaReadMetadata],
+                                                  filePermissions: ValidFilePermissions
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var requiredSchema: StructType = StructType(Nil)
