@@ -191,8 +191,7 @@ class VerticaDistributedFilesystemReadPipe(
       exportDone <- fileStoreLayer.fileExists(hdfsPath)
 
       // File permissions.
-      // TODO: Add file permission option w/ default value '700'
-      filePermissions = "777"
+      filePermissions = config.filePermissions
 
       cols <- getColumnNames(this.config.getRequiredSchema)
       _ = logger.info("Columns requested: " + cols)

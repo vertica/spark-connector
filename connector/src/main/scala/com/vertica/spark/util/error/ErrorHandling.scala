@@ -236,6 +236,9 @@ case class InvalidPortError() extends ConnectorError {
 case class UnquotedSemiInColumns() extends ConnectorError {
   def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
 }
+case class InvalidFilePermissions() extends ConnectorError {
+  def getFullContext: String = "File permissions are not in the correct format. Please specify a three digit number representing the file perms, ie 777 or 750."
+}
 case class InvalidFailedRowsTolerance() extends ConnectorError {
   def getFullContext: String = "The 'failed_rows_percent_tolerance' param specified is invalid. " +
     "Please specify ad valid float between 0 and 1, representing a percent between 0 and 100."
