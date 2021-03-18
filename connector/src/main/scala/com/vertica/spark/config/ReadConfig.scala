@@ -28,7 +28,7 @@ trait ReadConfig extends GenericConfig {
   def getRequiredSchema: StructType
 }
 
-class ValidFilePermissions (value: String) extends Serializable {
+class ValidFilePermissions private (value: String) extends Serializable {
   override def toString: String = value
 }
 
@@ -41,7 +41,7 @@ object ValidFilePermissions {
 
   // user-group-other format
   private def isValidLetterPerms(str: String): Boolean = {
-    str.forall(c => "crwx-".contains(c))
+    str.forall(c => "crwxdt-".contains(c))
   }
 
   final def apply(value: String): ValidationResult[ValidFilePermissions] = {
