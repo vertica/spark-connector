@@ -19,6 +19,7 @@ package com.vertica.spark.util.error
 
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
+import com.vertica.spark.util.error.ErrorHandling.invariantViolation
 import org.apache.spark.sql.types.DataType
 
 trait ConnectorError {
@@ -69,6 +70,9 @@ object ErrorHandling {
     logger.error(error.getFullContext)
     throw new ConnectorException(error)
   }
+
+  val invariantViolation: String = "This is a bug and should be reported to the developers here:\n" +
+    "https://github.com/vertica/spark-connector/issues"
 }
 
 case class SchemaDiscoveryError(error: Option[ConnectorError]) extends ConnectorError {
@@ -81,7 +85,7 @@ case class SchemaDiscoveryError(error: Option[ConnectorError]) extends Connector
   }
   override def getUserMessage: String = this.error match {
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getUserMessage)
-    case None => this.message
+    case None => "Failed to discover the schema of the table. " + invariantViolation
   }
 }
 case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
@@ -89,26 +93,27 @@ case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
     "due to mismatch with the existing table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 case class SchemaConversionError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to convert the schema of the table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 case class ExportFromVerticaError(error: ConnectorError) extends ConnectorError {
   private val message = "There was an error when attempting to export from Vertica: " +
     "connection error with JDBC."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
-case class ParquetMetadataError() extends ConnectorError {
-  def getFullContext: String = "There was an error retrieving parquet file metadata."
+case class InitialSetupPartitioningError() extends ConnectorError {
+  def getFullContext: String = "Failure when retrieving partitioning information for operation.\n" + invariantViolation
 }
-case class PartitioningError() extends ConnectorError {
-  def getFullContext: String = "Failure when retrieving partitioning information for operation."
+case class FileListEmptyPartitioningError() extends ConnectorError {
+  def getFullContext: String = "Failure when retrieving partitioning information for operation. " +
+    "The returned file list was empty, so valid partition info cannot be created."
 }
 case class InvalidPartition() extends ConnectorError {
   def getFullContext: String = "Input Partition was not valid for the given operation."

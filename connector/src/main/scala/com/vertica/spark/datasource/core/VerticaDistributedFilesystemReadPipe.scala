@@ -221,7 +221,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Retrieve all parquet files created by Vertica
       fileList <- fileStoreLayer.getFileList(hdfsPath)
       requestedPartitionCount <- if (fileList.isEmpty) {
-        Left(PartitioningError().context("Returned file list was empty, so cannot create valid partition info"))
+        Left(FileListEmptyPartitioningError())
       } else {
         config.partitionCount match {
           case Some(count) => Right(count)

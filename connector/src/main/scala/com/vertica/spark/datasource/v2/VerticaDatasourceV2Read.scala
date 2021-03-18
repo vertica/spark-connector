@@ -113,7 +113,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
       .performInitialSetup(config) match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
-        case None => ErrorHandling.logAndThrowError(logger, PartitioningError())
+        case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) => partitionInfo.partitionSeq
       }
     }
