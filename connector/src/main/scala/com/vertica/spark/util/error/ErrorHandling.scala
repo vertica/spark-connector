@@ -19,6 +19,7 @@ package com.vertica.spark.util.error
 
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
+import org.apache.spark.sql.types.DataType
 
 trait ConnectorError {
   // Adds context to an error
@@ -384,8 +385,12 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   */
 trait SchemaError extends ConnectorError
 
-case class MissingConversionError(value: String) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported SQL type: " + value
+case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
+    "\nSQL type value: " + sqlType
+}
+case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
 }
 case class UnexpectedExceptionError(cause: Throwable) extends SchemaError {
   private val message = "Unexpected exception while retrieving schema"
