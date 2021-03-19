@@ -53,6 +53,12 @@ An HDFS setup can have various configurations, for details of what might best fi
 
 For a quick start, you can either check out our [Guide on setting up a single-node HDFS](hdfs_single_node_instructions.md) or if you are just wanting a quick test run, you can use an HDFS container in Docker [as documented in our contributing guide](CONTRIBUTING.md#hdfs).
 
+However you set up HDFS, Vertica needs to have a copy of the hadoop configuration (location of hdfs-site.xml and core-site.xml). Each Vertica node must have access. Options for this are to either copy said configuration to /etc/hadoop/conf on those machines, or to tell Vertica where to find the configuration like so:
+
+```shell
+ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
+```
+
 ## Connector Usage
 
 Using the connector in Spark is straightforward. It requires the data source name, an options map, and if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/2.2.0/api/java/index.html?org/apache/spark/sql/SaveMode.html).
