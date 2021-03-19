@@ -74,8 +74,10 @@ Running this will run all unit tests and build the jar to target/[SCALA_VERSION]
 
 ## Step 4: Set up an environment
 
+### Vertica 
 The first requirement for a test environment is [Installing Vertica](https://www.vertica.com/docs/10.0.x/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm?tocpath=Installing%20Vertica%7C_____0). Our integration tests run on a single-node Vertica server and that should be all that's required for development unless you are working on a feature specifically relating to multi-node functionality, or are testing performance.
 
+### Spark
 The next requirement is a spark application that uses the connector jar. Example projects can be found under the examples directory. To use the jar built above, copy it into a subdirectory called "lib" at the root of the project.
 
 ```shell
@@ -85,6 +87,8 @@ cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-1.0.jar li
 sbt run
 ```
 
+### HDFS
+<a name="hdfs"></a>
 The final requirement is an intermediary distributed filesystem such as HDFS. This acts as an intermediary transport method between Spark and Vertica.
 
 The easiest setup for this in a development environment is to use a docker container with HDFS. We recommend [docker-hdfs](https://github.com/mdouchement/docker-hdfs). You can clone it and then set it up as follows:
