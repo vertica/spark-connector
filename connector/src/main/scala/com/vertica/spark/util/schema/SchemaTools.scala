@@ -146,7 +146,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         }
         catch {
           case e: Throwable =>
-            Left(UnexpectedExceptionError(e).context("Could not get column info"))
+            Left(DatabaseReadError(e).context("Could not get column info"))
         }
         finally {
           rs.close()

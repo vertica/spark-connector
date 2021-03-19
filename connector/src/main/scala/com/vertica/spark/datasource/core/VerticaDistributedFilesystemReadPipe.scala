@@ -156,7 +156,7 @@ class VerticaDistributedFilesystemReadPipe(
 
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
-      case Left(err) => Left(CastingSchemaReadError(err))
+      case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
       case Right(columnDefs) => Right(schemaTools.makeColumnsString(columnDefs, requiredSchema))
     }
   }
