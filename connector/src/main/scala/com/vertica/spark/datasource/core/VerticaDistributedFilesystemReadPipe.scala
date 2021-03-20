@@ -162,7 +162,7 @@ class VerticaDistributedFilesystemReadPipe(
 
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
-      case Left(err) => Left(CastingSchemaReadError(err))
+      case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
       case Right(columnDefs) => Right(schemaTools.makeColumnsString(columnDefs, requiredSchema))
     }
   }
@@ -234,7 +234,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Retrieve all parquet files created by Vertica
       fileList <- fileStoreLayer.getFileList(hdfsPath)
       requestedPartitionCount <- if (fileList.isEmpty) {
-        Left(PartitioningError().context("Returned file list was empty, so cannot create valid partition info"))
+        Left(FileListEmptyPartitioningError())
       } else {
         config.partitionCount match {
           case Some(count) => Right(count)

@@ -142,7 +142,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
       case _ => null
     }
 
-    if (answer == null) Left(MissingConversionError(sqlType.toString))
+    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
     else Right(answer)
   }
 
@@ -185,7 +185,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         }
         catch {
           case e: Throwable =>
-            Left(UnexpectedExceptionError(e).context("Could not get column info"))
+            Left(DatabaseReadError(e).context("Could not get column info"))
         }
         finally {
           rs.close()
@@ -221,7 +221,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(65000)")
 
 
-      case _ => Left(MissingConversionError(""))
+      case _ => Left(MissingSparkConversionError(sparkType))
     }
   }
 

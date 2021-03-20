@@ -105,18 +105,18 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
     jdbcLayer.query(query, params) match {
       case Left(err) => Left(TableCheckError(Some(err)).context("JDBC Error when checking if view exists"))
       case Right(rs) =>
-        if (!rs.next()) {
-          Left(TableCheckError(None).context("View check: empty result"))
-        } else {
-          try {
+        try {
+          if (!rs.next()) {
+            Left(TableCheckError(None).context("View check: empty result"))
+          } else {
             Right(rs.getInt(1) >= 1)
-          } catch {
-            case e: Throwable =>
-              jdbcLayer.handleJDBCException(e)
-              Left(TableCheckError(None))
-          } finally {
-            rs.close()
           }
+        } catch {
+          case e: Throwable =>
+            jdbcLayer.handleJDBCException(e)
+            Left(TableCheckError(None))
+        } finally {
+          rs.close()
         }
     }
   }

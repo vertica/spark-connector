@@ -66,7 +66,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       Right(())
     }
     else {
-      Left(CleanupError())
+      Left(CleanupError(path))
     }
   }
 
