@@ -134,7 +134,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig.copy(metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(MissingConversionError("unknown")))
+      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(MissingSqlConversionError("unknown", "")))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
@@ -463,7 +463,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == PartitioningError())
+      case Left(err) => assert(err.getError == FileListEmptyPartitioningError())
       case Right(_) => fail
     }
   }

@@ -19,6 +19,8 @@ package com.vertica.spark.util.error
 
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
+import com.vertica.spark.util.error.ErrorHandling.invariantViolation
+import org.apache.spark.sql.types.DataType
 
 trait ConnectorError {
   // Adds context to an error
@@ -68,6 +70,9 @@ object ErrorHandling {
     logger.error(error.getFullContext)
     throw new ConnectorException(error)
   }
+
+  val invariantViolation: String = "This is a bug and should be reported to the developers here:\n" +
+    "https://github.com/vertica/spark-connector/issues"
 }
 
 case class SchemaDiscoveryError(error: Option[ConnectorError]) extends ConnectorError {
@@ -80,7 +85,7 @@ case class SchemaDiscoveryError(error: Option[ConnectorError]) extends Connector
   }
   override def getUserMessage: String = this.error match {
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getUserMessage)
-    case None => this.message
+    case None => "Failed to discover the schema of the table. " + invariantViolation
   }
 }
 case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
@@ -88,29 +93,31 @@ case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
     "due to mismatch with the existing table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 case class SchemaConversionError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to convert the schema of the table."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 case class ExportFromVerticaError(error: ConnectorError) extends ConnectorError {
   private val message = "There was an error when attempting to export from Vertica: " +
     "connection error with JDBC."
 
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
-case class ParquetMetadataError() extends ConnectorError {
-  def getFullContext: String = "There was an error retrieving parquet file metadata."
+case class InitialSetupPartitioningError() extends ConnectorError {
+  def getFullContext: String = "Failure when retrieving partitioning information for operation.\n" + invariantViolation
 }
-case class PartitioningError() extends ConnectorError {
-  def getFullContext: String = "Failure when retrieving partitioning information for operation."
+case class FileListEmptyPartitioningError() extends ConnectorError {
+  def getFullContext: String = "Failure when retrieving partitioning information for operation. " +
+    "The returned file list was empty, so valid partition info cannot be created."
 }
 case class InvalidPartition() extends ConnectorError {
   def getFullContext: String = "Input Partition was not valid for the given operation."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
 
 // TODO: Remove
@@ -118,29 +125,21 @@ case class DoneReading() extends ConnectorError {
   def getFullContext: String = "No more data to read from source."
 }
 
-case class UninitializedReadCloseError() extends ConnectorError {
-  def getFullContext: String = "Error while closing read: The reader was not initialized."
-}
 case class UninitializedReadError() extends ConnectorError {
   def getFullContext: String = "Error while reading: The reader was not initialized."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
 case class MissingMetadata() extends ConnectorError {
   def getFullContext: String = "Metadata was missing from config."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
-case class TooManyPartitions() extends ConnectorError {
-  def getFullContext: String = "More partitions specified than is possible to divide the operation."
-}
-case class CastingSchemaReadError(error: ConnectorError) extends ConnectorError {
-  private val message = "Failed to get table schema when checking for fields that need casts."
-
-  def getFullContext: String = ErrorHandling.appendErrors(this.message, error.getFullContext)
-  override def getUserMessage: String = this.message
-}
-case class CleanupError() extends ConnectorError {
-  def getFullContext: String = "Unexpected error when attempting to clean up files."
+case class CleanupError(path: String) extends ConnectorError {
+  def getFullContext: String = "Unexpected error when attempting to clean up files. " +
+    "Parent directory missing for path: " + path
 }
 case class MissingSchemaError() extends ConnectorError {
   def getFullContext: String = "Expected to be passed in schema for this configuration. No schema found."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
 case class TableCheckError(error: Option[ConnectorError]) extends ConnectorError {
   private val message = "Error checking if table exists: connection error with JDBC."
@@ -397,14 +396,16 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   */
 trait SchemaError extends ConnectorError
 
-case class MissingConversionError(value: String) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported SQL type: " + value
+case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
+    "\nSQL type value: " + sqlType
 }
-case class UnexpectedExceptionError(cause: Throwable) extends SchemaError {
-  private val message = "Unexpected exception while retrieving schema"
-
-  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
+}
+case class DatabaseReadError(cause: Throwable) extends SchemaError {
+  def getFullContext: String = ErrorHandling.addCause("Exception while retrieving schema.", this.cause)
+  override def getUserMessage: String = "Could not read from database: " + cause.getMessage
 }
 case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
   private val message = "JDBC failure when trying to retrieve schema"

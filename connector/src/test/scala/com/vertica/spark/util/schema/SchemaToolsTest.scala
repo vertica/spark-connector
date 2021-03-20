@@ -346,18 +346,48 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         })
         assert(err.getError match {
           case ErrorList(errors) => errors.head match {
-            case MissingConversionError(_) => true
+            case MissingSqlConversionError(_, _) => true
             case _ => false
           }
           case _ => false
         })
         assert(err.getError match {
           case ErrorList(errors) => errors.tail.head match {
-            case MissingConversionError(_) => true
+            case MissingSqlConversionError(_, _) => true
             case _ => false
           }
           case _ => false
         })
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid SQL types to Spark types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(err) =>
+        err.getError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported SQL type: invalid-type" +
+            "\nSQL type value: 50000"))
+          case _ => false
+        }
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
+    new SchemaTools(logProvider).getVerticaTypeFromSparkType(CharType(0), 0) match {
+      case Left(err) =>
+        err.getError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported Spark type: CharType"))
+          case _ => false
+        }
       case Right(_) => fail
     }
   }

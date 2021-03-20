@@ -19,7 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, PartitioningError}
+import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
@@ -113,7 +113,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
       .performInitialSetup(config) match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
-        case None => ErrorHandling.logAndThrowError(logger, PartitioningError())
+        case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) => partitionInfo.partitionSeq
       }
     }
