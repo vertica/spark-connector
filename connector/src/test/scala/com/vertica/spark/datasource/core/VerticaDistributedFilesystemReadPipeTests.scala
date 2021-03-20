@@ -462,7 +462,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == PartitioningError())
+      case Left(err) => assert(err.getError == FileListEmptyPartitioningError())
       case Right(_) => fail
     }
   }

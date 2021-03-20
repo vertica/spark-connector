@@ -189,11 +189,11 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
     val reader = new DSReader(config, partition, pipeFactory)
-    (mockPipe.startPartitionRead _).expects(partition).returning(Left(PartitioningError()))
+    (mockPipe.startPartitionRead _).expects(partition).returning(Left(InitialSetupPartitioningError()))
 
     // Open
     reader.openRead() match {
-      case Left(err) => assert(err.getError == PartitioningError())
+      case Left(err) => assert(err.getError == InitialSetupPartitioningError())
       case Right(()) => fail
     }
   }

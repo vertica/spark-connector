@@ -19,7 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, PartitioningError}
+import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
