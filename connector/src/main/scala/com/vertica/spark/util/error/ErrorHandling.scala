@@ -352,11 +352,23 @@ case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorErro
   */
 trait JdbcError extends ConnectorError
 
-case class ConnectionError() extends JdbcError {
-  def getFullContext: String = "Failed to connect to the JDBC source"
+case class ConnectionSqlError(cause: Throwable) extends JdbcError {
+  private val message = "A JDBC SQL exception occurred while trying to connect to Vertica. " +
+    "Check the JDBC URI and properties to see if they are correct."
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = this.message + "\nCause: " + this.cause.getMessage
+}
+case class ConnectionError(cause: Throwable) extends JdbcError {
+  private val message = "An unknown JDBC exception occurred while trying to connect to Vertica. " +
+    "Check the JDBC URI and properties to see if they are correct."
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = this.message + "\nCause: " + this.cause.getMessage
 }
 case class ConnectionDownError() extends JdbcError {
-  def getFullContext: String = "Connection to the JDBC source is down or invalid"
+  def getFullContext: String = "Connection to the JDBC source is down or invalid. " +
+    "Please ensure that the JDBC source is running properly."
 }
 case class DataTypeError(cause: Throwable) extends JdbcError {
   private val message = "JDBC Error: Wrong data type"
@@ -365,21 +377,19 @@ case class DataTypeError(cause: Throwable) extends JdbcError {
   override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class SyntaxError(cause: Throwable) extends JdbcError {
-  private val message = "JDBC Error: syntax error occurred"
+  private val message = "JDBC Error: A syntax error occurred"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class GenericError(cause: Throwable) extends JdbcError {
-  private val message = "Generic JDBC error occurred"
+  private val message = "A generic JDBC error occurred"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = this.message + ": " + this.cause.toString
 }
 case class ParamsNotSupported(operation: String) extends JdbcError {
-  private val message = "Params not supported for operation: " + operation
-
-  def getFullContext: String = message
+  def getFullContext: String = "Params not supported for operation: " + operation
 }
 
 /**
