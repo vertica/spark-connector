@@ -46,6 +46,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: String)).expects("count").returning(count)
+    (resultSet.close _).expects().returning(())
 
     resultSet
   }
