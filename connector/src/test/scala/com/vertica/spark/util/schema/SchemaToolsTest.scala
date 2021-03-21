@@ -395,7 +395,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    (jdbcLayer.query _).expects(*,*).returning(Left(ConnectionError()))
+    (jdbcLayer.query _).expects(*,*).returning(Left(ConnectionError(new Exception())))
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>

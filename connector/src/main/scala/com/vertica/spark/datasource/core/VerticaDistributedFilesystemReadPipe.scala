@@ -193,7 +193,7 @@ class VerticaDistributedFilesystemReadPipe(
       _ <- fileStoreLayer.createDir(fileStoreConfig.address) match {
         case Left(err) =>
           err.getError match {
-            case CreateDirectoryAlreadyExistsError() =>
+            case CreateDirectoryAlreadyExistsError(_) =>
               logger.debug("Directory already existed: " + fileStoreConfig.address)
               Right(())
             case _ => Left(err.context("Failed to create directory: " + fileStoreConfig.address))

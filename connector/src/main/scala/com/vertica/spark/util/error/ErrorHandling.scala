@@ -20,6 +20,7 @@ package com.vertica.spark.util.error
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error.ErrorHandling.invariantViolation
+import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.DataType
 
 trait ConnectorError {
@@ -62,6 +63,10 @@ object ErrorHandling {
     throwable.getStackTrace.mkString("\n")
   }
 
+  def addUserFriendlyCause(errorText: String, throwable: Throwable): String = {
+    errorText + "\nCaused by: " + throwable.getMessage
+  }
+
   def appendErrors(errorText1: String, errorText2: String): String = {
     errorText1 + "\n" + errorText2
   }
@@ -71,7 +76,7 @@ object ErrorHandling {
     throw new ConnectorException(error)
   }
 
-  val invariantViolation: String = "This is a bug and should be reported to the developers here:\n" +
+  val invariantViolation: String = "This is likely a bug and should be reported to the developers here:\n" +
     "https://github.com/vertica/spark-connector/issues"
 }
 
@@ -254,92 +259,90 @@ case class StagingFsUrlMissingError() extends ConnectorError {
   def getFullContext: String = "The 'staging_fs_url' option is missing. " +
     "Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica."
 }
-case class FileSystemError() extends ConnectorError {
-  def getFullContext: String = "There was an error communicating with the intermediary filesystem."
+case class ParentDirMissingError(path: String) extends ConnectorError {
+  def getFullContext: String = "Could not retrieve parent path of file: " + this.path
 }
 case class FileListError(cause: Throwable) extends ConnectorError {
-  private val message = "There was an error listing files in the intermediary filesystem."
+  private val message = "There was an error listing files in the intermediary filesystem"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
 }
-case class CreateFileError(cause: Throwable) extends ConnectorError {
-  private val message = "There was an error creating a file in the intermediary filesystem."
+case class CreateFileError(path: Path, cause: Throwable) extends ConnectorError {
+  private val message = "There was an error creating file " + this.path.toString + " in the intermediary filesystem"
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
 }
-case class CreateDirectoryError(cause: Throwable) extends ConnectorError {
-  private val message = "There was an error creating a directory in the intermediary filesystem."
+case class CreateDirectoryError(path: Path, cause: Throwable) extends ConnectorError {
+  private val message = "There was an error creating directory " + this.path.toString + " in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
 }
-case class RemoveFileError(cause: Throwable) extends ConnectorError {
-  private val message = "There was an error removing the specified file in the intermediary filesystem."
+case class RemoveFileError(path: Path, cause: Throwable) extends ConnectorError {
+  private val message = "There was an error removing file " + this.path.toString + " in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
 }
-case class RemoveDirectoryError(cause: Throwable) extends ConnectorError {
-  private val message = "There was an error removing the specified directory in the intermediary filesystem."
+case class RemoveDirectoryError(path: Path, cause: Throwable) extends ConnectorError {
+  private val message = "There was an error removing the directory " + this.path.toString + " in the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
 }
-case class RemoveFileDoesNotExistError() extends ConnectorError {
-  def getFullContext: String = "The specified file to remove does not exist in the intermediary filesystem."
+case class CreateFileAlreadyExistsError(filename: String) extends ConnectorError {
+  def getFullContext: String = "Error creating file " + this.filename +
+    ". The file already exists in the intermediary filesystem."
 }
-case class RemoveDirectoryDoesNotExistError() extends ConnectorError {
-  def getFullContext: String = "The specified directory to remove does not exist in the intermediary filesystem."
-}
-case class CreateFileAlreadyExistsError() extends ConnectorError {
-  def getFullContext: String = "The specified file to create already exists in the intermediary filesystem."
-}
-case class CreateDirectoryAlreadyExistsError() extends ConnectorError {
-  def getFullContext: String = "The specified directory to create already exists in the intermediary filesystem."
+case class CreateDirectoryAlreadyExistsError(filename: String) extends ConnectorError {
+  def getFullContext: String = "Error creating directory " + this.filename +
+    ". The directory already exists in the intermediary filesystem."
 }
 case class OpenWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error opening a write to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, this.cause)
 }
 case class IntermediaryStoreWriterNotInitializedError() extends ConnectorError {
   def getFullContext: String = "Intermediary filesystem write error: The writer was not initialized."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
 case class IntermediaryStoreWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error writing to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, this.cause)
 }
 case class CloseWriteError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error closing the write to the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message + ": " + cause.getMessage
 }
 case class OpenReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error opening a read from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message + ": " + cause.getMessage
 }
 case class IntermediaryStoreReaderNotInitializedError() extends ConnectorError {
   def getFullContext: String = "Intermediary filesystem read error: The reader was not initialized."
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
 case class IntermediaryStoreReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error reading from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message + ": " + cause.getMessage
 }
 case class CloseReadError(cause: Throwable) extends ConnectorError {
   private val message = "There was an error closing the read from the intermediary filesystem."
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = this.message + ": " + cause.getMessage
 }
 case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorError {
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
