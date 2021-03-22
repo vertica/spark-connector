@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-scalaVersion := "2.12.0"
+scalaVersion := "2.12.10"
 name := "spark-vertica-connector"
 organization := "com.vertica"
 version := "1.0"
@@ -59,4 +59,11 @@ coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*"
 coverageMinimum := 59 
 coverageFailOnMinimum := true
 
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
+)
 
+assemblyExcludedJars in assembly := {
+  val cp = (fullClasspath in assembly).value
+  cp filter {_.data.getName.contains("spark")}
+}
