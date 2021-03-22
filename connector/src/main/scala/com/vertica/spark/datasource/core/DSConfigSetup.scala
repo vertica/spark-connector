@@ -13,6 +13,9 @@
 
 package com.vertica.spark.datasource.core
 
+import java.sql.{Connection, DriverManager}
+import java.util.Properties
+
 import com.vertica.spark.util.error._
 import org.apache.spark.sql.types.StructType
 import ch.qos.logback.classic.Level
@@ -210,7 +213,7 @@ object DSConfigSetupUtils {
 /**
   * Implementation for parsing user option map and getting read config
   */
-class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(connectionCreator: (String, Properties) => Try[Connection], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
   /**
     * Validates the user option map and parses read config
     *
@@ -229,11 +232,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
             DSConfigSetupUtils.getPartitionCount(config),
             None.validNec,
             DSConfigSetupUtils.getFilePermissions(config)).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-              val pipe = pipeFactory.getReadPipe(initialConfig)
-
-              // Then, retrieve metadata
-              val metadata = pipe.getMetadata
-               metadata match {
+              val pipeResult = pipeFactory.getReadPipe(initialConfig, connectionCreator)
+              addMetadata(pipeResult) match {
                 case Left(err) => err.invalidNec
                 case Right(meta) => meta match {
                   case readMeta: VerticaReadMetadata => initialConfig.copy(metadata = Some(readMeta)).validNec
@@ -246,6 +246,14 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
+  private def addMetadata(pipeResult: ConnectorResult[VerticaPipeInterface with VerticaPipeReadInterface]): ConnectorResult[VerticaMetadata] = {
+    for {
+      pipe <- pipeResult
+      // Then, retrieve metadata
+      metadata <- pipe.getMetadata
+    } yield metadata
+  }
+
   /**
    * Calls read pipe implementation to perform initial setup for the read operation.
    *
@@ -253,10 +261,10 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    * @return List of partitioning information for the operation to pass down to readers, or error that occured in setup.
    */
   override def performInitialSetup(config: ReadConfig): ConnectorResult[Option[PartitionInfo]] = {
-    pipeFactory.getReadPipe(config).doPreReadSteps() match {
-      case Right(partitionInfo) => Right(Some(partitionInfo))
-      case Left(err) => Left(err)
-    }
+    for {
+      pipe <- pipeFactory.getReadPipe(config, connectionCreator)
+      partitionInfo <- pipe.doPreReadSteps()
+    } yield Some(partitionInfo)
   }
 
   /**
@@ -279,7 +287,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 /**
   * Implementation for parsing user option map and getting write config
   */
-class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
+class DSWriteConfigSetup(connectionCreator: (String, Properties) => Try[Connection], val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
   /**
     * Validates the user option map and parses read config
     *
@@ -319,11 +327,10 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
    * @return None, partitioning info not needed for write operation.
    */
   override def performInitialSetup(config: WriteConfig): ConnectorResult[Option[PartitionInfo]] = {
-    val pipe = pipeFactory.getWritePipe(config)
-    pipe.doPreWriteSteps() match {
-      case Left(err) => Left(err)
-      case Right(_) => Right(None)
-    }
+    for {
+      pipe <- pipeFactory.getWritePipe(config, connectionCreator)
+      _ <- pipe.doPreWriteSteps()
+    } yield None
   }
 
   /**

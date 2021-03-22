@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.v2
 
+import java.sql.DriverManager
 import java.util
 
 import cats.data.Validated.{Invalid, Valid}
@@ -28,6 +29,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
 import collection.JavaConverters._
+import scala.util.Try
 
 /**
  * Represents a Vertica table to Spark.
@@ -54,7 +56,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
    */
   override def schema(): StructType = {
     // Check if there's a valid read config with schema for the table, if not return empty schema
-    (new DSReadConfigSetup).validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
+    new DSReadConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)}).validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
       case Invalid(_) => new StructType()
       case Valid(_) => this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
     }
@@ -80,7 +82,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
     this.scanBuilder match {
       case Some(builder) => builder
       case None =>
-        val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
+        val config = new DSReadConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)}).validateAndGetConfig(options.asScala.toMap) match {
           case Invalid(errList) =>
             val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
             ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
@@ -101,7 +103,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
    */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
+    val config = new DSWriteConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)}, schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
       case Invalid(errList) =>
         val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
         ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))

@@ -13,12 +13,18 @@
 
 package com.vertica.spark.datasource.core
 
+import java.sql.{Connection, DriverManager}
+import java.util
+
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
+
+import scala.util.Try
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
@@ -26,44 +32,49 @@ import com.vertica.spark.util.table.TableUtils
  * Constructed based on the passed in configuration
  */
 trait VerticaPipeFactoryInterface {
-  def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
+  def getReadPipe(config: ReadConfig, connectionCreator: (String, util.Properties) => Try[Connection]): ConnectorResult[VerticaPipeInterface with VerticaPipeReadInterface]
 
-  def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
+  def getWritePipe(config: WriteConfig, connectionCreator: (String, util.Properties) => Try[Connection]): ConnectorResult[VerticaPipeInterface with VerticaPipeWriteInterface]
 }
 
 /**
  * Implementation of the vertica pipe factory
  */
 object VerticaPipeFactory extends VerticaPipeFactoryInterface{
-  override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
+  override def getReadPipe(config: ReadConfig, connectionCreator: (String, util.Properties) => Try[Connection]): ConnectorResult[VerticaPipeInterface with VerticaPipeReadInterface] = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
-        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
-          case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
-            Some(cfg.getRequiredSchema)
+        val hadoopFileStoreLayer = new HadoopFileStoreLayer (cfg.logProvider, cfg.metadata match {
+          case Some (metadata) => if (cfg.getRequiredSchema.nonEmpty) {
+            Some (cfg.getRequiredSchema)
           } else {
-            Some(metadata.schema)
+            Some (metadata.schema)
           }
           case _ => None
         })
-        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
-          new VerticaJdbcLayer(cfg.jdbcConfig),
-          new SchemaTools(cfg.logProvider),
-          new CleanupUtils(cfg.logProvider)
-        )
+        for {
+          connection <- VerticaJdbcLayer.makeConnection(cfg.jdbcConfig, connectionCreator)
+          readPipe = new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
+            new VerticaJdbcLayer(connection, cfg.jdbcConfig),
+            new SchemaTools(cfg.logProvider),
+            new CleanupUtils(cfg.logProvider))
+        } yield readPipe
     }
   }
-  override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
+
+  override def getWritePipe(config: WriteConfig, connectionCreator: (String, util.Properties) => Try[Connection]): ConnectorResult[VerticaPipeInterface with VerticaPipeWriteInterface] = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         val schemaTools = new SchemaTools(logProvider = cfg.logProvider)
-        val jdbcLayer = new VerticaJdbcLayer(cfg.jdbcConfig)
-        new VerticaDistributedFilesystemWritePipe(cfg,
-          new HadoopFileStoreLayer(cfg.logProvider, Some(cfg.schema)),
-          jdbcLayer,
-          schemaTools,
-          new TableUtils(config.logProvider, schemaTools, jdbcLayer)
-        )
+        for {
+          connection <- VerticaJdbcLayer.makeConnection(cfg.jdbcConfig, connectionCreator)
+          jdbcLayer = new VerticaJdbcLayer(connection, cfg.jdbcConfig)
+          writePipe = new VerticaDistributedFilesystemWritePipe(cfg,
+              new HadoopFileStoreLayer(cfg.logProvider, Some(cfg.schema)),
+              jdbcLayer,
+              schemaTools,
+              new TableUtils(config.logProvider, schemaTools, jdbcLayer))
+        } yield writePipe
     }
   }
 }

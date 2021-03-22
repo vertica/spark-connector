@@ -13,12 +13,17 @@
 
 package com.vertica.spark.datasource.v2
 
+import java.sql.{Connection, DriverManager}
+import java.util
+
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.WriteConfig
-import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
+import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter, VerticaPipeFactory}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
+
+import scala.util.Try
 
 object WriteSucceeded extends WriterCommitMessage
 object WriteFailed extends WriterCommitMessage
@@ -56,7 +61,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
-  new DSWriteConfigSetup(None).performInitialSetup(config) match {
+  new DSWriteConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)}, None).performInitialSetup(config) match {
     case Left(err) => ErrorHandling.logAndThrowError(logger, err)
     case Right(_) => ()
   }
@@ -76,8 +81,12 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    val writer = new DSWriter(config, "")
-    writer.commitRows() match {
+    val result = for {
+      pipe <- VerticaPipeFactory.getWritePipe(config, (jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)})
+      writer <- DSWriter.makeDSWriter(pipe, config, "")
+      _ <- writer.commitRows()
+    } yield ()
+    result match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
     }
@@ -100,6 +109,7 @@ class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
   * This class is seriazlized and sent to each worker node. On the worker, createWriter will be called with a given unique id for the partition being written.
   */
 class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
+  private val logger: Logger = config.getLogger(classOf[VerticaWriterFactory])
 
 /**
   * Called from the worker node to get the writer for that node
@@ -108,23 +118,24 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   * @param taskId A unique identifier for the specific task, which there may be multiple of for a partition due to retries or speculative execution
   * @return [[VerticaBatchWriter]]
   */
-  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = new VerticaBatchWriter(config, partitionId, taskId)
+  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
+    val result = for {
+      pipe <- VerticaPipeFactory.getWritePipe(config, (jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)})
+      writer <- DSWriter.makeDSWriter(pipe, config, partitionId + "-" + taskId)
+    } yield VerticaBatchWriter(writer, config, partitionId, taskId)
+
+    result match {
+      case Right(batchWriter) => batchWriter
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+    }
+  }
 }
 
 /**
   * Writer class that passes rows to be written to the underlying datasource
   */
-class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) extends DataWriter[InternalRow] {
+case class VerticaBatchWriter(writer: DSWriter, config: WriteConfig, partitionId: Int, taskId: Long) extends DataWriter[InternalRow] {
   private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
-
-  // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
-  val uniqueId : String = partitionId + "-" + taskId
-
-  val writer = new DSWriter(config, uniqueId)
-  writer.openWrite() match {
-    case Right(_) => ()
-    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
-  }
 
   /**
   * Writes the row to datasource. Not permanent until a commit from the driver happens

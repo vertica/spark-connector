@@ -13,6 +13,9 @@
 
 package com.vertica.spark.datasource.core
 
+import java.sql.Connection
+import java.util.Properties
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
@@ -22,6 +25,8 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
+
+import scala.util.{Success, Try}
 
 class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
@@ -34,6 +39,8 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
   override def afterAll(): Unit = {
   }
+
+  private val mockConnectionCreator: (String, Properties) => Try[Connection] = (jdbcURI, prop) => Success(mock[Connection])
 
   val filename = "test.parquet"
   val partition: VerticaDistributedFilesystemPartition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
@@ -53,15 +60,14 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, *).returning(Right(mockPipe))
 
-
-    val reader = new DSReader(config, partition, pipeFactory)
-
-    // Open
-    reader.openRead() match {
-      case Left(_) => fail
-      case Right(()) => ()
+    val reader = (for {
+      pipe <- pipeFactory.getReadPipe(config, mockConnectionCreator)
+      reader <- DSReader.makeDSReader(pipe, config, partition)
+    } yield reader) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(reader) => reader
     }
 
     // 1st row
@@ -116,15 +122,14 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, *).returning(Right(mockPipe))
 
-
-    val reader = new DSReader(config, partition, pipeFactory)
-
-    // Open
-    reader.openRead() match {
-      case Left(_) => fail
-      case Right(()) => ()
+    val reader = (for {
+      pipe <- pipeFactory.getReadPipe(config, mockConnectionCreator)
+      reader <- DSReader.makeDSReader(pipe, config, partition)
+    } yield reader) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(reader) => reader
     }
 
     // 1st row
@@ -171,14 +176,14 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     val mockPipe = mock[DummyReadPipe]
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, *).returning(Right(mockPipe))
 
-    val reader = new DSReader(config, partition, pipeFactory)
-
-    // Open
-    reader.openRead() match {
+    (for {
+      pipe <- pipeFactory.getReadPipe(config, mockConnectionCreator)
+      reader <- DSReader.makeDSReader(pipe, config, partition)
+    } yield reader) match {
       case Left(err) => assert(err.getError == InvalidPartition())
-      case Right(()) => fail
+      case Right(_) => fail
     }
   }
 
@@ -186,15 +191,16 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val mockPipe = mock[DummyReadPipe]
 
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
-
-    val reader = new DSReader(config, partition, pipeFactory)
+    (pipeFactory.getReadPipe _).expects(*, *).returning(Right(mockPipe))
     (mockPipe.startPartitionRead _).expects(partition).returning(Left(InitialSetupPartitioningError()))
 
-    // Open
-    reader.openRead() match {
+    (for {
+      pipe <- pipeFactory.getReadPipe(config, mockConnectionCreator)
+      reader <- DSReader.makeDSReader(pipe, config, partition)
+    } yield reader) match {
       case Left(err) => assert(err.getError == InitialSetupPartitioningError())
-      case Right(()) => fail
+      case Right(_) => fail
     }
+
   }
 }

@@ -76,27 +76,23 @@ trait JdbcLayerInterface {
   def rollback(): ConnectorResult[Unit]
 }
 
-/**
-  * Implementation of layer for communicating with Vertica JDBC
-  */
-class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
-  private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
+object VerticaJdbcLayer {
+  def makeConnection(jdbcConfig: JDBCConfig, connectionCreator: (String, util.Properties) => Try[Connection]): ConnectorResult[Connection] = {
+    val logger = jdbcConfig.getLogger(classOf[VerticaJdbcLayer])
 
-  private val prop = new util.Properties()
-  prop.put("user", cfg.username)
-  prop.put("password", cfg.password)
+    val prop = new util.Properties()
+    prop.put("user", jdbcConfig.username)
+    prop.put("password", jdbcConfig.password)
 
-  // Load driver
-  Class.forName("com.vertica.jdbc.Driver")
+    // Load driver
+    Class.forName("com.vertica.jdbc.Driver")
 
-  private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
-  logger.info("Connecting to Vertica with URI: " + jdbcURI)
+    val jdbcURI = "jdbc:vertica://" + jdbcConfig.host + ":" + jdbcConfig.port + "/" + jdbcConfig.db
+    logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
-  private val connection: ConnectorResult[Connection] = {
-    Try { DriverManager.getConnection(jdbcURI, prop) }
-      .toEither.left.map(handleConnectionException)
+    connectionCreator(jdbcURI, prop).toEither.left.map(handleConnectionException)
       .flatMap(conn =>
-        this.useConnection(conn, c => {
+        useConnection(conn, c => {
           c.setAutoCommit(false)
           logger.info("Successfully connected to Vertica.")
           c
@@ -105,24 +101,46 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
     e match {
-      case e: java.sql.SQLException =>
-        ConnectionSqlError(e)
-      case e: Throwable =>
-        ConnectionError(e)
+      case e: java.sql.SQLException => ConnectionSqlError(e)
+      case e: Throwable => ConnectionError(e)
     }
   }
+
+  private def useConnection[T](
+                                connection: Connection,
+                                action: Connection => T,
+                                exceptionCatcher: Throwable => ConnectorError): ConnectorResult[T] = {
+    try {
+      if (connection.isValid(0)) {
+        Right(action(connection))
+      } else {
+        Left(ConnectionDownError())
+      }
+    } catch {
+      case e: Throwable => Left(exceptionCatcher(e))
+    }
+  }
+}
+
+/**
+  * Implementation of layer for communicating with Vertica JDBC
+  */
+class VerticaJdbcLayer(connection: Connection, cfg: JDBCConfig) extends JdbcLayerInterface {
+  private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
 
   /**
     * Gets a statement object or connection error if something is wrong.
     */
   private def getStatement: ConnectorResult[Statement] = {
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.createStatement(), handleConnectionException)
-      .left.map(_.context("getStatement: Error while trying to create statement.")))
+    VerticaJdbcLayer.useConnection(
+      this.connection, c => c.createStatement(), VerticaJdbcLayer.handleConnectionException)
+      .left.map(_.context("getStatement: Error while trying to create statement."))
   }
 
   private def getPreparedStatement(sql: String): ConnectorResult[PreparedStatement] = {
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.prepareStatement(sql), handleConnectionException)
-      .left.map(_.context("getPreparedStatement: Error while getting prepared statement.")))
+    VerticaJdbcLayer.useConnection(
+      this.connection, c => c.prepareStatement(sql), VerticaJdbcLayer.handleConnectionException)
+      .left.map(_.context("getPreparedStatement: Error while getting prepared statement."))
   }
 
   /**
@@ -215,34 +233,19 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
    */
   def close(): ConnectorResult[Unit] = {
     logger.debug("Closing connection.")
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.close(), handleJDBCException)
-      .left.map(_.context("close: JDBC Error closing the connection.")))
+    VerticaJdbcLayer.useConnection(this.connection, c => c.close(), handleJDBCException)
+      .left.map(_.context("close: JDBC Error closing the connection."))
   }
 
   def commit(): ConnectorResult[Unit] = {
     logger.debug("Commiting.")
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.commit(), handleJDBCException)
-      .left.map(_.context("commit: JDBC Error while commiting.")))
+    VerticaJdbcLayer.useConnection(this.connection, c => c.commit(), handleJDBCException)
+      .left.map(_.context("commit: JDBC Error while commiting."))
   }
 
   def rollback(): ConnectorResult[Unit] = {
     logger.debug("Rolling back.")
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.rollback(), handleJDBCException)
-      .left.map(_.context("rollback: JDBC Error while rolling back.")))
-  }
-
-  private def useConnection[T](
-                                connection: Connection,
-                                action: Connection => T,
-                                exceptionCatcher: Throwable => ConnectorError): ConnectorResult[T] = {
-    try {
-      if (connection.isValid(0)) {
-        Right(action(connection))
-      } else {
-        Left(ConnectionDownError())
-      }
-    } catch {
-      case e: Throwable => Left(exceptionCatcher(e))
-    }
+    VerticaJdbcLayer.useConnection(this.connection, c => c.rollback(), handleJDBCException)
+      .left.map(_.context("rollback: JDBC Error while rolling back."))
   }
 }

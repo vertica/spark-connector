@@ -13,6 +13,7 @@
 
 package com.vertica.spark.util.error
 
+import com.typesafe.scalalogging.Logger
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -151,5 +152,13 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(errorContext.contains("deferHandling"))
       case Right(_) => fail
     }
+  }
+
+  it should "add a user friendly cause to an error message" in {
+    assert(ErrorHandling.addUserFriendlyCause("Some error message", new Exception()) == "Some error message\nCaused by: null")
+  }
+
+  it should "append error messages" in {
+    assert(ErrorHandling.appendErrors("Some error message", "Some other error") == "Some error message\nSome other error")
   }
 }

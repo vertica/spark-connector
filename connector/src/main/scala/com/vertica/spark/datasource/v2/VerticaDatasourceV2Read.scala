@@ -13,14 +13,18 @@
 
 package com.vertica.spark.datasource.v2
 
+import java.sql.DriverManager
+
 import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.ReadConfig
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils}
+import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSReader, PushdownUtils, VerticaPipeFactory}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.sources.Filter
+
+import scala.util.Try
 
 trait PushdownFilter {
   def getFilterString: String
@@ -93,7 +97,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    ((new DSReadConfigSetup).getTableSchema(config), config.getRequiredSchema) match {
+    (new DSReadConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)}).getTableSchema(config), config.getRequiredSchema) match {
       case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
@@ -109,7 +113,7 @@ class VerticaScan(config: ReadConfig) extends Scan with Batch {
   * Returns an array of partitions. These contain the information necesary for each reader to read it's portion of the data
   */
   override def planInputPartitions(): Array[InputPartition] = {
-    new DSReadConfigSetup()
+    new DSReadConfigSetup((jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)})
       .performInitialSetup(config) match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
@@ -139,26 +143,27 @@ class VerticaReaderFactory(config: ReadConfig) extends PartitionReaderFactory {
   *
   * @return [[VerticaBatchReader]]
   */
-  override def createReader(partition: InputPartition): PartitionReader[InternalRow] =
-  {
-    new VerticaBatchReader(config, partition)
-  }
+  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
+    val result = for {
+      pipe <- VerticaPipeFactory.getReadPipe(config, (jdbcURI, prop) => Try { DriverManager.getConnection(jdbcURI, prop)})
+      reader <- DSReader.makeDSReader(pipe, config, partition)
+      batchReader = new VerticaBatchReader(reader, config)
+    } yield batchReader
 
+    result match {
+      case Right(batchReader) => batchReader
+      case Left(err) =>
+        val logger: Logger = config.getLogger(classOf[VerticaReaderFactory])
+        ErrorHandling.logAndThrowError(logger, err)
+    }
+  }
 }
 
 /**
   * Reader class that reads rows from the underlying datasource
   */
-class VerticaBatchReader(config: ReadConfig, partition: InputPartition) extends PartitionReader[InternalRow] {
+class VerticaBatchReader(reader: DSReader, config: ReadConfig) extends PartitionReader[InternalRow] {
   private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
-
-  val reader = new DSReader(config, partition)
-
-  // Open the read
-  reader.openRead() match {
-    case Right(_) => ()
-    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
-  }
 
   var row: Option[InternalRow] = None
 

@@ -13,6 +13,9 @@
 
 package com.vertica.spark.datasource.core
 
+import java.sql.Connection
+import java.util.Properties
+
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
 import com.vertica.spark.util.error.MissingSchemaError
@@ -23,6 +26,8 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
+import scala.util.{Success, Try}
+
 trait DummyWritePipe extends VerticaPipeInterface with VerticaPipeWriteInterface
 
 class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -32,6 +37,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val config: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = new StructType(), targetTableSql = None, strlen = 1024, copyColumnList = None, sessionId = "id", failedRowPercentTolerance =  0.0f)
 
   val uniqueId = "unique-id"
+
+  private val mockConnectionCreator: (String, Properties) => Try[Connection] = (jdbcURI, prop) => Success(mock[Connection])
 
   private def checkResult(result: ConnectorResult[Unit]): Unit= {
     result match {
@@ -52,11 +59,15 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, *).returning(Right(pipe))
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
-
-    checkResult(writer.openWrite())
+    val writer = (for {
+      pipe <- pipeFactory.getWritePipe(config, mockConnectionCreator)
+      writer <- DSWriter.makeDSWriter(pipe, config, "unique-id")
+    } yield writer) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(writer) => writer
+    }
 
     checkResult(writer.writeRow(dataBlock.data(0)))
     checkResult(writer.writeRow(dataBlock.data(1)))
@@ -77,11 +88,15 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, *).returning(Right(pipe))
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
-
-    checkResult(writer.openWrite())
+    val writer = (for {
+      pipe <- pipeFactory.getWritePipe(config, mockConnectionCreator)
+      writer <- DSWriter.makeDSWriter(pipe, config, "unique-id")
+    } yield writer) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(writer) => writer
+    }
 
     checkResult(writer.writeRow(dataBlock.data(0)))
     checkResult(writer.writeRow(dataBlock.data(1)))
@@ -103,11 +118,15 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock2).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, *).returning(Right(pipe))
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
-
-    checkResult(writer.openWrite())
+    val writer = (for {
+      pipe <- pipeFactory.getWritePipe(config, mockConnectionCreator)
+      writer <- DSWriter.makeDSWriter(pipe, config, "unique-id")
+    } yield writer) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(writer) => writer
+    }
 
     checkResult(writer.writeRow(dataBlock1.data(0)))
     checkResult(writer.writeRow(dataBlock1.data(1)))
@@ -121,23 +140,32 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Left(MissingSchemaError()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, *).returning(Right(pipe))
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
-
-    writer.openWrite() match {
-      case Right(_) => fail
+    val writer = (for {
+      pipe <- pipeFactory.getWritePipe(config, mockConnectionCreator)
+      writer <- DSWriter.makeDSWriter(pipe, config, "unique-id")
+    } yield writer) match {
       case Left(err) => assert(err.getError == MissingSchemaError())
+      case Right(_) => fail
     }
   }
 
   it should "call pipe commit on commit" in {
     val pipe = mock[DummyWritePipe]
+    (pipe.getDataBlockSize _).expects().returning(Right(1))
+    (pipe.startPartitionWrite _).expects(*).returning(Right(()))
     (pipe.commit _).expects().returning(Right())
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, *).returning(Right(pipe))
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = (for {
+      pipe <- pipeFactory.getWritePipe(config, mockConnectionCreator)
+      writer <- DSWriter.makeDSWriter(pipe, config, "unique-id")
+    } yield writer) match {
+      case Left(err) => fail(err.getFullContext)
+      case Right(writer) => writer
+    }
     checkResult(writer.commitRows())
   }
 }

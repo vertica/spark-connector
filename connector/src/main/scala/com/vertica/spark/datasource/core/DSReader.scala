@@ -39,17 +39,22 @@ trait DSReaderInterface {
   def closeRead(): ConnectorResult[Unit]
 }
 
+object DSReader {
+  def makeDSReader(pipe: VerticaPipeInterface with VerticaPipeReadInterface, config: ReadConfig, partition: InputPartition): ConnectorResult[DSReader] = {
+    val reader = new DSReader(pipe, config, partition)
+    for {
+      _ <- reader.openRead()
+    } yield reader
+  }
+}
 
 /**
  * Reader class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
  *
  * @param config Configuration data for the operation.
  * @param partition Information representing what this reader needs to read. Will be a portion of the overall read operation.
- * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for read.
  */
-class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
-  private val pipe = pipeFactory.getReadPipe(config)
-
+class DSReader private (pipe: VerticaPipeInterface with VerticaPipeReadInterface, config: ReadConfig, partition: InputPartition) extends DSReaderInterface {
   private var block: Option[DataBlock] = None
   private var i: Int = 0
 

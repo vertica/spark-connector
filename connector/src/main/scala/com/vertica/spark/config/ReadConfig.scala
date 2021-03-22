@@ -17,9 +17,8 @@ import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.v2.PushdownFilter
-import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
+import com.vertica.spark.util.error.InvalidFilePermissions
 import org.apache.spark.sql.types.StructType
-import scala.util.{Failure, Success, Try}
 
 /**
  * Interface for configuration of a read (from Vertica) operation.

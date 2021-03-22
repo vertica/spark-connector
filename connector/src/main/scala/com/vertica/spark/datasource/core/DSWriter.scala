@@ -44,16 +44,22 @@ trait DSWriterInterface {
   def commitRows(): ConnectorResult[Unit]
 }
 
+object DSWriter {
+  def makeDSWriter(pipe: VerticaPipeInterface with VerticaPipeWriteInterface, config: WriteConfig, uniqueId: String): ConnectorResult[DSWriter] = {
+    val writer = new DSWriter(pipe, config, uniqueId)
+    for {
+      _ <- writer.openWrite()
+    } yield writer
+  }
+}
+
 /**
  * Writer class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
  *
  * @param config Configuration data definining the write operation.
  * @param uniqueId Unique identifier for this specific writer. The writer for each partition should have a different ID.
- * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for write.
  */
-class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSWriterInterface {
-
-  private val pipe = pipeFactory.getWritePipe(config)
+class DSWriter private (pipe: VerticaPipeInterface with VerticaPipeWriteInterface, config: WriteConfig, uniqueId: String) extends DSWriterInterface {
   private var blockSize = 0L
 
   private var data = List[InternalRow]()
