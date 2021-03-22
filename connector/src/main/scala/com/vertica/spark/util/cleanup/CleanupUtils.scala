@@ -111,6 +111,8 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
+      _ = java.lang.Thread.sleep(2000L)
+
       // Check if all portions are written
       filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
           fileStoreLayer.fileExists(recordFileName(filename, idx))
