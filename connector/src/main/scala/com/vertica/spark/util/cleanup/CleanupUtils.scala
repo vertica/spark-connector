@@ -59,6 +59,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
     // Cleanup parent dir (unique id)
+    /*
     val p = new Path(s"$path")
     val parent = p.getParent
     if(parent != null) {
@@ -68,6 +69,8 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
     else {
       Left(CleanupError(path))
     }
+     */
+    Right(())
   }
 
   private def cleanupDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {

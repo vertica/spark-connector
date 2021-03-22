@@ -262,8 +262,8 @@ class VerticaDistributedFilesystemReadPipe(
     // If there's an error, cleanup
     ret match {
       case Left(_) =>
-        logger.info("DISABLED: Cleaning up all files in path: " + hdfsPath)
-        //cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        logger.info("Cleaning up all files in path: " + hdfsPath)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
       case _ => ()
     }
     jdbcLayer.close()
