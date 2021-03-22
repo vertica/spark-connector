@@ -13,14 +13,14 @@
 
 package com.vertica.spark.util.table
 
-import java.sql.ResultSet
+import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException}
 
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ConnectionError, JobStatusCreateError, TableCheckError}
+import com.vertica.spark.util.error.{ConnectionError, JobStatusCreateError, SyntaxError, TableCheckError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
@@ -43,6 +43,24 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: Int)).expects(1).returning(if(exists) 1 else 0)
+    (resultSet.close _).expects().returning()
+
+    resultSet
+  }
+
+  private def getBooleanResultSet(exists: Boolean) : ResultSet = {
+    val resultSet = mock[ResultSet]
+    (resultSet.next _).expects().returning(true)
+    (resultSet.getBoolean(_: String)).expects(*).returning(exists)
+    (resultSet.close _).expects().returning()
+
+    resultSet
+  }
+
+  private def getBooleanThrowResultSet() : ResultSet = {
+    val resultSet = mock[ResultSet]
+    (resultSet.next _).expects().returning(true)
+    (resultSet.getBoolean(_: String)).expects(*).throwing(new java.sql.SQLSyntaxErrorException("SQL err"))
     (resultSet.close _).expects().returning()
 
     resultSet
@@ -143,6 +161,45 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     utils.viewExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
       case Right(v) => assert(!v)
+    }
+  }
+
+  it should "Return true if temp table exists" in {
+    val tablename = "dummy"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(
+      "select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?",
+      Seq(JdbcLayerStringParam("dummy"), JdbcLayerStringParam("public"))
+    ).returning(Right(getBooleanResultSet(exists = true)))
+
+    val schemaTools = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+
+    utils.tempTableExists(TableName(tablename, None)) match {
+      case Left(errors) => fail(errors.getFullContext)
+      case Right(v) => assert(v)
+    }
+  }
+
+  it should "Return error if resultset throws" in {
+    val tablename = "dummy"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(
+      "select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?",
+      Seq(JdbcLayerStringParam("dummy"), JdbcLayerStringParam("public"))
+    ).returning(Right(getBooleanThrowResultSet()))
+    (jdbcLayerInterface.handleJDBCException _).expects(*).returning(SyntaxError(new SQLSyntaxErrorException("SQL Error")))
+
+    val schemaTools = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+
+    utils.tempTableExists(TableName(tablename, None)) match {
+      case Left(errors) => errors.getError.isInstanceOf[SyntaxError]
+      case Right(_) => fail
     }
   }
 

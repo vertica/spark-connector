@@ -15,12 +15,14 @@ package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.types.StructType
+
+import scala.util.Try
 
 /**
  * Pipe for writing data to Vertica using an intermediary filesystem.
@@ -156,13 +158,17 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     for {
       rs <- jdbcLayer.query(rejectsQuery)
-      rejectedCount = if (rs.next) {
+      res = Try {
+        if (rs.next) {
           rs.getInt("count")
         }
         else {
           logger.error("Could not retrieve rejected row count.")
           0
         }
+      }
+      _ = rs.close()
+      rejectedCount <- JdbcUtils.tryJdbcToResult(jdbcLayer, res)
 
       failedRowsPercent = if (rowsCopied > 0) {
         rejectedCount.toDouble / (rowsCopied.toDouble + rejectedCount.toDouble)

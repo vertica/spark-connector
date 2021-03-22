@@ -14,12 +14,13 @@
 package com.vertica.spark.util.table
 
 import com.vertica.spark.config.{EscapeUtils, LogProvider, TableName}
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.datasource.jdbc.JdbcLayerStringParam
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerStringParam, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{ConnectorError, CreateTableError, DropTableError, JdbcError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * Interface for common functionality dealing with Vertica tables.
@@ -86,12 +87,13 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
 
   override def tempTableExists(table: TableName): ConnectorResult[Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
-    val query = " select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?"
+    val query = "select is_temp_table as t from v_catalog.tables where table_name=? and table_schema=?"
     val params = Seq(JdbcLayerStringParam(table.name), JdbcLayerStringParam(dbschema))
     val ret = for {
       rs <- jdbcLayer.query(query, params)
-      isTemp = if (rs.next) {rs.getBoolean("t") } else false
+      res = Try{ if (rs.next) {rs.getBoolean("t") } else false }
       _ = rs.close()
+      isTemp <- JdbcUtils.tryJdbcToResult(jdbcLayer, res)
     } yield isTemp
 
     ret.left.map(err => TableCheckError(Some(err)).context("Cannot append to a temporary table"))

@@ -74,6 +74,16 @@ trait JdbcLayerInterface {
    * Rollback transaction
    */
   def rollback(): ConnectorResult[Unit]
+
+}
+
+object JdbcUtils {
+  def tryJdbcToResult[T](jdbcLayer: JdbcLayerInterface, ttry: Try[T]): ConnectorResult[T] = {
+    ttry match {
+      case Success(value) => Right(value)
+      case Failure(e) => Left(jdbcLayer.handleJDBCException(e))
+    }
+  }
 }
 
 /**
