@@ -94,8 +94,10 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
     for {
       // Delete all portions
-      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-          fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
+          logger.info("")
+          fileStoreLayer.removeFile(recordFileName(filename, idx)).toList.sequence
+      }
 
       // Delete the original file
       _ <- fileStoreLayer.removeFile(filename)
@@ -114,7 +116,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
-      _ = java.lang.Thread.sleep(2000L)
+      _ = java.lang.Thread.sleep(20000L)
 
       // Check if all portions are written
       filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
