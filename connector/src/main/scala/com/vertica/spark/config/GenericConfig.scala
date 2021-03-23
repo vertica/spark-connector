@@ -29,7 +29,7 @@ final case class LogProvider(logLevel: Level) {
   def getLogger(c: Class[_]): Logger = {
     val logger = Logger(c)
     Try{logger.underlying.asInstanceOf[classic.Logger].setLevel(logLevel) } match {
-      case Failure(_) => logger.error("Could not set log level based on configuration.")
+      case Failure(cause) => logger.error("Could not set log level based on configuration.", cause)
       case Success(_) => ()
     }
 
