@@ -94,10 +94,8 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
     for {
       // Delete all portions
-      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
-          logger.info("")
-          fileStoreLayer.removeFile(recordFileName(filename, idx)).toList.sequence
-      }
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
+          fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
 
       // Delete the original file
       _ <- fileStoreLayer.removeFile(filename)
