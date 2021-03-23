@@ -138,7 +138,7 @@ hadoop fs -rm user/release/s2v/74727063_613a_49d0_98e4_e806f5301ecf
 
 ### Old timestamps
 
-If using very old dates and timestamps, you may run into an error like the following:
+If using very old dates and timestamps, you may run into an error like the following related to the change between Spark 2.x and 3.x calendar (see https://issues.apache.org/jira/browse/SPARK-31404):
 
 ```
 org.apache.spark.SparkUpgradeException: You may get a different result due to the upgrading of Spark 3.0: writing dates before 1582-10-15 or timestamps before 1900-01-01T00:00:00Z into Parquet files can be dangerous, as the files may be read by Spark 2.x or legacy versions of Hive later, which uses a legacy hybrid calendar that is different from Spark 3.0+'s Proleptic Gregorian calendar. See more details in SPARK-31404. You can set spark.sql.legacy.parquet.datetimeRebaseModeInWrite to 'LEGACY' to rebase the datetime values w.r.t. the calendar difference during writing, to get maximum interoperability. Or set spark.sql.legacy.parquet.datetimeRebaseModeInWrite to 'CORRECTED' to write the datetime values as it is, if you are 100% sure that the written files will only be read by Spark 3.0+ or other systems that use Proleptic Gregorian calendar.
