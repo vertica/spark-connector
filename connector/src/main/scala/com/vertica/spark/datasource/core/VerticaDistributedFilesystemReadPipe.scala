@@ -127,7 +127,8 @@ class VerticaDistributedFilesystemReadPipe(
       while(j < size){
         if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+          //val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+          val frange = ParquetFileRange(m.filename, low, j, None)
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
           partitions = partitions :+ partition
@@ -137,7 +138,8 @@ class VerticaDistributedFilesystemReadPipe(
         }
         else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+          //val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+          val frange = ParquetFileRange(m.filename, low, j, None)
           curFileRanges = curFileRanges :+ frange
           i += 1
         }
