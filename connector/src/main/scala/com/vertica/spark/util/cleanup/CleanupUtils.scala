@@ -114,7 +114,11 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
+      _ = logger.info("Sleeping")
+
       _ = java.lang.Thread.sleep(20000L)
+
+      _ = logger.info("Checking file existance")
 
       // Check if all portions are written
       filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
@@ -122,7 +126,10 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
         ).toList.sequence
       allExist <- Right(filesExist.forall(identity))
 
-      _ <- if(allExist) performCleanup(fileStoreLayer, fileCleanupInfo) else Right(())
+      _ <- if(allExist) {
+        logger.info("Performing cleanup")
+        performCleanup(fileStoreLayer, fileCleanupInfo)
+      } else Right(())
 
     } yield ()
   }
