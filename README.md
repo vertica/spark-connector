@@ -122,3 +122,11 @@ Below is a detailed list of connector options:
 ## Limitations
 
 The connector supports basic Spark types. Complex types are not currently supported.
+
+Limitation of the alpha: when reading from vertica, parquet files used in intermediary are not currently cleaned up. This is a temporarily disabled feature while an issue with cleanup is investigated.
+
+The hadoop command line tool can be used to clean up files.
+
+```shell
+hadoop fs -rm hdfs://eng-g9-001.verticacorp.com:8020/user/release/s2v/74727063_613a_49d0_98e4_e806f5301ecf
+```
