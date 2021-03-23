@@ -116,7 +116,7 @@ class VerticaDistributedFilesystemReadPipe(
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): PartitionInfo = {
 
     /**
-     * If true, cleanup information will be added to partitions, so nodes will perform a coordinated cleanup of
+     * TODO If true, cleanup information will be added to partitions, so nodes will perform a coordinated cleanup of
      * exported parquet files.
      *
      * Temporarily set to false as an issue with the file cleanup system is investigated
