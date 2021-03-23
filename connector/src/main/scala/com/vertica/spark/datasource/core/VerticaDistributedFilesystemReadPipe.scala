@@ -120,27 +120,31 @@ class VerticaDistributedFilesystemReadPipe(
     var curFileRanges = List[ParquetFileRange]()
     val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
+    logger.info("Creating partitions.")
     for(m <- fileMetadata) {
       val size = m.rowGroupCount
+      logger.info("Splitting file " + m.filename + " with row group count " + size)
       var j = 0
       var low = 0
       while(j < size){
         if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          //val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
-          val frange = ParquetFileRange(m.filename, low, j, None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
           partitions = partitions :+ partition
           curFileRanges = List[ParquetFileRange]()
+          logger.info("Reached partition with file " + m.filename + " , range low: " +
+            low + " , range high: " + j + " , idx: " + rangeIdx)
           i = 0
           low = j + 1
         }
         else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          //val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
-          val frange = ParquetFileRange(m.filename, low, j, None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
           curFileRanges = curFileRanges :+ frange
+          logger.info("Reached end of file " + m.filename + " , range low: " +
+            low + " , range high: " + j + " , idx: " + rangeIdx)
           i += 1
         }
         else {
