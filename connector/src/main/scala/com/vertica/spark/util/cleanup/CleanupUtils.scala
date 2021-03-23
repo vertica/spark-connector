@@ -119,13 +119,17 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       _ = java.lang.Thread.sleep(20000L)
 
       _ = logger.info("Checking file existance")
+      _ = logger.info("File idx: " + fileCleanupInfo.fileIdx)
+      _ = logger.info("File range count: " + fileCleanupInfo.fileRangeCount)
 
       // Check if all portions are written
       filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
           fileStoreLayer.fileExists(recordFileName(filename, idx))
         ).toList.sequence
-      allExist <- Right(filesExist.forall(identity))
+      _ = logger.info("filesExist: " + filesExist.toString())
+      allExist <- Right(filesExist.forall(x => x))
 
+      _ = logger.info("All exist: " )
       _ <- if(allExist) {
         logger.info("Performing cleanup")
         performCleanup(fileStoreLayer, fileCleanupInfo)
