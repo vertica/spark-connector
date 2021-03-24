@@ -123,7 +123,7 @@ class VerticaDistributedFilesystemReadPipe(
     logger.info("Creating partitions.")
     for(m <- fileMetadata) {
       val size = m.rowGroupCount
-      logger.info("Splitting file " + m.filename + " with row group count " + size)
+      logger.debug("Splitting file " + m.filename + " with row group count " + size)
       var j = 0
       var low = 0
       while(j < size){
@@ -134,7 +134,7 @@ class VerticaDistributedFilesystemReadPipe(
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
           partitions = partitions :+ partition
           curFileRanges = List[ParquetFileRange]()
-          logger.info("Reached partition with file " + m.filename + " , range low: " +
+          logger.debug("Reached partition with file " + m.filename + " , range low: " +
             low + " , range high: " + j + " , idx: " + rangeIdx)
           i = 0
           low = j + 1
@@ -143,7 +143,7 @@ class VerticaDistributedFilesystemReadPipe(
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
           val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
           curFileRanges = curFileRanges :+ frange
-          logger.info("Reached end of file " + m.filename + " , range low: " +
+          logger.debug("Reached end of file " + m.filename + " , range low: " +
             low + " , range high: " + j + " , idx: " + rangeIdx)
           i += 1
         }
