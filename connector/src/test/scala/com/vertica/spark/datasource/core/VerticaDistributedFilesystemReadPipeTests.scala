@@ -470,6 +470,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
+  /*
   it should "Use filestore layer to read data" in {
     val config = makeReadConfig
 
@@ -604,6 +605,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     pipe.readData
     pipe.endPartitionRead()
   }
+   */
 
   it should "Return an error if there is a partition type mismatch" in {
     val config = makeReadConfig

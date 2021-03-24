@@ -342,13 +342,18 @@ class VerticaDistributedFilesystemReadPipe(
       case None => return Left(UninitializedReadError())
       case Some(p) => p
     }
+
     val ret = fileStoreLayer.readDataFromParquetFile(dataSize) match {
-      case Left(err) => err.getError match {
-        case DoneReading() =>
+      case Left(err) => Left(err)
+      case Right(data) =>
+        if(data.data.nonEmpty) {
+          Right(data)
+        }
+        else {
           logger.info("Hit done reading for file segment.")
 
           // Cleanup old file if required
-          getCleanupInfo(part,this.fileIdx) match {
+          getCleanupInfo(part, this.fileIdx) match {
             case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
               case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
               case Right(_) => ()
@@ -358,16 +363,14 @@ class VerticaDistributedFilesystemReadPipe(
 
           // Next file
           this.fileIdx += 1
-          if(this.fileIdx >= part.fileRanges.size) return Left(DoneReading())
+          if (this.fileIdx >= part.fileRanges.size) return Right(data)
 
           for {
             _ <- fileStoreLayer.closeReadParquetFile()
             _ <- fileStoreLayer.openReadParquetFile(part.fileRanges(this.fileIdx))
             data <- fileStoreLayer.readDataFromParquetFile(dataSize)
           } yield data
-        case _ => Left(err)
-      }
-      case Right(data) => Right(data)
+        }
     }
 
     // If there was an underlying error, call cleanup
