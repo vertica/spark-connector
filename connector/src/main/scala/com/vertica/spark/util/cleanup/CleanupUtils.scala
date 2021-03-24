@@ -116,10 +116,6 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
-      _ = logger.info("File: " + filename + ", Sleeping")
-
-      _ = java.lang.Thread.sleep(20000L)
-
       _ = logger.info("File: " + filename + "Checking file existance")
       _ = logger.info("File: " + filename + "File idx: " + fileCleanupInfo.fileIdx)
       _ = logger.info("File: " + filename + "File range count: " + fileCleanupInfo.fileRangeCount)
