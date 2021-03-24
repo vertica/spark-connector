@@ -238,17 +238,18 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Retrieve all parquet files created by Vertica
-      fileList <- fileStoreLayer.getFileList(hdfsPath)
-      requestedPartitionCount <- if (fileList.isEmpty) {
+      fullFileList <- fileStoreLayer.getFileList(hdfsPath)
+      parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
+      requestedPartitionCount <- if (parquetFileList.isEmpty) {
         Left(FileListEmptyPartitioningError())
       } else {
         config.partitionCount match {
           case Some(count) => Right(count)
-          case None => Right(fileList.size) // Default to 1 partition / file
+          case None => Right(parquetFileList.size) // Default to 1 partition / file
         }
       }
 
-      fileMetadata <- fileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
+      fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
       partitionCount = if (totalRowGroups < requestedPartitionCount) {
