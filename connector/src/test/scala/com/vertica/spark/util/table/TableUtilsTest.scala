@@ -111,7 +111,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.query _).expects(
       *,
       *
-    ).returning(Left(ConnectionError()))
+    ).returning(Left(ConnectionError(new Exception())))
 
     val schemaTools = mock[SchemaToolsInterface]
 
@@ -306,7 +306,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     (jdbcLayerInterface.query _).expects(
       *,*
     ).returning(Right(getTableResultSet(exists = false)))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Left(ConnectionError()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Left(ConnectionError(new Exception())))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 

@@ -152,4 +152,25 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       case Right(_) => fail
     }
   }
+
+  it should "get the error messages from a SchemaDiscoveryError" in {
+    val error = SchemaDiscoveryError(None)
+    assert(error.getFullContext == "Failed to discover the schema of the table. " +
+      "There may be an issue with connectivity to the database.")
+
+    assert(error.getUserMessage == "Failed to discover the schema of the table. This is likely a bug and should be reported to the developers here:\n" +
+      "https://github.com/vertica/spark-connector/issues")
+  }
+
+  it should "get the error messages from a SchemaDiscoveryError wrapping another error" in {
+    val error = SchemaDiscoveryError(Some(MyError()))
+    assert(error.getFullContext == "Failed to discover the schema of the table. " +
+      "There may be an issue with connectivity to the database.\nMy test error")
+  }
+
+  it should "get the error messages from a SchemaColumnListError" in {
+    val error = SchemaColumnListError(MyError())
+    assert(error.getFullContext == "Failed to create a valid column list for the write operation " +
+      "due to mismatch with the existing table.\nMy test error")
+  }
 }

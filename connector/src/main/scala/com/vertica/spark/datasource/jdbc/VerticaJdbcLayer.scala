@@ -57,7 +57,7 @@ trait JdbcLayerInterface {
   /**
     * Close and cleanup
     */
-  def close(): Unit
+  def close(): ConnectorResult[Unit]
 
 
   /**
@@ -102,53 +102,37 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
-  var connection: Option[Connection] = None
-  try{
-    val conn = DriverManager.getConnection(jdbcURI, prop)
-    if(conn.isValid(0))
-    {
-      conn.setAutoCommit(false)
-      logger.info("Successfully connected to Vertica.")
-      connection = Some(conn)
-    }
+  private val connection: ConnectorResult[Connection] = {
+    Try { DriverManager.getConnection(jdbcURI, prop) }
+      .toEither.left.map(handleConnectionException)
+      .flatMap(conn =>
+        this.useConnection(conn, c => {
+          c.setAutoCommit(false)
+          logger.info("Successfully connected to Vertica.")
+          c
+        }, handleConnectionException).left.map(_.context("Initial connection was not valid.")))
   }
-  catch {
-    case e: java.sql.SQLException => logger.error("SQL Exception when trying to connect to Vertica.", e)
-    case e: Throwable => logger.error("Unexpected Exception when trying to connect to Vertica.", e)
+
+  private def handleConnectionException(e: Throwable): ConnectorError = {
+    e match {
+      case e: java.sql.SQLException =>
+        ConnectionSqlError(e)
+      case e: Throwable =>
+        ConnectionError(e)
+    }
   }
 
   /**
     * Gets a statement object or connection error if something is wrong.
     */
   private def getStatement: ConnectorResult[Statement] = {
-    connection match {
-      case Some(conn) =>
-        if (conn.isValid(0)) {
-          val stmt = conn.createStatement()
-          Right(stmt)
-        } else {
-          Left(ConnectionDownError())
-        }
-      case None =>
-        Left(ConnectionError())
-    }
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.createStatement(), handleConnectionException)
+      .left.map(_.context("getStatement: Error while trying to create statement.")))
   }
 
   private def getPreparedStatement(sql: String): ConnectorResult[PreparedStatement] = {
-    connection match {
-      case Some(conn) =>
-        if(conn.isValid(0))
-        {
-          val stmt = conn.prepareStatement(sql)
-
-          Right(stmt)
-        }
-        else {
-          Left(ConnectionDownError())
-        }
-      case None =>
-        Left(ConnectionError())
-    }
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.prepareStatement(sql), handleConnectionException)
+      .left.map(_.context("getPreparedStatement: Error while getting prepared statement.")))
   }
 
   /**
@@ -239,38 +223,36 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   /**
    * Closes the connection
    */
-  def close(): Unit = {
+  def close(): ConnectorResult[Unit] = {
     logger.debug("Closing connection.")
-    connection match {
-      case Some(conn) =>
-        if(conn.isValid(0)){
-          conn.close()
-        }
-      case None => ()
-    }
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.close(), handleJDBCException)
+      .left.map(_.context("close: JDBC Error closing the connection.")))
   }
 
   def commit(): ConnectorResult[Unit] = {
     logger.debug("Commiting.")
-    this.useConnection(conn => conn.commit())
-      .left.map(err => err.context("Error getting connection while commiting"))
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.commit(), handleJDBCException)
+      .left.map(_.context("commit: JDBC Error while commiting.")))
   }
 
   def rollback(): ConnectorResult[Unit] = {
     logger.debug("Rolling back.")
-    this.useConnection(conn => conn.rollback())
-      .left.map(err => err.context("Error getting connection while rolling back"))
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.rollback(), handleJDBCException)
+      .left.map(_.context("rollback: JDBC Error while rolling back.")))
   }
 
-  private def useConnection(action: Connection => Unit): ConnectorResult[Unit] = {
-    connection match {
-      case Some(conn) =>
-        if (conn.isValid(0)){
-          Try { action(conn) }.toEither.left.map(e => handleJDBCException(e))
-        } else {
-          Left(ConnectionDownError())
-        }
-      case None => Left(ConnectionError())
+  private def useConnection[T](
+                                connection: Connection,
+                                action: Connection => T,
+                                exceptionCatcher: Throwable => ConnectorError): ConnectorResult[T] = {
+    try {
+      if (connection.isValid(0)) {
+        Right(action(connection))
+      } else {
+        Left(ConnectionDownError())
+      }
+    } catch {
+      case e: Throwable => Left(exceptionCatcher(e))
     }
   }
 }
