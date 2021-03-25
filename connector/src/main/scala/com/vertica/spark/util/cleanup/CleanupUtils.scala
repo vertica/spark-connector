@@ -130,7 +130,9 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       _ <- if(allExist) {
         logger.debug("File: " + filename + ", Performing cleanup")
         performCleanup(fileStoreLayer, fileCleanupInfo)
-      } else Right(())
+      } else {
+        Right(())
+      }
 
     } yield ()
   }
