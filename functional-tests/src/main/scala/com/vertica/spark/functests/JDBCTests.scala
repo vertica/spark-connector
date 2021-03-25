@@ -161,7 +161,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
         assert(err.getError match {
-          case SyntaxError(_) => true
+          case _: SyntaxError => true
           case _ => false
         })
       }
@@ -175,7 +175,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
         assert(err.getError match {
-          case ConnectionError() => true
+          case _: ConnectionError => true
           case _ => false
         })
       }
