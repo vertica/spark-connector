@@ -140,9 +140,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
 
-  // This variable is necessary for now until we change the interface's method of signalling when the read is done
-  private var done = false
-
   val hdfsConfig: Configuration = new Configuration()
   schema match {
     case Some(schema) =>
@@ -233,7 +230,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   }
 
   override def openReadParquetFile(file: ParquetFileRange): ConnectorResult[Unit] = {
-    this.done = false
     val filename = file.filename
 
     val readSupport = new ParquetReadSupport(
@@ -278,13 +274,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   }
 
   override def readDataFromParquetFile(blockSize: Int): ConnectorResult[DataBlock] = {
-    val dataBlock = for {
-      _ <- if (this.done) {
-        Left(DoneReading())
-      } else {
-        Right(())
-      }
-
+    for {
       dataBlock <- for {
           reader <- this.reader match {
             case Some(reader) => Right(reader)
@@ -295,15 +285,6 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
         } yield dataBlock
 
     } yield dataBlock
-
-    dataBlock match {
-      case Left(_) => ()
-      case Right(block) => if (block.data.size < blockSize) {
-        this.done = true
-      }
-    }
-
-    dataBlock
   }
 
   override def closeReadParquetFile(): ConnectorResult[Unit] = {

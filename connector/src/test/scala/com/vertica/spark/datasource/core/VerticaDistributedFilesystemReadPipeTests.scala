@@ -70,7 +70,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.fileExists _).expects(expectedAddress).returning(Right(false))
-    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
+    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example.parquet")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
     fileStoreLayer
   }
@@ -351,15 +351,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
         assert(partitions.length == partitionCount)
-        assert(partitions(0).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,0,3,None))
-        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,4,4,None))
-        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname2,0,2,None))
-        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname2,3,4,None))
-        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname3,0,1,None))
-        assert(partitions(3).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname3,2,4,None))
+        assert(partitions(0).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,0,3,Some(0)))
+        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,4,4,Some(1)))
+        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname2,0,2,Some(0)))
+        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname2,3,4,Some(1)))
+        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname3,0,1,Some(0)))
+        assert(partitions(3).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname3,2,4,Some(1)))
     }
   }
-
 
   it should "Construct file range count map and pass include it in partitions" in {
     val partitionCount = 4
@@ -510,6 +509,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val v3: Int = 2
     val data1 = DataBlock(List(InternalRow(v1, v2) ))
     val data2 = DataBlock(List(InternalRow(v3, v2) ))
+    val emptyData = DataBlock(List())
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
@@ -520,11 +520,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -554,8 +554,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     pipe.readData match {
-      case Left(err) => assert(err.getError == DoneReading())
-      case Right(_) => fail
+      case Left(err) => fail(err.getFullContext)
+      case Right(data) =>
+        assert(data.data.isEmpty)
     }
 
     this.failOnError(pipe.endPartitionRead())
@@ -569,6 +570,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val v3: Int = 2
     val data1 = DataBlock(List(InternalRow(v1, v2) ))
     val data2 = DataBlock(List(InternalRow(v3, v2) ))
+    val emptyData = DataBlock(List())
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
@@ -582,11 +584,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(DoneReading()))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     // Should be called to clean up 2 files

@@ -114,42 +114,39 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): PartitionInfo = {
-
-    /**
-     * TODO If true, cleanup information will be added to partitions, so nodes will perform a coordinated cleanup of
-     * exported parquet files.
-     *
-     * Temporarily set to false as an issue with the file cleanup system is investigated
-     */
-    val cleanup = false
-
     // Now, create partitions splitting up files roughly evenly
     var i = 0
     var partitions = List[VerticaDistributedFilesystemPartition]()
     var curFileRanges = List[ParquetFileRange]()
     val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
+    logger.info("Creating partitions.")
     for(m <- fileMetadata) {
       val size = m.rowGroupCount
+      logger.debug("Splitting file " + m.filename + " with row group count " + size)
       var j = 0
       var low = 0
       while(j < size){
         if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
-          val frange = ParquetFileRange(m.filename, low, j, if(cleanup) Some(rangeIdx) else None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
 
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
           partitions = partitions :+ partition
           curFileRanges = List[ParquetFileRange]()
+          logger.debug("Reached partition with file " + m.filename + " , range low: " +
+            low + " , range high: " + j + " , idx: " + rangeIdx)
           i = 0
           low = j + 1
         }
         else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          val frange = ParquetFileRange(m.filename, low, j, if(cleanup) Some(rangeIdx) else None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
           curFileRanges = curFileRanges :+ frange
+          logger.debug("Reached end of file " + m.filename + " , range low: " +
+            low + " , range high: " + j + " , idx: " + rangeIdx)
           i += 1
         }
         else {
@@ -243,17 +240,18 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Retrieve all parquet files created by Vertica
-      fileList <- fileStoreLayer.getFileList(hdfsPath)
-      requestedPartitionCount <- if (fileList.isEmpty) {
+      fullFileList <- fileStoreLayer.getFileList(hdfsPath)
+      parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
+      requestedPartitionCount <- if (parquetFileList.isEmpty) {
         Left(FileListEmptyPartitioningError())
       } else {
         config.partitionCount match {
           case Some(count) => Right(count)
-          case None => Right(fileList.size) // Default to 1 partition / file
+          case None => Right(parquetFileList.size) // Default to 1 partition / file
         }
       }
 
-      fileMetadata <- fileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
+      fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
       partitionCount = if (totalRowGroups < requestedPartitionCount) {
@@ -309,7 +307,7 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
-    logger.info("Getting cleanup info for partition with idx " + curIdx)
+    logger.debug("Getting cleanup info for partition with idx " + curIdx)
     for {
       _ <- if (curIdx >= part.fileRanges.size) {
         logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
@@ -347,13 +345,18 @@ class VerticaDistributedFilesystemReadPipe(
       case None => return Left(UninitializedReadError())
       case Some(p) => p
     }
+
     val ret = fileStoreLayer.readDataFromParquetFile(dataSize) match {
-      case Left(err) => err.getError match {
-        case DoneReading() =>
+      case Left(err) => Left(err)
+      case Right(data) =>
+        if(data.data.nonEmpty) {
+          Right(data)
+        }
+        else {
           logger.info("Hit done reading for file segment.")
 
           // Cleanup old file if required
-          getCleanupInfo(part,this.fileIdx) match {
+          getCleanupInfo(part, this.fileIdx) match {
             case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
               case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
               case Right(_) => ()
@@ -363,23 +366,28 @@ class VerticaDistributedFilesystemReadPipe(
 
           // Next file
           this.fileIdx += 1
-          if(this.fileIdx >= part.fileRanges.size) return Left(DoneReading())
+          if (this.fileIdx >= part.fileRanges.size) return Right(data)
 
           for {
             _ <- fileStoreLayer.closeReadParquetFile()
             _ <- fileStoreLayer.openReadParquetFile(part.fileRanges(this.fileIdx))
             data <- fileStoreLayer.readDataFromParquetFile(dataSize)
           } yield data
-        case _ => Left(err)
-      }
-      case Right(data) => Right(data)
+        }
     }
 
     // If there was an underlying error, call cleanup
     (ret, getCleanupInfo(part,this.fileIdx)) match {
-      case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
+      case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+        case Right(()) => ()
+        case Left(err) => logger.warn("Ran into error when cleaning up: " + err.getFullContext)
+      }
       case (Left(_), None) => logger.warn("No cleanup info found")
-      case (Right(dataBlock), Some(cleanupInfo)) => if(dataBlock.data.isEmpty) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo)
+      case (Right(dataBlock), Some(cleanupInfo)) =>
+        if(dataBlock.data.isEmpty) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+          case Right(()) => ()
+          case Left(err) => logger.warn("Ran into error when cleaning up: " + err.getFullContext)
+        }
       case (Right(_), None) => ()
     }
     ret

@@ -126,16 +126,6 @@ The connector supports basic Spark types. Complex types are not currently suppor
 
 ## Known Issues
 
-### Cleanup on Vertica to Spark path
-
-When reading from vertica, parquet files used in intermediary are not currently cleaned up. This is a temporarily disabled feature while an issue with cleanup is investigated.
-
-The hadoop command line tool can be used to clean up files.
-
-```shell
-hadoop fs -rm user/release/s2v/74727063_613a_49d0_98e4_e806f5301ecf
-```
-
 ### Old timestamps
 
 If using very old dates and timestamps, you may run into an error like the following:

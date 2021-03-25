@@ -91,10 +91,12 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
     for {
       // Delete all portions
-      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-          fileStoreLayer.removeFile(recordFileName(filename, idx))).toList.sequence
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
+        logger.debug("Removing: " + recordFileName(filename, idx))
+        fileStoreLayer.removeFile(recordFileName(filename, idx))}).toList.sequence
 
       // Delete the original file
+      _ = logger.debug("Removing parquet: " + filename)
       _ <- fileStoreLayer.removeFile(filename)
 
       // Delete the directory if empty
@@ -111,13 +113,26 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
-      // Check if all portions are written
-      filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-          fileStoreLayer.fileExists(recordFileName(filename, idx))
-        ).toList.sequence
-      allExist <- Right(filesExist.forall(identity))
+      _ = logger.debug("File: " + filename + ", Checking file existance")
+      _ = logger.debug("File: " + filename + ", File idx: " + fileCleanupInfo.fileIdx)
+      _ = logger.debug("File: " + filename + ", File range count: " + fileCleanupInfo.fileRangeCount)
 
-      _ <- if(allExist) performCleanup(fileStoreLayer, fileCleanupInfo) else Right(())
+      // Check if all portions are written
+      filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
+           logger.debug("Checking existence: " + recordFileName(filename, idx))
+           fileStoreLayer.fileExists(recordFileName(filename, idx))
+        }).toList.sequence
+      allExist <- Right(filesExist.forall(x => x))
+
+      _ = logger.debug("File: " + filename + ", filesExist: " + filesExist.toString())
+      _ = logger.debug("File: " + filename + ", All exist: " + allExist)
+
+      _ <- if(allExist) {
+        logger.debug("File: " + filename + ", Performing cleanup")
+        performCleanup(fileStoreLayer, fileCleanupInfo)
+      } else {
+        Right(())
+      }
 
     } yield ()
   }
