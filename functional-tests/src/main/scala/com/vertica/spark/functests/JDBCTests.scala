@@ -133,6 +133,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
         assert(false)
       }
       case Left(err) => {
+        println(err.getError.getFullContext)
         assert(err.getError match {
           case SyntaxError(_) => true
           case _ => false
@@ -148,6 +149,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');") match {
       case Right(u) => assert(false) // should not succeed
       case Left(err) => {
+        println(err.getError.getFullContext)
         assert(err.getError match {
           case DataTypeError(_) => true
           case _ => false

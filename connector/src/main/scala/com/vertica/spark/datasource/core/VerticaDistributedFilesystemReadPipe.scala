@@ -114,15 +114,6 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): PartitionInfo = {
-
-    /**
-     * TODO If true, cleanup information will be added to partitions, so nodes will perform a coordinated cleanup of
-     * exported parquet files.
-     *
-     * Temporarily set to false as an issue with the file cleanup system is investigated
-     */
-    val cleanup = false
-
     // Now, create partitions splitting up files roughly evenly
     var i = 0
     var partitions = List[VerticaDistributedFilesystemPartition]()
@@ -139,7 +130,7 @@ class VerticaDistributedFilesystemReadPipe(
         if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
-          val frange = ParquetFileRange(m.filename, low, j, if(cleanup) Some(rangeIdx) else None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
 
           curFileRanges = curFileRanges :+ frange
           val partition = VerticaDistributedFilesystemPartition(curFileRanges)
@@ -152,7 +143,7 @@ class VerticaDistributedFilesystemReadPipe(
         }
         else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          val frange = ParquetFileRange(m.filename, low, j, if(cleanup) Some(rangeIdx) else None)
+          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
           curFileRanges = curFileRanges :+ frange
           logger.debug("Reached end of file " + m.filename + " , range low: " +
             low + " , range high: " + j + " , idx: " + rangeIdx)
