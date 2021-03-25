@@ -115,10 +115,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
     e match {
-      case e: java.sql.SQLException =>
-        ConnectionSqlError(e)
-      case e: Throwable =>
-        ConnectionError(e)
+      case e: java.sql.SQLSyntaxErrorException => SyntaxError(e)
+      case e: java.sql.SQLDataException => DataTypeError(e)
+      case e: java.sql.SQLException => ConnectionSqlError(e)
+      case e: Throwable => ConnectionError(e)
     }
   }
 
