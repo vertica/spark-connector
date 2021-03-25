@@ -554,7 +554,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     pipe.readData match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(data) =>
         assert(data.data.isEmpty)
     }

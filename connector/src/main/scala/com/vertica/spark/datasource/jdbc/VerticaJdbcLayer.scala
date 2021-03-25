@@ -115,8 +115,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
     e match {
-      case e: java.sql.SQLSyntaxErrorException => SyntaxError(e)
-      case e: java.sql.SQLDataException => DataTypeError(e)
       case e: java.sql.SQLException => ConnectionSqlError(e)
       case e: Throwable => ConnectionError(e)
     }
@@ -126,12 +124,12 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     * Gets a statement object or connection error if something is wrong.
     */
   private def getStatement: ConnectorResult[Statement] = {
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.createStatement(), handleConnectionException)
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.createStatement(), handleJDBCException)
       .left.map(_.context("getStatement: Error while trying to create statement.")))
   }
 
   private def getPreparedStatement(sql: String): ConnectorResult[PreparedStatement] = {
-    this.connection.flatMap(conn => this.useConnection(conn, c => c.prepareStatement(sql), handleConnectionException)
+    this.connection.flatMap(conn => this.useConnection(conn, c => c.prepareStatement(sql), handleJDBCException)
       .left.map(_.context("getPreparedStatement: Error while getting prepared statement.")))
   }
 
