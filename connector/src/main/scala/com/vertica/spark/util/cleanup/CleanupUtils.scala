@@ -16,7 +16,7 @@ package com.vertica.spark.util.cleanup
 import cats.implicits.toTraverseOps
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.{CleanupError, ConnectorError, FileSystemError}
+import com.vertica.spark.util.error.{CleanupError, ConnectorError, ParentDirMissingError}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
@@ -83,7 +83,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
   private def getParentHadoopPath(path: String): ConnectorResult[String] = {
     val p = new Path(s"$path")
     val parent = p.getParent
-    if(parent != null) Right(parent.toString) else Left(FileSystemError().context("Could not retrieve parent path of file: " + path))
+    if(parent != null) Right(parent.toString) else Left(ParentDirMissingError(path))
   }
 
   private def performCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo ): ConnectorResult[Unit] = {

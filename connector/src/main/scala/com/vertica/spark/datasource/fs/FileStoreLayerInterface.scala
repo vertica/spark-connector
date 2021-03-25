@@ -17,7 +17,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileDoesNotExistError, RemoveFileError}
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
@@ -165,13 +165,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
     val builder = new VerticaParquetBuilder(new Path(s"$filename"))
 
     val writerOrError = for {
-      _ <- removeFile(filename) match {
-        case Right(_) => Right(())
-        case Left(err) => err.getError match {
-          case RemoveFileDoesNotExistError() => Right(())
-          case _ => Left(err)
-        }
-      }
+      _ <- removeFile(filename)
       writer <- Try { builder.withConf(hdfsConfig)
         .enableValidation()
         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
@@ -317,7 +311,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   override def removeFile(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (fs.exists(path)) {
-        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveFileError(exception)
+        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveFileError(path, exception)
           .context("Error removing HDFS file."))
       } else {
         Right(())
@@ -327,7 +321,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   override def removeDir(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (fs.exists(path)) {
-        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveDirectoryError(exception)
+        Try{fs.delete(path, true); ()}.toEither.left.map(exception => RemoveDirectoryError(path, exception)
           .context("Error removing HDFS directory."))
       } else {
         Right(())
@@ -337,20 +331,20 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
   override def createFile(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.create(path); ()}.toEither.left.map(exception => CreateFileError(exception)
+        Try {fs.create(path); ()}.toEither.left.map(exception => CreateFileError(path, exception)
           .context("Error creating HDFS file."))
       } else {
-        Left(CreateFileAlreadyExistsError())
+        Left(CreateFileAlreadyExistsError(filename))
       })
   }
 
   override def createDir(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.mkdirs(path); ()}.toEither.left.map(exception => CreateDirectoryError(exception)
+        Try {fs.mkdirs(path); ()}.toEither.left.map(exception => CreateDirectoryError(path, exception)
           .context("Error creating HDFS directory."))
       } else {
-        Left(CreateDirectoryAlreadyExistsError())
+        Left(CreateDirectoryAlreadyExistsError(filename))
       })
   }
 
