@@ -72,7 +72,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
-    for {
+    val ret = for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
@@ -102,7 +102,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+
+      _ <- jdbcLayer.close()
     } yield ()
+
+    // Safety check upon failure; make sure to close connection
+    jdbcLayer.close()
+    ret
   }
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
@@ -118,8 +124,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
-    jdbcLayer.close()
-    fileStoreLayer.closeWriteParquetFile()
+    val ret1 = jdbcLayer.close()
+    val ret2 = fileStoreLayer.closeWriteParquetFile()
+    (ret1, ret2) match {
+      case (Left(_), _) => ret1
+      case (_, Left(_)) => ret2
+      case (_, _) => Right(())
+    }
   }
 
 

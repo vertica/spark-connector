@@ -266,6 +266,8 @@ class VerticaDistributedFilesystemReadPipe(
       rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
 
       partitionInfo = getPartitionInfo(fileMetadata, rowGroupRoom)
+
+      _ <- jdbcLayer.close()
     } yield partitionInfo
 
     // If there's an error, cleanup
@@ -273,9 +275,10 @@ class VerticaDistributedFilesystemReadPipe(
       case Left(_) =>
         logger.info("Cleaning up all files in path: " + hdfsPath)
         cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        jdbcLayer.close()
       case _ => ()
     }
-    jdbcLayer.close()
+
     ret
   }
 

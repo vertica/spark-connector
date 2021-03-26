@@ -83,10 +83,9 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
 
   def closeWrite(): ConnectorResult[Unit] = {
     if(data.nonEmpty) {
-      for {
-        _ <- pipe.writeData(DataBlock(data))
-        _ <- pipe.endPartitionWrite()
-      } yield ()
+       val ret = pipe.writeData(DataBlock(data))
+       pipe.endPartitionWrite()
+       ret
     }
     else {
       pipe.endPartitionWrite()
