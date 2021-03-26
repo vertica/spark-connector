@@ -124,13 +124,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
-    val ret1 = jdbcLayer.close()
-    val ret2 = fileStoreLayer.closeWriteParquetFile()
-    (ret1, ret2) match {
-      case (Left(_), _) => ret1
-      case (_, Left(_)) => ret2
-      case (_, _) => Right(())
-    }
+    fileStoreLayer.closeWriteParquetFile()
   }
 
 
