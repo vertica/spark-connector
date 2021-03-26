@@ -225,7 +225,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val uniqueId = "unique-id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
