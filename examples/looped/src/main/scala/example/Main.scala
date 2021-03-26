@@ -39,10 +39,18 @@ object Main extends App {
 
   try {
     val tableName = "dftest"
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val rows = sc.parallelize(Array(
+                                Row(1,"hello", true),
+                                Row(2,"goodbye", false)
+                              ))
 
-    val data = Seq(Row(77))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    val schema = StructType(Array(
+                              StructField("id",IntegerType, false),
+                              StructField("message",StringType,true),
+                              StructField("still_here",BooleanType,true)
+                            ))
+
+    val df = spark.createDataFrame(rows, schema)
     println(df.toString())
     val mode = SaveMode.Append
 
