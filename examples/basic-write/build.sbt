@@ -20,3 +20,5 @@ resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies += "com.typesafe" % "config" % "1.4.1"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.0"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.0"
