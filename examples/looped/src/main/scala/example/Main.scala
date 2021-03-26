@@ -17,7 +17,7 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType, BooleanType, StringType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main extends App {
