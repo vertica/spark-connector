@@ -39,7 +39,7 @@ object Main extends App {
 
   try {
     val tableName = "dftest"
-    val rows = sc.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array(
                                 Row(1,"hello", true),
                                 Row(2,"goodbye", false)
                               ))
