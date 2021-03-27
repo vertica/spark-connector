@@ -402,8 +402,6 @@ class VerticaDistributedFilesystemReadPipe(
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
     logger.info("Ending partition read.")
-
-    jdbcLayer.close()
     fileStoreLayer.closeReadParquetFile()
   }
 
