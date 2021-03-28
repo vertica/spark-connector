@@ -71,7 +71,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
@@ -97,7 +96,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     config.setOverwrite(true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
@@ -125,7 +123,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = Some(createTableStatement), copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -150,7 +147,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
@@ -174,7 +170,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -200,7 +195,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right()).anyNumberOfTimes()
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
