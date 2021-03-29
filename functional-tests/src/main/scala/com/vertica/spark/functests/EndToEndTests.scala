@@ -52,8 +52,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
   }
-  /*
 
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
@@ -68,6 +68,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 20)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "perform aggregations" in {
@@ -87,6 +88,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(sumDf.head.get(0) == 2*n + 4*n)
     assert(sumDf.head.get(1) == 5)
     assert(sumDf.head.get(2) == 7)
+    TestUtils.dropTable(conn, tableName1)
   }
 
 
@@ -117,6 +119,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val joined_df = df_as1.join(
       df_as2, col("df1.a") === col("df2.b"), "inner")
     assert(joined_df.collect().length == n*n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "collect results" in {
@@ -135,6 +138,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val arr = df.collect()
 
     assert(arr.length == n*2)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "return column names" in {
@@ -154,6 +158,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(cols(0) == "a")
     assert(cols(1) == "b")
     assert(cols(2) == "c")
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "sort" in {
@@ -174,6 +179,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(df.sort("a").head.get(1) == 3)
     assert(df.sort("b").head.get(0) == 5)
     assert(df.sort("c").head.get(0) == 3)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "get distinct elements" in {
@@ -192,6 +198,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
     assert(df.distinct().count() == 3)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "drop and take" in {
@@ -211,6 +218,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val dfMinusCols = df.drop("a").drop("c")
     assert(dfMinusCols.distinct().sort("b").take(1)(0).get(0) == 2)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame schema" in {
@@ -230,6 +238,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val sc = StructType(Array(StructField("a",LongType,nullable = true), StructField("b",DoubleType,nullable = true)))
 
     assert(schema.toString equals sc.toString)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame projection" in {
@@ -247,6 +256,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(count == n)
     assert(filtered.columns.mkString equals Array("a").mkString)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame filter" in {
@@ -265,6 +275,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val count = filtered.count()
 
     assert(count == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [ALL] nodes" in {
@@ -276,6 +287,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [ALL] nodes" in {
@@ -287,6 +299,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [SOME] nodes for [arbitrary partition number]" in {
@@ -301,6 +314,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
       assert(r == n)
     }
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [Some] nodes" in {
@@ -312,6 +326,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [Some] nodes" in {
@@ -323,6 +338,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [One] nodes for [arbitrary partition number]" in {
@@ -2983,6 +2999,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, "peopleTable")
   }
 
   it should "fail to save a DF if there are syntax errors in target_table_ddl" in {
@@ -3084,7 +3101,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
-  */
 
   it should "Verify writing old dateType works" in {
     val tableName = "s2vdevtestoldwrite"
@@ -3132,7 +3148,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows )
-    //TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, tableName)
   }
 
   it should "Verify writing old timestamp type works" in {
@@ -3171,6 +3187,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows )
-    //TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, tableName)
   }
 }
