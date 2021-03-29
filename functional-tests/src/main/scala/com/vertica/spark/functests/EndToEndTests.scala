@@ -53,7 +53,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
   }
-  /*
 
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
@@ -3082,95 +3081,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failureMessage = e.toString
     }
     assert (failureMessage.nonEmpty)
-    TestUtils.dropTable(conn, tableName)
-  }
-  */
-
-  it should "Verify writing old dateType works" in {
-    val tableName = "s2vdevtest35"
-    val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
-
-    // jeff
-    val c = java.util.Calendar.getInstance()
-    c.set(1822,1,1, 1,1,1)
-    val ms = new java.util.Date(c.getTimeInMillis)
-
-    //hua
-    val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1555-07-05")
-    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("0455-01-01")
-
-    val inputData = Seq(
-      new java.sql.Date(date1.getTime),
-      new java.sql.Date(date3.getTime),
-      new java.sql.Date(ms.getTime),
-      null
-    )
-    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
-    df.show
-    df.schema
-    val numDfRows = df.count()
-
-    val stmt = conn.createStatement()
-    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
-    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a date)")
-
-    val options = writeOpts + ("table" -> tableName)
-
-    val mode = SaveMode.Overwrite
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
-
-    var rowsLoaded = 0
-    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    try {
-      val rs = stmt.executeQuery(query)
-      if (rs.next) {
-        rowsLoaded = rs.getInt("cnt")
-      }
-    }
-    finally {
-      stmt.close()
-    }
-    assert ( rowsLoaded == numDfRows )
-    TestUtils.dropTable(conn, tableName)
-  }
-
-  it should "Verify writing old timestamp type works" in {
-    val tableName = "s2vdevtest35"
-    val schema = StructType(StructField("dt", TimestampType, nullable=true)::Nil)
-
-    val timestampInMicros = System.currentTimeMillis() * 1000
-
-    val inputData = Seq(
-      Timestamp.valueOf("1855-01-01 23:00:01")
-    )
-    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(rowRDD, schema)
-    df.show
-    df.schema
-    val numDfRows = df.count()
-
-    val stmt = conn.createStatement()
-    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
-    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a timestamp)")
-
-    val options = writeOpts + ("table" -> tableName)
-
-    val mode = SaveMode.Overwrite
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
-
-    var rowsLoaded = 0
-    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    try {
-      val rs = stmt.executeQuery(query)
-      if (rs.next) {
-        rowsLoaded = rs.getInt("cnt")
-      }
-    }
-    finally {
-      stmt.close()
-    }
-    assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
 }
