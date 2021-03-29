@@ -102,7 +102,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
-  private val connection: ConnectorResult[Connection] = {
+  private lazy val connection: ConnectorResult[Connection] = {
     Try { DriverManager.getConnection(jdbcURI, prop) }
       .toEither.left.map(handleConnectionException)
       .flatMap(conn =>

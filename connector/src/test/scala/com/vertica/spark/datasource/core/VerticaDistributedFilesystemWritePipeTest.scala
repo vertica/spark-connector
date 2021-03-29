@@ -147,6 +147,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+
     val schemaToolsInterface = mock[SchemaToolsInterface]
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
@@ -169,6 +170,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
     // Directory w/ configured address is created
@@ -188,6 +190,28 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     tryDoPreWriteSteps(pipe)
   }
 
+  it should "error if view exists with the table name" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.tableExists _).expects(*).returning(Right(false))
+    (tableUtils.viewExists _).expects(*).returning(Right(true))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.doPreWriteSteps() match {
+      case Left(err) => assert(err.getError == ViewExistsError())
+      case Right(_) => fail
+    }
+  }
+
   it should "use filestore layer to write data" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
@@ -195,7 +219,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val uniqueId = "unique-id"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.close _).expects().returning(Right(()))
+
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
     val v1: Int = 1
@@ -239,28 +263,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
         case OpenWriteError(_) => true
         case _ => false
       })
-    }
-  }
-
-  it should "error if view exists with the table name" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
-
-    val jdbcLayerInterface = mock[JdbcLayerInterface]
-
-    val schemaToolsInterface = mock[SchemaToolsInterface]
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-
-    val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.tableExists _).expects(*).returning(Right(false))
-    (tableUtils.viewExists _).expects(*).returning(Right(true))
-
-    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
-
-    pipe.doPreWriteSteps() match {
-      case Left(err) => assert(err.getError == ViewExistsError())
-      case Right(_) => fail
     }
   }
 
