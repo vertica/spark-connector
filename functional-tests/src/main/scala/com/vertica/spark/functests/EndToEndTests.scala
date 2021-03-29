@@ -3087,7 +3087,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   */
 
   it should "Verify writing old dateType works" in {
-    val tableName = "s2vdevtest35"
+    val tableName = "s2vdevtestoldwrite"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
     // jeff
@@ -3132,11 +3132,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows )
-    TestUtils.dropTable(conn, tableName)
+    //TestUtils.dropTable(conn, tableName)
   }
 
   it should "Verify writing old timestamp type works" in {
-    val tableName = "s2vdevtest35"
+    val tableName = "s2vdevtestoldwritetime"
     val schema = StructType(StructField("dt", TimestampType, nullable=true)::Nil)
 
     val timestampInMicros = System.currentTimeMillis() * 1000
@@ -3171,6 +3171,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert ( rowsLoaded == numDfRows )
-    TestUtils.dropTable(conn, tableName)
+    //TestUtils.dropTable(conn, tableName)
   }
 }
