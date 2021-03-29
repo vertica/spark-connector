@@ -2208,12 +2208,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest35"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
-    // jeff
     val c = java.util.Calendar.getInstance()
     c.set(1965,1,1, 1,1,1)
     val ms = new java.util.Date(c.getTimeInMillis)
 
-    //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
     val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1999-01-01")
 
@@ -3106,12 +3104,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtestoldwrite"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
-    // jeff
     val c = java.util.Calendar.getInstance()
     c.set(1822,1,1, 1,1,1)
     val ms = new java.util.Date(c.getTimeInMillis)
 
-    //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1555-07-05")
     val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("0455-01-01")
 
