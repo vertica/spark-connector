@@ -101,7 +101,8 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
 
       // Delete the directory if empty
       parentPath <- getParentHadoopPath(filename)
-      _ <- this.cleanupDirIfEmpty(fileStoreLayer, parentPath)
+      parentPath2 <- getParentHadoopPath(parentPath)
+      _ <- this.cleanupDirIfEmpty(fileStoreLayer, parentPath2)
     } yield ()
   }
 

@@ -39,7 +39,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-  /*
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -3100,7 +3099,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
-   */
 
   it should "Verify writing old dateType works" in {
     val tableName = "s2vdevtestoldwrite"
