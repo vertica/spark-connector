@@ -17,12 +17,14 @@ import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, 
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, SetSparkConfError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * Pipe for writing data to Vertica using an intermediary filesystem.
@@ -65,6 +67,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   /**
+   * Set spark conf to handle old dates if unset
+   * This deals with SPARK-31404 -- issue with legacy calendar format
+   */
+  private def setSparkkCalendarConf(): ConnectorResult[Unit] = {
+    Try {
+      if(LegacyBehaviorPolicy.withName(
+        SQLConf.get.getConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE)) == LegacyBehaviorPolicy.EXCEPTION) {
+        SQLConf.get.setConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
+      }
+    } match {
+      case Success(_) => Right(())
+      case Failure(e) => Left(SetSparkConfError(e))
+    }
+  }
+
+  /**
    * Initial setup for the intermediate-based write operation.
    *
    * - Checks if the table exists
@@ -75,6 +93,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
+
+      // Set spark configuration
+      _ <- setSparkkCalendarConf()
 
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
@@ -102,6 +123,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+
     } yield ()
   }
 

@@ -186,6 +186,12 @@ case class ViewExistsError() extends ConnectorError {
 case class TempTableExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to a temporary tt"
 }
+case class SetSparkConfError(cause: Throwable) extends ConnectorError {
+  private val message = "Error setting spark configuration. "
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
 case class FaultToleranceTestFail() extends ConnectorError {
   def getFullContext: String = "Failed row count is above error tolerance threshold. Operation aborted."
 }
