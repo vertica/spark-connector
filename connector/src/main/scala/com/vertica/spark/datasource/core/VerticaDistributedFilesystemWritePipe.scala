@@ -20,6 +20,8 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, SetSparkConfError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
@@ -72,10 +74,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    */
   private def setSparkkCalendarConf(): ConnectorResult[Unit] = {
     Try {
-      if(LegacyBehaviorPolicy.withName(
-        SQLConf.get.getConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE)) == LegacyBehaviorPolicy.EXCEPTION) {
-        SQLConf.get.setConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
-      }
+      SparkSession.getActiveSession.get.conf.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
     } match {
       case Success(_) => Right(())
       case Failure(e) => Left(SetSparkConfError(e))
