@@ -70,10 +70,12 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
     }
   }
 
-  private def cleanupDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {
+  private def cleanupParentDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {
     for {
-      allFiles <- fileStoreLayer.getFileList(path)
-      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(path) else Right(())
+      parentPath <- getParentHadoopPath(path)
+      allFiles <- fileStoreLayer.getFileList(parentPath)
+      parentPath2 <- getParentHadoopPath(parentPath)
+      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(parentPath2) else Right(())
     } yield ()
   }
 
@@ -100,9 +102,7 @@ class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
       _ <- fileStoreLayer.removeFile(filename)
 
       // Delete the directory if empty
-      parentPath <- getParentHadoopPath(filename)
-      parentPath2 <- getParentHadoopPath(parentPath)
-      _ <- this.cleanupDirIfEmpty(fileStoreLayer, parentPath2)
+      _ <- this.cleanupParentDirIfEmpty(fileStoreLayer, filename)
     } yield ()
   }
 
