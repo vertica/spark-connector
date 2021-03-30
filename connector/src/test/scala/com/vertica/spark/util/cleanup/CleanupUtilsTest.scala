@@ -34,7 +34,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (fileStoreLayer.fileExists _).expects(filename+".cleanup0").returning(Right(true))
     (fileStoreLayer.removeFile _).expects(filename+".cleanup0").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename).returning(Right(()))
-    (fileStoreLayer.getFileList _).expects("path").returning(Right(Seq[String]()))
+    (fileStoreLayer.getFileList _).expects("path/path").returning(Right(Seq[String]()))
     (fileStoreLayer.removeDir _).expects("path").returning(Right(()))
 
     val fileCleanupInfo = FileCleanupInfo(filename, 0, 1)
@@ -82,7 +82,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (fileStoreLayer.removeFile _).expects(filename+".cleanup1").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename+".cleanup2").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename).returning(Right(()))
-    (fileStoreLayer.getFileList _).expects("path").returning(Right(Seq[String]()))
+    (fileStoreLayer.getFileList _).expects("path/path").returning(Right(Seq[String]()))
     (fileStoreLayer.removeDir _).expects("path").returning(Right(()))
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 2, 3))
