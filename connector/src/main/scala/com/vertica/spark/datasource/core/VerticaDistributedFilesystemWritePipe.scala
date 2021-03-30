@@ -72,12 +72,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * Set spark conf to handle old dates if unset
    * This deals with SPARK-31404 -- issue with legacy calendar format
    */
-  private def setSparkkCalendarConf(): ConnectorResult[Unit] = {
-    Try {
-      SparkSession.getActiveSession.get.conf.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
-    } match {
-      case Success(_) => Right(())
-      case Failure(e) => Left(SetSparkConfError(e))
+  private def setSparkkCalendarConf(): Unit = {
+    SparkSession.getActiveSession match {
+      case Some(session) => session.conf.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
+      case None => logger.warn("No spark session found to set config")
     }
   }
 
@@ -94,7 +92,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- checkSchemaForDuplicates(config.schema)
 
       // Set spark configuration
-      _ <- setSparkkCalendarConf()
+      _ = setSparkkCalendarConf()
 
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
