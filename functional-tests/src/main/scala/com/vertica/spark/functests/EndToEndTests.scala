@@ -15,6 +15,7 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Date, Timestamp}
 
+import com.vertica.spark.util.error.ConnectorException
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}

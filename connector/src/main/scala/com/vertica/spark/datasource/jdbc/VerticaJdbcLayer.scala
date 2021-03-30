@@ -93,8 +93,12 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
 
   private val prop = new util.Properties()
-  prop.put("user", cfg.username)
-  prop.put("password", cfg.password)
+  prop.put("user", "user1")
+  prop.put("KerberosServiceName", "vertica")
+  prop.put("KerberosHostname", "vertica.example.com")
+  prop.put("JAASConfigName", "Client")
+
+  //prop.put("password", cfg.password)
 
   // Load driver
   Class.forName("com.vertica.jdbc.Driver")

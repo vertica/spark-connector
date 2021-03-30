@@ -53,11 +53,14 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   }
 
   it should "Insert integer data to table and load" in {
-    jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+    val result = for {
+      _ <- jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+      _ <- jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(123);")
+      rs <- jdbcLayer.query("SELECT * FROM " + tablename + ";")
+    } yield rs
 
-    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(123);")
 
-    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+    result match {
       case Right(rs) =>
         assert(rs.next())
         assert(rs.getInt(1) == 123)
