@@ -15,6 +15,8 @@ package com.vertica.spark.datasource.v2
 
 import java.util
 
+import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup}
 import org.apache.spark.sql.catalyst.analysis.{NoSuchNamespaceException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.connector.catalog.{Identifier, Table, TableCatalog, TableChange}
 import org.apache.spark.sql.connector.expressions.Transform
@@ -31,7 +33,7 @@ final case class NoCatalogException(private val message: String = "Catalog funct
  * and indicates whether the table already exists. This is in place to allow for the Ignore and ErrorIfExist
  * save modes.
  */
-class VerticaDatasourceV2Catalog extends TableCatalog{
+class VerticaDatasourceV2Catalog(readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup) extends TableCatalog{
 
 
   override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
@@ -41,7 +43,7 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   override def tableExists(ident: Identifier): Boolean = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
 
-    val table = new VerticaTable(opt)
+    val table = new VerticaTable(opt, readSetupInterface)
     val schema = table.schema()
 
     schema.nonEmpty
@@ -56,7 +58,7 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   override def loadTable(ident: Identifier): Table = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
 
-    new VerticaTable(opt)
+    new VerticaTable(opt, readSetupInterface)
   }
 
   @throws[TableAlreadyExistsException]

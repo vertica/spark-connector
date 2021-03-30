@@ -32,7 +32,7 @@ import com.vertica.spark.datasource.core._
 import com.vertica.spark.util.error.{CloseReadError, ConfigBuilderError, ConnectorException, ErrorList, FileListEmptyPartitioningError, IntermediaryStoreReaderNotInitializedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
-import org.apache.spark.sql.connector.write.LogicalWriteInfo
+import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
 import org.apache.spark.sql.sources.{Filter, GreaterThan, LessThan}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
@@ -236,11 +236,94 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "build vertica batch write" in {
     val info = mock[LogicalWriteInfo]
     (info.options _).expects().returning(options)
+
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
     (writeSetupInterface.validateAndGetConfig _).expects(options.toMap).returning(writeConfig.validNec)
+    (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
 
     val builder = new VerticaWriteBuilder(info, writeSetupInterface)
 
     assert(builder.buildForBatch().isInstanceOf[VerticaBatchWrite])
+  }
+
+  it should "batch write creates writer factory" in {
+    val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
+    (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
+    val physicalInfo = mock[PhysicalWriteInfo]
+
+    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
+
+    assert(batchWrite.createBatchWriterFactory(physicalInfo).isInstanceOf[VerticaWriterFactory])
+  }
+
+  it should "batch writer writes" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.openWrite _).expects().returning(Right())
+    (dsWriter.writeRow _).expects(InternalRow(5)).returning(Right())
+    (dsWriter.writeRow _).expects(InternalRow(6)).returning(Right())
+    (dsWriter.writeRow _).expects(InternalRow(7)).returning(Right())
+    (dsWriter.writeRow _).expects(InternalRow(8)).returning(Right())
+    (dsWriter.closeWrite _).expects().returning(Right())
+
+    val batchWriter = new VerticaBatchWriter(writeConfig, dsWriter)
+    batchWriter.write(InternalRow(5))
+    batchWriter.write(InternalRow(6))
+    batchWriter.write(InternalRow(7))
+    batchWriter.write(InternalRow(8))
+
+    assert(batchWriter.commit() == WriteSucceeded)
+  }
+
+  it should "catalog tests if table exists" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
+    (readSetup.getTableSchema _).expects(readConfig).returning(Right(intSchema))
+
+    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+
+    catalog.initialize("VerticaTable", options)
+
+    // Implementation currently based on config, not identifier
+    assert(catalog.tableExists(mock[Identifier]))
+  }
+
+  it should "catalog loads table on load or create" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+
+    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+
+    catalog.initialize("VerticaTable", options)
+
+    assert(catalog.loadTable(mock[Identifier]).isInstanceOf[VerticaTable])
+    assert(catalog.createTable(mock[Identifier], new StructType(), Array(), jOptions).isInstanceOf[VerticaTable])
+  }
+
+  it should "catalog does not support other operations" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+
+    Try { catalog.alterTable(mock[Identifier], mock[TableChange]) }
+    match {
+      case Success(_) => fail
+      case Failure(e) => assert(e.isInstanceOf[NoCatalogException])
+    }
+
+    Try { catalog.renameTable(mock[Identifier], mock[Identifier]) }
+    match {
+      case Success(_) => fail
+      case Failure(e) => assert(e.isInstanceOf[NoCatalogException])
+    }
+
+    Try { catalog.dropTable(mock[Identifier]) }
+    match {
+      case Success(_) => fail
+      case Failure(e) => assert(e.isInstanceOf[NoCatalogException])
+    }
+
+    Try { catalog.listTables(Array()) }
+    match {
+      case Success(_) => fail
+      case Failure(e) => assert(e.isInstanceOf[NoCatalogException])
+    }
   }
 }
