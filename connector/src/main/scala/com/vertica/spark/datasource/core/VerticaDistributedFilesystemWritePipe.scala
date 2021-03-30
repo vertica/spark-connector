@@ -74,7 +74,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    */
   private def setSparkkCalendarConf(): Unit = {
     SparkSession.getActiveSession match {
-      case Some(session) => session.conf.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
+      case Some(session) =>
+        //session.conf.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
+        session.sparkContext.setLocalProperty(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
       case None => logger.warn("No spark session found to set config")
     }
   }
