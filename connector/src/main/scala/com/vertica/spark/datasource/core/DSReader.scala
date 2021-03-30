@@ -27,6 +27,11 @@ import org.apache.spark.sql.connector.read.InputPartition
 trait DSReaderInterface {
 
   /**
+   * Starts the read operation
+   */
+  def openRead(): ConnectorResult[Unit]
+
+  /**
    * Called by spark to read an individual row
    *
    * @return The next row if it exists, if the read is done None will be returned.
