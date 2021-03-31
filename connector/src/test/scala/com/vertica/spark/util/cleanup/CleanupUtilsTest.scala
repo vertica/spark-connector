@@ -16,7 +16,7 @@ package com.vertica.spark.util.cleanup
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.{CreateFileError, RemoveFileError}
+import com.vertica.spark.util.error.{CleanupError, CreateFileError, RemoveFileError}
 import org.apache.hadoop.fs.Path
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -129,6 +129,29 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         case RemoveFileError(_, _) => true
         case _ => false
       })
+    }
+  }
+
+  it should "Cleans up all" in {
+    val dirname = "path/path"
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.removeDir _).expects("path")
+
+    cleanupUtils.cleanupAll(fileStoreLayer, dirname) match {
+      case Left(e) => fail("Failure: " + e)
+      case Right(_) => ()
+    }
+  }
+
+  it should "Returns error if java path returns null on cleanup all" in {
+    val dirname = "/"
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+
+    cleanupUtils.cleanupAll(fileStoreLayer, dirname) match {
+      case Right(_) => fail
+      case Left(e) => e.isInstanceOf[CleanupError]
     }
   }
 }

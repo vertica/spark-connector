@@ -17,7 +17,7 @@ import cats.data.Validated.{Invalid, Valid}
 import ch.qos.logback.classic.Level
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{LogProvider, WriteConfig}
-import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriteConfigSetup, DSWriter, DSWriterInterface}
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -36,7 +36,7 @@ case class JobAbortedError() extends ConnectorError {
   */
 class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends WriteBuilder with SupportsTruncate {
 
-  val config = writeSetupInterface.validateAndGetConfig(info.options.asScala.toMap) match {
+  private val config = writeSetupInterface.validateAndGetConfig(info.options.asScala.toMap) match {
     case Invalid(errList) =>
       val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
       ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))

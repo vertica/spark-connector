@@ -22,14 +22,14 @@ import org.apache.spark.sql.connector.catalog._
 import org.scalamock.scalatest.MockFactory
 import java.util
 
-import cats.data.Validated.{Invalid, Valid}
+import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{CloseReadError, ConfigBuilderError, ConnectorException, ErrorList, FileListEmptyPartitioningError, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, OpenWriteError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, FileListEmptyPartitioningError, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
@@ -61,7 +61,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))
 
-  val partition = VerticaDistributedFilesystemPartition(Seq(), None)
+  private val partition = VerticaDistributedFilesystemPartition(Seq(), None)
 
   it should "get no catalog options" in {
     VerticaDatasourceV2Catalog.getOptions match {
