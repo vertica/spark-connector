@@ -470,7 +470,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(intSchema))
 
-    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+    val catalog = new VerticaDatasourceV2Catalog()
+    catalog.readSetupInterface = readSetup
 
     catalog.initialize("VerticaTable", options)
 
@@ -481,7 +482,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "catalog loads table on load or create" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
-    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+    val catalog = new VerticaDatasourceV2Catalog()
+    catalog.readSetupInterface = readSetup
 
     catalog.initialize("VerticaTable", options)
 
@@ -491,7 +493,9 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "catalog does not support other operations" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    val catalog = new VerticaDatasourceV2Catalog(readSetup)
+
+    val catalog = new VerticaDatasourceV2Catalog()
+    catalog.readSetupInterface = readSetup
 
     Try { catalog.alterTable(mock[Identifier], mock[TableChange]) }
     match {

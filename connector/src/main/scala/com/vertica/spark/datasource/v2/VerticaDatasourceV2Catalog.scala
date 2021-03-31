@@ -33,7 +33,8 @@ final case class NoCatalogException(private val message: String = "Catalog funct
  * and indicates whether the table already exists. This is in place to allow for the Ignore and ErrorIfExist
  * save modes.
  */
-class VerticaDatasourceV2Catalog(readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup) extends TableCatalog{
+class VerticaDatasourceV2Catalog() extends TableCatalog{
+  var readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup
 
   override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
     VerticaDatasourceV2Catalog.catalogOptions = Some(options)
