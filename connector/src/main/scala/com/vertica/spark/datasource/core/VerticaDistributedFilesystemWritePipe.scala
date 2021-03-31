@@ -121,7 +121,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
-
     } yield ()
   }
 
