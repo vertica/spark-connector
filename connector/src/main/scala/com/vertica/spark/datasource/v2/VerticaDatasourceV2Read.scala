@@ -145,8 +145,7 @@ class VerticaReaderFactory(config: ReadConfig) extends PartitionReaderFactory {
   */
   override def createReader(partition: InputPartition): PartitionReader[InternalRow] =
   {
-    val reader = new DSReader(config, partition)
-    new VerticaBatchReader(config, reader)
+    new VerticaBatchReader(config, new DSReader(config, partition))
   }
 
 }
@@ -194,5 +193,10 @@ class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends 
 /**
   * Calls underlying datasource to do any needed cleanup
   */
-  def close(): Unit = reader.closeRead()
+  def close(): Unit = {
+    reader.closeRead() match {
+      case Right(_) => ()
+      case Left(e) => ErrorHandling.logAndThrowError(logger, e)
+    }
+  }
 }

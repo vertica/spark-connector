@@ -29,7 +29,7 @@ import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFil
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{CloseReadError, ConfigBuilderError, ConnectorException, ErrorList, FileListEmptyPartitioningError, IntermediaryStoreReaderNotInitializedError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.error.{CloseReadError, ConfigBuilderError, ConnectorException, ErrorList, FileListEmptyPartitioningError, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, OpenWriteError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
@@ -50,6 +50,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   val jOptions = new util.HashMap[String, String]()
+  jOptions.put("table", "t1")
   val options = new CaseInsensitiveStringMap(jOptions)
 
   val tablename: TableName = TableName("testtable", None)
@@ -62,11 +63,37 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   val partition = VerticaDistributedFilesystemPartition(Seq(), None)
 
+  it should "get no catalog options" in {
+    VerticaDatasourceV2Catalog.getOptions match {
+      case Some(_) => fail
+      case None => ()
+    }
+  }
+
   it should "return a Vertica Table" in {
     val source = new VerticaSource()
     val table = source.getTable(new StructType(), Array[Transform](), jOptions)
 
     assert(table.isInstanceOf[VerticaTable])
+  }
+
+  it should "extract identifier from options" in {
+    val source = new VerticaSource()
+
+    val ident = source.extractIdentifier(options)
+
+    assert(ident.name() == "t1")
+  }
+
+  it should "fail to extract catalog name without spark session" in {
+    val source = new VerticaSource()
+
+    Try {
+      source.extractCatalog(options)
+    } match {
+      case Success(_) => fail
+      case Failure(_) => ()
+    }
   }
 
   it should "table returns scan builder" in {
@@ -168,6 +195,31 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(scan.planInputPartitions().sameElements(partitions))
   }
 
+  it should "throw error on input partitions" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.performInitialSetup _).expects(readConfig).returning(Left(FileListEmptyPartitioningError()))
+
+    val scan = new VerticaScan(readConfig, readSetup)
+
+    Try { scan.planInputPartitions() } match {
+      case Success(_) => fail
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[FileListEmptyPartitioningError]
+    }
+  }
+
+  it should "throw error on bad schema read" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(readConfig).returning(Left(SchemaDiscoveryError(None)))
+
+    val scan = new VerticaScan(readConfig, readSetup)
+
+    Try { scan.readSchema() } match {
+      case Success(_) => fail
+      case Success(_) => fail
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[SchemaDiscoveryError]
+    }
+  }
+
   it should "scan return error on partitions" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.performInitialSetup _).expects(readConfig).returning(Left(FileListEmptyPartitioningError()))
@@ -182,6 +234,18 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
         case _ : FileListEmptyPartitioningError => ()
         case _ => fail(e)
       }
+    }
+  }
+
+  it should "throw error on empty partition info" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.performInitialSetup _).expects(readConfig).returning(Right(None))
+
+    val scan = new VerticaScan(readConfig, readSetup)
+
+    Try { scan.planInputPartitions() } match {
+      case Success(_) => fail
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[InitialSetupPartitioningError]
     }
   }
 
@@ -229,6 +293,33 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       batchReader.get
     } match {
       case Success(_) => fail
+      case Failure(_) => ()
+    }
+  }
+
+  it should "throw error in open read" in {
+    val dsReader = mock[DSReaderInterface]
+    (dsReader.openRead _).expects().returning(Left(IntermediaryStoreReaderNotInitializedError()))
+
+    Try {
+      new VerticaBatchReader(readConfig, dsReader)
+    } match {
+      case Success(_) => fail
+      case Failure(_) => ()
+    }
+  }
+
+  it should "throw error in close read" in {
+    val dsReader = mock[DSReaderInterface]
+    (dsReader.openRead _).expects().returning(Right())
+    (dsReader.closeRead _).expects().returning(Left(IntermediaryStoreReaderNotInitializedError()))
+
+    val batchReader = new VerticaBatchReader(readConfig, dsReader)
+
+    Try {
+      batchReader.close()
+    } match {
+      case Success(_) => fail
       case _ => ()
     }
   }
@@ -246,6 +337,31 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(builder.buildForBatch().isInstanceOf[VerticaBatchWrite])
   }
 
+  it should "throw error on creating write builder" in {
+    val info = mock[LogicalWriteInfo]
+    (info.options _).expects().returning(options)
+
+    val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
+    (writeSetupInterface.validateAndGetConfig _).expects(options.toMap).returning(UserMissingError().invalidNec)
+
+    Try { new VerticaWriteBuilder(info, writeSetupInterface) } match {
+      case Success(_) => fail
+      case Failure(_) => ()
+    }
+  }
+
+  it should "throw error on creating batch write" in {
+    val info = mock[LogicalWriteInfo]
+
+    val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
+    (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Left(UserMissingError()))
+
+    Try { new VerticaBatchWrite(writeConfig, writeSetupInterface) } match {
+      case Success(_) => fail
+      case Failure(_) => ()
+    }
+  }
+
   it should "batch write creates writer factory" in {
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
@@ -254,6 +370,20 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
 
     assert(batchWrite.createBatchWriterFactory(physicalInfo).isInstanceOf[VerticaWriterFactory])
+  }
+
+  it should "throw error on abort" in {
+    val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
+    (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
+
+    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
+
+    Try {
+      batchWrite.abort(Array())
+    } match {
+      case Success(_) => fail
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[JobAbortedError]
+    }
   }
 
   it should "batch writer writes" in {
@@ -272,6 +402,67 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     batchWriter.write(InternalRow(8))
 
     assert(batchWriter.commit() == WriteSucceeded)
+  }
+
+  it should "throws error on write" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.openWrite _).expects().returning(Right())
+    (dsWriter.writeRow _).expects(InternalRow(5)).returning(Left(IntermediaryStoreWriterNotInitializedError()))
+
+    val batchWriter = new VerticaBatchWriter(writeConfig, dsWriter)
+
+    Try {
+      batchWriter.write(InternalRow(5))
+    } match {
+      case Success(_) => fail
+      case Failure(e) => ()
+    }
+  }
+
+  it should "throws error on open write" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.openWrite _).expects().returning(Left(IntermediaryStoreWriterNotInitializedError()))
+
+    Try {
+      new VerticaBatchWriter(writeConfig, dsWriter)
+    } match {
+      case Success(_) => fail
+      case Failure(e) => ()
+    }
+  }
+
+  it should "throws error on writer commit" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.openWrite _).expects().returning(Right())
+    (dsWriter.closeWrite _).expects().returning(Left(IntermediaryStoreWriterNotInitializedError()))
+
+    val batchWriter = new VerticaBatchWriter(writeConfig, dsWriter)
+
+    Try {
+      batchWriter.commit()
+    } match {
+      case Success(_) => fail
+      case Failure(e) => ()
+    }
+  }
+
+  /**
+   * More relevant error thrown earlier in abort case
+   */
+  it should "throws no error on abort" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.openWrite _).expects().returning(Right())
+    (dsWriter.closeWrite _).expects().returning(Left(IntermediaryStoreWriterNotInitializedError()))
+
+    val batchWriter = new VerticaBatchWriter(writeConfig, dsWriter)
+
+    Try {
+      batchWriter.abort()
+      batchWriter.close()
+    } match {
+      case Success(_) => ()
+      case Failure(e) => fail(e)
+    }
   }
 
   it should "catalog tests if table exists" in {
@@ -325,5 +516,14 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       case Success(_) => fail
       case Failure(e) => assert(e.isInstanceOf[NoCatalogException])
     }
+  }
+
+  it should "get/set catalog options" in {
+    val operationM = Map("thing" -> "thing")
+    val opOpts = new CaseInsensitiveStringMap(operationM)
+
+    VerticaDatasourceV2Catalog.setOptions(opOpts)
+
+    assert(VerticaDatasourceV2Catalog.getOptions.get.containsKey("thing"))
   }
 }

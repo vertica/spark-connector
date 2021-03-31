@@ -35,7 +35,6 @@ final case class NoCatalogException(private val message: String = "Catalog funct
  */
 class VerticaDatasourceV2Catalog(readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup) extends TableCatalog{
 
-
   override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
     VerticaDatasourceV2Catalog.catalogOptions = Some(options)
   }

@@ -20,10 +20,14 @@ import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException}
 import org.apache.spark.sql.SparkSession
 
 import collection.JavaConverters._
 
+case class MissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: spark context did not exist"
+}
 
 /**
  * Entry-Point for Spark V2 Datasource.
@@ -67,11 +71,14 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
 
   private val CATALOG_NAME = "vertica"
   override def extractCatalog(options: CaseInsensitiveStringMap): String = {
-    // Set the spark conf for catalog class
-    SparkSession.getActiveSession.get.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
-
     // Add all passed in options to spark catalog options
     VerticaDatasourceV2Catalog.setOptions(options)
+
+    // Set the spark conf for catalog class
+    SparkSession.getActiveSession match {
+      case Some(session) => session.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
+      case None => throw new ConnectorException(MissingSparkSessionError())
+    }
 
     CATALOG_NAME
   }

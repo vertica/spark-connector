@@ -14,6 +14,7 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 
