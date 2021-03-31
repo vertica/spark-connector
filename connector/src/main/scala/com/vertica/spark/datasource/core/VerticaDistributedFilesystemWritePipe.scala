@@ -285,5 +285,4 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     jdbcLayer.close()
     result
   }
-
 }

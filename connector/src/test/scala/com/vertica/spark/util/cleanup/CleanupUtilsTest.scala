@@ -26,7 +26,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
 
-  it should "Cleans up a file with a single part" in {
+  it should "Clean up a file with a single part" in {
     val filename = "path/file.parquet"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -132,7 +132,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  it should "Cleans up all" in {
+  it should "Clean up all" in {
     val dirname = "path/path"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -144,7 +144,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  it should "Returns error if java path returns null on cleanup all" in {
+  it should "Return error if java path returns null on cleanup all" in {
     val dirname = "/"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
