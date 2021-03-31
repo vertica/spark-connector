@@ -15,6 +15,7 @@ package com.vertica.spark.datasource.core
 
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
@@ -25,6 +26,11 @@ import org.apache.spark.sql.connector.read.InputPartition
   * This class is initiated and called from each spark worker.
   */
 trait DSReaderInterface {
+
+  /**
+   * Starts the read operation
+   */
+  def openRead(): ConnectorResult[Unit]
 
   /**
    * Called by spark to read an individual row

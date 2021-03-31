@@ -280,6 +280,63 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  it should "parse time type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIME, "TIME", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse interval type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "interval", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse uuid type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "uuid", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse other type with error" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "asdf", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(e) => e.isInstanceOf[MissingSqlConversionError]
+      case Right(_) => fail
+    }
+  }
+
   it should "parse rowid to long type" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
