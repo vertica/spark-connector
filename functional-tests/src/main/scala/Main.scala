@@ -29,7 +29,6 @@ object Main extends App {
 
   new JDBCTests(jdbcConfig).execute()
 
-  /*
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
   new HDFSTests(
@@ -43,6 +42,7 @@ object Main extends App {
     jdbcConfig
   ).execute()
 
+  /*
   new CleanupUtilTests(
     FileStoreConfig(filename,
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
