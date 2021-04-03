@@ -55,6 +55,68 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read data from Vertica using query option" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val query = "select * from " + tableName1
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("query" -> query)).load()
+
+    assert(df.count() == 1)
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read data from Vertica using join" in {
+    val stmt = conn.createStatement
+
+    val n = 1
+
+    val tableName1 = "dftest1"
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val tableName2 = "dftest2"
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName2 + " (b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val query = "select * from " + tableName1 + " inner join " + tableName2 + " on " +
+      tableName1 + ".a == " + tableName2 + ".b"
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("query" -> query)).load()
+
+    assert(df.count() == 1)
+    assert(df.columns.length == 2)
+    TestUtils.dropTable(conn, tableName1)
+    TestUtils.dropTable(conn, tableName2)
+  }
+
+  it should "read data from Vertica using aggregation query" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 2
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val query = "select sum(a) from " + tableName1
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("query" -> query)).load()
+
+    assert(df.count() == 1)
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 4))
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  /*
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -3185,4 +3247,5 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
+   */
 }
