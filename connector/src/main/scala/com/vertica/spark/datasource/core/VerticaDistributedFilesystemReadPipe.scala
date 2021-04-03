@@ -70,7 +70,7 @@ class VerticaDistributedFilesystemReadPipe(
 
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
-    schemaTools.readSchema(this.jdbcLayer, this.config.tablename.getFullTableName) match {
+    schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {
       case Right(schema) => Right(VerticaReadMetadata(schema))
       case Left(err) => Left(SchemaDiscoveryError(Some(err)))
     }
@@ -169,7 +169,7 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
-    schemaTools.getColumnInfo(jdbcLayer, config.tablename.getFullTableName) match {
+    schemaTools.getColumnInfo(jdbcLayer, config.tableSource) match {
       case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
       case Right(columnDefs) => Right(schemaTools.makeColumnsString(columnDefs, requiredSchema))
     }
@@ -189,7 +189,7 @@ class VerticaDistributedFilesystemReadPipe(
   override def doPreReadSteps(): ConnectorResult[PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tablename.name
+    val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + hdfsPath)
 
     val ret: ConnectorResult[PartitionInfo] = for {
@@ -221,6 +221,11 @@ class VerticaDistributedFilesystemReadPipe(
       pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
       _ = logger.info("Pushdown filters: " + pushdownSql)
 
+      exportSource = config.tableSource match {
+        case tablename: TableName => tablename.getFullTableName
+        case query: TableQuery => "(" + query.query + ") AS x"
+      }
+
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
@@ -228,7 +233,7 @@ class VerticaDistributedFilesystemReadPipe(
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
         "') AS " + "SELECT " + cols + " FROM " +
-        config.tablename.getFullTableName + pushdownSql + ";"
+        exportSource + pushdownSql + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {

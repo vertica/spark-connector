@@ -13,6 +13,8 @@
 
 package com.vertica.spark.config
 
+import com.vertica.spark.datasource.core.SessionId
+
 object EscapeUtils {
   def sqlEscape(str: String, char: Char = '\"'): String = {
     val c = char.toString
@@ -25,12 +27,24 @@ object EscapeUtils {
 }
 
 /**
+ * Parent trait representing a set of data being read from
+ */
+trait TableSource {
+  /**
+   * Get a unique identifier for the operation.
+   *
+   * This value is used in a filepath.
+   */
+  def identifier : String
+}
+
+/**
  * Represents a fully qualified tablename in Vertica.
  *
  * @param name Name of the table
  * @param dbschema Optionally, the schema of the table. Public schema will be assumed if not specified.
  */
-final case class TableName(name: String, dbschema: Option[String]) {
+final case class TableName(name: String, dbschema: Option[String]) extends TableSource {
 
   /**
    * Returns the full name of the table, escaped and surrounded with double quotes to prevent injection
@@ -42,4 +56,17 @@ final case class TableName(name: String, dbschema: Option[String]) {
       case Some(schema) => EscapeUtils.sqlEscapeAndQuote(schema) + "." + EscapeUtils.sqlEscapeAndQuote(name)
     }
   }
+
+  /**
+   * The table's name is used as an identifier for the operation.
+   */
+  override def identifier: String = name
 }
+
+
+final case class TableQuery(query: String) extends TableSource {
+  val id = SessionId.getId
+
+  override def identifier: String = id
+}
+
