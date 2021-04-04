@@ -86,6 +86,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val insert = "insert into "+ tableName1 + " values(2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName2 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
 
     val query = "select * from " + tableName1 + " inner join " + tableName2 + " on " +
       tableName1 + ".a == " + tableName2 + ".b"
