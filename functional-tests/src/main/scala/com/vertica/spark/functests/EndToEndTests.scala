@@ -90,7 +90,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.populateTableBySQL(stmt, insert2, n)
 
     val query = "select * from " + tableName1 + " inner join " + tableName2 + " on " +
-      tableName1 + ".a == " + tableName2 + ".b"
+      tableName1 + ".a = " + tableName2 + ".b"
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("query" -> query)).load()
 
