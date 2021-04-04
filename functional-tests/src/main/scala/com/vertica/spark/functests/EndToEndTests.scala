@@ -74,7 +74,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "read data from Vertica using join" in {
-    val stmt = conn.createStatement
 
     val n = 1
 
@@ -82,8 +81,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
 
     val tableName2 = "dftest2"
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName2 + " (b int)")
+    TestUtils.createTableBySQL(conn, tableName2, "create table " + tableName2 + " (b int)")
 
+    val stmt = conn.createStatement
     val insert = "insert into "+ tableName1 + " values(2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
     val insert2 = "insert into "+ tableName2 + " values(2)"
