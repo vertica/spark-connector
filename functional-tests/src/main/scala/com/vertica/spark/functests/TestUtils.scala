@@ -26,6 +26,9 @@ object TestUtils {
     val prop = new Properties()
     prop.put("user", user)
     prop.put("password", password)
+    prop.put("KerberosServiceName", "vertica")
+    prop.put("KerberosHostname", "vertica.example.com")
+    prop.put("JAASConfigName", "Client")
 
     getConnectionByProp(host, port, db, prop)(None)
   }
