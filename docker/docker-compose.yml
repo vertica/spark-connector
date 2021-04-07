@@ -17,6 +17,8 @@ services:
     networks:
       docker_test:
         ipv4_address: 10.5.0.5
+    depends_on:
+      - hdfs
   hdfs:
     image: "mdouchement/hdfs"
     ports:
