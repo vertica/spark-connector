@@ -35,6 +35,7 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with Support
   }
 
   def truncate: WriteBuilder = {
+    config.setOverwrite(true)
     this
   }
 

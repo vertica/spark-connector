@@ -48,7 +48,7 @@ object Main extends App {
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
-    df.rdd.foreach(println)
+    df.rdd.foreach(x => println("READ VALUE: " + x))
   } finally {
     spark.close()
     conn.close()

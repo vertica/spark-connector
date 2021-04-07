@@ -64,11 +64,14 @@ object ConnectorErrorType extends Enumeration {
   val MissingSchemaError: Value = Value("Expected to be passed in schema for this configuration. No schema found.")
   val TableCheckError: Value = Value("Error checking if table exists: connection error with JDBC.")
   val CreateTableError: Value = Value("Error when trying to create table. Check 'target_table_sql' option for issues.")
+  val DropTableError: Value = Value("Error when trying to drop table. Check 'target_table_sql' option for issues.")
   val CommitError: Value = Value("Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.")
   val ViewExistsError: Value = Value("Table name provided cannot refer to an existing view in Vertica.")
+  val TempTableExistsError: Value = Value("Table name provided cannot refer to a temporary tt")
   val FaultToleranceTestFail: Value = Value("Failed row count is above error tolerance threshold. Operation aborted.")
   val JobStatusCreateError: Value = Value("Failed to create job status table.")
   val JobStatusUpdateError: Value = Value("Failed to update job status table.")
+  val DuplicateColumnsError: Value = Value("Schema contains duplicate columns, can't write this data.")
 }
 import ConnectorErrorType._
 

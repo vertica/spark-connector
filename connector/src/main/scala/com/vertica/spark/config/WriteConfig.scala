@@ -16,7 +16,9 @@ package com.vertica.spark.config
 import ch.qos.logback.classic.Level
 import org.apache.spark.sql.types.StructType
 
-trait WriteConfig extends GenericConfig
+trait WriteConfig extends GenericConfig {
+  def setOverwrite(overwrite: Boolean): Unit
+}
 
 final case class DistributedFilesystemWriteConfig(override val logLevel: Level,
                                                   jdbcConfig: JDBCConfig,
@@ -29,5 +31,9 @@ final case class DistributedFilesystemWriteConfig(override val logLevel: Level,
                                                   sessionId: String,
                                                   failedRowPercentTolerance: Float
                                                  ) extends WriteConfig {
+  private var overwrite: Boolean = false
+
+  def setOverwrite(overwrite: Boolean): Unit = this.overwrite = overwrite
+  def isOverwrite: Boolean = overwrite
 }
 

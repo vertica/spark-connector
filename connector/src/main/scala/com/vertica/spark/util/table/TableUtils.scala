@@ -1,8 +1,22 @@
+// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// You may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.vertica.spark.util.table
 
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.ConnectorErrorType.{CreateTableError, DropTableError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error.JdbcErrorType.DataTypeError
 import com.vertica.spark.util.error.{ConnectorError, JDBCLayerError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
@@ -10,13 +24,32 @@ import org.apache.spark.sql.types.StructType
 trait TableUtilsInterface {
   def viewExists(view: TableName): Either[ConnectorError, Boolean]
   def tableExists(table: TableName): Either[ConnectorError, Boolean]
+  def tempTableExists(table: TableName): Either[ConnectorError, Boolean]
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): Either[ConnectorError, Unit]
+  def dropTable(tablename: TableName): Either[ConnectorError, Unit]
   def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String): Either[ConnectorError, Unit]
   def updateJobStatusTable(tableName: TableName, user: String, failedRowsPercent: Double, sessionId: String, success: Boolean): Either[ConnectorError, Unit]
 }
 
 class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = logProvider.getLogger(classOf[TableUtils])
+
+  override def tempTableExists(table: TableName): Either[ConnectorError, Boolean] = {
+    val dbschema = table.dbschema.getOrElse("public")
+    val query = " select is_temp_table as t from v_catalog.tables where table_name='" + table.name + "' and table_schema='" + dbschema + "'"
+    val ret = for {
+      rs <- jdbcLayer.query(query)
+      is_temp = if (rs.next) {rs.getBoolean("t") } else false
+      _ = rs.close()
+    } yield (is_temp)
+
+    ret match {
+      case Left(err) =>
+        logger.error(" Cannot append to a temporary table: " + table.getFullTableName + " , JDBC error: " + err.msg)
+        Left(ConnectorError(TableCheckError))
+      case Right(v) => Right(v)
+    }
+  }
 
   override def viewExists(view: TableName): Either[ConnectorError, Boolean] = {
     val dbschema = view.dbschema.getOrElse("public")
@@ -139,6 +172,15 @@ class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jd
       case Left(err) =>
         logger.error("JDBC Error creating table: " + err)
         Left(ConnectorError(CreateTableError))
+    }
+  }
+
+  def dropTable(tablename: TableName): Either[ConnectorError, Unit] = {
+    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName) match {
+      case Right(_) => Right(())
+      case Left(err) =>
+        logger.error("JDBC Error dropping table: " + err)
+        Left(ConnectorError(DropTableError))
     }
   }
 
