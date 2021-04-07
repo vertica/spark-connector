@@ -38,3 +38,5 @@ assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+
+unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
