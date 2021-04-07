@@ -17,9 +17,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
 import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
@@ -28,7 +28,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
   val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
-  val config: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None)
+  val config: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None, ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
 
   override def beforeAll(): Unit = {
   }
@@ -51,7 +51,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val mockPipe = mock[DummyReadPipe]
     (mockPipe.startPartitionRead _).expects(partition).returning(Right(()))
     (mockPipe.readData _).expects().returning(Right(data))
-    (mockPipe.readData _).expects().returning(Left(ConnectorError(DoneReading)))
+    (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
@@ -114,7 +114,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (mockPipe.startPartitionRead _).expects(partition).returning(Right(()))
     (mockPipe.readData _).expects().returning(Right(data))
     (mockPipe.readData _).expects().returning(Right(data))
-    (mockPipe.readData _).expects().returning(Left(ConnectorError(DoneReading)))
+    (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
@@ -178,7 +178,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     // Open
     reader.openRead() match {
-      case Left(err) => assert(err.err == InvalidPartition)
+      case Left(err) => assert(err.getError == InvalidPartition())
       case Right(()) => fail
     }
   }
@@ -190,11 +190,11 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
     val reader = new DSReader(config, partition, pipeFactory)
-    (mockPipe.startPartitionRead _).expects(partition).returning(Left(ConnectorError(PartitioningError)))
+    (mockPipe.startPartitionRead _).expects(partition).returning(Left(InitialSetupPartitioningError()))
 
     // Open
     reader.openRead() match {
-      case Left(err) => assert(err.err == PartitioningError)
+      case Left(err) => assert(err.getError == InitialSetupPartitioningError())
       case Right(()) => fail
     }
   }

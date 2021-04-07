@@ -18,12 +18,10 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.TableName
+import com.vertica.spark.config.{TableName, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
-import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
-import org.scalactic.TolerantNumerics
+import org.scalactic.{Equality, TolerantNumerics}
 
 class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
@@ -41,7 +39,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     }
   }
 
-  implicit val floatEquality = TolerantNumerics.tolerantFloatEquality(0.01f)
+  implicit val floatEquality: Equality[Float] = TolerantNumerics.tolerantFloatEquality(0.01f)
 
   it should "parse the logging level" in {
     var opts = Map("logging_level" -> "ERROR")
@@ -70,7 +68,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "error given incorrect logging_level param" in {
     val opts = Map("logging_level" -> "OTHER")
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getLogLevel(opts))
-    assert(err.toNonEmptyList.head.err == InvalidLoggingLevel)
+    assert(err.toNonEmptyList.head == InvalidLoggingLevel())
   }
 
   it should "parse the host name" in {
@@ -82,7 +80,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing host name" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getHost(opts))
-    assert(err.toNonEmptyList.head.err == HostMissingError)
+    assert(err.toNonEmptyList.head == HostMissingError())
   }
 
   it should "parse the port" in {
@@ -100,11 +98,11 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "error with invalid port input" in {
     var opts = Map("port" -> "abc123")
     var err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPort(opts))
-    assert(err.toNonEmptyList.head.err == InvalidPortError)
+    assert(err.toNonEmptyList.head == InvalidPortError())
 
     opts = Map("port" -> "1.1")
     err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPort(opts))
-    assert(err.toNonEmptyList.head.err == InvalidPortError)
+    assert(err.toNonEmptyList.head == InvalidPortError())
   }
 
   it should "parse the failed row tolerance" in {
@@ -122,7 +120,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "error on invalid failed row tolerance" in {
     val opts = Map("failed_rows_percent_tolerance" -> "1.5")
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getFailedRowsPercentTolerance(opts))
-    assert(err.toNonEmptyList.head.err == InvalidFailedRowsTolerance)
+    assert(err.toNonEmptyList.head == InvalidFailedRowsTolerance())
   }
 
   it should "parse the db name" in {
@@ -134,7 +132,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing db name" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getDb(opts))
-    assert(err.toNonEmptyList.head.err == DbMissingError)
+    assert(err.toNonEmptyList.head == DbMissingError())
   }
 
   it should "parse the username" in {
@@ -146,7 +144,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing username" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getUser(opts))
-    assert(err.toNonEmptyList.head.err == UserMissingError)
+    assert(err.toNonEmptyList.head == UserMissingError())
   }
 
   it should "parse the partition count" in {
@@ -158,7 +156,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail on invalid partition count" in {
     val opts = Map("num_partitions" -> "asdf")
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPartitionCount(opts))
-    assert(err.toNonEmptyList.head.err == InvalidPartitionCountError)
+    assert(err.toNonEmptyList.head == InvalidPartitionCountError())
   }
 
   it should "parse the table name" in {
@@ -191,7 +189,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing table name" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getTablename(opts))
-    assert(err.toNonEmptyList.head.err == TablenameMissingError)
+    assert(err.toNonEmptyList.head == TablenameMissingError())
   }
 
   it should "parse the password" in {
@@ -203,7 +201,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing password" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPassword(opts))
-    assert(err.toNonEmptyList.head.err == PasswordMissingError)
+    assert(err.toNonEmptyList.head == PasswordMissingError())
   }
 
   it should "parse the staging filesystem url" in {
@@ -215,7 +213,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "fail with missing staging filesystem url" in {
     val opts = Map[String, String]()
     val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStagingFsUrl(opts))
-    assert(err.toNonEmptyList.head.err == StagingFsUrlMissingError)
+    assert(err.toNonEmptyList.head == StagingFsUrlMissingError())
   }
 
   it should "parse the strlen" in {
@@ -233,11 +231,11 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "error with invalid strlen input" in {
     var opts = Map("strlen" -> "abc123")
     var err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStrLen(opts))
-    assert(err.toNonEmptyList.head.err == InvalidStrlenError)
+    assert(err.toNonEmptyList.head == InvalidStrlenError())
 
     opts = Map("strlen" -> "1.1")
     err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStrLen(opts))
-    assert(err.toNonEmptyList.head.err == InvalidStrlenError)
+    assert(err.toNonEmptyList.head == InvalidStrlenError())
   }
 
   it should "parse target table SQL" in {
@@ -256,11 +254,58 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val stmt = "col1"
     val opts = Map("copy_column_list" -> stmt)
 
-    val res = getResultOrAssert[Option[String]](DSConfigSetupUtils.getCopyColumnList(opts))
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
 
     res match {
-      case Some(str) => assert(str == stmt)
+      case Some(list) => assert(list.toString == stmt)
       case None => fail
     }
+  }
+
+  it should "fail on unquoted semicolon" in {
+    val stmt = "col1,fasd;,fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getCopyColumnList(opts))
+    assert(err.toNonEmptyList.head.isInstanceOf[UnquotedSemiInColumns])
+  }
+
+  it should "don't fail on quoted semicolon" in {
+    val stmt = "col1,\"fa;sd\",fda"
+    val opts = Map("copy_column_list" -> stmt)
+
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getCopyColumnList(opts))
+
+    res match {
+      case Some(list) => assert(list.toString == stmt)
+      case None => fail
+    }
+  }
+
+  it should "parse file permissions" in {
+    val stmt = "-rwxr-xr-x"
+    val opts = Map("file_permissions" -> stmt)
+
+    val res = getResultOrAssert[ValidFilePermissions](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(res.toString == stmt)
+  }
+
+  it should "parse octal file permissions" in {
+    val stmt = "777"
+    val opts = Map("file_permissions" -> stmt)
+
+    val res = getResultOrAssert[ValidFilePermissions](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(res.toString == stmt)
+  }
+
+  it should "fail to parse invalid file permissions" in {
+    val stmt = "777'; DROP TABLE test;"
+    val opts = Map("file_permissions" -> stmt)
+
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getFilePermissions(opts))
+
+    assert(err.toNonEmptyList.head.isInstanceOf[InvalidFilePermissions])
   }
 }

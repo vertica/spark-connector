@@ -11,11 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.core
+package com.vertica.spark.datasource.core.factory
 
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
+import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
 
@@ -38,10 +40,18 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
     config match {
       case cfg: DistributedFilesystemReadConfig =>
         val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.logProvider, cfg.metadata match {
-          case Some(metadata) => Some(metadata.schema)
-          case None => None
+          case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
+            Some(cfg.getRequiredSchema)
+          } else {
+            Some(metadata.schema)
+          }
+          case _ => None
         })
-        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer, new VerticaJdbcLayer(cfg.jdbcConfig), new SchemaTools(cfg.logProvider))
+        new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
+          new VerticaJdbcLayer(cfg.jdbcConfig),
+          new SchemaTools(cfg.logProvider),
+          new CleanupUtils(cfg.logProvider)
+        )
     }
   }
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {

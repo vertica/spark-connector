@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
 import org.apache.spark.sql.types.StructType
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config._
@@ -25,6 +24,8 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
+import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 
 /**
@@ -43,12 +44,12 @@ trait DSConfigSetupInterface[T] {
    *
    * @return Optionally returns partitioning information for the operation when needed
    */
-  def performInitialSetup(config: T): Either[ConnectorError, Option[PartitionInfo]]
+  def performInitialSetup(config: T): ConnectorResult[Option[PartitionInfo]]
 
   /**
     * Returns the schema for the table as required by Spark.
     */
-  def getTableSchema(config: T): Either[ConnectorError, StructType]
+  def getTableSchema(config: T): ConnectorResult[StructType]
 }
 
 
@@ -66,49 +67,49 @@ object DSConfigSetupUtils {
       case "DEBUG" => Level.DEBUG.validNec
       case "WARNING" => Level.WARN.validNec
       case "INFO" => Level.INFO.validNec
-      case _ => ConnectorError(InvalidLoggingLevel).invalidNec
+      case _ => InvalidLoggingLevel().invalidNec
     }.getOrElse(Level.ERROR.validNec)
   }
 
   def getHost(config: Map[String, String]): ValidationResult[String] = {
     config.get("host") match {
       case Some(host) => host.validNec
-      case None => ConnectorError(HostMissingError).invalidNec
+      case None => HostMissingError().invalidNec
     }
   }
 
   def getStagingFsUrl(config: Map[String, String]): ValidationResult[String] = {
     config.get("staging_fs_url") match {
       case Some(address) => address.validNec
-      case None => ConnectorError(StagingFsUrlMissingError).invalidNec
+      case None => StagingFsUrlMissingError().invalidNec
     }
   }
 
   def getPort(config: Map[String, String]): ValidationResult[Int] = {
     Try {config.getOrElse("port","5433").toInt} match {
-      case Success(i) => if (i >= 1 && i <= 65535) i.validNec else ConnectorError(InvalidPortError).invalidNec
-      case Failure(_) => ConnectorError(InvalidPortError).invalidNec
+      case Success(i) => if (i >= 1 && i <= 65535) i.validNec else InvalidPortError().invalidNec
+      case Failure(_) => InvalidPortError().invalidNec
     }
   }
 
   def getFailedRowsPercentTolerance(config: Map[String, String]): ValidationResult[Float] = {
     Try {config.getOrElse("failed_rows_percent_tolerance","0.00").toFloat} match {
-      case Success(f) => if (f >= 0.00 && f <= 1.00) f.validNec else ConnectorError(InvalidFailedRowsTolerance).invalidNec
-      case Failure(_) => ConnectorError(InvalidFailedRowsTolerance).invalidNec
+      case Success(f) => if (f >= 0.00 && f <= 1.00) f.validNec else InvalidFailedRowsTolerance().invalidNec
+      case Failure(_) => InvalidFailedRowsTolerance().invalidNec
     }
   }
 
   def getDb(config: Map[String, String]): ValidationResult[String] = {
     config.get("db") match {
       case Some(db) => db.validNec
-      case None => ConnectorError(DbMissingError).invalidNec
+      case None => DbMissingError().invalidNec
     }
   }
 
   def getUser(config: Map[String, String]): ValidationResult[String] = {
     config.get("user") match {
       case Some(user) => user.validNec
-      case None => ConnectorError(UserMissingError).invalidNec
+      case None => UserMissingError().invalidNec
     }
     //TODO: make option once kerberos support is introduced
   }
@@ -116,7 +117,7 @@ object DSConfigSetupUtils {
   def getTablename(config: Map[String, String]): ValidationResult[String] = {
     config.get("table") match {
       case Some(table) => table.validNec
-      case None => ConnectorError(TablenameMissingError).invalidNec
+      case None => TablenameMissingError().invalidNec
     }
   }
 
@@ -130,7 +131,7 @@ object DSConfigSetupUtils {
   def getPassword(config: Map[String, String]): ValidationResult[String] = {
     config.get("password") match {
       case Some(password) => password.validNec
-      case None => ConnectorError(PasswordMissingError).invalidNec
+      case None => PasswordMissingError().invalidNec
     }
     //TODO: make option once kerberos support is introduced
   }
@@ -139,8 +140,20 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
-  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("copy_column_list").validNec
+
+
+  def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
+    config.get("copy_column_list") match {
+      case None => None.validNec
+      case Some(listStr) => ValidColumnList(listStr)
+    }
+  }
+
+  def getFilePermissions(config: Map[String, String]): ValidationResult[ValidFilePermissions] = {
+    config.get("file_permissions") match {
+      case None => ValidFilePermissions("770") // Default to allowing user and group
+      case Some(str) => ValidFilePermissions(str)
+    }
   }
 
   // Optional param, if not specified the partition count will be decided as part of the inital steps
@@ -148,8 +161,8 @@ object DSConfigSetupUtils {
     config.get("num_partitions") match {
       case Some(partitionCount) => Try{partitionCount.toInt} match {
         case Success(i) =>
-          if(i > 0) Some(i).validNec else ConnectorError(InvalidPartitionCountError).invalidNec
-        case Failure(_) => ConnectorError(InvalidPartitionCountError).invalidNec
+          if(i > 0) Some(i).validNec else InvalidPartitionCountError().invalidNec
+        case Failure(_) => InvalidPartitionCountError().invalidNec
       }
       case None => None.validNec
     }
@@ -157,8 +170,8 @@ object DSConfigSetupUtils {
 
   def getStrLen(config: Map[String, String]) : ValidationResult[Long] = {
     Try {config.getOrElse("strlen","1024").toLong} match {
-      case Success(i) => if (i >= 1 && i <= 32000000) i.validNec else ConnectorError(InvalidStrlenError).invalidNec
-      case Failure(_) => ConnectorError(InvalidStrlenError).invalidNec
+      case Success(i) => if (i >= 1 && i <= 32000000) i.validNec else InvalidStrlenError().invalidNec
+      case Failure(_) => InvalidStrlenError().invalidNec
     }
   }
 
@@ -215,7 +228,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
             fileStoreConfig.validNec,
             tableName.validNec,
             DSConfigSetupUtils.getPartitionCount(config),
-            None.validNec).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+            None.validNec,
+            DSConfigSetupUtils.getFilePermissions(config)).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
               val pipe = pipeFactory.getReadPipe(initialConfig)
 
               // Then, retrieve metadata
@@ -224,7 +238,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
                 case Left(err) => err.invalidNec
                 case Right(meta) => meta match {
                   case readMeta: VerticaReadMetadata => initialConfig.copy(metadata = Some(readMeta)).validNec
-                  case _ => ConnectorError(MissingMetadata).invalidNec
+                  case _ => MissingMetadata().invalidNec
                 }
               }
           }
@@ -233,18 +247,30 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     }
   }
 
-  override def performInitialSetup(config: ReadConfig): Either[ConnectorError, Option[PartitionInfo]] = {
+  /**
+   * Calls read pipe implementation to perform initial setup for the read operation.
+   *
+   * @param config Configuration data for the read operation. Used to construct pipe for performing initial setup.
+   * @return List of partitioning information for the operation to pass down to readers, or error that occured in setup.
+   */
+  override def performInitialSetup(config: ReadConfig): ConnectorResult[Option[PartitionInfo]] = {
     pipeFactory.getReadPipe(config).doPreReadSteps() match {
       case Right(partitionInfo) => Right(Some(partitionInfo))
       case Left(err) => Left(err)
     }
   }
 
-  override def getTableSchema(config: ReadConfig): Either[ConnectorError, StructType] =  {
+  /**
+   * Returns the schema of the table being read
+   *
+   * @param config Configuration data for the read operation. Contains the metadata required for returning the table schema.
+   * @return The table schema or an error that occured trying to retrieve it
+   */
+  override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata, _) =>
         verticaMetadata match {
-          case None => Left(ConnectorError(SchemaDiscoveryError))
+          case None => Left(SchemaDiscoveryError(None))
           case Some(metadata) => Right(metadata.schema)
         }
     }
@@ -281,14 +307,19 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
                 DSConfigSetupUtils.getFailedRowsPercentTolerance(config)
                 ).mapN(DistributedFilesystemWriteConfig)
             case None =>
-              ConnectorError(MissingSchemaError).invalidNec
+              MissingSchemaError().invalidNec
           }
         }
       }
     }
   }
 
-  override def performInitialSetup(config: WriteConfig): Either[ConnectorError, Option[PartitionInfo]] = {
+  /**
+   * Performs initial steps for write operation.
+   *
+   * @return None, partitioning info not needed for write operation.
+   */
+  override def performInitialSetup(config: WriteConfig): ConnectorResult[Option[PartitionInfo]] = {
     val pipe = pipeFactory.getWritePipe(config)
     pipe.doPreWriteSteps() match {
       case Left(err) => Left(err)
@@ -296,8 +327,11 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
-  override def getTableSchema(config: WriteConfig): Either[ConnectorError, StructType] = schema match {
-    case Some(schem) => Right(schem)
-    case None => Left(ConnectorError(SchemaDiscoveryError))
+  /**
+   * Returns the same schema that was passed in to this class.
+   */
+  override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
+    case Some(schema) => Right(schema)
+    case None => Left(SchemaDiscoveryError(None))
   }
 }

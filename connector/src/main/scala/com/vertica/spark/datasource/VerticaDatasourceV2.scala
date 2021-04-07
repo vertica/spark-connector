@@ -20,10 +20,14 @@ import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException}
 import org.apache.spark.sql.SparkSession
 
 import collection.JavaConverters._
 
+case class MissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: spark context did not exist"
+}
 
 /**
  * Entry-Point for Spark V2 Datasource.
@@ -40,10 +44,8 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
    * @param caseInsensitiveStringMap A string map of options that was passed in by user to datasource
    * @return The table's schema in spark StructType format
    */
-  override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap):
-  StructType = {
-
-    val table = getTable(schema = null, partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
+  override def inferSchema(caseInsensitiveStringMap: CaseInsensitiveStringMap): StructType = {
+    val table = getTable(schema = StructType(Nil), partitioning = Array.empty[Transform], properties = caseInsensitiveStringMap)
     table.schema()
   }
 
@@ -69,14 +71,14 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
 
   private val CATALOG_NAME = "vertica"
   override def extractCatalog(options: CaseInsensitiveStringMap): String = {
-    println("EXTRACT CATALOG OPTIONS: ")
-    options.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
-
-    // Set the spark conf for catalog class
-    SparkSession.getActiveSession.get.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
-
     // Add all passed in options to spark catalog options
     VerticaDatasourceV2Catalog.setOptions(options)
+
+    // Set the spark conf for catalog class
+    SparkSession.getActiveSession match {
+      case Some(session) => session.conf.set("spark.sql.catalog." + CATALOG_NAME, "com.vertica.spark.datasource.v2.VerticaDatasourceV2Catalog")
+      case None => throw new ConnectorException(MissingSparkSessionError())
+    }
 
     CATALOG_NAME
   }

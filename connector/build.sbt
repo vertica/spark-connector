@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-scalaVersion := "2.12.0"
+scalaVersion := "2.12.10"
 name := "spark-vertica-connector"
 organization := "com.vertica"
 version := "1.0"
@@ -43,7 +43,6 @@ import sbtsonar.SonarPlugin.autoImport.sonarProperties
 
 sonarProperties ++= Map(
   "sonar.host.url" -> "http://localhost:80",
-  "sonar.coverage.exclusions" -> "**/*FileStoreLayerInterface.scala,**/*VerticaJdbcLayer.scala"
 )
 
 scapegoatVersion in ThisBuild := "1.3.3"
@@ -54,5 +53,20 @@ scalacOptions += "-Ypartial-unification"
 scalastyleFailOnError := true
 scalastyleFailOnWarning := true
 
+// Explanation for exclusions from unit test coverage:
+// - JDBC Layer: excluded as a bottom-layer component that does IO -- covered by integration tests.
+// - File Store Layer: excluded as a bottom-layer component that does IO -- covered by integration tests.
+// - Pipe Factory: as the rest of the components rely on abstract interfaces, this is the place
+//   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*"
+coverageMinimum := 59
+coverageFailOnMinimum := true
 
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
+)
 
+assemblyExcludedJars in assembly := {
+  val cp = (fullClasspath in assembly).value
+  cp filter {_.data.getName.contains("spark")}
+}

@@ -8,12 +8,9 @@
  </check>
  <check level="warning" class="org.scalastyle.file.HeaderMatchesChecker" enabled="true">
   <parameters>
-   <parameter name="header"><![CDATA[// Copyright (C) 2011-2012 the original author or authors.
-// See the LICENCE.txt file distributed with this work for additional
-// information regarding copyright ownership.
-//
+   <parameter name="header"><![CDATA[// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// You may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
@@ -28,7 +25,7 @@
  <check level="warning" class="org.scalastyle.scalariform.SpacesAfterPlusChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.file.WhitespaceEndOfLineChecker" enabled="true"></check>
  <check level="warning" class="org.scalastyle.scalariform.SpacesBeforePlusChecker" enabled="true"></check>
- <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="false">
   <parameters>
    <parameter name="maxLineLength"><![CDATA[160]]></parameter>
    <parameter name="tabSize"><![CDATA[4]]></parameter>
@@ -78,12 +75,12 @@
    <parameter name="regex"><![CDATA[println]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.NumberOfTypesChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.NumberOfTypesChecker" enabled="false">
   <parameters>
    <parameter name="maxTypes"><![CDATA[30]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.CyclomaticComplexityChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.CyclomaticComplexityChecker" enabled="false">
   <parameters>
    <parameter name="maximum"><![CDATA[10]]></parameter>
   </parameters>
@@ -96,7 +93,7 @@
    <parameter name="doubleLineAllowed"><![CDATA[false]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true">
+ <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="false">
   <parameters>
    <parameter name="maxLength"><![CDATA[50]]></parameter>
   </parameters>

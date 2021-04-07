@@ -22,6 +22,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalactic.TripleEquals._
 import org.scalactic.Tolerance._
+import org.apache.spark.sql.functions._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
   val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
@@ -51,6 +52,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "read 20 rows of data from Vertica" in {
@@ -66,6 +68,157 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 20)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "perform aggregations" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(4, 7)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val sumDf = df.agg(sum("a") as "sum", avg("b") as "avg", max("b") as "max")
+    assert(sumDf.head.get(0) == 2*n + 4*n)
+    assert(sumDf.head.get(1) == 5)
+    assert(sumDf.head.get(2) == 7)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+
+  it should "df alias and join" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    println("Getting count")
+    println("Count: " + df.count())
+
+
+    println("Getting as1")
+    val df_as1 = df.as("df1")
+
+    println("Getting as2")
+    val df_as2 = df.as("df2")
+
+    println("Joining")
+    val joined_df = df_as1.join(
+      df_as2, col("df1.a") === col("df2.b"), "inner")
+    assert(joined_df.collect().length == n*n)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "collect results" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val arr = df.collect()
+
+    assert(arr.length == n*2)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "return column names" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val cols = df.columns
+    assert(cols(0) == "a")
+    assert(cols(1) == "b")
+    assert(cols(2) == "c")
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "sort" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.sort("a").head.get(1) == 3)
+    assert(df.sort("b").head.get(0) == 5)
+    assert(df.sort("c").head.get(0) == 3)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "get distinct elements" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.distinct().count() == 3)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "drop and take" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c float)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 5.5)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+    val insert3 = "insert into "+ tableName1 + " values(5, 2, 10.0)"
+    TestUtils.populateTableBySQL(stmt, insert3, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfMinusCols = df.drop("a").drop("c")
+    assert(dfMinusCols.distinct().sort("b").take(1)(0).get(0) == 2)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame schema" in {
@@ -85,6 +238,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val sc = StructType(Array(StructField("a",LongType,nullable = true), StructField("b",DoubleType,nullable = true)))
 
     assert(schema.toString equals sc.toString)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame projection" in {
@@ -102,6 +256,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(count == n)
     assert(filtered.columns.mkString equals Array("a").mkString)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "support data frame filter" in {
@@ -120,6 +275,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val count = filtered.count()
 
     assert(count == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [ALL] nodes" in {
@@ -131,6 +287,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [ALL] nodes" in {
@@ -142,6 +299,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [SOME] nodes for [arbitrary partition number]" in {
@@ -156,6 +314,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
       assert(r == n)
     }
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [SEGMENTED] on [Some] nodes" in {
@@ -167,6 +326,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [Some] nodes" in {
@@ -178,6 +338,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
 
     assert(r == n)
+    TestUtils.dropTable(conn, tableName1)
   }
 
   it should "load data from Vertica table that is [UNSEGMENTED] on [One] nodes for [arbitrary partition number]" in {
@@ -340,7 +501,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val dfFiltered1 = df.filter("a < cast('2001-01-01' as DATE)")
+    val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
     val r = dfFiltered1.count
@@ -488,7 +649,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-  it should "load data from Vertica with no column projection pushdown" in {
+  it should "load data from Vertica with select * projection pushdown" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement()
     val n = 3
@@ -513,6 +674,92 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(executedPlanString.contains("meToo"))
 
     dr.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with no column projection pushdown" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (includeMe TIMESTAMP, meToo float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val executedPlanString = df
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(executedPlanString.contains("includeMe"))
+    assert(executedPlanString.contains("meToo"))
+
+    df.show
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a column projection pushdown with the correct values" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (excludeMe INTEGER, includeMe INTEGER)")
+
+    var insert = "insert into "+ tableName1 + " values(1, 2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(5, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.select("includeMe")
+
+    val executedPlanString = dr
+      .queryExecution
+      .executedPlan
+      .toString()
+
+    assert(!executedPlanString.contains("excludeMe"))
+    assert(executedPlanString.contains("includeMe"))
+
+    assert(dr.collect().mkString(",") == "[2],[2],[2],[3],[3],[3],[3]")
+
+    stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a filter pushdown with the correct values" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a INTEGER, b INTEGER)")
+
+    var insert = "insert into "+ tableName1 + " values(4, 6)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(23, 7)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dfFiltered = df.filter("a < 10")
+
+    val r = dfFiltered.count
+
+    assert(!dfFiltered
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(r == n)
+
+    assert(dfFiltered.collect().mkString(",") == "[4,6],[4,6],[4,6]")
+
     stmt.execute("drop table " + tableName1)
   }
 
@@ -682,6 +929,92 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         assert(rs.getInt(2) == 0)
         assert(rs.getString(3) == "goodbye")
       }
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  private def escapeSql(v: String) = v.replace("\"", "\"\"")
+
+  it should "fail to inject SQL w/ tablename to drop table" in {
+    val tableName = "blah; DROP TABLE blah2; SELECT * FROM "
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + tableName + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "fail to inject SQL w/ tablename using \" to drop table" in {
+    val tableName = "blah\"; DROP TABLE blah2; SELECT * FROM \""
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + escapeSql(tableName) + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, escapeSql(tableName))
+  }
+
+  it should "fail to inject SQL w/ tablename using ' to drop table" in {
+    val tableName = "blah'; DROP TABLE blah2; SELECT * FROM '"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM \"" + tableName + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
     }
     catch{
       case err : Exception => fail(err)
@@ -1875,12 +2208,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName = "s2vdevtest35"
     val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
 
-    // jeff
     val c = java.util.Calendar.getInstance()
     c.set(1965,1,1, 1,1,1)
     val ms = new java.util.Date(c.getTimeInMillis)
 
-    //hua
     val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
     val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1999-01-01")
 
@@ -2666,6 +2997,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
+    TestUtils.dropTable(conn, "peopleTable")
   }
 
   it should "fail to save a DF if there are syntax errors in target_table_ddl" in {
@@ -2765,6 +3097,92 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failureMessage = e.toString
     }
     assert (failureMessage.nonEmpty)
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Verify writing old dateType works" in {
+    val tableName = "s2vdevtestoldwrite"
+    val schema = StructType(StructField("dt", DateType, nullable=true)::Nil)
+
+    val c = java.util.Calendar.getInstance()
+    c.set(1822,1,1, 1,1,1)
+    val ms = new java.util.Date(c.getTimeInMillis)
+
+    val date1 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("1555-07-05")
+    val date3 = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("0455-01-01")
+
+    val inputData = Seq(
+      new java.sql.Date(date1.getTime),
+      new java.sql.Date(date3.getTime),
+      new java.sql.Date(ms.getTime),
+      null
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema)
+    df.show
+    df.schema
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a date)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var rowsLoaded = 0
+    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert ( rowsLoaded == numDfRows )
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Verify writing old timestamp type works" in {
+    val tableName = "s2vdevtestoldwritetime"
+    val schema = StructType(StructField("dt", TimestampType, nullable=true)::Nil)
+
+    val timestampInMicros = System.currentTimeMillis() * 1000
+
+    val inputData = Seq(
+      Timestamp.valueOf("1855-01-01 23:00:01")
+    )
+    val rowRDD = spark.sparkContext.parallelize(inputData).map(p => Row(p))
+    val df = spark.createDataFrame(rowRDD, schema)
+    df.show
+    df.schema
+    val numDfRows = df.count()
+
+    val stmt = conn.createStatement()
+    stmt.execute("DROP TABLE IF EXISTS "+ tableName)
+    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a timestamp)")
+
+    val options = writeOpts + ("table" -> tableName)
+
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+
+    var rowsLoaded = 0
+    val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
+    try {
+      val rs = stmt.executeQuery(query)
+      if (rs.next) {
+        rowsLoaded = rs.getInt("cnt")
+      }
+    }
+    finally {
+      stmt.close()
+    }
+    assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
 }

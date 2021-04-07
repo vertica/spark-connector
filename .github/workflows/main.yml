@@ -36,7 +36,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v2
       - name: Run unit tests
-        run: cd connector && sbt test
+        run: cd connector && sbt coverage test coverageReport
   run-integration-tests:
     runs-on: ubuntu-latest
     needs: build

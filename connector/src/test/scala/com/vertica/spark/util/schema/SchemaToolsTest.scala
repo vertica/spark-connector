@@ -24,8 +24,6 @@ import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.SchemaErrorType._
-import com.vertica.spark.util.error.JdbcErrorType._
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -42,7 +40,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
 
-    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0").returning(Right(resultSet))
+    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0", *).returning(Right(resultSet))
     (resultSet.getMetaData _).expects().returning(rsmd)
     (resultSet.close _).expects()
 
@@ -282,6 +280,63 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  it should "parse time type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIME, "TIME", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse interval type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "interval", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse uuid type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "uuid", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse other type with error" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "asdf", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(e) => e.isInstanceOf[MissingSqlConversionError]
+      case Right(_) => fail
+    }
+  }
+
   it should "parse rowid to long type" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
@@ -325,7 +380,10 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 4)
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) => assert(errList.size == 4)
+      case Left(err) => assert(err.getError match {
+          case ErrorList(errors) => errors.size == 4
+          case _ => false
+        })
       case Right(_) => fail
     }
   }
@@ -338,10 +396,55 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 2)
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) =>
-        assert(errList.size == 2)
-        assert(errList.head.err == MissingConversionError)
-        assert(errList(1).err == MissingConversionError)
+      case Left(err) =>
+        assert(err.getError match {
+          case ErrorList(errors) => errors.size == 2
+          case _ => false
+        })
+        assert(err.getError match {
+          case ErrorList(errors) => errors.head match {
+            case MissingSqlConversionError(_, _) => true
+            case _ => false
+          }
+          case _ => false
+        })
+        assert(err.getError match {
+          case ErrorList(errors) => errors.tail.head match {
+            case MissingSqlConversionError(_, _) => true
+            case _ => false
+          }
+          case _ => false
+        })
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid SQL types to Spark types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+      case Left(err) =>
+        err.getError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported SQL type: invalid-type" +
+            "\nSQL type value: 50000"))
+          case _ => false
+        }
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
+    new SchemaTools(logProvider).getVerticaTypeFromSparkType(CharType(0), 0) match {
+      case Left(err) =>
+        err.getError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported Spark type: CharType"))
+          case _ => false
+        }
       case Right(_) => fail
     }
   }
@@ -349,12 +452,14 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    (jdbcLayer.query _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
+    (jdbcLayer.query _).expects(*,*).returning(Left(ConnectionError(new Exception())))
 
     new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
-      case Left(errList) =>
-        assert(errList.size == 1)
-        assert(errList.head.err == JdbcError)
+      case Left(err) =>
+        assert(err.getError match {
+          case JdbcSchemaError(_) => true
+          case _ => false
+        })
       case Right(_) => fail
     }
   }
@@ -398,7 +503,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val schemaTools = new SchemaTools(logProvider)
 
     schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
-      case Left(err) => fail(err.msg)
+      case Left(err) => fail(err.getFullContext)
       case Right(str) => assert(str == "(\"col1\",\"col2\")")
     }
   }

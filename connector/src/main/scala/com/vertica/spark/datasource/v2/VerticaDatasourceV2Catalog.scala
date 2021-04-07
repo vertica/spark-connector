@@ -15,13 +15,13 @@ package com.vertica.spark.datasource.v2
 
 import java.util
 
+import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup}
 import org.apache.spark.sql.catalyst.analysis.{NoSuchNamespaceException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.connector.catalog.{Identifier, Table, TableCatalog, TableChange}
 import org.apache.spark.sql.connector.expressions.Transform
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-
-import collection.JavaConverters._
 
 final case class NoCatalogException(private val message: String = "Catalog functionality not implemented for Vertica source.")
   extends Exception(message)
@@ -33,19 +33,17 @@ final case class NoCatalogException(private val message: String = "Catalog funct
  * and indicates whether the table already exists. This is in place to allow for the Ignore and ErrorIfExist
  * save modes.
  */
-class VerticaDatasourceV2Catalog extends TableCatalog{
-
+class VerticaDatasourceV2Catalog() extends TableCatalog{
+  var readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup
 
   override def initialize(name: String, options: CaseInsensitiveStringMap): Unit = {
-    println("CATALOG OPTIONS: ")
-    options.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
     VerticaDatasourceV2Catalog.catalogOptions = Some(options)
   }
 
   override def tableExists(ident: Identifier): Boolean = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
 
-    val table = new VerticaTable(opt)
+    val table = new VerticaTable(opt, readSetupInterface)
     val schema = table.schema()
 
     schema.nonEmpty
@@ -54,16 +52,13 @@ class VerticaDatasourceV2Catalog extends TableCatalog{
   override def name: String = "VerticaCatalog"
 
   @throws[NoSuchNamespaceException]
-  override def listTables(namespace: Array[String]): Array[Identifier] = ???
+  override def listTables(namespace: Array[String]): Array[Identifier] = throw new NoCatalogException
 
   @throws[NoSuchTableException]
   override def loadTable(ident: Identifier): Table = {
     val opt = VerticaDatasourceV2Catalog.getOptions.getOrElse(throw new NoSuchTableException(ident))
 
-    println("Loading table with OPTIONS: ")
-    opt.asScala.toMap.foreach(p => println(">>> key=" + p._1 + ", value=" + p._2))
-
-    new VerticaTable(opt)
+    new VerticaTable(opt, readSetupInterface)
   }
 
   @throws[TableAlreadyExistsException]
@@ -91,7 +86,7 @@ object VerticaDatasourceV2Catalog {
   private var catalogOptions: Option[CaseInsensitiveStringMap] = None
   private var operationOptions: Option[CaseInsensitiveStringMap] = None
 
-  def setOptions(opts: CaseInsensitiveStringMap) = {
+  def setOptions(opts: CaseInsensitiveStringMap): Unit = {
     this.operationOptions = Some(opts)
   }
 

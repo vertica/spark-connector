@@ -15,4 +15,14 @@ package com.vertica.spark.config
 
 import ch.qos.logback.classic.Level
 
+/**
+ * Configuration for a JDBC connection to Vertica.
+ *
+ * @param host hostname for the JDBC connection
+ * @param port port for the JDBC connection
+ * @param db name of the Vertica database to connect to
+ * @param username hash-based authentication user
+ * @param password hash-based authentication user
+ * @param logLevel log level
+ */
 final case class JDBCConfig(host: String, port: Int, db: String, username: String, password: String, override val logLevel: Level) extends GenericConfig

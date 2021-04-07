@@ -19,7 +19,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
 import org.scalamock.scalatest.MockFactory
-import com.vertica.spark.util.error.ConnectorErrorType._
+import com.vertica.spark.util.error.{DbMissingError, PasswordMissingError, UserMissingError}
 
 
 class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -57,9 +57,9 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(errSeq) =>
         assert(errSeq.toNonEmptyList.size == 3)
-        assert(!errSeq.filter(err => err.err == UserMissingError).isEmpty)
-        assert(!errSeq.filter(err => err.err == PasswordMissingError).isEmpty)
-        assert(!errSeq.filter(err => err.err == DbMissingError).isEmpty)
+        assert(!errSeq.filter(err => err == UserMissingError()).isEmpty)
+        assert(!errSeq.filter(err => err == PasswordMissingError()).isEmpty)
+        assert(!errSeq.filter(err => err == DbMissingError()).isEmpty)
       case Valid(_) =>
         fail // should not succeed
     }

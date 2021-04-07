@@ -14,9 +14,10 @@
 package com.vertica.spark.util.cleanup
 
 import cats.implicits.toTraverseOps
+import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ConnectorErrorType.CleanupError
+import com.vertica.spark.util.error.{CleanupError, ConnectorError, ParentDirMissingError}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
 /**
@@ -41,7 +42,7 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param fileCleanupInfo Cleanup information for a portion of the file.
    */
-  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : Either[ConnectorError, Unit]
+  def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo) : ConnectorResult[Unit]
 
   /**
    * Cleanup all files
@@ -49,13 +50,14 @@ trait CleanupUtilsInterface {
    * @param fileStoreLayer Interface to interact with the filestore where files requiring cleaning are.
    * @param path Path of directory
    */
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit]
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit]
 }
 
-object CleanupUtils extends CleanupUtilsInterface {
+class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
+  private val logger = logProvider.getLogger(classOf[CleanupUtils])
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
-  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : Either[ConnectorError, Unit] = {
+  def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
     // Cleanup parent dir (unique id)
     val p = new Path(s"$path")
     val parent = p.getParent
@@ -64,33 +66,75 @@ object CleanupUtils extends CleanupUtilsInterface {
       Right(())
     }
     else {
-      Left(ConnectorError(CleanupError))
+      Left(CleanupError(path))
     }
   }
 
-  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): Either[ConnectorError, Unit] = {
+  private def cleanupParentDirIfEmpty(fileStoreLayer: FileStoreLayerInterface, path: String): Either[ConnectorError, Unit]= {
+    for {
+      parentPath <- getParentHadoopPath(path)
+      allFiles <- fileStoreLayer.getFileList(parentPath)
+      parentPath2 <- getParentHadoopPath(parentPath)
+      _ <- if(allFiles.isEmpty) fileStoreLayer.removeDir(parentPath2) else Right(())
+    } yield ()
+  }
+
+  /**
+   * Uses java-based hadoop path to retrieve the parent path. Checks for null safety here.
+   */
+  private def getParentHadoopPath(path: String): ConnectorResult[String] = {
+    val p = new Path(s"$path")
+    val parent = p.getParent
+    if(parent != null) Right(parent.toString) else Left(ParentDirMissingError(path))
+  }
+
+  private def performCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo ): ConnectorResult[Unit] = {
     val filename = fileCleanupInfo.filename
+
+    for {
+      // Delete all portions
+      _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
+        logger.debug("Removing: " + recordFileName(filename, idx))
+        fileStoreLayer.removeFile(recordFileName(filename, idx))}).toList.sequence
+
+      // Delete the original file
+      _ = logger.debug("Removing parquet: " + filename)
+      _ <- fileStoreLayer.removeFile(filename)
+
+      // Delete the directory if empty
+      _ <- this.cleanupParentDirIfEmpty(fileStoreLayer, filename)
+    } yield ()
+  }
+
+  override def checkAndCleanup(fileStoreLayer: FileStoreLayerInterface, fileCleanupInfo: FileCleanupInfo): ConnectorResult[Unit] = {
+    val filename = fileCleanupInfo.filename
+    logger.info("Doing partition cleanup of file: " + filename)
+
     for {
       // Create the file for this portion
       _ <- fileStoreLayer.createFile(recordFileName(filename, fileCleanupInfo.fileIdx))
 
+      _ = logger.debug("File: " + filename + ", Checking file existance")
+      _ = logger.debug("File: " + filename + ", File idx: " + fileCleanupInfo.fileIdx)
+      _ = logger.debug("File: " + filename + ", File range count: " + fileCleanupInfo.fileRangeCount)
+
       // Check if all portions are written
-      filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-          fileStoreLayer.fileExists(recordFileName(filename, idx))
-        ).toList.sequence
-      allExist <- Right(filesExist.forall(identity))
+      filesExist <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
+           logger.debug("Checking existence: " + recordFileName(filename, idx))
+           fileStoreLayer.fileExists(recordFileName(filename, idx))
+        }).toList.sequence
+      allExist <- Right(filesExist.forall(x => x))
 
-      // Delete all portions
-      _ <- if(allExist){
-          (0 until fileCleanupInfo.fileRangeCount).map(idx =>
-                fileStoreLayer.removeFile(recordFileName(filename, idx))
-              ).toList.sequence
-           } else Right(())
+      _ = logger.debug("File: " + filename + ", filesExist: " + filesExist.toString())
+      _ = logger.debug("File: " + filename + ", All exist: " + allExist)
 
-      // Delete the original file
       _ <- if(allExist) {
-            fileStoreLayer.removeFile(filename)
-          } else Right(())
+        logger.debug("File: " + filename + ", Performing cleanup")
+        performCleanup(fileStoreLayer, fileCleanupInfo)
+      } else {
+        Right(())
+      }
+
     } yield ()
   }
 }

@@ -17,13 +17,14 @@ import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import java.sql.ResultSetMetaData
 
+import cats.data.NonEmptyList
 import cats.implicits._
 
 import scala.util.Either
 import cats.instances.list._
 import com.vertica.spark.config.LogProvider
+import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.SchemaErrorType._
 
 import scala.util.control.Breaks.{break, breakable}
 
@@ -37,15 +38,54 @@ case class ColumnDef(
                       nullable: Boolean,
                       metadata: Metadata)
 
+/**
+ * Interface for functionality around retrieving and translating schema.
+ */
 trait SchemaToolsInterface {
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): Either[Seq[SchemaError], StructType]
+  /**
+   * Retrieves the schema of Vertica table in Spark format.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of table we want the schema of.
+   * @return StructType representing table's schema converted to Spark's schema type.
+   */
+  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[StructType]
 
-  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[SchemaError, Seq[ColumnDef]]
+  /**
+   * Retrieves the schema of Vertica table in format of list of column definitions.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of table we want the schema of.
+   * @return Sequence of ColumnDef, representing the Vertica structure of schema.
+   */
+  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[Seq[ColumnDef]]
 
-  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String]
+  /**
+   * Returns the Vertica type to use for a given Spark type.
+   *
+   * @param sparkType One of Sparks' DataTypes
+   * @param strlen Necessary if the type is StringType, string length to use for Vertica type.
+   * @return String representing Vertica type, that one could use in a create table statement
+   */
+  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String]
 
-  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String]
+  /**
+   * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
+   *
+   * @param jdbcLayer Depedency for communicating with Vertica over JDBC
+   * @param tablename Name of the table.
+   * @param schema Schema of data in spark.
+   * @return
+   */
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): ConnectorResult[String]
 
+  /**
+   * Matches a list of columns against a required schema, only returning the list of matches in string form.
+   *
+   * @param columnDefs List of column definitions from the Vertica table.
+   * @param requiredSchema Set of columns in Spark schema format that we want to limit the column list to.
+   * @return List of columns in matches.
+   */
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 }
 
@@ -58,8 +98,6 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
     scale: Int,
     signed: Boolean,
     typename: String): Either[SchemaError, DataType] = {
-    println("The type is: " + sqlType)
-    println("The type name is: " + typename)
     val answer = sqlType match {
       // scalastyle:off
       case java.sql.Types.ARRAY => null
@@ -104,13 +142,13 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
       case _ => null
     }
 
-    if (answer == null) Left(SchemaError(MissingConversionError, sqlType.toString))
+    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
     else Right(answer)
   }
 
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[Seq[SchemaError], StructType] = {
+  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[StructType] = {
     this.getColumnInfo(jdbcLayer, tablename) match {
-      case Left(err) => Left(List(err))
+      case Left(err) => Left(err)
       case Right(colInfo) =>
         val errorsOrFields: List[Either[SchemaError, StructField]] = colInfo.map(info => {
             this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName).map(columnType =>
@@ -118,17 +156,18 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
           }).toList
         errorsOrFields
           // converts List[Either[A, B]] to Either[List[A], List[B]]
-          .traverse(_.leftMap(err => List(err)).toValidated).toEither
+          .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
           .map(field => StructType(field))
+          .left.map(errors => ErrorList(errors))
     }
   }
 
-  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String) : Either[SchemaError, Seq[ColumnDef]] = {
+  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[Seq[ColumnDef]] = {
     // Query for an empty result set from Vertica.
     // This is simply so we can load the metadata of the result set
     // and use this to retrieve the name and type information of each column
     jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0") match {
-      case Left(err) => Left(SchemaError(JdbcError, err.msg))
+      case Left(err) => Left(JdbcSchemaError(err))
       case Right(rs) =>
         try {
           val rsmd = rs.getMetaData
@@ -146,8 +185,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         }
         catch {
           case e: Throwable =>
-            logger.error("Could not get column info: ", e)
-            Left(SchemaError(UnexpectedExceptionError, e.getMessage))
+            Left(DatabaseReadError(e).context("Could not get column info"))
         }
         finally {
           rs.close()
@@ -156,7 +194,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
   }
 
 
-  override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): Either[SchemaError, String] = {
+  override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
       case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(65000)")
       case org.apache.spark.sql.types.BooleanType => Right("BOOLEAN")
@@ -183,12 +221,12 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(65000)")
 
 
-      case _ => Left(SchemaError(MissingConversionError))
+      case _ => Left(MissingSparkConversionError(sparkType))
     }
   }
 
 
-  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): Either[SchemaError, String] = {
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): ConnectorResult[String] = {
     for {
       columns <- getColumnInfo(jdbcLayer, tablename)
 
@@ -220,10 +258,9 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
         })
         // Verify DataFrame column count <= target table column count
         if (!(schema.length <= colCount)) {
-          logger.error("Error: Number of columns in the target table should be greater or equal to number of columns in the DataFrame. "
+          Left(TableNotEnoughRowsError().context("Error: Number of columns in the target table should be greater or equal to number of columns in the DataFrame. "
             + " Number of columns in DataFrame: " + schema.length + ". Number of columns in the target table: "
-            + tablename + ": " + colCount)
-          Left(SchemaError(TableNotEnoughRowsError))
+            + tablename + ": " + colCount))
         }
         // Load by Name:
         // if all cols in DataFrame were found in target table

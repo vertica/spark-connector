@@ -16,8 +16,11 @@ package com.vertica.spark.datasource.v2
 import java.util
 
 import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.datasource.core.{DSReadConfigSetup, DSWriteConfigSetup}
+import ch.qos.logback.classic.Level
+import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
+import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -31,7 +34,7 @@ import collection.JavaConverters._
  *
  * Supports Read and Write functionality.
  */
-class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends Table with SupportsRead with SupportsWrite {
+class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup) extends Table with SupportsRead with SupportsWrite {
 
   // Cache the scan builder so we don't build it twice
   var scanBuilder : Option[VerticaScanBuilder] = None
@@ -51,7 +54,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
    */
   override def schema(): StructType = {
     // Check if there's a valid read config with schema for the table, if not return empty schema
-    (new DSReadConfigSetup).validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
+    readSetupInterface.validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap) match {
       case Invalid(_) => new StructType()
       case Valid(_) => this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
     }
@@ -65,7 +68,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
    */
   override def capabilities(): util.Set[TableCapability] =
     Set(TableCapability.BATCH_READ, TableCapability.BATCH_WRITE, TableCapability.OVERWRITE_BY_FILTER,
-      TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava  // Update this set with any capabilities this table supports
+      TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava
 
   /**
    * Returns a scan builder for reading from Vertica
@@ -77,16 +80,15 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
     this.scanBuilder match {
       case Some(builder) => builder
       case None =>
-        val config = (new DSReadConfigSetup).validateAndGetConfig(options.asScala.toMap) match {
+        val config = readSetupInterface.validateAndGetConfig(options.asScala.toMap) match {
           case Invalid(errList) =>
-            val errMsgList = for (err <- errList) yield err.msg
-            val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-            throw new Exception(msg)
+            val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+            ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
           case Valid(cfg) => cfg
         }
         config.getLogger(classOf[VerticaTable]).debug("Config loaded")
 
-        val scanBuilder = new VerticaScanBuilder(config)
+        val scanBuilder = new VerticaScanBuilder(config, readSetupInterface)
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
     }
@@ -99,16 +101,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap) extends T
    */
   def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
   {
-    val config = new DSWriteConfigSetup(schema = Some(info.schema)).validateAndGetConfig(info.options.asScala.toMap) match {
-      case Invalid(errList) =>
-        val errMsgList = for (err <- errList) yield err.msg
-        val msg: String = errMsgList.toNonEmptyList.toList.mkString(",\n")
-        throw new Exception(msg)
-      case Valid(cfg) => cfg
-    }
-    config.getLogger(classOf[VerticaTable]).debug("Config loaded")
-
-    new VerticaWriteBuilder(config)
+    new VerticaWriteBuilder(info, new DSWriteConfigSetup(schema = Some(info.schema)))
   }
 }
 

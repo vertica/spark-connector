@@ -21,15 +21,13 @@ import com.vertica.spark.util.schema._
 import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.error.ConnectorErrorType._
-import com.vertica.spark.util.error.SchemaErrorType._
-import com.vertica.spark.util.error.JdbcErrorType._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{EqualTo, Filter, GreaterThan, LessThan}
+import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -53,25 +51,26 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       fileStoreConfig = fileStoreConfig,
       tablename = tablename,
       partitionCount = None,
-      metadata = Some(VerticaReadMetadata(new StructType())))
+      metadata = Some(VerticaReadMetadata(new StructType())),
+      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
   }
 
   private def makeIntColumnDef: ColumnDef = {
     ColumnDef("col1", java.sql.Types.INTEGER, "INT", size, scale, signed = false, nullable = true, metadata)
   }
 
-  private def mockJdbcLayer(expectedJdbcCommand: String): JdbcLayerInterface = {
+  private def mockJdbcLayer(expectedJdbcCommand: String, expectedJdbcParams: Seq[JdbcLayerParam] = Seq()): JdbcLayerInterface = {
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(expectedJdbcCommand, expectedJdbcParams).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
     jdbcLayer
   }
 
   private def mockFileStoreLayer(config: DistributedFilesystemReadConfig): FileStoreLayerInterface = {
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
-    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
+    (fileStoreLayer.fileExists _).expects(expectedAddress).returning(Right(false))
+    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example.parquet")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
     fileStoreLayer
   }
@@ -87,15 +86,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     schemaTools
   }
 
-  private def failOnError[T](either: Either[ConnectorError, T]): Unit = {
-    either match {
-      case Left(err) => fail(err.msg)
+  private def failOnError[T](result: ConnectorResult[T]): Unit = {
+    result match {
+      case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
     }
   }
 
   it should "retrieve metadata when not provided" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, partitionCount = None, metadata = None)
+    val config = makeReadConfig.copy(metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Right(new StructType()))
@@ -110,7 +109,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   it should "use full schema" in {
     val fullTablename = TableName("table", Some("schema"))
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, partitionCount = None, tablename = fullTablename, metadata = None)
+    val config = makeReadConfig.copy(tablename = fullTablename, metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,fullTablename.getFullTableName).returning(Right(new StructType()))
@@ -121,7 +120,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "return cached metadata" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
@@ -132,32 +131,31 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "return an error when there's an issue parsing schema" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = None)
+    val config = makeReadConfig.copy(metadata = None)
 
     val mockSchemaTools = mock[SchemaToolsInterface]
-      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(List(SchemaError(MissingConversionError, "unknown"))))
+      (mockSchemaTools.readSchema _).expects(*,tablename.getFullTableName).returning(Left(MissingSqlConversionError("unknown", "")))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
     pipe.getMetadata match {
-      case Left(err) => assert(err.err == SchemaDiscoveryError)
+      case Left(err) => assert(err.getError match {
+        case SchemaDiscoveryError(_) => true
+        case _ => false
+      })
       case Right(_) => fail
     }
   }
 
   it should "call Vertica to export parquet files on pre read steps" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
-    val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(expectedAddress).returning(Right())
-    (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example")))
-    (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
+    val fileStoreLayer = mockFileStoreLayer(config)
 
     val jdbcLayer = mock[JdbcLayerInterface]
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
-    (jdbcLayer.execute _).expects(expectedJdbcCommand).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(expectedJdbcCommand, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -169,14 +167,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "return an error when there's a filesystem failure" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+    (fileStoreLayer.fileExists _).expects(*).returning(Left(ParentDirMissingError("")))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
@@ -184,21 +182,21 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == FileSystemError)
+      case Left(err) => assert(err.getError == ParentDirMissingError(""))
       case Right(_) => fail
     }
   }
 
   it should "return an error when there's a JDBC failure" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Left(JDBCLayerError(ConnectionError)))
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Left(ConnectionError(new Exception())))
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -210,18 +208,21 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == ExportFromVerticaError)
+      case Left(err) => assert(err.getError match {
+        case ExportFromVerticaError(_) => true
+        case _ => false
+      })
       case Right(_) => fail
     }
   }
 
   // Default partition count of 1 per file, with equal partition counts
   it should "return partitioning info from pre-read steps based on files from filesystem" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet", expectedAddress+"/t1p2.parquet", expectedAddress+"/t1p3.parquet")
@@ -232,8 +233,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right())
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -264,11 +265,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val partitionCount = 15
     val rowGroupCount = 29
 
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet")
@@ -279,8 +280,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right())
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -318,11 +319,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val rowGroupPerFile = 5
     // With 3 files so 15 total row groups, partitions should end up containning rows as such: [4,4,4,3]
 
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -336,8 +337,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -359,17 +360,16 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-
   it should "Construct file range count map and pass include it in partitions" in {
     val partitionCount = 4
     val rowGroupPerFile = 5
     // With 3 files so 15 total row groups, partitions should end up containning rows as such: [4,4,4,3]
 
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = Some(partitionCount), metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -383,8 +383,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -410,15 +410,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "Return an error when there is a problem retrieving file list" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right(()))
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right(()))
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -429,28 +429,28 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
-    (fileStoreLayer.getFileList _).expects(*).returning(Left(ConnectorError(FileSystemError)))
+    (fileStoreLayer.getFileList _).expects(*).returning(Left(ParentDirMissingError("")))
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == FileSystemError)
+      case Left(err) => assert(err.getError == ParentDirMissingError(""))
       case Right(_) => fail
     }
   }
 
   it should "Return an error when there are no files to create partitions from" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*).returning(Right())
-    (fileStoreLayer.removeDir _).expects(*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String]()
     (fileStoreLayer.getFileList _).expects(*).returning(Right(exportedFiles))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.execute _).expects(*).returning(Right())
-    (jdbcLayer.close _).expects().returning()
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -462,13 +462,13 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.err == PartitioningError)
+      case Left(err) => assert(err.getError == FileListEmptyPartitioningError())
       case Right(_) => fail
     }
   }
 
   it should "Use filestore layer to read data" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val filename = "test.parquet"
     val v1: Int = 1
@@ -484,7 +484,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.close _).expects().returning()
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
 
@@ -502,13 +501,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "Use filestore layer to read from multiple files" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Int = 2
     val data1 = DataBlock(List(InternalRow(v1, v2) ))
     val data2 = DataBlock(List(InternalRow(v3, v2) ))
+    val emptyData = DataBlock(List())
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
@@ -519,15 +519,14 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.close _).expects().returning()
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
 
@@ -553,21 +552,23 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     pipe.readData match {
-      case Left(err) => assert(err.err == DoneReading)
-      case Right(_) => fail
+      case Left(err) => fail(err.getFullContext)
+      case Right(data) =>
+        assert(data.data.isEmpty)
     }
 
     this.failOnError(pipe.endPartitionRead())
   }
 
   it should "Call cleanup when done reading files" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Int = 2
     val data1 = DataBlock(List(InternalRow(v1, v2) ))
     val data2 = DataBlock(List(InternalRow(v3, v2) ))
+    val emptyData = DataBlock(List())
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
@@ -576,16 +577,15 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Some(Map(filename1 -> 1, filename2 -> 1)))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.close _).expects().returning()
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
     (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(DoneReading)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
     (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
 
     // Should be called to clean up 2 files
@@ -603,7 +603,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "Return an error if there is a partition type mismatch" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val partition = mock[VerticaPartition]
 
@@ -613,39 +613,39 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.err == InvalidPartition)
+      case Left(err) => assert(err.getError == InvalidPartition())
       case Right(_) => fail
     }
   }
 
   it should "Pass on errors from filestore layer on read start" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val filename = "test.parquet"
     val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.openReadParquetFile _).expects(*).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.openReadParquetFile _).expects(*).returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
 
   it should "Pass on errors from filestore layer on read" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val filename = "test.parquet"
     val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
-    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
@@ -654,13 +654,13 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.startPartitionRead(partition))
 
     pipe.readData match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
 
   it should "Pass on errors from filestore layer on read end" in {
-    val config = DistributedFilesystemReadConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, partitionCount = None, metadata = Some(VerticaReadMetadata(new StructType())))
+    val config = makeReadConfig
 
     val filename = "test.parquet"
     val v1: Int = 1
@@ -672,10 +672,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
     (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data))
-    (fileStoreLayer.closeReadParquetFile _).expects().returning(Left(ConnectorError(StagingFsUrlMissingError)))
+    (fileStoreLayer.closeReadParquetFile _).expects().returning(Left(StagingFsUrlMissingError()))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.close _).expects().returning()
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
@@ -683,7 +682,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.readData)
 
     pipe.endPartitionRead() match {
-      case Left(err) => assert(err.err == StagingFsUrlMissingError)
+      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }

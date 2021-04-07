@@ -13,37 +13,45 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.util.error._
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
 
 /**
   * Interface responsible for writing to the Vertica source.
   *
-  * This class is initiated and called from each spark worker.
+  * This interface is initiated and called from each spark worker.
   */
 trait DSWriterInterface {
   /**
     * Called before reading to perform any needed setup with the given configuration.
     */
-  def openWrite(): Either[ConnectorError, Unit]
+  def openWrite(): ConnectorResult[Unit]
 
   /**
     * Called to write an individual row to the datasource.
     */
-  def writeRow(row: InternalRow): Either[ConnectorError, Unit]
+  def writeRow(row: InternalRow): ConnectorResult[Unit]
 
   /**
     * Called from the executor to cleanup the individual write operation
     */
-  def closeWrite(): Either[ConnectorError, Unit]
+  def closeWrite(): ConnectorResult[Unit]
 
   /**
     * Called by the driver to commit all the write results
     */
-  def commitRows(): Either[ConnectorError, Unit]
+  def commitRows(): ConnectorResult[Unit]
 }
 
+/**
+ * Writer class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
+ *
+ * @param config Configuration data definining the write operation.
+ * @param uniqueId Unique identifier for this specific writer. The writer for each partition should have a different ID.
+ * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for write.
+ */
 class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSWriterInterface {
 
   private val pipe = pipeFactory.getWritePipe(config)
@@ -51,7 +59,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
 
   private var data = List[InternalRow]()
 
-  def openWrite(): Either[ConnectorError, Unit] = {
+  def openWrite(): ConnectorResult[Unit] = {
     for {
       size <- pipe.getDataBlockSize
       _ <- pipe.startPartitionWrite(uniqueId)
@@ -59,14 +67,14 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     } yield ()
   }
 
-  def writeRow(row: InternalRow): Either[ConnectorError, Unit] = {
+  def writeRow(row: InternalRow): ConnectorResult[Unit] = {
     data = data :+ row
     if(data.length >= blockSize) {
       pipe.writeData(DataBlock(data)) match {
         case Right(_) =>
           data = List[InternalRow]()
           Right(())
-        case Left(err) => Left(err)
+        case Left(errors) => Left(errors)
       }
     }
     else {
@@ -74,19 +82,18 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
     }
   }
 
-  def closeWrite(): Either[ConnectorError, Unit] = {
+  def closeWrite(): ConnectorResult[Unit] = {
     if(data.nonEmpty) {
-      for {
-        _ <- pipe.writeData(DataBlock(data))
-        _ <- pipe.endPartitionWrite()
-      } yield ()
+       val ret = pipe.writeData(DataBlock(data))
+       pipe.endPartitionWrite()
+       ret
     }
     else {
       pipe.endPartitionWrite()
     }
   }
 
-  def commitRows(): Either[ConnectorError, Unit] = {
+  def commitRows(): ConnectorResult[Unit] = {
     pipe.commit()
   }
 }
