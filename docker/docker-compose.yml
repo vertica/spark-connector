@@ -9,7 +9,7 @@ networks:
 services:
   vertica:
     image: "glarik/vertica:10.0.0-RHEL7"
-    command: ssh -L 50010:localhost:50010 root@10.5.0.6 -o PreferredAuthentications=password
+    command: ssh -fNT -L 50010:localhost:50010 root@10.5.0.6 -o PreferredAuthentications=password
     ports:
       - "5433:5433"
     volumes:
