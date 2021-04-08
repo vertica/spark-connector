@@ -54,7 +54,7 @@ jobs:
       - name: Wait for Vertica to start up
         run: docker exec docker_vertica_1 sleep 60
       - name: Allocate more memory to Vertica queries
-        run: docker exec docker_vertica_1 /opt/vertica/bin/vsql -U dbadmin -a -c "ALTER RESOURCE POOL GENERAL MAXQUERYMEMORYSIZE 10G;"
+        run: docker exec docker_vertica_1 /opt/vertica/bin/vsql -U dbadmin -a -c "ALTER RESOURCE POOL GENERAL MAXQUERYMEMORYSIZE '10G';"
 
       - name: Download the build artifact
         uses: actions/download-artifact@v2
