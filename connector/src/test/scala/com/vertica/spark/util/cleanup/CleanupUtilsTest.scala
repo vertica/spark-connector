@@ -24,7 +24,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
-  val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
+  val cleanupUtils = new CleanupUtils
 
   it should "Clean up a file with a single part" in {
     val filename = "path/path/file.parquet"

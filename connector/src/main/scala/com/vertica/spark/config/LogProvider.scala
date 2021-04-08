@@ -13,13 +13,16 @@
 
 package com.vertica.spark.config
 
+import com.typesafe.scalalogging.Logger
+
 /**
- * Configuration for a JDBC connection to Vertica.
- *
- * @param host hostname for the JDBC connection
- * @param port port for the JDBC connection
- * @param db name of the Vertica database to connect to
- * @param username hash-based authentication user
- * @param password hash-based authentication user
+ * Used to provide a logger for a given class, configured with a given log level.
  */
-final case class JDBCConfig(host: String, port: Int, db: String, username: String, password: String)
+case object LogProvider {
+  def getLogger(c: Class[_]): Logger = {
+    val logger = Logger(c)
+
+    logger
+  }
+}
+

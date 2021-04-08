@@ -20,6 +20,5 @@ import ch.qos.logback.classic.Level
  *
  * There is not currently much user configuration for the filestore beyond the address to connect to.
  * @param address Address of the distributed filestore, ie HDFS, to connect to.
- * @param logLevel One of [OFF,DEBUG,INFO,WARN,ERR] depending on configured level of logging desired.
  */
-final case class FileStoreConfig(address: String, override val logLevel: Level) extends GenericConfig
+final case class FileStoreConfig(address: String)

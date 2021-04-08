@@ -41,36 +41,6 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   implicit val floatEquality: Equality[Float] = TolerantNumerics.tolerantFloatEquality(0.01f)
 
-  it should "parse the logging level" in {
-    var opts = Map("logging_level" -> "ERROR")
-    var level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
-    assert(level == Level.ERROR)
-
-    opts = Map("logging_level" -> "DEBUG")
-    level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
-    assert(level == Level.DEBUG)
-
-    opts = Map("logging_level" -> "WARNING")
-    level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
-    assert(level == Level.WARN)
-
-    opts = Map("logging_level" -> "INFO")
-    level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
-    assert(level == Level.INFO)
-  }
-
-  it should "default to ERROR logging level" in {
-    val opts = Map[String, String]()
-    val level = getResultOrAssert[Level](DSConfigSetupUtils.getLogLevel(opts))
-    assert(level == Level.ERROR)
-  }
-
-  it should "error given incorrect logging_level param" in {
-    val opts = Map("logging_level" -> "OTHER")
-    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getLogLevel(opts))
-    assert(err.toNonEmptyList.head == InvalidLoggingLevel())
-  }
-
   it should "parse the host name" in {
     val opts = Map("host" -> "1.1.1.1")
     val host = getResultOrAssert[String](DSConfigSetupUtils.getHost(opts))

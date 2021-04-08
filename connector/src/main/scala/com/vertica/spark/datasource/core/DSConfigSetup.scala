@@ -15,7 +15,6 @@ package com.vertica.spark.datasource.core
 
 import com.vertica.spark.util.error._
 import org.apache.spark.sql.types.StructType
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config._
 
 import scala.util.Try
@@ -58,18 +57,6 @@ trait DSConfigSetupInterface[T] {
   */
 object DSConfigSetupUtils {
   type ValidationResult[A] = ValidatedNec[ConnectorError, A]
-  /**
-    * Parses the log level from options.
-    */
-  def getLogLevel(config: Map[String, String]): ValidationResult[Level] = {
-    config.get("logging_level").map {
-      case "ERROR" => Level.ERROR.validNec
-      case "DEBUG" => Level.DEBUG.validNec
-      case "WARNING" => Level.WARN.validNec
-      case "INFO" => Level.INFO.validNec
-      case _ => InvalidLoggingLevel().invalidNec
-    }.getOrElse(Level.ERROR.validNec)
-  }
 
   def getHost(config: Map[String, String]): ValidationResult[String] = {
     config.get("host") match {
@@ -183,11 +170,11 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
     DSConfigSetupUtils.getUser(config),
-    DSConfigSetupUtils.getPassword(config),
-    DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
+    DSConfigSetupUtils.getPassword(config)
+    ).mapN(JDBCConfig)
   }
 
-  def validateAndGetFilestoreConfig(config: Map[String, String], logLevel: Level, sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+  def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
     DSConfigSetupUtils.getStagingFsUrl(config).map(
       address => {
         val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
@@ -196,7 +183,7 @@ object DSConfigSetupUtils {
         // Create unique directory for session
         val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
 
-        FileStoreConfig(uniqueAddress, logLevel)
+        FileStoreConfig(uniqueAddress)
       }
     )
   }
@@ -220,28 +207,23 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     val sessionId = sessionIdInterface.getId
 
-    DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>
-        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
-            (jdbcConfig.logLevel.validNec,
-            jdbcConfig.validNec,
-            fileStoreConfig.validNec,
-            tableName.validNec,
-            DSConfigSetupUtils.getPartitionCount(config),
-            None.validNec,
-            DSConfigSetupUtils.getFilePermissions(config)).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-              val pipe = pipeFactory.getReadPipe(initialConfig)
+    (
+      DSConfigSetupUtils.validateAndGetJDBCConfig(config),
+      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, sessionId),
+      DSConfigSetupUtils.validateAndGetFullTableName(config),
+      DSConfigSetupUtils.getPartitionCount(config),
+      None.validNec,
+      DSConfigSetupUtils.getFilePermissions(config)
+    ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+      val pipe = pipeFactory.getReadPipe(initialConfig)
 
-              // Then, retrieve metadata
-              val metadata = pipe.getMetadata
-               metadata match {
-                case Left(err) => err.invalidNec
-                case Right(meta) => meta match {
-                  case readMeta: VerticaReadMetadata => initialConfig.copy(metadata = Some(readMeta)).validNec
-                  case _ => MissingMetadata().invalidNec
-                }
-              }
-          }
+      // Then, retrieve metadata
+      val metadata = pipe.getMetadata
+      metadata match {
+        case Left(err) => err.invalidNec
+        case Right(meta) => meta match {
+          case readMeta: VerticaReadMetadata => initialConfig.copy(metadata = Some(readMeta)).validNec
+          case _ => MissingMetadata().invalidNec
         }
       }
     }
@@ -268,7 +250,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, _, verticaMetadata, _) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError(None))
           case Some(metadata) => Right(metadata.schema)
@@ -290,27 +272,21 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     val sessionId = sessionIdInterface.getId
 
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
-    DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
-      DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>
-        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
-          schema match {
-            case Some(passedInSchema) =>
-              (jdbcConfig.logLevel.validNec,
-                jdbcConfig.validNec,
-                fileStoreConfig.validNec,
-                tableName.validNec,
-                passedInSchema.validNec,
-                DSConfigSetupUtils.getStrLen(config),
-                DSConfigSetupUtils.getTargetTableSQL(config),
-                DSConfigSetupUtils.getCopyColumnList(config),
-                sessionId.validNec,
-                DSConfigSetupUtils.getFailedRowsPercentTolerance(config)
-                ).mapN(DistributedFilesystemWriteConfig)
-            case None =>
-              MissingSchemaError().invalidNec
-          }
-        }
-      }
+    schema match {
+      case Some(passedInSchema) =>
+        (
+          DSConfigSetupUtils.validateAndGetJDBCConfig(config),
+          DSConfigSetupUtils.validateAndGetFilestoreConfig(config, sessionId),
+          DSConfigSetupUtils.validateAndGetFullTableName(config),
+          passedInSchema.validNec,
+          DSConfigSetupUtils.getStrLen(config),
+          DSConfigSetupUtils.getTargetTableSQL(config),
+          DSConfigSetupUtils.getCopyColumnList(config),
+          sessionId.validNec,
+          DSConfigSetupUtils.getFailedRowsPercentTolerance(config)
+        ).mapN(DistributedFilesystemWriteConfig)
+      case None =>
+        MissingSchemaError().invalidNec
     }
   }
 

@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Interface for configuration of a read (from Vertica) operation.
  */
-trait ReadConfig extends GenericConfig {
+trait ReadConfig {
 
   /**
    * Set filters to push down to the Vertica read.
@@ -75,7 +75,6 @@ object ValidFilePermissions {
 /**
  * Configuration for a read operation using a distributed filesystem as an intermediary.
  *
- * @param logLevel Logging level for the read operation.
  * @param jdbcConfig Configuration for the JDBC connection used to communicate with Vertica.
  * @param fileStoreConfig Configuration for the intermediary filestore used to stage data between Spark and Vertica.
  * @param tablename Table to read from.
@@ -83,7 +82,6 @@ object ValidFilePermissions {
  * @param metadata Contains any metadata from the Vertica table that needs to be retrieved before the read. Includes table schema.
  */
 final case class DistributedFilesystemReadConfig(
-                                                  override val logLevel: Level,
                                                   jdbcConfig: JDBCConfig,
                                                   fileStoreConfig: FileStoreConfig,
                                                   tablename: TableName,

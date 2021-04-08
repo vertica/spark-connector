@@ -33,7 +33,6 @@ case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: St
   * Tests here not exhaustive of all possible options, covers common cases and edge cases. Integration tests should cover a wider selection of closer to real world cases of table schema.
   */
 class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
-  private val logProvider = LogProvider(Level.ERROR)
 
   private def mockJdbcDeps(tablename: String): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -70,7 +69,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) => fail(err.toString())
       case Right(schema) =>
         val field = schema.fields(0)
@@ -89,7 +88,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 3)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -116,7 +115,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BIGINT, "BIGINT", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -135,7 +134,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.DECIMAL, "VARCHAR", 16, signed = false, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -155,7 +154,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.TINYINT, "TINYINT", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 3)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -174,7 +173,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(4, "col4", java.sql.Types.LONGVARBINARY, "LONGVARBINARY", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 4)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -195,7 +194,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BIT, "BIT", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -224,7 +223,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(11, "col11", java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 11)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -241,7 +240,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DATE, "DATE", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -256,7 +255,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.FLOAT, "FLOAT", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -271,7 +270,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIMESTAMP, "TIMESTAMP", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -286,7 +285,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIME, "TIME", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -301,7 +300,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "interval", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -316,7 +315,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "uuid", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -331,7 +330,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "asdf", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(e) => e.isInstanceOf[MissingSqlConversionError]
       case Right(_) => fail
     }
@@ -343,7 +342,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.ROWID, "ROWID", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -359,7 +358,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.REAL, "REAL", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(_) => fail
       case Right(schema) =>
         val fields = schema.fields
@@ -379,7 +378,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(4, "col5", java.sql.Types.NULL, "NULL", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 4)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) => assert(err.getError match {
           case ErrorList(errors) => errors.size == 4
           case _ => false
@@ -395,7 +394,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", 50000, "invalid-type", 16, signed = false, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
         assert(err.getError match {
           case ErrorList(errors) => errors.size == 2
@@ -425,7 +424,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
     mockColumnCount(rsmd, 1)
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
         err.getError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -438,7 +437,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
-    new SchemaTools(logProvider).getVerticaTypeFromSparkType(CharType(0), 0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
       case Left(err) =>
         err.getError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -454,7 +453,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (jdbcLayer.query _).expects(*,*).returning(Left(ConnectionError(new Exception())))
 
-    new SchemaTools(logProvider).readSchema(jdbcLayer, tablename) match {
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
         assert(err.getError match {
           case JdbcSchemaError(_) => true
@@ -465,7 +464,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "Convert basic spark types to vertica types" in {
-    val schemaTools = new SchemaTools(logProvider)
+    val schemaTools = new SchemaTools
 
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1) == Right("VARBINARY(65000)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1) == Right("BOOLEAN"))
@@ -484,7 +483,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
 
   it should "Convert string types to vertica type properly" in {
-    val schemaTools = new SchemaTools(logProvider)
+    val schemaTools = new SchemaTools
 
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024) == Right("VARCHAR(1024)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000) == Right("VARCHAR(5000)"))
@@ -500,7 +499,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.INTEGER, "INTEGER", 0, signed = true, nullable = true))
     mockColumnCount(rsmd, 2)
 
-    val schemaTools = new SchemaTools(logProvider)
+    val schemaTools = new SchemaTools
 
     schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
       case Left(err) => fail(err.getFullContext)

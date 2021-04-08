@@ -32,8 +32,8 @@ import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
   private val tablename = TableName("dummy", None)
-  private val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test", Level.ERROR)
-  private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
+  private val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test")
+  private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   private val metadata = new MetadataBuilder().putString("name", "col1").build()
   private val size = 32
   private val scale = 32
@@ -46,7 +46,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private def makeReadConfig: DistributedFilesystemReadConfig = {
     DistributedFilesystemReadConfig(
-      logLevel = Level.ERROR,
       jdbcConfig = jdbcConfig,
       fileStoreConfig = fileStoreConfig,
       tablename = tablename,

@@ -20,7 +20,7 @@ import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
-import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.config.{JDBCConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import scala.util.Try
@@ -90,7 +90,7 @@ object JdbcUtils {
   * Implementation of layer for communicating with Vertica JDBC
   */
 class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
-  private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
+  private val logger = LogProvider.getLogger(classOf[VerticaJdbcLayer])
 
   private val prop = new util.Properties()
   prop.put("user", cfg.username)

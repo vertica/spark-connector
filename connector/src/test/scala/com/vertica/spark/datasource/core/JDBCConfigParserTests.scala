@@ -33,8 +33,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "password" -> "password"
     )
 
-    val logLevel : Level = Level.ERROR
-
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(_) =>
         fail
@@ -44,8 +42,6 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(jdbcConfig.db == "testdb")
         assert(jdbcConfig.username == "user")
         assert(jdbcConfig.password == "password")
-        println(jdbcConfig.logLevel)
-        assert(jdbcConfig.logLevel == logLevel)
     }
   }
 

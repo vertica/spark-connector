@@ -76,8 +76,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
 
   it should "parse a valid read config" in {
-    val opts = Map("logging_level" -> "ERROR",
-                   "host" -> "1.1.1.1",
+    val opts = Map("host" -> "1.1.1.1",
                    "port" -> "1234",
                    "db" -> "testdb",
                    "user" -> "user",
@@ -102,7 +101,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.username == "user")
         assert(config.jdbcConfig.password == "password")
         assert(config.tablename.getFullTableName == "\"tbl\"")
-        assert(config.logLevel == Level.ERROR)
         config.metadata match {
           case Some(metadata) => assert(metadata.schema == new StructType())
           case None => fail
@@ -112,14 +110,14 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   it should "Return several parsing errors on read" in {
     // Should be one error from the jdbc parser for the port and one for the missing log level
-    val opts = Map("logging_level" -> "invalid",
-                   "host" -> "1.1.1.1",
+    val opts = Map("host" -> "1.1.1.1",
                    "db" -> "testdb",
                    "port" -> "asdf",
                    "user" -> "user",
                    "password" -> "password",
                    "table" -> "tbl",
-                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+                   "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+                   "num_partitions" -> "foo"
     )
 
     val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
@@ -127,13 +125,12 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 2)
     assert(errSeq.contains(InvalidPortError()))
-    assert(errSeq.contains(InvalidLoggingLevel()))
+    assert(errSeq.contains(InvalidPartitionCountError()))
   }
 
   it should "Return error when there's a problem retrieving metadata" in {
 
-    val opts = Map("logging_level" -> "ERROR",
-                   "host" -> "1.1.1.1",
+    val opts = Map("host" -> "1.1.1.1",
                    "port" -> "1234",
                    "db" -> "testdb",
                    "user" -> "user",
@@ -156,7 +153,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "parse a valid write config" in {
-    val opts = Map("logging_level" -> "ERROR",
+    val opts = Map(
       "host" -> "1.1.1.1",
       "port" -> "1234",
       "db" -> "testdb",
@@ -179,18 +176,18 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.username == "user")
         assert(config.jdbcConfig.password == "password")
         assert(config.tablename.getFullTableName == "\"tbl\"")
-        assert(config.logLevel == Level.ERROR)
     }
   }
 
   it should "Return several parsing errors on write" in {
-    val opts = Map("logging_level" -> "invalid",
+    val opts = Map(
       "host" -> "1.1.1.1",
       "db" -> "testdb",
       "port" -> "asdf",
       "user" -> "user",
       "password" -> "password",
       "table" -> "tbl",
+      "failed_rows_percent_tolerance" -> "2.00",
       "staging_fs_url" -> "hdfs://test:8020/tmp/test"
     )
 
@@ -202,6 +199,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
     assert(errSeq.size == 2)
     assert(errSeq.map(_.getError).contains(InvalidPortError()))
-    assert(errSeq.map(_.getError).contains(InvalidLoggingLevel()))
+    assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
+
   }
 }

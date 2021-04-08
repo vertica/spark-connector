@@ -70,9 +70,7 @@ trait FileStoreLayerInterface {
   def fileExists(filename: String) : ConnectorResult[Boolean]
 }
 
-final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
-  private val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
-
+final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
   private var recordReader: Option[RecordReader[InternalRow]] = None
   private var curRow = 0L
   private var rowCount = 0L
@@ -135,8 +133,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
-  val logger: Logger = logProvider.getLogger(classOf[HadoopFileStoreLayer])
+class HadoopFileStoreLayer(schema: Option[StructType]) extends FileStoreLayerInterface {
+  val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -264,7 +262,7 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
-      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
+      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file)
     }.toEither.left.map(exception => OpenReadError(exception).context("Error creating Parquet Reader"))
 
     readerOrError match {
