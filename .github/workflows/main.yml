@@ -51,6 +51,8 @@ jobs:
         run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
       - name: Replace HDFS hdfs-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Allocate more memory to Vertica queries
+        run: docker exec docker_vertica_1 vsql -U dbadmin -a -c "ALTER RESOURCE POOL GENERAL MAXQUERYMEMORYSIZE 10G;"
 
       - name: Download the build artifact
         uses: actions/download-artifact@v2
