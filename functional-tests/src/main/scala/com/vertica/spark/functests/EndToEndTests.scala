@@ -15,6 +15,7 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Date, Timestamp}
 
+import com.vertica.spark.util.error.ConnectorException
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
@@ -2947,7 +2948,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Append
 
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+    } catch {
+      case e: ConnectorException => fail(e.error.getFullContext)
+    }
 
     var totalRows = 0
     val query = "SELECT COUNT(*) AS count FROM " + "\"" + options("table") + "\";"
