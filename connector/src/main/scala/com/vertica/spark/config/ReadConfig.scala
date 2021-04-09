@@ -14,7 +14,6 @@
 package com.vertica.spark.config
 
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
-import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}

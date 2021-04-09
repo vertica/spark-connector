@@ -16,7 +16,6 @@ package com.vertica.spark.datasource.core
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
-import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._

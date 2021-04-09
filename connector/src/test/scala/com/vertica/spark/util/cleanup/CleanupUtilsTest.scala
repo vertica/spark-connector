@@ -13,7 +13,6 @@
 
 package com.vertica.spark.util.cleanup
 
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.{CleanupError, CreateFileError, RemoveFileError}

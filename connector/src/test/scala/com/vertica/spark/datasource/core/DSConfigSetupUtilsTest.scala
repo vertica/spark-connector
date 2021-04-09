@@ -17,7 +17,6 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{TableName, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._

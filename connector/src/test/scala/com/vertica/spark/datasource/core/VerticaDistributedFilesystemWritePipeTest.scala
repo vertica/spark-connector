@@ -15,7 +15,6 @@ package com.vertica.spark.datasource.core
 
 import java.sql.ResultSet
 
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName, ValidColumnList}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface

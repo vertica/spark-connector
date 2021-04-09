@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.v2
 
 import cats.data.Validated.{Invalid, Valid}
-import ch.qos.logback.classic.Level
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{LogProvider, WriteConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}

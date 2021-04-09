@@ -24,7 +24,6 @@ import java.util
 
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
 
 import scala.collection.JavaConversions._

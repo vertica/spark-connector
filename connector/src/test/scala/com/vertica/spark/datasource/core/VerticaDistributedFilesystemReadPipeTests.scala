@@ -18,7 +18,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.config._
 import com.vertica.spark.util.schema._
-import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}

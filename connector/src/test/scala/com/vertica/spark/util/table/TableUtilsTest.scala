@@ -15,7 +15,6 @@ package com.vertica.spark.util.table
 
 import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException}
 
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface

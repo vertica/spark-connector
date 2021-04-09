@@ -16,7 +16,6 @@ package com.vertica.spark.datasource.v2
 import java.util
 
 import cats.data.Validated.{Invalid, Valid}
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2

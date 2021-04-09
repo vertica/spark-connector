@@ -13,8 +13,6 @@
 
 package com.vertica.spark.config
 
-import ch.qos.logback.classic.Level
-
 /**
  * Represents configuration for a filestore used by the connector.
  *
