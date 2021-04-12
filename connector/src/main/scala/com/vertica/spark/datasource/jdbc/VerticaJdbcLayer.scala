@@ -20,7 +20,7 @@ import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
-import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import scala.util.Try
@@ -93,12 +93,17 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
 
   private val prop = new util.Properties()
-  prop.put("user", "user1")
-  prop.put("KerberosServiceName", "vertica")
-  prop.put("KerberosHostname", "vertica.example.com")
-  prop.put("JAASConfigName", "Client")
 
-  //prop.put("password", cfg.password)
+  cfg.auth match {
+    case BasicJdbcAuth(username, password) =>
+      prop.put("user", username)
+      prop.put("password", password)
+    case KerberosAuth(username, kerberosServiceName, kerberosHostname, jaasConfigName) =>
+      prop.put("user", username)
+      prop.put("KerberosServiceName", kerberosServiceName)
+      prop.put("KerberosHostname", kerberosHostname)
+      prop.put("JAASConfigName", jaasConfigName)
+  }
 
   // Load driver
   Class.forName("com.vertica.jdbc.Driver")

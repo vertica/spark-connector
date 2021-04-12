@@ -175,7 +175,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val tablename = "testwriteload"
     // Create table
-    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    val conn: Connection = TestUtils.getJDBCConnection(jdbcCfg)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
@@ -223,7 +223,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val tablename = "testwritetimestamp"
     // Create table
-    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    val conn: Connection = TestUtils.getJDBCConnection(jdbcCfg)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a timestamp)")
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"

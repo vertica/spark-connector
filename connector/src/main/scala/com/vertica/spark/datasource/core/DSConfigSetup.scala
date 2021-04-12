@@ -105,12 +105,24 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getUser(config: Map[String, String]): ValidationResult[String] = {
-    config.get("user") match {
-      case Some(user) => user.validNec
-      case None => UserMissingError().invalidNec
-    }
-    //TODO: make option once kerberos support is introduced
+  def getUser(config: Map[String, String]): Option[String] = {
+    config.get("user")
+  }
+
+  def getPassword(config: Map[String, String]): Option[String] = {
+    config.get("password")
+  }
+
+  def getKerberosServiceName(config: Map[String, String]): Option[String] = {
+    config.get("kerberos_service_name")
+  }
+
+  def getKerberosHostname(config: Map[String, String]): Option[String] = {
+    config.get("kerberos_host_name")
+  }
+
+  def getJaasConfigName(config: Map[String, String]): Option[String] = {
+    config.get("jaas_config_name")
   }
 
   def getTablename(config: Map[String, String]): ValidationResult[String] = {
@@ -127,13 +139,6 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getPassword(config: Map[String, String]): ValidationResult[String] = {
-    config.get("password") match {
-      case Some(password) => password.validNec
-      case None => PasswordMissingError().invalidNec
-    }
-    //TODO: make option once kerberos support is introduced
-  }
 
   def getTargetTableSQL(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("target_table_sql").validNec
@@ -174,6 +179,23 @@ object DSConfigSetupUtils {
     }
   }
 
+  def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
+    val user = DSConfigSetupUtils.getUser(config)
+    val password = DSConfigSetupUtils.getPassword(config)
+
+    val serviceName = getKerberosServiceName(config)
+    val hostname = getKerberosHostname(config)
+    val jaasConfig = getJaasConfigName(config)
+
+    (user, password, serviceName, hostname, jaasConfig) match {
+      case (Some(u), _, Some(s), Some(h), Some(j)) => KerberosAuth(u, s, h, j).validNec
+      case (Some(u), Some(p), _, _, _) => BasicJdbcAuth(u, p).validNec
+      case (None, _, _, _, _) => UserMissingError().invalidNec
+      case (_, None, None, None, None) => PasswordMissingError().invalidNec
+      case (_, _, _, _, _) => KerberosAuthMissingError().invalidNec
+    }
+  }
+
   /**
    * Parses the config map for JDBC config params, collecting any errors.
    */
@@ -181,8 +203,7 @@ object DSConfigSetupUtils {
     (DSConfigSetupUtils.getHost(config),
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
-    DSConfigSetupUtils.getUser(config),
-    DSConfigSetupUtils.getPassword(config),
+    DSConfigSetupUtils.validateAndGetJDBCAuth(config),
     DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
   }
 

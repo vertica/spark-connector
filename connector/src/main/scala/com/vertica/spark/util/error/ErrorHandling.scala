@@ -186,6 +186,12 @@ case class ViewExistsError() extends ConnectorError {
 case class TempTableExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to a temporary tt"
 }
+case class SetSparkConfError(cause: Throwable) extends ConnectorError {
+  private val message = "Error setting spark configuration. "
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
 case class FaultToleranceTestFail() extends ConnectorError {
   def getFullContext: String = "Failed row count is above error tolerance threshold. Operation aborted."
 }
@@ -224,14 +230,24 @@ case class DbMissingError() extends ConnectorError {
 }
 case class UserMissingError() extends ConnectorError {
   def getFullContext: String = "The 'user' param is missing. Please specify the username to use " +
-    "for authenticating with Vertica."
+    "for authenticating with Vertica, as well as authentication details.."
 }
 case class PasswordMissingError() extends ConnectorError {
   def getFullContext: String = "The 'password' param is missing. Please specify the password to use " +
     "for authenticating with Vertica."
 }
+case class KerberosAuthMissingError() extends ConnectorError {
+  def getFullContext: String = "Some Kerberos authentication details are missing. Please specify the following parameters:" +
+    " 'kerberos_service_name', 'kerberos_host_name', 'jaas_config_name'"
+}
 case class TablenameMissingError() extends ConnectorError {
   def getFullContext: String = "The 'table' param is missing. Please specify the name of the table to use."
+}
+case class TableAndQueryMissingError() extends ConnectorError {
+  def getFullContext: String = "The 'table' and 'query' params are both missing. Please specify the table name or query to use."
+}
+case class QuerySpecifiedOnWriteError() extends ConnectorError {
+  def getFullContext: String = "The 'query' option was specified for a write operation. This option is only valid for reads."
 }
 case class InvalidPortError() extends ConnectorError {
   def getFullContext: String = "The 'port' param specified is invalid. " +

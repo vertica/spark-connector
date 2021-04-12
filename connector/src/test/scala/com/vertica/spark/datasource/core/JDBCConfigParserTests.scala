@@ -18,8 +18,9 @@ import cats.implicits._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
+import com.vertica.spark.config.{BasicJdbcAuth, KerberosAuth}
 import org.scalamock.scalatest.MockFactory
-import com.vertica.spark.util.error.{DbMissingError, PasswordMissingError, UserMissingError}
+import com.vertica.spark.util.error.{DbMissingError, HostMissingError, PasswordMissingError, UserMissingError}
 
 
 class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -33,7 +34,28 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
                    "password" -> "password"
     )
 
-    val logLevel : Level = Level.ERROR
+    DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
+      case Invalid(_) =>
+        fail
+      case Valid(jdbcConfig) =>
+        assert(jdbcConfig.host == "1.1.1.1")
+        assert(jdbcConfig.port == 1234)
+        assert(jdbcConfig.db == "testdb")
+        assert(jdbcConfig.auth.asInstanceOf[BasicJdbcAuth].username == "user")
+        assert(jdbcConfig.auth.asInstanceOf[BasicJdbcAuth].password == "password")
+    }
+  }
+
+  it should "parse the JDBC config with Kerberos" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "kerberos_service_name" -> "vertica",
+      "kerberos_host_name" -> "vertica.example.com",
+      "jaas_config_name" -> "Client"
+  )
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(_) =>
@@ -42,35 +64,22 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(jdbcConfig.host == "1.1.1.1")
         assert(jdbcConfig.port == 1234)
         assert(jdbcConfig.db == "testdb")
-        assert(jdbcConfig.username == "user")
-        assert(jdbcConfig.password == "password")
-        println(jdbcConfig.logLevel)
-        assert(jdbcConfig.logLevel == logLevel)
+        assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].username == "user")
+        assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].kerberosServiceName == "vertica")
+        assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].kerberosHostname == "vertica.example.com")
+        assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].jaasConfigName == "Client")
     }
   }
 
   it should "return several configuration errors" in {
-    val opts = Map(
-                   "host" -> "1.1.1.1"
-    )
+    val opts = Map[String, String]()
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(errSeq) =>
         assert(errSeq.toNonEmptyList.size == 3)
         assert(!errSeq.filter(err => err == UserMissingError()).isEmpty)
-        assert(!errSeq.filter(err => err == PasswordMissingError()).isEmpty)
         assert(!errSeq.filter(err => err == DbMissingError()).isEmpty)
-      case Valid(_) =>
-        fail // should not succeed
-    }
-  }
-
-  it should "return all possible configuration errors" in {
-    val opts = Map[String, String]()
-
-    DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
-      case Invalid(errSeq) =>
-        assert(errSeq.toNonEmptyList.size == 4)
+        assert(!errSeq.filter(err => err == HostMissingError()).isEmpty)
       case Valid(_) =>
         fail // should not succeed
     }

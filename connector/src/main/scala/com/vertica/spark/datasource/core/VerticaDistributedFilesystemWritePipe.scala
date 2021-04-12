@@ -101,7 +101,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
 
       // Create job status table / entry
-      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
     } yield ()
   }
 
@@ -265,7 +265,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
-      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.username, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
     } yield ()
