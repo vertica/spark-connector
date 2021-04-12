@@ -63,10 +63,7 @@ final case class TableName(name: String, dbschema: Option[String]) extends Table
   override def identifier: String = name
 }
 
-
-final case class TableQuery(query: String) extends TableSource {
-  val id = SessionId.getId
-
-  override def identifier: String = id
+final case class TableQuery(query: String, uniqueId: String) extends TableSource {
+  override def identifier: String = uniqueId
 }
 

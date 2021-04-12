@@ -94,7 +94,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "parse schema of query" in {
-    val query = TableQuery("SELECT * FROM t WHERE a > 1")
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
     val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
 
     // Schema

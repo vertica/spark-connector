@@ -74,7 +74,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "read data from Vertica using join" in {
-
     val n = 1
 
     val tableName1 = "dftest1"

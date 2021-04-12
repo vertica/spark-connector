@@ -223,7 +223,7 @@ class VerticaDistributedFilesystemReadPipe(
 
       exportSource = config.tableSource match {
         case tablename: TableName => tablename.getFullTableName
-        case query: TableQuery => "(" + query.query + ") AS x"
+        case TableQuery(query, _) => "(" + query + ") AS x"
       }
 
       exportStatement = "EXPORT TO PARQUET(" +

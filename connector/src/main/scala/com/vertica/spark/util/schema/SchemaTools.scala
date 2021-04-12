@@ -55,7 +55,7 @@ trait SchemaToolsInterface {
    * Retrieves the schema of Vertica table in format of list of column definitions.
    *
    * @param jdbcLayer Depedency for communicating with Vertica over JDBC
-   * @param tableSource The table/query we want the schema of
+   * @param tableSource The table/query we want the schema of.
    * @return Sequence of ColumnDef, representing the Vertica structure of schema.
    */
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]]
@@ -73,7 +73,7 @@ trait SchemaToolsInterface {
    * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
    *
    * @param jdbcLayer Depedency for communicating with Vertica over JDBC
-   * @param tableName Name of the table we want to copy to
+   * @param tableName Name of the table we want to copy to.
    * @param schema Schema of data in spark.
    * @return
    */
@@ -168,7 +168,7 @@ class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
     // and use this to retrieve the name and type information of each column
     val query = tableSource match {
       case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
-      case query: TableQuery => "SELECT * FROM (" + query.query + ") AS x WHERE 1=0"
+      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
     }
 
     jdbcLayer.query(query) match {

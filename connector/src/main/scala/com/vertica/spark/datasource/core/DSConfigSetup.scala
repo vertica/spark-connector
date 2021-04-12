@@ -209,7 +209,7 @@ object DSConfigSetupUtils {
     val query = DSConfigSetupUtils.getQuery(config)
 
     (query, name) match {
-      case (Some(q), _) => TableQuery(q).validNec
+      case (Some(q), _) => TableQuery(q, SessionId.getId).validNec
       case (None, Some(n)) => TableName(n, schema).validNec
       case (None, None) => TableAndQueryMissingError().invalidNec
     }

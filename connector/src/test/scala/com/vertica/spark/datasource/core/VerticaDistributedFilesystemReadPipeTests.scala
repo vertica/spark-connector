@@ -168,7 +168,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "export using query" in {
-    val query = TableQuery("SELECT * FROM t where n > 777")
+    val query = TableQuery("SELECT * FROM t where n > 777", "")
     val config = makeReadConfig.copy(tableSource = query)
 
     val fileStoreLayer = mockFileStoreLayer(config, fileStoreConfig.address + "/" + query.identifier)
