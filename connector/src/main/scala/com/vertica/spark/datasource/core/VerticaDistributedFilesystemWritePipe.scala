@@ -20,7 +20,11 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.security.UserGroupInformation
+import org.apache.hadoop.io.Text
 
 import scala.util.Try
 
@@ -75,6 +79,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
+
 
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
@@ -234,6 +239,52 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def commit(): ConnectorResult[Unit] = {
     val globPattern: String = "*.parquet"
+
+    SparkSession.getActiveSession match {
+      case Some(session) =>
+        logger.debug("HH: found session")
+        val hadoopConf = session.sparkContext.hadoopConfiguration
+        val isKerberosEnabled = hadoopConf.get("hadoop.security.authentication")
+        logger.debug("HH: kerb authentication: " + isKerberosEnabled)
+        if (isKerberosEnabled == "kerberos") {
+          val nameNodeAddress = hadoopConf.get("dfs.namenode.http-address")
+          logger.debug("HH: name node address: " + nameNodeAddress)
+
+
+          // try to get delegation tokens
+          val addr = config.fileStoreConfig.address
+          val path = new Path(s"$addr")
+          val fs = path.getFileSystem(hadoopConf)
+          val tokens = fs.addDelegationTokens("user1", null)
+
+          /*
+          val usr = UserGroupInformation.getCurrentUser
+          logger.debug("HH: usr name: " + usr.getShortUserName)
+          logger.debug("HH: tokens size: " + usr.getTokens.size())
+          logger.debug("HH: cred tokens size: " + usr.getCredentials.getAllTokens().size())
+           */
+          val itr = tokens.iterator
+          while (itr.hasNext) {
+            val token = itr.next();
+            logger.debug("HH: IT kind: " + token.getKind.toString)
+            if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+              val encodedDelegatedToken = token.encodeToUrlString
+              val jsonString = {
+                s"""
+                  {
+                     "authority": "$nameNodeAddress",
+                     "token": "$encodedDelegatedToken"
+                  }"""
+              }
+              val sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
+              logger.debug(sql)
+              jdbcLayer.execute(sql)
+            }
+          }
+        }
+
+      case None => logger.warn("No spark session found to set config")
+    }
 
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")

@@ -56,6 +56,7 @@ object Main extends App {
                               auth,
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
+  /*
   new JDBCTests(jdbcConfig).execute()
 
   val filename = conf.getString("functional-tests.filepath")
@@ -76,7 +77,7 @@ object Main extends App {
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     )
   ).execute()
-
+  */
 
   val writeOpts = readOpts
   new EndToEndTests(readOpts, writeOpts, jdbcConfig).execute()
