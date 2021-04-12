@@ -27,6 +27,7 @@ object Main extends App {
                               password = conf.getString("functional-tests.password"),
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
+/*
   new JDBCTests(jdbcConfig).execute()
 
   val filename = conf.getString("functional-tests.filepath")
@@ -41,14 +42,13 @@ object Main extends App {
     ),
     jdbcConfig
   ).execute()
-
-  /*
   new CleanupUtilTests(
     FileStoreConfig(filename,
       logLevel = if(conf.getBoolean("functional-tests.log")) Level.ERROR else Level.OFF
     )
   ).execute()
 
+*/
   val readOpts = Map(
     "host" -> conf.getString("functional-tests.host"),
     "user" -> conf.getString("functional-tests.user"),
@@ -60,5 +60,4 @@ object Main extends App {
   val writeOpts = readOpts
   new EndToEndTests(readOpts, writeOpts).execute()
 
-   */
 }

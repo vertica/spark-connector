@@ -40,6 +40,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
+/*
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -874,6 +875,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
   }
+  */
+
 
   it should "write data to Vertica" in {
     val tableName = "basicWriteTest"
@@ -902,6 +905,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
   }
+/*
 
   it should "write int and string rows to Vertica" in {
     val tableName = "basicWriteTest"
@@ -3186,4 +3190,5 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
+*/
 }

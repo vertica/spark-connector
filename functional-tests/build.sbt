@@ -34,9 +34,12 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 
+/*
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
+*/
 
 unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
+
