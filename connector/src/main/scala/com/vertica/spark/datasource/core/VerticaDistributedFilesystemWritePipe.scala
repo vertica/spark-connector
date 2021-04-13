@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, KerberosAuth, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -240,58 +240,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def commit(): ConnectorResult[Unit] = {
     val globPattern: String = "*.parquet"
 
-    SparkSession.getActiveSession match {
-      case Some(session) =>
-        logger.debug("HH: found session")
-        val hadoopConf = session.sparkContext.hadoopConfiguration
-        val isKerberosEnabled = hadoopConf.get("hadoop.security.authentication")
-        logger.debug("HH: kerb authentication: " + isKerberosEnabled)
-        if (isKerberosEnabled == "kerberos") {
-          val nameNodeAddress = hadoopConf.get("dfs.namenode.http-address")
-          logger.debug("HH: name node address: " + nameNodeAddress)
-
-
-          // try to get delegation tokens
-          val addr = config.fileStoreConfig.address
-          val path = new Path(s"$addr")
-          val fs = path.getFileSystem(hadoopConf)
-          val tokens = fs.addDelegationTokens("user1", null)
-
-          /*
-          val usr = UserGroupInformation.getCurrentUser
-          logger.debug("HH: usr name: " + usr.getShortUserName)
-          logger.debug("HH: tokens size: " + usr.getTokens.size())
-          logger.debug("HH: cred tokens size: " + usr.getCredentials.getAllTokens().size())
-           */
-          val itr = tokens.iterator
-          while (itr.hasNext) {
-            val token = itr.next();
-            logger.debug("HH: IT kind: " + token.getKind.toString)
-            if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-              val encodedDelegatedToken = token.encodeToUrlString
-              val jsonString = {
-                s"""
-                  {
-                     "authority": "$nameNodeAddress",
-                     "token": "$encodedDelegatedToken"
-                  }"""
-              }
-              val sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
-              logger.debug(sql)
-              jdbcLayer.execute(sql)
-            }
-          }
-        }
-
-      case None => logger.warn("No spark session found to set config")
-    }
-
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
 
     val tableNameMaxLength = 30
 
     val ret = for {
+      // Set Vertica to work with kerberos and HDFS
+      _ <- config.jdbcConfig.auth match {
+        case _: KerberosAuth =>
+          jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+        case _ => Right(())
+      }
+
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 

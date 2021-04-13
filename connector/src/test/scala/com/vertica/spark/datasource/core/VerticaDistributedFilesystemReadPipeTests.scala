@@ -68,7 +68,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private def mockFileStoreLayer(config: DistributedFilesystemReadConfig): FileStoreLayerInterface = {
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.fileExists _).expects(expectedAddress).returning(Right(false))
     (fileStoreLayer.getFileList _).expects(expectedAddress).returning(Right(Array[String]("example.parquet")))
@@ -167,11 +166,28 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.doPreReadSteps())
   }
 
+  it should "call jdbc layer to set kerberos impersonation" in {
+    val config = makeReadConfig.copy(jdbcConfig = jdbcConfig.copy(auth = KerberosAuth("user", "", "", "")))
+
+    val fileStoreLayer = mockFileStoreLayer(config)
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.configureKerberosToFilestore _).expects(fileStoreLayer).returning(Right(()))
+    (jdbcLayer.execute _).expects(*, *).returning(Right())
+    (jdbcLayer.close _).expects().returning(Right(()))
+
+    val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
+    val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+
+    this.failOnError(pipe.doPreReadSteps())
+  }
+
   it should "return an error when there's a filesystem failure" in {
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
     (fileStoreLayer.createDir _).expects(*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Left(ParentDirMissingError("")))
 

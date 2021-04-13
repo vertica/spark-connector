@@ -435,3 +435,21 @@ case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
 case class TableNotEnoughRowsError() extends SchemaError {
   def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
 }
+
+case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
+  override def getFullContext: String = "Could not retrieve an impersonation token for the desginated user " + username + " on address: " + address
+}
+
+case class KerberosNotEnabledInHadoopConf() extends ConnectorError {
+  override def getFullContext: String = "Trying to use Kerberos, but did not detect hadoop configuration with Kerberos enabled."
+}
+
+case class NoSparkSessionFound() extends ConnectorError {
+  override def getFullContext: String = "Could not get spark session. " + invariantViolation
+}
+case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
+  private val message = "Unexpected error in interaction with filestore. "
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
