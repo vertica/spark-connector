@@ -22,7 +22,7 @@ import cats.implicits._
 
 import scala.util.Either
 import cats.instances.list._
-import com.vertica.spark.config.LogProvider
+import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 
@@ -46,19 +46,19 @@ trait SchemaToolsInterface {
    * Retrieves the schema of Vertica table in Spark format.
    *
    * @param jdbcLayer Depedency for communicating with Vertica over JDBC
-   * @param tablename Name of table we want the schema of.
+   * @param tableSource The table/query we want the schema of
    * @return StructType representing table's schema converted to Spark's schema type.
    */
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[StructType]
+  def readSchema(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[StructType]
 
   /**
    * Retrieves the schema of Vertica table in format of list of column definitions.
    *
    * @param jdbcLayer Depedency for communicating with Vertica over JDBC
-   * @param tablename Name of table we want the schema of.
+   * @param tableSource The table/query we want the schema of.
    * @return Sequence of ColumnDef, representing the Vertica structure of schema.
    */
-  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[Seq[ColumnDef]]
+  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]]
 
   /**
    * Returns the Vertica type to use for a given Spark type.
@@ -73,11 +73,11 @@ trait SchemaToolsInterface {
    * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
    *
    * @param jdbcLayer Depedency for communicating with Vertica over JDBC
-   * @param tablename Name of the table.
+   * @param tableName Name of the table we want to copy to.
    * @param schema Schema of data in spark.
    * @return
    */
-  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): ConnectorResult[String]
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tableName: TableName, schema: StructType): ConnectorResult[String]
 
   /**
    * Matches a list of columns against a required schema, only returning the list of matches in string form.
@@ -146,8 +146,8 @@ class SchemaTools extends SchemaToolsInterface {
     else Right(answer)
   }
 
-  def readSchema(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[StructType] = {
-    this.getColumnInfo(jdbcLayer, tablename) match {
+  def readSchema(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[StructType] = {
+    this.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colInfo) =>
         val errorsOrFields: List[Either[SchemaError, StructField]] = colInfo.map(info => {
@@ -162,11 +162,16 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tablename: String): ConnectorResult[Seq[ColumnDef]] = {
+  def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     // Query for an empty result set from Vertica.
     // This is simply so we can load the metadata of the result set
     // and use this to retrieve the name and type information of each column
-    jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0") match {
+    val query = tableSource match {
+      case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
+      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+    }
+
+    jdbcLayer.query(query) match {
       case Left(err) => Left(JdbcSchemaError(err))
       case Right(rs) =>
         try {
@@ -226,9 +231,9 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
 
-  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tablename: String, schema: StructType): ConnectorResult[String] = {
+  def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tableName: TableName, schema: StructType): ConnectorResult[String] = {
     for {
-      columns <- getColumnInfo(jdbcLayer, tablename)
+      columns <- getColumnInfo(jdbcLayer, tableName)
 
       columnList <- {
         val colCount = columns.length
@@ -246,7 +251,7 @@ class SchemaTools extends SchemaToolsInterface {
                 // Log a warning if target column is not null and DF column is null
                 if (!column.nullable) {
                   if (s.nullable) {
-                    logger.warn("S2V: Column " + s.name + " is NOT NULL in target table " + tablename +
+                    logger.warn("S2V: Column " + s.name + " is NOT NULL in target table " + tableName.getFullTableName +
                       " but it's nullable in the DataFrame. Rows with NULL values in column " +
                       s.name + " will be rejected.")
                   }
@@ -260,7 +265,7 @@ class SchemaTools extends SchemaToolsInterface {
         if (!(schema.length <= colCount)) {
           Left(TableNotEnoughRowsError().context("Error: Number of columns in the target table should be greater or equal to number of columns in the DataFrame. "
             + " Number of columns in DataFrame: " + schema.length + ". Number of columns in the target table: "
-            + tablename + ": " + colCount))
+            + tableName.getFullTableName + ": " + colCount))
         }
         // Load by Name:
         // if all cols in DataFrame were found in target table

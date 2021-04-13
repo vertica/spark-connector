@@ -283,7 +283,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -337,7 +337,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.close _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -371,7 +371,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(fileStoreConfig.address).returning(Right())
@@ -429,7 +429,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right("(\"col1\",\"col5\")"))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right("(\"col1\",\"col5\")"))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -455,7 +455,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -484,7 +484,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -513,7 +513,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy_id_COMMITS\" CASCADE", *).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename.getFullTableName, schema).returning(Right(""))
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())

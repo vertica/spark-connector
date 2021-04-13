@@ -99,7 +99,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.db == "testdb")
         assert(config.jdbcConfig.username == "user")
         assert(config.jdbcConfig.password == "password")
-        assert(config.tablename.getFullTableName == "\"tbl\"")
+        assert(config.tableSource.asInstanceOf[TableName].getFullTableName == "\"tbl\"")
         config.metadata match {
           case Some(metadata) => assert(metadata.schema == new StructType())
           case None => fail

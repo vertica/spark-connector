@@ -19,7 +19,7 @@ import org.scalamock.scalatest.MockFactory
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 
-import com.vertica.spark.config.LogProvider
+import com.vertica.spark.config.{TableName, TableQuery}
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
@@ -33,12 +33,25 @@ case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: St
   */
 class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
-  private def mockJdbcDeps(tablename: String): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+  private def mockJdbcDeps(tablename: TableName): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
 
-    (jdbcLayer.query _).expects("SELECT * FROM " + tablename + " WHERE 1=0", *).returning(Right(resultSet))
+    (jdbcLayer.query _).expects("SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0", *).returning(Right(resultSet))
+    (resultSet.getMetaData _).expects().returning(rsmd)
+    (resultSet.close _).expects()
+
+    (jdbcLayer, resultSet, rsmd)
+
+  }
+
+  private def mockJdbcDepsQuery(query: TableQuery): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+    val jdbcLayer = mock[JdbcLayerInterface]
+    val resultSet = mock[ResultSet]
+    val rsmd = mock[ResultSetMetaData]
+
+    (jdbcLayer.query _).expects("SELECT * FROM (" + query.query + ") AS x WHERE 1=0", *).returning(Right(resultSet))
     (resultSet.getMetaData _).expects().returning(rsmd)
     (resultSet.close _).expects()
 
@@ -59,7 +72,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
-  val tablename = "\"testtable\""
+  val tablename = TableName("\"testtable\"", None)
 
   it should "parse a single-column double schema" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
@@ -69,6 +82,24 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 1)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) => fail(err.toString())
+      case Right(schema) =>
+        val field = schema.fields(0)
+        assert(field.name == "col1")
+        assert(field.nullable)
+        assert(field.dataType == DoubleType)
+    }
+  }
+
+  it should "parse schema of query" in {
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
+    val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
+
+    // Schema
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, query) match {
       case Left(err) => fail(err.toString())
       case Right(schema) =>
         val field = schema.fields(0)
