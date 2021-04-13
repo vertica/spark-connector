@@ -161,7 +161,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case None =>
         // Default COPY
         logger.info(s"Building default copy column list")
-        schemaTools.getCopyColumnList(jdbcLayer, config.tablename.getFullTableName, config.schema)
+        schemaTools.getCopyColumnList(jdbcLayer, config.tablename, config.schema)
           .left.map(err => SchemaColumnListError(err)
           .context("getColumnList: Error building default copy column list"))
     }

@@ -239,6 +239,12 @@ case class PasswordMissingError() extends ConnectorError {
 case class TablenameMissingError() extends ConnectorError {
   def getFullContext: String = "The 'table' param is missing. Please specify the name of the table to use."
 }
+case class TableAndQueryMissingError() extends ConnectorError {
+  def getFullContext: String = "The 'table' and 'query' params are both missing. Please specify the table name or query to use."
+}
+case class QuerySpecifiedOnWriteError() extends ConnectorError {
+  def getFullContext: String = "The 'query' option was specified for a write operation. This option is only valid for reads."
+}
 case class InvalidPortError() extends ConnectorError {
   def getFullContext: String = "The 'port' param specified is invalid. " +
     "Please specify a valid integer between 1 and 65535."
