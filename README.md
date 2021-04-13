@@ -119,7 +119,11 @@ Below is a detailed list of connector options:
 
 ## Configuring Logging
 
-The connector uses log4j, so adding log4j.properties and log4j.xml will allow you to enable and configure logging for the connector. There are example log4j configuration files in `functional-tests/src/main/resources`.
+The connector uses Spark's log4j configuration for logging. Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
+
+Here is an example spark-submit command showing how to add Spark's default configuration folder to the classpath:
+`spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
+where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
 ## Limitations
 
