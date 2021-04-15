@@ -348,6 +348,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
     val perms = new FsPermission(permission)
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
+        logger.debug("Making path " + path + " with permissions: " + perms.toString)
         Try {fs.mkdirs(path, perms); ()}.toEither.left.map(exception => CreateDirectoryError(path, exception)
           .context("Error creating HDFS directory."))
       } else {
