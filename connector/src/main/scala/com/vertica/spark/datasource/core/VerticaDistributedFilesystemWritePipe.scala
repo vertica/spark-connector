@@ -13,20 +13,18 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, KerberosAuth, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, SetSparkConfError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.SparkSession
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
  * Pipe for writing data to Vertica using an intermediary filesystem.
@@ -120,7 +118,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
 
       // Create job status table / entry
-      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.username, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
     } yield ()
   }
 
@@ -260,6 +258,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val tableNameMaxLength = 30
 
     val ret = for {
+      // Set Vertica to work with kerberos and HDFS
+      _ <- config.jdbcConfig.auth match {
+        case _: KerberosAuth =>
+          jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+        case _ => Right(())
+      }
+
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 
@@ -284,7 +289,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
-      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.username, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
     } yield ()

@@ -2,13 +2,14 @@ package com.vertica.spark.functests
 
 import java.sql.Connection
 
+import com.vertica.spark.config.JDBCConfig
 import com.vertica.spark.util.error.ConnectorException
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
-  val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
+class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+  val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
 

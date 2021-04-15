@@ -42,6 +42,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   private val df = spark.range(100).toDF("number")
   private val schema = df.schema
 
+  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
   override def beforeAll(): Unit = {
@@ -53,7 +54,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "create, list, and remove files from HDFS correctly" in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg.logProvider, Some(schema))
     val path = dirTestCfg.address
     fsLayer.removeDir(path)
     val unitOrError = for {
@@ -74,7 +74,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "correctly read data from HDFS" in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg.logProvider, Some(schema))
     fsLayer.removeFile(fsCfg.address)
     df.coalesce(1).write.format("parquet").mode("append").save(fsCfg.address)
     //df.write.parquet(fsCfg.fileStoreConfig.address)
@@ -98,7 +97,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "return an error when reading and the reader is uninitialized." in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg.logProvider, Some(schema))
     val dataOrError = fsLayer.readDataFromParquetFile(100)
     dataOrError match {
       case Right(_) => fail
@@ -107,7 +105,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "return an error when closing a read and the reader is uninitialized." in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg.logProvider, Some(schema))
     val dataOrError = fsLayer.closeReadParquetFile()
     dataOrError match {
       case Right(_) => fail
@@ -116,7 +113,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   }
 
   it should "return an error when reading and the schema has not been set in the config" in {
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg.logProvider, Some(schema))
     val dataOrError = fsLayer.readDataFromParquetFile(100)
     dataOrError match {
       case Right(_) => fail
@@ -126,7 +122,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write then read a parquet file" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(fsCfg.logProvider, Some(intSchema))
     val path = fsCfg.address
     val filename = path + "testwriteread.parquet"
 
@@ -160,7 +155,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write then copy into vertica" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(fsCfg.logProvider, Some(intSchema))
     val path = fsCfg.address
     val filename = path + "testwriteload.parquet"
 
@@ -175,7 +169,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val tablename = "testwriteload"
     // Create table
-    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    val conn: Connection = TestUtils.getJDBCConnection(jdbcCfg)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a int)")
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"
@@ -206,7 +200,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write a timestamp then copy into vertica" in {
     val timestampSchema = new StructType(Array(StructField("a", TimestampType)))
-    val fsLayer = new HadoopFileStoreLayer(fsCfg.logProvider, Some(timestampSchema))
     val path = fsCfg.address
     val filename = path + "testwritetimestamp.parquet"
 
@@ -223,7 +216,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
     val tablename = "testwritetimestamp"
     // Create table
-    val conn: Connection = TestUtils.getJDBCConnection(host = jdbcCfg.host, db = jdbcCfg.db, user = jdbcCfg.username, password = jdbcCfg.password)
+    val conn: Connection = TestUtils.getJDBCConnection(jdbcCfg)
     TestUtils.createTableBySQL(conn, tablename, "create table " + tablename + " (a timestamp)")
 
     val copyStmt = s"COPY $tablename FROM '$filename' ON ANY NODE parquet"

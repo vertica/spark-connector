@@ -17,7 +17,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
@@ -27,8 +27,9 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.LogProvider
+import com.vertica.spark.config.{FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.hadoop.io.Text
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
@@ -68,6 +69,8 @@ trait FileStoreLayerInterface {
   def createFile(filename: String) : ConnectorResult[Unit]
   def createDir(filename: String) : ConnectorResult[Unit]
   def fileExists(filename: String) : ConnectorResult[Boolean]
+
+  def getImpersonationToken(user: String) : ConnectorResult[String]
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
@@ -135,7 +138,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
+class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
   val logger: Logger = logProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
@@ -355,16 +358,44 @@ class HadoopFileStoreLayer(logProvider: LogProvider, schema: Option[StructType])
       Right(fs.exists(path)))
   }
 
+  // scalastyle:off
+  override def getImpersonationToken(user: String) : ConnectorResult[String] = {
+    this.useFileSystem(fileStoreConfig.address, (fs, path) => {
+      var hdfsToken = ""
+
+      val tokens = fs.addDelegationTokens(user, null)
+      val itr = tokens.iterator
+      while (itr.hasNext) {
+        val token = itr.next();
+        logger.debug("Hadoop impersonation: IT kind: " + token.getKind.toString)
+        if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+          hdfsToken = token.encodeToUrlString
+        }
+      }
+
+      if(hdfsToken.nonEmpty) {
+        Right(hdfsToken)
+      }
+      else {
+        Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
+      }
+    })
+  }
+
   private def useFileSystem[T](filename: String,
                                fsAction: (FileSystem, Path) => ConnectorResult[T]): ConnectorResult[T] = {
     // Path for directory of files
     logger.debug("Filestore path: " + filename)
 
     // Get list of partitions
-    val path = new Path(s"$filename")
-    val fs = path.getFileSystem(hdfsConfig)
-    val result = fsAction(fs, path)
-    result
+    Try {
+      val path = new Path(s"$filename")
+      val fs = path.getFileSystem(hdfsConfig)
+      fsAction(fs, path)
+    } match {
+      case Success(value) => value
+      case Failure(exception) => Left(FileStoreThrownError(exception))
+    }
   }
 }
 

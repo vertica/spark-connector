@@ -11,20 +11,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
 import ch.qos.logback.classic.Level
 
 object Main extends App {
   val conf: Config = ConfigFactory.load()
+  var readOpts = Map(
+    "host" -> conf.getString("functional-tests.host"),
+    "user" -> conf.getString("functional-tests.user"),
+    "db" -> conf.getString("functional-tests.db"),
+    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+  )
+  val auth = if(conf.getString("functional-tests.password").nonEmpty) {
+    readOpts = readOpts + (
+        "password" -> conf.getString("functional-tests.password"),
+      )
+    BasicJdbcAuth(
+      username = conf.getString("functional-tests.user"),
+      password = conf.getString("functional-tests.password"),
+    )
+  }
+  else {
+    readOpts = readOpts + (
+        "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
+        "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
+        "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name")
+    )
+    KerberosAuth(
+      username = conf.getString("functional-tests.user"),
+      kerberosServiceName = conf.getString("functional-tests.kerberos_service_name"),
+      kerberosHostname = conf.getString("functional-tests.kerberos_host_name"),
+      jaasConfigName = conf.getString("functional-tests.jaas_config_name")
+    )
+  }
 
   val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
                               port = conf.getInt("functional-tests.port"),
                               db = conf.getString("functional-tests.db"),
-                              username = conf.getString("functional-tests.user"),
-                              password = conf.getString("functional-tests.password"),
+                              auth,
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
   new JDBCTests(jdbcConfig).execute()
@@ -48,18 +79,10 @@ object Main extends App {
     )
   ).execute()
 
-  val readOpts = Map(
-    "host" -> conf.getString("functional-tests.host"),
-    "user" -> conf.getString("functional-tests.user"),
-    "db" -> conf.getString("functional-tests.db"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "password" -> conf.getString("functional-tests.password"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
-  )
   val writeOpts = readOpts
-  new EndToEndTests(readOpts, writeOpts).execute()
+  new EndToEndTests(readOpts, writeOpts, jdbcConfig).execute()
 
   if (args.length == 1 && args(0) == "Large") {
-    new LargeDataTests(readOpts, writeOpts).execute()
+    new LargeDataTests(readOpts, writeOpts, jdbcConfig).execute()
   }
 }

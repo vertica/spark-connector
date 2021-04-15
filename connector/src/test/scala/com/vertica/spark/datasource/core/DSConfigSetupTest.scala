@@ -99,8 +99,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.host == "1.1.1.1")
         assert(config.jdbcConfig.port == 1234)
         assert(config.jdbcConfig.db == "testdb")
-        assert(config.jdbcConfig.username == "user")
-        assert(config.jdbcConfig.password == "password")
         assert(config.tableSource.asInstanceOf[TableName].getFullTableName == "\"tbl\"")
         assert(config.logLevel == Level.ERROR)
         config.metadata match {
@@ -176,8 +174,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.host == "1.1.1.1")
         assert(config.jdbcConfig.port == 1234)
         assert(config.jdbcConfig.db == "testdb")
-        assert(config.jdbcConfig.username == "user")
-        assert(config.jdbcConfig.password == "password")
         assert(config.tablename.getFullTableName == "\"tbl\"")
         assert(config.logLevel == Level.ERROR)
     }
