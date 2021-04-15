@@ -358,6 +358,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
       Right(fs.exists(path)))
   }
 
+  // scalastyle:off
   override def getImpersonationToken(user: String) : ConnectorResult[String] = {
     this.useFileSystem(fileStoreConfig.address, (fs, path) => {
       var hdfsToken = ""
