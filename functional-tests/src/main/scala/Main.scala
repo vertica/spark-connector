@@ -16,6 +16,8 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
+import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
+import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
 import ch.qos.logback.classic.Level
 
 object Main extends App {
@@ -79,4 +81,8 @@ object Main extends App {
 
   val writeOpts = readOpts
   new EndToEndTests(readOpts, writeOpts, jdbcConfig).execute()
+
+  if (args.length == 1 && args(0) == "Large") {
+    new LargeDataTests(readOpts, writeOpts, jdbcConfig).execute()
+  }
 }

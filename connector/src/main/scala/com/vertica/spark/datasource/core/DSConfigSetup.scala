@@ -24,6 +24,7 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
+import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 
@@ -125,26 +126,25 @@ object DSConfigSetupUtils {
     config.get("jaas_config_name")
   }
 
-  def getTablename(config: Map[String, String]): ValidationResult[String] = {
-    config.get("table") match {
-      case Some(table) => table.validNec
-      case None => TablenameMissingError().invalidNec
+  def getTablename(config: Map[String, String]): Option[String] = {
+    config.get("table")
+  }
+
+  def getQuery(config: Map[String, String]): Option[String] = {
+    config.get("query") match {
+      case None => None
+        // Strip the ';' from the query to allow for queries ending with this
+      case Some(value) => Some(value.stripSuffix(";"))
     }
   }
 
-  def getDbSchema(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("dbschema") match {
-      case Some(dbschema) => Some(dbschema).validNec
-      case None => None.validNec
-    }
+  def getDbSchema(config: Map[String, String]): Option[String] = {
+    config.get("dbschema")
   }
-
 
   def getTargetTableSQL(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("target_table_sql").validNec
   }
-
-
 
   def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
     config.get("copy_column_list") match {
@@ -221,9 +221,28 @@ object DSConfigSetupUtils {
     )
   }
 
+  def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {
+    val name = DSConfigSetupUtils.getTablename(config)
+    val schema = DSConfigSetupUtils.getDbSchema(config)
+    val query = DSConfigSetupUtils.getQuery(config)
+
+    (query, name) match {
+      case (Some(q), _) => TableQuery(q, SessionId.getId).validNec
+      case (None, Some(n)) => TableName(n, schema).validNec
+      case (None, None) => TableAndQueryMissingError().invalidNec
+    }
+  }
+
   def validateAndGetFullTableName(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableName] = {
-    (DSConfigSetupUtils.getTablename(config),
-      DSConfigSetupUtils.getDbSchema(config) ).mapN(TableName)
+    val name = DSConfigSetupUtils.getTablename(config)
+    val schema = DSConfigSetupUtils.getDbSchema(config)
+    val query = DSConfigSetupUtils.getQuery(config)
+
+    (query, name) match {
+      case (_, Some(n)) => TableName(n, schema).validNec
+      case (Some(_), None) => QuerySpecifiedOnWriteError().invalidNec
+      case (None, None) => TablenameMissingError().invalidNec
+    }
   }
 
 }
@@ -242,11 +261,11 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(config).andThen { jdbcConfig =>
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config, jdbcConfig.logLevel, sessionId).andThen { fileStoreConfig =>
-        DSConfigSetupUtils.validateAndGetFullTableName(config).andThen { tableName =>
+        DSConfigSetupUtils.validateAndGetTableSource(config).andThen { tableSource =>
             (jdbcConfig.logLevel.validNec,
             jdbcConfig.validNec,
             fileStoreConfig.validNec,
-            tableName.validNec,
+            tableSource.validNec,
             DSConfigSetupUtils.getPartitionCount(config),
             None.validNec,
             DSConfigSetupUtils.getFilePermissions(config)).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>

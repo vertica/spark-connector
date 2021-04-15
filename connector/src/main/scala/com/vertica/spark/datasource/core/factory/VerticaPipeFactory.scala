@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.core
+package com.vertica.spark.datasource.core.factory
 
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils

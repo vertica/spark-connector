@@ -35,6 +35,7 @@ import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.types.StructType
 
 import collection.JavaConverters._
@@ -157,14 +158,6 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
   hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key, "CORRECTED")
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_READ.key, "CORRECTED")
-
-  /**
-   * Set spark conf for handling old dates if unset
-   */
-  if(LegacyBehaviorPolicy.withName(
-      SQLConf.get.getConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE)) == LegacyBehaviorPolicy.EXCEPTION) {
-      SQLConf.get.setConf(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
-    }
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this

@@ -13,12 +13,16 @@
 
 package com.vertica.spark.datasource.v2
 
+import cats.data.Validated.{Invalid, Valid}
+import ch.qos.logback.classic.Level
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.WriteConfig
-import com.vertica.spark.datasource.core.{DSWriteConfigSetup, DSWriter}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling}
+import com.vertica.spark.config.{LogProvider, WriteConfig}
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
+import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
+
+import collection.JavaConverters._
 
 object WriteSucceeded extends WriterCommitMessage
 object WriteFailed extends WriterCommitMessage
@@ -30,14 +34,23 @@ case class JobAbortedError() extends ConnectorError {
 /**
   * Builds the class for use in writing to Vertica
   */
-class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with SupportsTruncate {
+class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends WriteBuilder with SupportsTruncate {
+
+  private val config = writeSetupInterface.validateAndGetConfig(info.options.asScala.toMap) match {
+    case Invalid(errList) =>
+      val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
+      ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
+    case Valid(cfg) => cfg
+  }
+  config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+
 /**
   * Builds the class representing a write operation to a Vertica table
   *
   * @return [[VerticaBatchWrite]]
   */
   override def buildForBatch(): BatchWrite = {
-    new VerticaBatchWrite(config)
+    new VerticaBatchWrite(config, writeSetupInterface)
   }
 
   def truncate: WriteBuilder = {
@@ -52,11 +65,11 @@ class VerticaWriteBuilder(config: WriteConfig) extends WriteBuilder with Support
   *
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
-class VerticaBatchWrite(config: WriteConfig) extends BatchWrite {
+class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends BatchWrite {
   private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
-  new DSWriteConfigSetup(None).performInitialSetup(config) match {
+  writeSetupInterface.performInitialSetup(config) match {
     case Left(err) => ErrorHandling.logAndThrowError(logger, err)
     case Right(_) => ()
   }
@@ -108,19 +121,21 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   * @param taskId A unique identifier for the specific task, which there may be multiple of for a partition due to retries or speculative execution
   * @return [[VerticaBatchWriter]]
   */
-  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = new VerticaBatchWriter(config, partitionId, taskId)
+  override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
+    val uniqueId : String = partitionId + "-" + taskId
+    val writer = new DSWriter(config, uniqueId)
+    new VerticaBatchWriter(config, writer)
+  }
 }
 
 /**
   * Writer class that passes rows to be written to the underlying datasource
   */
-class VerticaBatchWriter(config: WriteConfig, partitionId: Int, taskId: Long) extends DataWriter[InternalRow] {
+class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends DataWriter[InternalRow] {
   private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
 
   // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
-  val uniqueId : String = partitionId + "-" + taskId
 
-  val writer = new DSWriter(config, uniqueId)
   writer.openWrite() match {
     case Right(_) => ()
     case Left(err) => ErrorHandling.logAndThrowError(logger, err)

@@ -28,12 +28,14 @@ trait ReadConfig extends GenericConfig {
 
   /**
    * Set filters to push down to the Vertica read.
+   *
    * @param pushdownFilters Filter strings
    */
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit
 
   /**
    * Sets the required schema of the read operation. Used to push down column selection
+   *
    * @param requiredSchema Schema of subset of data to be read from Vertica table
    */
   def setRequiredSchema(requiredSchema: StructType): Unit
@@ -78,7 +80,7 @@ object ValidFilePermissions {
  * @param logLevel Logging level for the read operation.
  * @param jdbcConfig Configuration for the JDBC connection used to communicate with Vertica.
  * @param fileStoreConfig Configuration for the intermediary filestore used to stage data between Spark and Vertica.
- * @param tablename Table to read from.
+ * @param tableSource Table or query to read from.
  * @param partitionCount Number of Spark partitions to divide the read into.
  * @param metadata Contains any metadata from the Vertica table that needs to be retrieved before the read. Includes table schema.
  */
@@ -86,7 +88,7 @@ final case class DistributedFilesystemReadConfig(
                                                   override val logLevel: Level,
                                                   jdbcConfig: JDBCConfig,
                                                   fileStoreConfig: FileStoreConfig,
-                                                  tablename: TableName,
+                                                  tableSource: TableSource,
                                                   partitionCount: Option[Int],
                                                   metadata: Option[VerticaReadMetadata],
                                                   filePermissions: ValidFilePermissions

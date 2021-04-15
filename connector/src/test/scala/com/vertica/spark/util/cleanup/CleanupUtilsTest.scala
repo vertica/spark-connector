@@ -16,7 +16,7 @@ package com.vertica.spark.util.cleanup
 import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.{CreateFileError, RemoveFileError}
+import com.vertica.spark.util.error.{CleanupError, CreateFileError, RemoveFileError}
 import org.apache.hadoop.fs.Path
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -26,15 +26,15 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
 
-  it should "Cleans up a file with a single part" in {
-    val filename = "path/file.parquet"
+  it should "Clean up a file with a single part" in {
+    val filename = "path/path/file.parquet"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createFile _).expects(filename+".cleanup0").returning(Right(()))
     (fileStoreLayer.fileExists _).expects(filename+".cleanup0").returning(Right(true))
     (fileStoreLayer.removeFile _).expects(filename+".cleanup0").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename).returning(Right(()))
-    (fileStoreLayer.getFileList _).expects("path").returning(Right(Seq[String]()))
+    (fileStoreLayer.getFileList _).expects("path/path").returning(Right(Seq[String]()))
     (fileStoreLayer.removeDir _).expects("path").returning(Right(()))
 
     val fileCleanupInfo = FileCleanupInfo(filename, 0, 1)
@@ -57,7 +57,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "Clean up a file with a multiple parts" in {
-    val filename = "path/file.parquet"
+    val filename = "path/path/file.parquet"
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createFile _).expects(filename+".cleanup0").returning(Right(()))
@@ -82,7 +82,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (fileStoreLayer.removeFile _).expects(filename+".cleanup1").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename+".cleanup2").returning(Right(()))
     (fileStoreLayer.removeFile _).expects(filename).returning(Right(()))
-    (fileStoreLayer.getFileList _).expects("path").returning(Right(Seq[String]()))
+    (fileStoreLayer.getFileList _).expects("path/path").returning(Right(Seq[String]()))
     (fileStoreLayer.removeDir _).expects("path").returning(Right(()))
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 2, 3))
@@ -129,6 +129,29 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         case RemoveFileError(_, _) => true
         case _ => false
       })
+    }
+  }
+
+  it should "Clean up all" in {
+    val dirname = "path/path"
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.removeDir _).expects("path")
+
+    cleanupUtils.cleanupAll(fileStoreLayer, dirname) match {
+      case Left(e) => fail("Failure: " + e)
+      case Right(_) => ()
+    }
+  }
+
+  it should "Return error if java path returns null on cleanup all" in {
+    val dirname = "/"
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+
+    cleanupUtils.cleanupAll(fileStoreLayer, dirname) match {
+      case Right(_) => fail
+      case Left(e) => e.isInstanceOf[CleanupError]
     }
   }
 }

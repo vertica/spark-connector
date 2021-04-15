@@ -13,11 +13,14 @@
 
 package com.vertica.spark.util.error
 
+import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError, JobAbortedError}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.types.IntegerType
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait TestError extends ConnectorError
 
@@ -172,5 +175,152 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val error = SchemaColumnListError(MyError())
     assert(error.getFullContext == "Failed to create a valid column list for the write operation " +
       "due to mismatch with the existing table.\nMy test error")
+  }
+
+  it should "get the error messages from a ExpectedRowDidNotExistError" in {
+    val error = ExpectedRowDidNotExistError()
+    assert(error.getFullContext == "Fatal error: expected row did not exist")
+  }
+
+  private def checkErrReturnsMessages(error: ConnectorError): Unit = {
+    assert(error.getFullContext.length > 0)
+    assert(error.getUserMessage.length > 0)
+  }
+
+  it should "return full context and user message for static errors without exception" in {
+    Try {
+      checkErrReturnsMessages(ExpectedRowDidNotExistError())
+      checkErrReturnsMessages(InitialSetupPartitioningError())
+      checkErrReturnsMessages(FileListEmptyPartitioningError())
+      checkErrReturnsMessages(InvalidPartition())
+      checkErrReturnsMessages(DoneReading())
+      checkErrReturnsMessages(UninitializedReadError())
+      checkErrReturnsMessages(MissingMetadata())
+      checkErrReturnsMessages(MissingSchemaError())
+      checkErrReturnsMessages(ViewExistsError())
+      checkErrReturnsMessages(TempTableExistsError())
+      checkErrReturnsMessages(FaultToleranceTestFail())
+      checkErrReturnsMessages(DuplicateColumnsError())
+      checkErrReturnsMessages(InvalidLoggingLevel())
+      checkErrReturnsMessages(ConfigBuilderError())
+      checkErrReturnsMessages(HostMissingError())
+      checkErrReturnsMessages(DbMissingError())
+      checkErrReturnsMessages(UserMissingError())
+      checkErrReturnsMessages(PasswordMissingError())
+      checkErrReturnsMessages(TablenameMissingError())
+      checkErrReturnsMessages(InvalidPortError())
+      checkErrReturnsMessages(InvalidPortError())
+      checkErrReturnsMessages(UnquotedSemiInColumns())
+      checkErrReturnsMessages(InvalidFilePermissions())
+      checkErrReturnsMessages(InvalidFailedRowsTolerance())
+      checkErrReturnsMessages(InvalidStrlenError())
+      checkErrReturnsMessages(InvalidPartitionCountError())
+      checkErrReturnsMessages(StagingFsUrlMissingError())
+      checkErrReturnsMessages(IntermediaryStoreWriterNotInitializedError())
+      checkErrReturnsMessages(IntermediaryStoreReaderNotInitializedError())
+      checkErrReturnsMessages(ConnectionDownError())
+      checkErrReturnsMessages(TableNotEnoughRowsError())
+    } match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+
+  }
+
+  it should "return full context and user message for errors with optional sub-error" in {
+    Try {
+      val suberr = TableNotEnoughRowsError()
+
+      checkErrReturnsMessages(SchemaDiscoveryError(Some(suberr)))
+      checkErrReturnsMessages(SchemaDiscoveryError(None))
+      checkErrReturnsMessages(TableCheckError(Some(suberr)))
+      checkErrReturnsMessages(TableCheckError(None))
+      checkErrReturnsMessages(CreateTableError(Some(suberr)))
+      checkErrReturnsMessages(CreateTableError(None))
+      checkErrReturnsMessages(DropTableError(Some(suberr)))
+      checkErrReturnsMessages(DropTableError(None))
+      checkErrReturnsMessages(JobStatusUpdateError(Some(suberr)))
+      checkErrReturnsMessages(JobStatusUpdateError(None))
+
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for errors with mandatory sub-error" in {
+    Try {
+      val suberr = TableNotEnoughRowsError()
+
+      checkErrReturnsMessages(SchemaColumnListError(suberr))
+      checkErrReturnsMessages(SchemaConversionError(suberr))
+      checkErrReturnsMessages(ExportFromVerticaError(suberr))
+      checkErrReturnsMessages(CommitError(suberr))
+      checkErrReturnsMessages(JobStatusCreateError(suberr))
+      checkErrReturnsMessages(JdbcSchemaError(suberr))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for errors that take one string param" in {
+    Try {
+      val str = "ex;s@^$%&*%&@W($GDH"
+
+      checkErrReturnsMessages(CleanupError(str))
+      checkErrReturnsMessages(ParentDirMissingError(str))
+      checkErrReturnsMessages(CreateFileAlreadyExistsError(str))
+      checkErrReturnsMessages(CreateDirectoryAlreadyExistsError(str))
+      checkErrReturnsMessages(ParamsNotSupported(str))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for errors that have a throwable cause" in {
+    Try {
+      val path = new Path("hdfs://test/path\\sdfa123$#*$&*&(#$.***")
+      val cause = new Exception("test")
+
+      checkErrReturnsMessages(FileListError(cause))
+      checkErrReturnsMessages(CreateFileError(path, cause))
+      checkErrReturnsMessages(CreateDirectoryError(path, cause))
+      checkErrReturnsMessages(RemoveFileError(path, cause))
+      checkErrReturnsMessages(RemoveDirectoryError(path, cause))
+      checkErrReturnsMessages(IntermediaryStoreWriteError(cause))
+      checkErrReturnsMessages(CloseWriteError(cause))
+      checkErrReturnsMessages(OpenReadError(cause))
+      checkErrReturnsMessages(IntermediaryStoreReadError(cause))
+      checkErrReturnsMessages(CloseReadError(cause))
+      checkErrReturnsMessages(ConnectionSqlError(cause))
+      checkErrReturnsMessages(ConnectionError(cause))
+      checkErrReturnsMessages(DataTypeError(cause))
+      checkErrReturnsMessages(SyntaxError(cause))
+      checkErrReturnsMessages(GenericError(cause))
+      checkErrReturnsMessages(DatabaseReadError(cause))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for conversion errors" in {
+    Try {
+      val sqlType = "invalid&#%$&*#%*&%#"
+      val sparkType = IntegerType
+
+      checkErrReturnsMessages(MissingSqlConversionError(sqlType, sqlType))
+      checkErrReturnsMessages(MissingSparkConversionError(sparkType))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
   }
 }

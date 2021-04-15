@@ -14,7 +14,9 @@
 package com.vertica.spark.datasource.core
 
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
+import com.vertica.spark.config.BasicJdbcAuth
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import com.vertica.spark.util.error.MissingSchemaError
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow

@@ -18,6 +18,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
 import ch.qos.logback.classic.Level
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
@@ -98,7 +99,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(config.jdbcConfig.host == "1.1.1.1")
         assert(config.jdbcConfig.port == 1234)
         assert(config.jdbcConfig.db == "testdb")
-        assert(config.tablename.getFullTableName == "\"tbl\"")
+        assert(config.tableSource.asInstanceOf[TableName].getFullTableName == "\"tbl\"")
         assert(config.logLevel == Level.ERROR)
         config.metadata match {
           case Some(metadata) => assert(metadata.schema == new StructType())

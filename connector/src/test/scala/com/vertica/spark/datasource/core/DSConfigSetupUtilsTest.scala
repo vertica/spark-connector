@@ -18,7 +18,8 @@ import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{JdbcAuth, KerberosAuth, TableName, ValidColumnList, ValidFilePermissions}
+import com.vertica.spark.config.{JdbcAuth, KerberosAuth}
+import com.vertica.spark.config.{TableName, TableQuery, TableSource, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import org.scalactic.{Equality, TolerantNumerics}
@@ -161,19 +162,19 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   it should "parse the table name" in {
     val opts = Map("table" -> "tbl")
-    val table = getResultOrAssert[String](DSConfigSetupUtils.getTablename(opts))
-    assert(table == "tbl")
+    val table = DSConfigSetupUtils.getTablename(opts)
+    assert(table.get == "tbl")
   }
 
   it should "parse the db schema" in {
     val opts = Map("dbschema" -> "test")
-    val schema = getResultOrAssert[Option[String]](DSConfigSetupUtils.getDbSchema(opts))
+    val schema = DSConfigSetupUtils.getDbSchema(opts)
     assert(schema.get == "test")
   }
 
   it should "default to no schema" in {
     val opts = Map[String, String]()
-    val schema = getResultOrAssert[Option[String]](DSConfigSetupUtils.getDbSchema(opts))
+    val schema = DSConfigSetupUtils.getDbSchema(opts)
     schema match {
       case Some(_) => fail
       case None => ()
@@ -186,10 +187,32 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(schema.getFullTableName == "\"test\".\"table\"")
   }
 
-  it should "fail with missing table name" in {
-    val opts = Map[String, String]()
-    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getTablename(opts))
-    assert(err.toNonEmptyList.head == TablenameMissingError())
+  it should "get full table name of read" in {
+    val opts = Map("dbschema" -> "test", "table" -> "table")
+    val schema = getResultOrAssert[TableSource](DSConfigSetupUtils.validateAndGetTableSource(opts))
+    assert(schema.isInstanceOf[TableName])
+    assert(schema.asInstanceOf[TableName].getFullTableName == "\"test\".\"table\"")
+  }
+
+  it should "get table query" in {
+    val q = "select * from abc where n > 5"
+    val opts = Map("dbschema" -> "test", "query" -> q)
+    val schema = getResultOrAssert[TableSource](DSConfigSetupUtils.validateAndGetTableSource(opts))
+    assert(schema.isInstanceOf[TableQuery])
+    assert(schema.asInstanceOf[TableQuery].query == q)
+  }
+
+  it should "error if no table or query specified" in {
+    val opts = Map("dbschema" -> "test")
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.validateAndGetTableSource(opts))
+    assert(err.toNonEmptyList.head == TableAndQueryMissingError())
+  }
+
+  it should "error on query on write" in {
+    val q = "select * from abc where n > 5"
+    val opts = Map("dbschema" -> "test", "query" -> q)
+    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.validateAndGetFullTableName(opts))
+    assert(err.toNonEmptyList.head == QuerySpecifiedOnWriteError())
   }
 
   it should "parse the password" in {
@@ -225,7 +248,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   it should "parse the staging filesystem url" in {
     val opts = Map[String, String]("staging_fs_url" -> "hdfs://test:8020/tmp/test")
-    val url = getResultOrAssert [String](DSConfigSetupUtils.getStagingFsUrl(opts))
+    val url = getResultOrAssert[String](DSConfigSetupUtils.getStagingFsUrl(opts))
     assert(url == "hdfs://test:8020/tmp/test")
   }
 
