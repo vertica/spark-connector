@@ -76,7 +76,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   it should "correctly read data from HDFS" in {
     fsLayer.removeFile(fsCfg.address)
     df.coalesce(1).write.format("parquet").mode("append").save(fsCfg.address)
-    //df.write.parquet(fsCfg.fileStoreConfig.address)
 
     val dataOrError = for {
       files <- fsLayer.getFileList(fsCfg.address)
@@ -94,6 +93,8 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
       case Left(error) => fail(error.getFullContext)
     }
 
+    fsLayer.removeFile(fsCfg.address)
+    fsLayer.createDir(fsCfg.address, "777")
   }
 
   it should "return an error when reading and the reader is uninitialized." in {
