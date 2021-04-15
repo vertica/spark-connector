@@ -80,7 +80,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
-
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite) tableUtils.dropTable(config.tablename) else Right(())
 

@@ -45,7 +45,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
-
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
   }

@@ -876,7 +876,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute("drop table " + tableName1)
   }
 
-
   it should "write data to Vertica" in {
     val tableName = "basicWriteTest"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
