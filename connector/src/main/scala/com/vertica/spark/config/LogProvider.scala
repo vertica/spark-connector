@@ -19,10 +19,6 @@ import com.typesafe.scalalogging.Logger
  * Used to provide a logger for a given class, configured with a given log level.
  */
 case object LogProvider {
-  def getLogger(c: Class[_]): Logger = {
-    val logger = Logger(c)
-
-    logger
-  }
+  def getLogger(c: Class[_]): Logger = Logger(c)
 }
 
