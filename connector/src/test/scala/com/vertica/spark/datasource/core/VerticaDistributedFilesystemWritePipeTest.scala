@@ -73,7 +73,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
+    (fileStoreLayerInterface.createDir _).expects(*,*).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -98,7 +98,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
+    (fileStoreLayerInterface.createDir _).expects(*,*).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -127,7 +127,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.createDir _).expects(*).returning(Right(()))
+    (fileStoreLayerInterface.createDir _).expects(*,*).returning(Right(()))
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.tableExists _).expects(tablename).returning(Right(false))
@@ -175,7 +175,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     // Directory w/ configured address is created
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.createDir _).expects(fileStoreConfig.address).returning(Right(()))
+    (fileStoreLayerInterface.createDir _).expects(fileStoreConfig.address, *).returning(Right(()))
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.tableExists _).expects(*).returning(Right(false))

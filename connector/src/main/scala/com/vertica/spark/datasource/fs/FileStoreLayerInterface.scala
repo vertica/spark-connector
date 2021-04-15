@@ -29,6 +29,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
@@ -67,7 +68,7 @@ trait FileStoreLayerInterface {
   def removeFile(filename: String) : ConnectorResult[Unit]
   def removeDir(filename: String) : ConnectorResult[Unit]
   def createFile(filename: String) : ConnectorResult[Unit]
-  def createDir(filename: String) : ConnectorResult[Unit]
+  def createDir(filename: String, permission: String) : ConnectorResult[Unit]
   def fileExists(filename: String) : ConnectorResult[Boolean]
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
@@ -343,10 +344,11 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
       })
   }
 
-  override def createDir(filename: String): ConnectorResult[Unit] = {
+  override def createDir(filename: String, permission: String): ConnectorResult[Unit] = {
+    val perms = new FsPermission(permission)
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.mkdirs(path); ()}.toEither.left.map(exception => CreateDirectoryError(path, exception)
+        Try {fs.mkdirs(path, perms); ()}.toEither.left.map(exception => CreateDirectoryError(path, exception)
           .context("Error creating HDFS directory."))
       } else {
         Left(CreateDirectoryAlreadyExistsError(filename))

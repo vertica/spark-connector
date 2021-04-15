@@ -86,6 +86,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
+    // TODO get from config
+    val perm = "777"
+
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -115,7 +118,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
-      _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
+      _ <- fileStoreLayer.createDir(config.fileStoreConfig.address, perm)
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")

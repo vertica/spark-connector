@@ -68,7 +68,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private def mockFileStoreLayer(config: DistributedFilesystemReadConfig, expectedAdd: String = expectedAddress): FileStoreLayerInterface = {
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(expectedAdd).returning(Right(false))
     (fileStoreLayer.getFileList _).expects(expectedAdd).returning(Right(Array[String]("example.parquet")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
@@ -211,7 +211,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Left(ParentDirMissingError("")))
 
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -232,7 +232,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -262,7 +262,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     // Files returned by filesystem (mock of what vertica would create
@@ -309,7 +309,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     // Files returned by filesystem (mock of what vertica would create
@@ -363,7 +363,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     // Files returned by filesystem (mock of what vertica would create
@@ -409,7 +409,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig.copy(partitionCount = Some(partitionCount))
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     // Files returned by filesystem (mock of what vertica would create
@@ -454,7 +454,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -482,7 +482,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
-    (fileStoreLayer.createDir _).expects(*).returning(Right())
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     // Files returned by filesystem (mock of what vertica would create
