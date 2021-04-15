@@ -57,7 +57,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val path = dirTestCfg.address
     fsLayer.removeDir(path)
     val unitOrError = for {
-      _ <- fsLayer.createDir(path)
+      _ <- fsLayer.createDir(path, "777")
       _ <- fsLayer.createFile(path + "test.parquet")
       fileList1 <- fsLayer.getFileList(path)
       _ = fileList1.foreach(file => assert(file == path + "test.parquet"))

@@ -28,7 +28,7 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
   val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
 
   override def beforeAll() = {
-    fsLayer.createDir(path)
+    fsLayer.createDir(path, "777")
   }
 
   override def afterAll() = {
@@ -65,10 +65,10 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
 
   it should "Clean up parent unique directory" in {
     val uniqueDir = path + "/unique-dir-123"
-    fsLayer.createDir(uniqueDir)
+    fsLayer.createDir(uniqueDir, "777")
 
     val childDir = uniqueDir + "/tablename"
-    fsLayer.createDir(childDir)
+    fsLayer.createDir(childDir, "777")
 
     val filename = childDir + "/test.parquet"
     fsLayer.createFile(filename)
