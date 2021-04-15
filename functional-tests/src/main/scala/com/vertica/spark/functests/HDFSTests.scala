@@ -125,6 +125,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write then read a parquet file" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(intSchema))
     val path = fsCfg.address
     val filename = path + "testwriteread.parquet"
 
