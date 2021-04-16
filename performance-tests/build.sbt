@@ -41,3 +41,5 @@ assemblyMergeStrategy in assembly := {
 }
 */
 
+unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
+
