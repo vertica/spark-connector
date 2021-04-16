@@ -62,7 +62,6 @@ object Main extends App {
 
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
-  /*
   new HDFSTests(
     FileStoreConfig(
       filename,
@@ -73,7 +72,6 @@ object Main extends App {
     ),
     jdbcConfig
   ).execute()
-   */
 
   new CleanupUtilTests(
     FileStoreConfig(filename,

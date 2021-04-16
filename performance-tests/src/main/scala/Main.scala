@@ -22,8 +22,6 @@ import org.apache.spark.sql.SparkSession
 
 object Main extends App {
   private val spark = SparkSession.builder()
-    // TODO: remove this, to be run on real cluster
-    .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()
 

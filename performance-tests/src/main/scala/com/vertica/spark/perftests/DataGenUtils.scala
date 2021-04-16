@@ -64,6 +64,8 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
     }
     else {
       println("Data doesn't exist yet, generating")
+      val startTime: Long = System.currentTimeMillis()
+
       val basicData : RDD[Row] = spark.sparkContext.parallelize(Seq[Int](), numPartitions)
         .mapPartitions { _ => {
           (1 to rowsPerPartition).map{_ => Row(1)}.iterator
@@ -80,6 +82,10 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
       println("Storing data in file " + dataFileName)
       dataDf.write.parquet(dataFileName)
 
+      val endTime: Long = System.currentTimeMillis()
+      println("start: " + startTime + ", end: " + endTime)
+      println("it took " + (endTime - startTime) + "MS to generate and write data")
+      
       dataDf
     }
   }
