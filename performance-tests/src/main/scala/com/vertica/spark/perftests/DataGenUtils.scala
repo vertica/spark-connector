@@ -56,9 +56,14 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
     val exists = fs.exists(new org.apache.hadoop.fs.Path(dataFileName))
 
     if(exists) {
-      spark.read.parquet(dataFileName)
+      println("Data already exists, loading")
+      val df = spark.read.parquet(dataFileName)
+      df.cache()
+      df.rdd.count()
+      df
     }
     else {
+      println("Data doesn't exist yet, generating")
       val basicData : RDD[Row] = spark.sparkContext.parallelize(Seq[Int](), numPartitions)
         .mapPartitions { _ => {
           (1 to rowsPerPartition).map{_ => Row(1)}.iterator
@@ -72,6 +77,7 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
         dataSchema
       )
 
+      println("Storing data in file " + dataFileName)
       dataDf.write.parquet(dataFileName)
 
       dataDf
