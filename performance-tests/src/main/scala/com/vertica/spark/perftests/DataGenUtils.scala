@@ -85,7 +85,7 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
       val endTime: Long = System.currentTimeMillis()
       println("start: " + startTime + ", end: " + endTime)
       println("it took " + (endTime - startTime) + "MS to generate and write data")
-      
+
       dataDf
     }
   }
