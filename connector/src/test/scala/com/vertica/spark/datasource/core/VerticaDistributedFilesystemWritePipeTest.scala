@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.core
 import java.sql.ResultSet
 
 import ch.qos.logback.classic.Level
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName, ValidColumnList}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName, ValidColumnList, ValidFilePermissions}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -34,6 +34,22 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   private val jdbcConfig = JDBCConfig("1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), Level.ERROR)
   private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", Level.ERROR)
   private val strlen = 1024
+
+  val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+  private def createWriteConfig() = {
+    DistributedFilesystemWriteConfig(logLevel = Level.ERROR,
+      jdbcConfig = jdbcConfig,
+      fileStoreConfig = fileStoreConfig,
+      tablename = tablename,
+      schema = schema,
+      strlen = strlen,
+      targetTableSql = None,
+      copyColumnList = None,
+      sessionId = "id",
+      0.0f,
+      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
+  }
 
   private def checkResult(result: ConnectorResult[Unit]): Unit = {
     result match {
@@ -67,8 +83,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   // TODO: Change this based on write modes
   it should "Create a table if it doesn't exist" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -91,8 +106,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Drop the table first if in overwrite mode" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
     config.setOverwrite(true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
@@ -119,8 +133,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   it should "Create a table using custom logic if it doesn't exist" in {
     val createTableStatement = "CREATE table dummy(col1 INTEGER);"
 
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = Some(createTableStatement), copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig().copy(targetTableSql = Some(createTableStatement))
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -143,8 +156,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Pass on errors from table tools" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -166,8 +178,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Create the directory for exporting files" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -191,8 +202,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "error if view exists with the table name" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -213,8 +223,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "use filestore layer to write data" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val uniqueId = "unique-id"
 
@@ -242,8 +251,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "pass on errors from filestore layer on write" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val uniqueId = "unique-id"
 
@@ -267,8 +275,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "call vertica copy upon commit" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val uniqueId = "unique-id"
 
@@ -298,11 +305,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "call vertica copy upon commit with a custom copy list" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = ValidColumnList("col1 INTEGER, col2 FLOAT").getOrElse(None), sessionId = "id", 0.0f)
-
-    val uniqueId = "unique-id"
-
+    val config = createWriteConfig().copy(copyColumnList = ValidColumnList("col1 INTEGER, col2 FLOAT").getOrElse(None))
 
     val expected = "COPY \"dummy\" (col1 INTEGER, col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
@@ -328,8 +331,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "pass error upon commit" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
@@ -357,10 +359,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "cleanup file dir after commit" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
-
-    val uniqueId = "unique-id"
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -387,10 +386,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "use specified custom copy columns if specified" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None,
-      copyColumnList = ValidColumnList("col1,col3,col2").getOrElse(None), sessionId = "id", 0.0f)
-
-    val uniqueId = "unique-id"
+    val config = createWriteConfig().copy(
+      copyColumnList = ValidColumnList("col1,col3,col2").getOrElse(None)
+    )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -415,10 +413,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "use constructed column list from schema tools on commit" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.0f)
-
-    val uniqueId = "unique-id"
+    val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -444,8 +439,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Fail if rejected row count is above threshold" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.05f)
+    val config = createWriteConfig().copy(
+      failedRowPercentTolerance =  0.05f
+    )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -474,7 +470,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "Succeed if rejected row count is below threshold" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.05f)
+    val config = createWriteConfig().copy(
+      failedRowPercentTolerance =  0.05f
+    )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -500,7 +498,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "Drop rejects table if there are no rejects" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = DistributedFilesystemWriteConfig(logLevel = Level.ERROR, jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig, tablename = tablename, schema = schema, strlen = strlen, targetTableSql = None, copyColumnList = None, sessionId = "id", 0.05f)
+    val config = createWriteConfig().copy(
+      failedRowPercentTolerance =  0.05f
+    )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))

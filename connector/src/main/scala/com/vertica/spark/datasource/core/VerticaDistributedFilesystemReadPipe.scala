@@ -211,10 +211,10 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Create unique directory for session
-      perm = "777"
+      perm = config.filePermissions
       _ = logger.debug("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
 
-      _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm) match {
+      _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
         case Left(err) =>
           err.getError match {
             case CreateDirectoryAlreadyExistsError(_) =>
