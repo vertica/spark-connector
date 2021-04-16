@@ -46,33 +46,36 @@ object DataGenUtils  {
 
 class DataGenUtils(hdfsPath: String, spark: SparkSession) {
 
-  def loadOrGenerateData() = {
-    val sizePerPartition = 100
-    val numPartitions = 12
-    val colCount = 200
+  def loadOrGenerateData(rowsPerPartition: Int, numPartitions: Int, colCount: Int): DataFrame = {
+    val totalRowCount = rowsPerPartition * numPartitions
+    println("Getting data for row count " + totalRowCount + " , col count " + colCount)
+    val dataFileName = hdfsPath + "data_" + rowsPerPartition + "_" + colCount + ".parquet"
 
-    val intSchema = new StructType(Array(StructField("col1", IntegerType)))
+    val conf = spark.sparkContext.hadoopConfiguration
+    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
+    val exists = fs.exists(new org.apache.hadoop.fs.Path(dataFileName))
 
-    val basicData : RDD[Row] = spark.sparkContext.parallelize(Seq[Int](), numPartitions)
-      .mapPartitions { _ => {
-        (1 to sizePerPartition).map{_ => Row(1)}.iterator
-      }}
+    if(exists) {
+      spark.read.parquet(dataFileName)
+    }
+    else {
+      val basicData : RDD[Row] = spark.sparkContext.parallelize(Seq[Int](), numPartitions)
+        .mapPartitions { _ => {
+          (1 to rowsPerPartition).map{_ => Row(1)}.iterator
+        }}
 
-    val df = spark.createDataFrame(basicData, intSchema)
-    println("DF COUNT: " + df.count())
+      val dataSchema = genDataSchema(colCount)
+      println("SCHEMA: " + dataSchema.toString())
 
-    val dataSchema = genDataSchema(colCount)
-    println("SCHEMA: " + dataSchema.toString())
+      val dataDf = spark.createDataFrame(
+        basicData.map(_ => DataGenUtils.genDataRow(colCount)),
+        dataSchema
+      )
 
-    val stringDataDf = spark.createDataFrame(
-      df.rdd.map(_ => DataGenUtils.genDataRow(colCount)),
-      dataSchema
-    )
+      dataDf.write.parquet(dataFileName)
 
-    //println("Data gen size: " + stringDataDf.count())
-    //stringDataDf.show(20)
-
-    stringDataDf
+      dataDf
+    }
   }
 
 }
