@@ -65,7 +65,8 @@ class PerformanceTestSuite(spark: SparkSession) {
   def colTestRead(dataRunDef: DataRunDef): Unit = {
     val tablename = dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
     val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).load()
-    dfRead.rdd.count()
+    val count = dfRead.rdd.count()
+    println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
   def runAndTimeTests(opts: Map[String, String], colCounts: String, rowCounts: String, runCount: Int, testMode: String): Unit = {
