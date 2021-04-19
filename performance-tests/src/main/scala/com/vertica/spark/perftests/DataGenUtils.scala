@@ -49,7 +49,7 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
   def loadOrGenerateData(rowsPerPartition: Int, numPartitions: Int, colCount: Int): DataFrame = {
     val totalRowCount = rowsPerPartition * numPartitions
     println("Getting data for row count " + totalRowCount + " , col count " + colCount)
-    val dataFileName = hdfsPath + "data_" + rowsPerPartition + "_" + colCount
+    val dataFileName = hdfsPath + "data_" + totalRowCount +  "_" + colCount
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)

@@ -63,10 +63,12 @@ object Main extends App {
                               logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
 
 
+  // read/write/both
+  val testMode = conf.getString("functional-tests.testMode")
 
   val colCounts = conf.getString("functional-tests.colCounts")
   val rowCounts = conf.getString("functional-tests.rowCounts")
   val runCount = conf.getInt("functional-tests.runCount")
-  new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount)
+  new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount, testMode)
 
 }
