@@ -64,7 +64,9 @@ object Main extends App {
 
 
 
-  new PerformanceTestSuite(spark).runAndTimeTests(readOpts)
-  // new EndToEndTests(readOpts, writeOpts, jdbcConfig).execute()
+  val colCounts = conf.getString("functional-tests.colCounts")
+  val rowCounts = conf.getString("functional-tests.rowCounts")
+  val runCount = conf.getInt("functional-tests.runCount")
+  new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount)
 
 }

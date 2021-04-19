@@ -58,7 +58,6 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
     if(exists) {
       println("Data already exists, loading")
       val df = spark.read.parquet(dataFileName)
-      df.cache()
       df.rdd.count()
       df
     }
@@ -78,7 +77,6 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
         basicData.map(_ => DataGenUtils.genDataRow(colCount)),
         dataSchema
       )
-      dataDf.cache()
 
       println("Storing data in file " + dataFileName)
       dataDf.write.parquet(dataFileName)
