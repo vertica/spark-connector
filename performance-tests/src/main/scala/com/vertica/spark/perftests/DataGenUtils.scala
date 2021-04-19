@@ -71,7 +71,7 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
         }}
 
       val dataSchema = genDataSchema(colCount)
-      println("SCHEMA: " + dataSchema.toString())
+      //println("SCHEMA: " + dataSchema.toString())
 
       val dataDf = spark.createDataFrame(
         basicData.map(_ => DataGenUtils.genDataRow(colCount)),
