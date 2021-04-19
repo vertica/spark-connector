@@ -78,6 +78,7 @@ class DataGenUtils(hdfsPath: String, spark: SparkSession) {
         basicData.map(_ => DataGenUtils.genDataRow(colCount)),
         dataSchema
       )
+      dataDf.cache()
 
       println("Storing data in file " + dataFileName)
       dataDf.write.parquet(dataFileName)

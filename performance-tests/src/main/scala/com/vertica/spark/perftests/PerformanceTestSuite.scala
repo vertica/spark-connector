@@ -25,7 +25,7 @@ class PerformanceTestSuite(spark: SparkSession) {
   def runAndTimeTests(opts: Map[String, String]): Unit = {
     val dataGenUtils = new DataGenUtils(opts("staging_fs_url"), spark)
 
-    val df = dataGenUtils.loadOrGenerateData(1000000, 12, 200)
+    val df = dataGenUtils.loadOrGenerateData(500000, 24, 200)
 
     val time = timeRun(opts, df)
 
