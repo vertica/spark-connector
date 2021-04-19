@@ -4,11 +4,23 @@ import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 class PerformanceTestSuite(spark: SparkSession) {
   def timeRun(opts: Map[String, String], df: DataFrame): Long = {
-    val startTime: Long = System.currentTimeMillis()
-    colTest(opts, df)
-    val endTime: Long = System.currentTimeMillis()
-    println("start: " + startTime + ", end: " + endTime)
-    endTime - startTime
+    discardOutliersAndAverageRuns(opts, df, 5)
+  }
+
+  def discardOutliersAndAverageRuns(opts: Map[String, String], df: DataFrame, runs: Int): Long = {
+    val results = (0 until runs).map( i => {
+      val startTime: Long = System.currentTimeMillis()
+      colTest(opts, df)
+      val endTime: Long = System.currentTimeMillis()
+      println("Run for col200row12M -- run " + i + " start: " + startTime + ", end: " + endTime)
+      endTime - startTime
+    })
+
+    val culledResults = if(runs >= 5) {
+      results.filter(v => v != results.min && v != results.max)
+    } else results
+
+    culledResults.sum / culledResults.length
   }
 
   def colTest(opts: Map[String, String], df: DataFrame): Unit = {
@@ -29,7 +41,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
     val time = timeRun(opts, df)
 
-    println("RAN PERF TEST, TOOK: " + time + " MS")
+    println("RAN PERF TEST, TOOK AVERAGE OF: " + time + " MS")
   }
 
 }
