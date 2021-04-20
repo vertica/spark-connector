@@ -190,8 +190,7 @@ object DSConfigSetupUtils {
     (DSConfigSetupUtils.getHost(config),
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
-    DSConfigSetupUtils.validateAndGetJDBCAuth(config),
-    DSConfigSetupUtils.getLogLevel(config)).mapN(JDBCConfig)
+    DSConfigSetupUtils.validateAndGetJDBCAuth(config)).mapN(JDBCConfig)
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
