@@ -17,6 +17,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.config.{JdbcAuth, KerberosAuth}
 import com.vertica.spark.config.{TableName, TableQuery, TableSource, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
@@ -106,14 +107,14 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   it should "parse the username" in {
     val opts = Map("user" -> "testuser")
-    val user = getResultOrAssert[String](DSConfigSetupUtils.getUser(opts))
-    assert(user == "testuser")
+    val user = DSConfigSetupUtils.getUser(opts)
+    assert(user.contains("testuser"))
   }
 
-  it should "fail with missing username" in {
+  it should "returns empty username" in {
     val opts = Map[String, String]()
-    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getUser(opts))
-    assert(err.toNonEmptyList.head == UserMissingError())
+    val user = DSConfigSetupUtils.getUser(opts)
+    assert(user.isEmpty)
   }
 
   it should "parse the partition count" in {
@@ -185,19 +186,38 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   it should "parse the password" in {
     val opts = Map("password" -> "pass")
-    val pass = getResultOrAssert[String](DSConfigSetupUtils.getPassword(opts))
-    assert(pass == "pass")
+    val pass = DSConfigSetupUtils.getPassword(opts)
+    assert(pass.contains("pass"))
   }
 
-  it should "fail with missing password" in {
+  it should "parse no password" in {
     val opts = Map[String, String]()
-    val err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPassword(opts))
-    assert(err.toNonEmptyList.head == PasswordMissingError())
+    val pass = DSConfigSetupUtils.getPassword(opts)
+    assert(pass.isEmpty)
+  }
+
+  it should "parse kerberos options" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "kerberos_service_name" -> "vertica",
+      "kerberos_host_name" -> "vertica.example.com",
+      "jaas_config_name" -> "Client"
+    )
+
+    val auth = getResultOrAssert[JdbcAuth](DSConfigSetupUtils.validateAndGetJDBCAuth(opts))
+
+    assert(auth.isInstanceOf[KerberosAuth])
+    assert(auth.asInstanceOf[KerberosAuth].kerberosServiceName == "vertica")
+    assert(auth.asInstanceOf[KerberosAuth].kerberosHostname == "vertica.example.com")
+    assert(auth.asInstanceOf[KerberosAuth].jaasConfigName == "Client")
   }
 
   it should "parse the staging filesystem url" in {
     val opts = Map[String, String]("staging_fs_url" -> "hdfs://test:8020/tmp/test")
-    val url = getResultOrAssert [String](DSConfigSetupUtils.getStagingFsUrl(opts))
+    val url = getResultOrAssert[String](DSConfigSetupUtils.getStagingFsUrl(opts))
     assert(url == "hdfs://test:8020/tmp/test")
   }
 

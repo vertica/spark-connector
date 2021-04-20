@@ -24,7 +24,7 @@ import java.util
 
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
@@ -53,7 +53,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   val options = new CaseInsensitiveStringMap(jOptions)
 
   val tablename: TableName = TableName("testtable", None)
-  val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test")
+  val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   val readConfig: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tableSource = tablename, partitionCount = None, metadata = None, ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
   val writeConfig: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = new StructType(), targetTableSql = None, strlen = 1024, copyColumnList = None, sessionId = "id", failedRowPercentTolerance =  0.0f)

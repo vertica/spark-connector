@@ -17,7 +17,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.jdbc._
-import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig}
 import com.vertica.spark.util.error.{ConnectionSqlError, DataTypeError, SyntaxError}
 
 /**
@@ -53,11 +53,14 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   }
 
   it should "Insert integer data to table and load" in {
-    jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+    val result = for {
+      _ <- jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
+      _ <- jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(123);")
+      rs <- jdbcLayer.query("SELECT * FROM " + tablename + ";")
+    } yield rs
 
-    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(123);")
 
-    jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
+    result match {
       case Right(rs) =>
         assert(rs.next())
         assert(rs.getInt(1) == 123)
@@ -171,7 +174,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   }
 
   it should "Fail to connect to the wrong database" in {
-    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", username = jdbcCfg.username, password = jdbcCfg.password))
+    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test")))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed

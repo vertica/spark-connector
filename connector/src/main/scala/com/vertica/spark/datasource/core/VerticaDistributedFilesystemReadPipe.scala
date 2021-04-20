@@ -23,6 +23,10 @@ import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.io.Text
+import org.apache.hadoop.security.UserGroupInformation
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -194,6 +198,13 @@ class VerticaDistributedFilesystemReadPipe(
 
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
+
+      // Set Vertica to work with kerberos and HDFS
+      _ <- config.jdbcConfig.auth match {
+        case _: KerberosAuth =>
+          jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+        case _ => Right(())
+      }
 
       // Create unique directory for session
       _ = logger.debug("Creating unique directory: " + fileStoreConfig.address)

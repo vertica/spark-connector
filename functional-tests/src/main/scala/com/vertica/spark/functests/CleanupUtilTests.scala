@@ -21,7 +21,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll {
 
-  val fsLayer = new HadoopFileStoreLayer(None)
+  val fsLayer = new HadoopFileStoreLayer(cfg, None)
   val path = cfg.address + "/CleanupTest"
 
   val cleanupUtils = new CleanupUtils

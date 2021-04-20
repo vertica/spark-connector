@@ -15,6 +15,7 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Date, Timestamp}
 
+import com.vertica.spark.config.JDBCConfig
 import com.vertica.spark.util.error.ConnectorException
 import org.apache.log4j.Logger
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
@@ -25,8 +26,8 @@ import org.scalactic.TripleEquals._
 import org.scalactic.Tolerance._
 import org.apache.spark.sql.functions._
 
-class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String]) extends AnyFlatSpec with BeforeAndAfterAll {
-  val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
+class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+  val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
 

@@ -16,18 +16,30 @@ package com.vertica.spark.functests
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
 
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JdbcAuth, KerberosAuth}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 
 object TestUtils {
-  def getJDBCConnection(host: String, port: Int = 5433, db: String, user: String, password: String): Connection = {
+  def getJDBCConnection(config: JDBCConfig): Connection = {
     Class.forName("com.vertica.jdbc.Driver").newInstance()
 
-    val prop = new Properties()
-    prop.put("user", user)
-    prop.put("password", password)
+    config.auth match {
+      case BasicJdbcAuth(username, password) =>
+        val prop = new Properties()
+        prop.put("user", username)
+        prop.put("password", password)
 
-    getConnectionByProp(host, port, db, prop)(None)
+        getConnectionByProp(config.host, config.port, config.db, prop)(None)
+      case KerberosAuth(username, kerberosServiceName, kerberosHostname, jaasConfigName) =>
+        val prop = new Properties()
+        prop.put("user", username)
+        prop.put("KerberosServiceName", kerberosServiceName)
+        prop.put("KerberosHostname", kerberosHostname)
+        prop.put("JAASConfigName", jaasConfigName)
+
+        getConnectionByProp(config.host, config.port, config.db, prop)(None)
+    }
   }
 
   def getJDBCUrl(host: String, port: Int = 5433, db: String): String = {

@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
+import com.vertica.spark.config.BasicJdbcAuth
 import com.vertica.spark.config.{DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, TableName}
 import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import com.vertica.spark.util.error.MissingSchemaError
@@ -27,7 +28,7 @@ trait DummyWritePipe extends VerticaPipeInterface with VerticaPipeWriteInterface
 
 class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
-  val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", "test", "test")
+  val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   val config: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tablename = tablename, schema = new StructType(), targetTableSql = None, strlen = 1024, copyColumnList = None, sessionId = "id", failedRowPercentTolerance =  0.0f)
 

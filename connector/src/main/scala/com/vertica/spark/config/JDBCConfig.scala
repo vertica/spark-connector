@@ -14,12 +14,43 @@
 package com.vertica.spark.config
 
 /**
+ * Represents any config necessary for authenticating to JDBC.
+ *
+ * Abstract as there are multiple possible methods of authentication.
+ */
+trait JdbcAuth {
+  def user: String
+}
+
+/**
+ * Authentication to Vertica using username and password
+ */
+case class BasicJdbcAuth(username: String, password: String) extends JdbcAuth {
+  override def user: String = username
+}
+
+/**
+ * Authentication using kerberos
+ * @param kerberosServiceName the Kerberos service name, as specified when creating the service principal
+ * @param kerberosHostname the Kerberos host name, as specified when creating the service principal
+ * @param jaasConfigName the name of the JAAS configuration used for Kerberos authentication
+ */
+case class KerberosAuth(username: String,
+                        kerberosServiceName: String,
+                        kerberosHostname: String,
+                        jaasConfigName: String) extends JdbcAuth {
+  override def user: String = username
+}
+
+/**
  * Configuration for a JDBC connection to Vertica.
  *
  * @param host hostname for the JDBC connection
  * @param port port for the JDBC connection
  * @param db name of the Vertica database to connect to
- * @param username hash-based authentication user
- * @param password hash-based authentication user
+ * @param auth the authentication details, varies depending on method used
  */
-final case class JDBCConfig(host: String, port: Int, db: String, username: String, password: String)
+final case class JDBCConfig(host: String,
+                            port: Int,
+                            db: String,
+                            auth: JdbcAuth)

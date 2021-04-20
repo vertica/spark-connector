@@ -20,8 +20,10 @@ import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
-import com.vertica.spark.config.{JDBCConfig, LogProvider}
+import com.vertica.spark.config.{BasicJdbcAuth, LogProvider, JDBCConfig, KerberosAuth}
+import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
 import scala.util.Success
@@ -59,7 +61,6 @@ trait JdbcLayerInterface {
     */
   def close(): ConnectorResult[Unit]
 
-
   /**
    * Converts and logs JDBC exception to our error format
    */
@@ -75,6 +76,12 @@ trait JdbcLayerInterface {
    */
   def rollback(): ConnectorResult[Unit]
 
+  /**
+   * Configures the database to be able to communicate with filestore using kerberos
+   *
+   * @param fileStoreLayer Interface to a filestore that provides an impersonation token via getImpersonationToken
+   */
+  def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit]
 }
 
 object JdbcUtils {
@@ -93,8 +100,17 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val logger = LogProvider.getLogger(classOf[VerticaJdbcLayer])
 
   private val prop = new util.Properties()
-  prop.put("user", cfg.username)
-  prop.put("password", cfg.password)
+
+  cfg.auth match {
+    case BasicJdbcAuth(username, password) =>
+      prop.put("user", username)
+      prop.put("password", password)
+    case KerberosAuth(username, kerberosServiceName, kerberosHostname, jaasConfigName) =>
+      prop.put("user", username)
+      prop.put("KerberosServiceName", kerberosServiceName)
+      prop.put("KerberosHostname", kerberosHostname)
+      prop.put("JAASConfigName", jaasConfigName)
+  }
 
   // Load driver
   Class.forName("com.vertica.jdbc.Driver")
@@ -237,6 +253,34 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     logger.debug("Rolling back.")
     this.connection.flatMap(conn => this.useConnection(conn, c => c.rollback(), handleJDBCException)
       .left.map(_.context("rollback: JDBC Error while rolling back.")))
+  }
+
+  def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    SparkSession.getActiveSession match {
+      case Some(session) =>
+        logger.debug("Hadoop impersonation: found session")
+        val hadoopConf = session.sparkContext.hadoopConfiguration
+        val isKerberosEnabled = hadoopConf.get("hadoop.security.authentication")
+        logger.debug("Hadoop impersonation: kerb authentication: " + isKerberosEnabled)
+        if (isKerberosEnabled == "kerberos") {
+          val nameNodeAddress = hadoopConf.get("dfs.namenode.http-address")
+          logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
+
+          for {
+            encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
+            jsonString = s"""
+                {
+                   "authority": "$nameNodeAddress",
+                   "token": "$encodedDelegationToken"
+                }"""
+            sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
+            _ <- this.execute(sql)
+          } yield ()
+        } else {
+          Left(KerberosNotEnabledInHadoopConf())
+        }
+      case None => Left(NoSparkSessionFound())
+    }
   }
 
   private def useConnection[T](
