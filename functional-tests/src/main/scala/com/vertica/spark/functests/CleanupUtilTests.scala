@@ -24,11 +24,12 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
 
   val fsLayer = new HadoopFileStoreLayer(cfg, cfg.logProvider, None)
   val path = cfg.address + "/CleanupTest"
+  private val perms = "777"
 
   val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
 
   override def beforeAll() = {
-    fsLayer.createDir(path, "777")
+    fsLayer.createDir(path, perms)
   }
 
   override def afterAll() = {
@@ -65,10 +66,10 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
 
   it should "Clean up parent unique directory" in {
     val uniqueDir = path + "/unique-dir-123"
-    fsLayer.createDir(uniqueDir, "777")
+    fsLayer.createDir(uniqueDir, perms)
 
     val childDir = uniqueDir + "/tablename"
-    fsLayer.createDir(childDir, "777")
+    fsLayer.createDir(childDir, perms)
 
     val filename = childDir + "/test.parquet"
     fsLayer.createFile(filename)

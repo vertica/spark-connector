@@ -2,13 +2,17 @@ package com.vertica.spark.perftests
 
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
-case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: String) {
-}
+sealed trait TestMode
+case class WriteMode() extends TestMode
+case class ReadMode() extends TestMode
+case class BothMode() extends TestMode
+
+case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode)
 
 class PerformanceTestSuite(spark: SparkSession) {
   def discardOutliersAndAverageRuns(dataRunDef: DataRunDef): Unit = {
     val mode = dataRunDef.mode
-    if(mode == "read") {
+    if(mode.isInstanceOf[ReadMode]) {
       colTestWrite(dataRunDef)
     }
     else {
@@ -25,7 +29,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       println("RAN WRITE PERF TEST, TOOK AVERAGE OF: " + avg + " MS")
     }
 
-    if(mode != "write") {
+    if(!mode.isInstanceOf[WriteMode]) {
       println("RUNNING READ PERF TEST FOR ROW COUNT : " + dataRunDef.rows + " , COL COUNT: " + dataRunDef.cols + " -- DOING " + dataRunDef.runs + " RUNS")
       val results = (0 until dataRunDef.runs).map( i => {
         timeRead(dataRunDef, i)
@@ -69,13 +73,8 @@ class PerformanceTestSuite(spark: SparkSession) {
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
-  def runAndTimeTests(opts: Map[String, String], colCounts: String, rowCounts: String, runCount: Int, testMode: String): Unit = {
+  def runAndTimeTests(opts: Map[String, String], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode): Unit = {
     val dataGenUtils = new DataGenUtils(opts("staging_fs_url"), spark)
-
-    testMode match {
-      case "read" | "write" | "both" => ()
-      case _ => throw new Exception("Invalid test mode, must be 'read', 'write' or 'both'")
-    }
 
     colCounts.split(",").map(x => x.toInt).map(colCount => {
       rowCounts.split(",").map(x => x.toInt).map(rowCount => {

@@ -17,7 +17,7 @@ import com.typesafe.config.Config
 import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import ch.qos.logback.classic.Level
-import com.vertica.spark.perftests.{DataGenUtils, PerformanceTestSuite}
+import com.vertica.spark.perftests.{BothMode, DataGenUtils, PerformanceTestSuite, ReadMode, WriteMode}
 import org.apache.spark.sql.SparkSession
 
 object Main extends App {
@@ -64,11 +64,19 @@ object Main extends App {
 
 
   // read/write/both
-  val testMode = conf.getString("functional-tests.testMode")
 
   val colCounts = conf.getString("functional-tests.colCounts")
   val rowCounts = conf.getString("functional-tests.rowCounts")
   val runCount = conf.getInt("functional-tests.runCount")
+
+  val testModeStr = conf.getString("functional-tests.testMode")
+  val testMode = testModeStr match {
+    case "read" => ReadMode()
+    case "write" => WriteMode()
+    case "both" => BothMode()
+    case _ => throw new Exception("Invalid test mode, must be 'read', 'write' or 'both'")
+  }
+
   new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount, testMode)
 
 }

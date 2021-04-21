@@ -41,6 +41,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   private val df = spark.range(100).toDF("number")
   private val schema = df.schema
+  private val perms = "777"
 
   val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
@@ -57,7 +58,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     val path = dirTestCfg.address
     fsLayer.removeDir(path)
     val unitOrError = for {
-      _ <- fsLayer.createDir(path, "777")
+      _ <- fsLayer.createDir(path, perms)
       _ <- fsLayer.createFile(path + "test.parquet")
       fileList1 <- fsLayer.getFileList(path)
       _ = fileList1.foreach(file => assert(file == path + "test.parquet"))
@@ -94,7 +95,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
     }
 
     fsLayer.removeFile(fsCfg.address)
-    fsLayer.createDir(fsCfg.address, "777")
+    fsLayer.createDir(fsCfg.address, perms)
   }
 
   it should "return an error when reading and the reader is uninitialized." in {
