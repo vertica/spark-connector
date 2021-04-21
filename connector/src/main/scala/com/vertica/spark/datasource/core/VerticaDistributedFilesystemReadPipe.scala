@@ -24,6 +24,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.spark.sql.SparkSession
@@ -202,14 +203,18 @@ class VerticaDistributedFilesystemReadPipe(
       // Set Vertica to work with kerberos and HDFS
       _ <- config.jdbcConfig.auth match {
         case _: KerberosAuth =>
+          logger.debug("Using kerberos auth.")
           jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
-        case _ => Right(())
+        case _ =>
+          logger.debug("Using regular auth.")
+          Right(())
       }
 
       // Create unique directory for session
-      _ = logger.debug("Creating unique directory: " + fileStoreConfig.address)
+      perm = config.filePermissions
+      _ = logger.debug("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
 
-      _ <- fileStoreLayer.createDir(fileStoreConfig.address) match {
+      _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
         case Left(err) =>
           err.getError match {
             case CreateDirectoryAlreadyExistsError(_) =>

@@ -321,7 +321,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getTargetTableSQL(config),
           DSConfigSetupUtils.getCopyColumnList(config),
           sessionId.validNec,
-          DSConfigSetupUtils.getFailedRowsPercentTolerance(config)
+          DSConfigSetupUtils.getFailedRowsPercentTolerance(config),
+          DSConfigSetupUtils.getFilePermissions(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

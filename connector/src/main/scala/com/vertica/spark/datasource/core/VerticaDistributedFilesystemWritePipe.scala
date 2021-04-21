@@ -115,7 +115,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
-      _ <- fileStoreLayer.createDir(config.fileStoreConfig.address)
+      perm = config.filePermissions
+      _ <- fileStoreLayer.createDir(config.fileStoreConfig.address, perm.toString)
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
