@@ -7,6 +7,19 @@ import org.apache.spark.sql.types.{DateType, Decimal, DecimalType, IntegerType, 
 
 object DataGenUtils  {
   val rand = new scala.util.Random(System.currentTimeMillis)
+
+  def randomMsInLast70Years() = {
+    -946771200000L  + // Time in past
+      (Math.abs(rand.nextLong) % (
+        70L  // years
+        * 365 // days
+        * 24 // hours
+        * 60 // minutes
+        * 60 // seconds
+        * 1000 // ms
+      ))
+  }
+
   def randomStringGen(length: Int): String = rand.alphanumeric.take(length).mkString
 
   def randomIntGen(): Int = rand.nextInt()
@@ -14,7 +27,7 @@ object DataGenUtils  {
   def randomDecimalGen(): Decimal = Decimal(rand.nextDouble())
 
   def randomDateGen(): java.sql.Date = {
-    val ms = -946771200000L + (Math.abs(rand.nextLong) % (70L * 365 * 24 * 60 * 60 * 1000))
+    val ms = randomMsInLast70Years()
     new java.sql.Date(ms)
   }
 
