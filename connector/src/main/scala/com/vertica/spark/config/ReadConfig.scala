@@ -14,7 +14,6 @@
 package com.vertica.spark.config
 
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
-import ch.qos.logback.classic.Level
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
@@ -24,7 +23,7 @@ import scala.util.{Failure, Success, Try}
 /**
  * Interface for configuration of a read (from Vertica) operation.
  */
-trait ReadConfig extends GenericConfig {
+trait ReadConfig {
 
   /**
    * Set filters to push down to the Vertica read.
@@ -77,7 +76,6 @@ object ValidFilePermissions {
 /**
  * Configuration for a read operation using a distributed filesystem as an intermediary.
  *
- * @param logLevel Logging level for the read operation.
  * @param jdbcConfig Configuration for the JDBC connection used to communicate with Vertica.
  * @param fileStoreConfig Configuration for the intermediary filestore used to stage data between Spark and Vertica.
  * @param tableSource Table or query to read from.
@@ -85,7 +83,6 @@ object ValidFilePermissions {
  * @param metadata Contains any metadata from the Vertica table that needs to be retrieved before the read. Includes table schema.
  */
 final case class DistributedFilesystemReadConfig(
-                                                  override val logLevel: Level,
                                                   jdbcConfig: JDBCConfig,
                                                   fileStoreConfig: FileStoreConfig,
                                                   tableSource: TableSource,

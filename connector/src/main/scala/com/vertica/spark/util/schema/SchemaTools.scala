@@ -89,8 +89,8 @@ trait SchemaToolsInterface {
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 }
 
-class SchemaTools(val logProvider: LogProvider) extends SchemaToolsInterface {
-  private val logger = logProvider.getLogger(classOf[SchemaTools])
+class SchemaTools extends SchemaToolsInterface {
+  private val logger = LogProvider.getLogger(classOf[SchemaTools])
 
   private def getCatalystType(
     sqlType: Int,

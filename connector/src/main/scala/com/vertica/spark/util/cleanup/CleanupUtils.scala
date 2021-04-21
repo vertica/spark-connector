@@ -53,8 +53,8 @@ trait CleanupUtilsInterface {
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit]
 }
 
-class CleanupUtils(logProvider: LogProvider) extends CleanupUtilsInterface {
-  private val logger = logProvider.getLogger(classOf[CleanupUtils])
+class CleanupUtils extends CleanupUtilsInterface {
+  private val logger = LogProvider.getLogger(classOf[CleanupUtils])
   private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
 
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {

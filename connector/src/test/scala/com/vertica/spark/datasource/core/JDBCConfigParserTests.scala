@@ -17,7 +17,6 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.implicits._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{BasicJdbcAuth, KerberosAuth}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error.{DbMissingError, HostMissingError, PasswordMissingError, UserMissingError}

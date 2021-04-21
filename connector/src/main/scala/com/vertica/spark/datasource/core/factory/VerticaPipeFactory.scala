@@ -39,7 +39,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
-        val hadoopFileStoreLayer =  new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.logProvider, cfg.metadata match {
+        val hadoopFileStoreLayer = new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
           case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
             Some(cfg.getRequiredSchema)
           } else {
@@ -49,21 +49,21 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
         })
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
           new VerticaJdbcLayer(cfg.jdbcConfig),
-          new SchemaTools(cfg.logProvider),
-          new CleanupUtils(cfg.logProvider)
+          new SchemaTools,
+          new CleanupUtils
         )
     }
   }
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
-        val schemaTools = new SchemaTools(logProvider = cfg.logProvider)
+        val schemaTools = new SchemaTools
         val jdbcLayer = new VerticaJdbcLayer(cfg.jdbcConfig)
         new VerticaDistributedFilesystemWritePipe(cfg,
-          new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.logProvider, Some(cfg.schema)),
+          new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
           jdbcLayer,
           schemaTools,
-          new TableUtils(config.logProvider, schemaTools, jdbcLayer)
+          new TableUtils(schemaTools, jdbcLayer)
         )
     }
   }

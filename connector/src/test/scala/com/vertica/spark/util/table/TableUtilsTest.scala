@@ -15,7 +15,6 @@ package com.vertica.spark.util.table
 
 import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException}
 
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
@@ -29,7 +28,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
-  private val logProvider = LogProvider(Level.ERROR)
   private val strlen = 1024
 
   private def checkResult(result: ConnectorResult[Unit]): Unit= {
@@ -77,7 +75,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -96,7 +94,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -115,7 +113,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
       case Left(err) => assert(err.getError match {
@@ -137,7 +135,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.viewExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -156,7 +154,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.viewExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -175,7 +173,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tempTableExists(TableName(tablename, None)) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -195,7 +193,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaTools = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tempTableExists(TableName(tablename, None)) match {
       case Left(errors) => errors.getError.isInstanceOf[SyntaxError]
@@ -217,7 +215,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val schemaTools = mock[SchemaToolsInterface]
     (schemaTools.getVerticaTypeFromSparkType _).expects(IntegerType, strlen).returning(Right("INTEGER"))
 
-    val utils = new TableUtils(logProvider, schemaTools, jdbcLayerInterface)
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.createTable(TableName(tablename, None), None, schema, strlen) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -240,7 +238,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     utils.createTable(TableName(tablename, None), Some(stmt), schema, strlen) match {
       case Left(errors) => fail(errors.getFullContext)
@@ -267,7 +265,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE"))
   }
@@ -292,7 +290,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "APPEND"))
   }
@@ -310,7 +308,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE") match {
       case Right(_) => fail
@@ -331,7 +329,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.updateJobStatusTable(TableName(tablename,None), user, 0.1, sessionId, success = true))
   }
@@ -346,7 +344,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.updateJobStatusTable(TableName(tablename,None), user, 0.2, sessionId, success = false))
   }
@@ -359,7 +357,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
-    val utils = new TableUtils(logProvider, schemaToolsInterface, jdbcLayerInterface)
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.dropTable(TableName(tablename, None)))
   }

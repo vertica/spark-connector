@@ -20,11 +20,9 @@ import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
-import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth}
+import com.vertica.spark.config.{BasicJdbcAuth, LogProvider, JDBCConfig, KerberosAuth}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.Text
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
@@ -99,7 +97,7 @@ object JdbcUtils {
   * Implementation of layer for communicating with Vertica JDBC
   */
 class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
-  private val logger = cfg.getLogger(classOf[VerticaJdbcLayer])
+  private val logger = LogProvider.getLogger(classOf[VerticaJdbcLayer])
 
   private val prop = new util.Properties()
 

@@ -174,7 +174,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   }
 
   it should "Fail to connect to the wrong database" in {
-    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test"), logLevel=jdbcCfg.logLevel))
+    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test")))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed

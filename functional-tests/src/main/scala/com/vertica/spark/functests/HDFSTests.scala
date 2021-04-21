@@ -42,7 +42,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   private val df = spark.range(100).toDF("number")
   private val schema = df.schema
 
-  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(schema))
+  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
   override def beforeAll(): Unit = {

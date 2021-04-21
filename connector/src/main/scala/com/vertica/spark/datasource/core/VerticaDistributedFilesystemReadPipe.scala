@@ -65,7 +65,7 @@ class VerticaDistributedFilesystemReadPipe(
                                             val cleanupUtils: CleanupUtilsInterface,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
-  private val logger: Logger = config.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
   // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.

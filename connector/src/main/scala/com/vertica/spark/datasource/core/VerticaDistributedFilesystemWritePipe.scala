@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, KerberosAuth, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, LogProvider, KerberosAuth, TableName, VerticaMetadata, VerticaWriteMetadata}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -44,7 +44,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                                             val dataSize: Int = 1)
           extends VerticaPipeInterface with VerticaPipeWriteInterface {
 
-  private val logger = config.logProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
+  private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
 
   /**
    * No write metadata required for configuration as of yet.
