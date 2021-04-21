@@ -124,7 +124,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write then read a parquet file" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(intSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema))
     val path = fsCfg.address
     val filename = path + "testwriteread.parquet"
 
@@ -158,7 +158,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write then copy into vertica" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(intSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema))
 
     val path = fsCfg.address
     val filename = path + "testwriteload.parquet"
@@ -205,7 +205,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
 
   it should "write a timestamp then copy into vertica" in {
     val timestampSchema = new StructType(Array(StructField("a", TimestampType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, dirTestCfg.logProvider, Some(timestampSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(timestampSchema))
     val path = fsCfg.address
     val filename = path + "testwritetimestamp.parquet"
 
