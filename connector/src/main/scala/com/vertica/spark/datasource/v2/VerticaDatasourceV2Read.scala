@@ -17,7 +17,7 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface, PushdownUtils}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.sources.Filter
@@ -89,7 +89,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   */
 class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
 
-  private val logger: Logger = config.getLogger(classOf[VerticaScan])
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaScan])
 
   def getConfig: ReadConfig = config
 
@@ -154,7 +154,7 @@ class VerticaReaderFactory(config: ReadConfig) extends PartitionReaderFactory {
   * Reader class that reads rows from the underlying datasource
   */
 class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends PartitionReader[InternalRow] {
-  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaBatchReader])
 
   // Open the read
   reader.openRead() match {

@@ -82,8 +82,8 @@ trait TableUtilsInterface {
 /**
  * Implementation of TableUtils wrapping JDBC layer.
  */
-class TableUtils(logProvider: LogProvider, schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
-  private val logger = logProvider.getLogger(classOf[TableUtils])
+class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
+  private val logger = LogProvider.getLogger(classOf[TableUtils])
 
   override def tempTableExists(table: TableName): ConnectorResult[Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")

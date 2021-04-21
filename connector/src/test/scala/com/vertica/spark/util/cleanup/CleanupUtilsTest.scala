@@ -13,7 +13,6 @@
 
 package com.vertica.spark.util.cleanup
 
-import ch.qos.logback.classic.Level
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.{CleanupError, CreateFileError, RemoveFileError}
@@ -24,7 +23,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
-  val cleanupUtils = new CleanupUtils(new LogProvider(Level.ERROR))
+  val cleanupUtils = new CleanupUtils
 
   it should "Clean up a file with a single part" in {
     val filename = "path/path/file.parquet"

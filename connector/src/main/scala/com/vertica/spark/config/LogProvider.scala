@@ -13,10 +13,12 @@
 
 package com.vertica.spark.config
 
+import com.typesafe.scalalogging.Logger
+
 /**
- * Represents configuration for a filestore used by the connector.
- *
- * There is not currently much user configuration for the filestore beyond the address to connect to.
- * @param address Address of the distributed filestore, ie HDFS, to connect to.
+ * Used to provide a logger for a given class, configured with a given log level.
  */
-final case class FileStoreConfig(address: String)
+case object LogProvider {
+  def getLogger(c: Class[_]): Logger = Logger(c)
+}
+

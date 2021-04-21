@@ -17,7 +17,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetWriter}
@@ -74,9 +74,7 @@ trait FileStoreLayerInterface {
   def getImpersonationToken(user: String) : ConnectorResult[String]
 }
 
-final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange, logProvider: LogProvider) {
-  private val logger = logProvider.getLogger(classOf[HadoopFileStoreReader])
-
+final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
   private var recordReader: Option[RecordReader[InternalRow]] = None
   private var curRow = 0L
   private var rowCount = 0L
@@ -139,8 +137,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogProvider, schema: Option[StructType]) extends FileStoreLayerInterface {
-  val logger: Logger = logProvider.getLogger(classOf[HadoopFileStoreLayer])
+class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
+  val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -268,7 +266,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
       val strictTypeChecking = false
       val columnIO = columnIOFactory.getColumnIO(requestedSchema, fileSchema, strictTypeChecking)
 
-      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file, logProvider)
+      HadoopFileStoreReader(fileReader, columnIO, recordConverter, file)
     }.toEither.left.map(exception => OpenReadError(exception).context("Error creating Parquet Reader"))
 
     readerOrError match {
@@ -363,7 +361,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
 
   // scalastyle:off
   override def getImpersonationToken(user: String) : ConnectorResult[String] = {
-    this.useFileSystem(fileStoreConfig.address, (fs, path) => {
+    this.useFileSystem(fileStoreConfig.address, (fs, _) => {
       var hdfsToken = ""
 
       val tokens = fs.addDelegationTokens(user, null)
@@ -378,8 +376,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, logProvider: LogPr
 
       if(hdfsToken.nonEmpty) {
         Right(hdfsToken)
-      }
-      else {
+      } else {
         Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
       }
     })

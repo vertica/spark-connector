@@ -49,7 +49,7 @@ class ConnectorException(val error: ConnectorError) extends Exception {
 }
 
 object ErrorHandling {
-  type Result[E, T] = Either[E, T]
+  type Result[+E, +T] = Either[E, T]
 
   type ConnectorResult[T] = Result[ConnectorError, T]
   type SchemaResult[T] = Result[SchemaError, T]

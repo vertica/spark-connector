@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.v2
 
 import cats.data.Validated.{Invalid, Valid}
-import ch.qos.logback.classic.Level
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{LogProvider, WriteConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
@@ -36,13 +35,13 @@ case class JobAbortedError() extends ConnectorError {
   */
 class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends WriteBuilder with SupportsTruncate {
 
+  private val logger = LogProvider.getLogger(classOf[VerticaTable])
   private val config = writeSetupInterface.validateAndGetConfig(info.options.asScala.toMap) match {
     case Invalid(errList) =>
-      val logger = LogProvider(Level.ERROR).getLogger(classOf[VerticaTable])
       ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))
     case Valid(cfg) => cfg
   }
-  config.getLogger(classOf[VerticaTable]).debug("Config loaded")
+  logger.debug("Config loaded")
 
 /**
   * Builds the class representing a write operation to a Vertica table
@@ -66,7 +65,7 @@ class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigS
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
 class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends BatchWrite {
-  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
   writeSetupInterface.performInitialSetup(config) match {
@@ -132,7 +131,7 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   * Writer class that passes rows to be written to the underlying datasource
   */
 class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends DataWriter[InternalRow] {
-  private val logger: Logger = config.getLogger(classOf[VerticaBatchReader])
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaBatchReader])
 
   // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
 

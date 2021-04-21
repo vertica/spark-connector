@@ -13,8 +13,6 @@
 
 package com.vertica.spark.config
 
-import ch.qos.logback.classic.Level
-
 /**
  * Represents any config necessary for authenticating to JDBC.
  *
@@ -51,10 +49,8 @@ case class KerberosAuth(username: String,
  * @param port port for the JDBC connection
  * @param db name of the Vertica database to connect to
  * @param auth the authentication details, varies depending on method used
- * @param logLevel log level
  */
 final case class JDBCConfig(host: String,
                             port: Int,
                             db: String,
-                            auth: JdbcAuth,
-                            override val logLevel: Level) extends GenericConfig
+                            auth: JdbcAuth)
