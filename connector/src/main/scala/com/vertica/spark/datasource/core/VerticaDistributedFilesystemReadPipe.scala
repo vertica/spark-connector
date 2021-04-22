@@ -70,8 +70,8 @@ class VerticaDistributedFilesystemReadPipe(
 
   // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
   // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
-  private val maxFileSize = 512
-  private val maxRowGroupSize = 64
+  private val maxFileSize = config.maxFileSize
+  private val maxRowGroupSize = config.maxRowGroupSize
 
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {

@@ -88,7 +88,9 @@ final case class DistributedFilesystemReadConfig(
                                                   tableSource: TableSource,
                                                   partitionCount: Option[Int],
                                                   metadata: Option[VerticaReadMetadata],
-                                                  filePermissions: ValidFilePermissions
+                                                  filePermissions: ValidFilePermissions,
+                                                  maxRowGroupSize: Int,
+                                                  maxFileSize: Int
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var requiredSchema: StructType = StructType(Nil)

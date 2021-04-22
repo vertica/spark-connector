@@ -31,7 +31,9 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"},
+    "max_row_group_size" -> conf.getString("functional-tests.max_row_group_size"),
+    "max_file_size" -> conf.getString("functional-tests.max_file_size")
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
     readOpts = readOpts + (

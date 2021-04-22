@@ -79,6 +79,20 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getMaxFileSize(config: Map[String, String]): ValidationResult[Int] = {
+    Try {config.getOrElse("max_file_size","512").toInt} match {
+      case Success(i) => i.validNec
+      case Failure(_) => InvalidIntegerField("max_file_size").invalidNec
+    }
+  }
+
+  def getMaxRowGroupSize(config: Map[String, String]): ValidationResult[Int] = {
+    Try {config.getOrElse("max_row_group_size","64").toInt} match {
+      case Success(i) => i.validNec
+      case Failure(_) => InvalidIntegerField("max_row_group_size").invalidNec
+    }
+  }
+
   def getFailedRowsPercentTolerance(config: Map[String, String]): ValidationResult[Float] = {
     Try {config.getOrElse("failed_rows_percent_tolerance","0.00").toFloat} match {
       case Success(f) => if (f >= 0.00 && f <= 1.00) f.validNec else InvalidFailedRowsTolerance().invalidNec
@@ -251,7 +265,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.validateAndGetTableSource(config),
       DSConfigSetupUtils.getPartitionCount(config),
       None.validNec,
-      DSConfigSetupUtils.getFilePermissions(config)
+      DSConfigSetupUtils.getFilePermissions(config),
+      DSConfigSetupUtils.getMaxRowGroupSize(config),
+      DSConfigSetupUtils.getMaxFileSize(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -288,7 +304,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError(None))
           case Some(metadata) => Right(metadata.schema)
