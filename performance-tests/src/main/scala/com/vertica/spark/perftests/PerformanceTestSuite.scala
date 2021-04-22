@@ -73,17 +73,21 @@ class PerformanceTestSuite(spark: SparkSession) {
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
-  def runAndTimeTests(opts: Map[String, String], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode): Unit = {
-    val dataGenUtils = new DataGenUtils(opts("staging_fs_url"), spark)
+  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode): Unit = {
 
-    colCounts.split(",").map(x => x.toInt).map(colCount => {
-      rowCounts.split(",").map(x => x.toInt).map(rowCount => {
-        val rowsPerPartition = rowCount / 25
-        val numPartitions = 25
-        val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
+    optsList.map(opts => {
+      println("Running operation with options: " + opts.toString())
+      val dataGenUtils = new DataGenUtils(opts("staging_fs_url"), spark)
 
-        val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode)
-        discardOutliersAndAverageRuns(runDef)
+      colCounts.split(",").map(x => x.toInt).map(colCount => {
+        rowCounts.split(",").map(x => x.toInt).map(rowCount => {
+          val rowsPerPartition = rowCount / 25
+          val numPartitions = 25
+          val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
+
+          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode)
+          discardOutliersAndAverageRuns(runDef)
+        })
       })
     })
   }

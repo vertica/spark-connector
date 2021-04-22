@@ -32,7 +32,6 @@ object Main extends App {
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"},
-    "max_row_group_size" -> conf.getString("functional-tests.max_row_group_size"),
     "max_file_size" -> conf.getString("functional-tests.max_file_size")
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
@@ -71,6 +70,11 @@ object Main extends App {
   val rowCounts = conf.getString("functional-tests.rowCounts")
   val runCount = conf.getInt("functional-tests.runCount")
 
+  val rowGroupSizes = conf.getString("functional-tests.max_row_group_size")
+  val optList = rowGroupSizes.split(",").map(rowGroupSize => {
+    readOpts + ("max_row_group_size" -> rowGroupSize)
+  })
+
   val testModeStr = conf.getString("functional-tests.testMode")
   val testMode = testModeStr match {
     case "read" => ReadMode()
@@ -79,6 +83,6 @@ object Main extends App {
     case _ => throw new Exception("Invalid test mode, must be 'read', 'write' or 'both'")
   }
 
-  new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount, testMode)
+  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode)
 
 }
