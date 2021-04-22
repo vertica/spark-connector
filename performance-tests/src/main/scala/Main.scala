@@ -31,8 +31,8 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"},
-    "max_file_size" -> conf.getString("functional-tests.max_file_size")
+    "max_file_size" -> conf.getString("functional-tests.max_file_size"),
+    "staging_fs_url" -> conf.getString("functional-tests.filepath")
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
     readOpts = readOpts + (
@@ -56,13 +56,6 @@ object Main extends App {
       jaasConfigName = conf.getString("functional-tests.jaas_config_name")
     )
   }
-
-  val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
-                              port = conf.getInt("functional-tests.port"),
-                              db = conf.getString("functional-tests.db"),
-                              auth,
-                              logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
-
 
   // read/write/both
 
