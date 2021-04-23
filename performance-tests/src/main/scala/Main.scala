@@ -32,7 +32,8 @@ object Main extends App {
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "max_file_size" -> conf.getString("functional-tests.max_file_size"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath")
+    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "num_partitions" -> conf.getString("functional-tests.num_partitions")
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
     readOpts = readOpts + (
