@@ -62,13 +62,13 @@ class PerformanceTestSuite(spark: SparkSession) {
   }
 
   def colTestWrite(dataRunDef: DataRunDef): Unit = {
-    val tablename = dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val tablename = "t" + dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
     val mode = SaveMode.Overwrite
     dataRunDef.df.write.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).mode(mode).save()
   }
 
   def colTestRead(dataRunDef: DataRunDef): Unit = {
-    val tablename = dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val tablename = "t" + dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
     val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).load()
     val count = dfRead.rdd.count()
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
