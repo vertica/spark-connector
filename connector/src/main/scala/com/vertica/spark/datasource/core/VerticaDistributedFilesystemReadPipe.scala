@@ -272,6 +272,9 @@ class VerticaDistributedFilesystemReadPipe(
         }
       }
 
+      _ = logger.info("Requested partition count: " + requestedPartitionCount)
+      _ = logger.info("Parquet file list size: " + parquetFileList.size)
+
       fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
