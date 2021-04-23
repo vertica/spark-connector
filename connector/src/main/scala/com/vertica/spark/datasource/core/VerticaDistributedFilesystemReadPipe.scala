@@ -278,6 +278,8 @@ class VerticaDistributedFilesystemReadPipe(
       fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
+      _ = logger.info("Total row groups: " + totalRowGroups)
+
       partitionCount = if (totalRowGroups < requestedPartitionCount) {
         logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)
         totalRowGroups
