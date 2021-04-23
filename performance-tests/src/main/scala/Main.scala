@@ -76,6 +76,8 @@ object Main extends App {
     case _ => throw new Exception("Invalid test mode, must be 'read', 'write' or 'both'")
   }
 
-  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode)
+  val runJdbcComparison = conf.getBoolean("functional-tests.compareJdbc")
+
+  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode, runJdbcComparison)
 
 }

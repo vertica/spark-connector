@@ -7,7 +7,7 @@ case class WriteMode() extends TestMode
 case class ReadMode() extends TestMode
 case class BothMode() extends TestMode
 
-case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode)
+case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode, jdbc: Boolean)
 
 class PerformanceTestSuite(spark: SparkSession) {
   def discardOutliersAndAverageRuns(dataRunDef: DataRunDef): Unit = {
@@ -30,6 +30,7 @@ class PerformanceTestSuite(spark: SparkSession) {
     }
 
     if(!mode.isInstanceOf[WriteMode]) {
+      if(dataRunDef.jdbc) println("TESTING W/ JDBC")
       println("RUNNING READ PERF TEST FOR ROW COUNT : " + dataRunDef.rows + " , COL COUNT: " + dataRunDef.cols + " -- DOING " + dataRunDef.runs + " RUNS")
       val results = (0 until dataRunDef.runs).map( i => {
         timeRead(dataRunDef, i)
@@ -54,7 +55,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
   def timeRead(dataRunDef: DataRunDef, runNum: Int) = {
     val startTime: Long = System.currentTimeMillis()
-    colTestRead(dataRunDef)
+    if(dataRunDef.jdbc) jdbcTestRead(dataRunDef) else colTestRead(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
     println("Read run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
@@ -73,7 +74,19 @@ class PerformanceTestSuite(spark: SparkSession) {
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
-  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode): Unit = {
+  def jdbcTestRead(dataRunDef: DataRunDef): Unit = {
+    val tablename = dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val jdbcDf = spark.read.format("jdbc")
+      .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
+        dataRunDef.opts("user")+"&password="+dataRunDef.opts("password"))
+      .option("dbtable", tablename)
+      .option("driver", "com.vertica.jdbc.Driver")
+      .load()
+    val count = jdbcDf.rdd.count()
+    println("JDBC READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
+  }
+
+  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean): Unit = {
 
     optsList.map(opts => {
       println("Running operation with options: " + opts.toString())
@@ -85,7 +98,11 @@ class PerformanceTestSuite(spark: SparkSession) {
           val numPartitions = 25
           val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
 
-          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode)
+          if(testAgainstJdbc) {
+            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, true)
+            discardOutliersAndAverageRuns(jdbcRunDef)
+          }
+          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, false)
           discardOutliersAndAverageRuns(runDef)
         })
       })
