@@ -1,5 +1,7 @@
 package com.vertica.spark.perftests
 
+import org.apache.orc.impl.TreeReaderFactory.StructTreeReader
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 sealed trait TestMode
@@ -61,21 +63,23 @@ class PerformanceTestSuite(spark: SparkSession) {
     endTime - startTime
   }
 
+  def tableName(dataRunDef: DataRunDef) = "t" + dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+
   def colTestWrite(dataRunDef: DataRunDef): Unit = {
-    val tablename = "t" + dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val tablename = tableName(dataRunDef)
     val mode = SaveMode.Overwrite
     dataRunDef.df.write.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).mode(mode).save()
   }
 
   def colTestRead(dataRunDef: DataRunDef): Unit = {
-    val tablename = "t" + dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val tablename = tableName(dataRunDef)
     val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).load()
     val count = dfRead.rdd.count()
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
   def jdbcTestRead(dataRunDef: DataRunDef): Unit = {
-    val tablename = dataRunDef.cols + "col" + dataRunDef.rows / 1000000 + "Mrow"
+    val tablename = tableName(dataRunDef)
     val jdbcDf = spark.read.format("jdbc")
       .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
         dataRunDef.opts("user")+"&password="+dataRunDef.opts("password"))
