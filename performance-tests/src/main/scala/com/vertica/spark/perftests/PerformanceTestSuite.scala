@@ -98,6 +98,7 @@ class PerformanceTestSuite(spark: SparkSession) {
     val tablename = tableName(dataRunDef)
     val createTableColumns = DataGenUtils.getColumns(dataRunDef.cols)
     val createTableStatement = "CREATE TABLE " + tablename + "(" + createTableColumns + ")"
+    println("create table statement: " + createTableStatement)
     val mode = SaveMode.Overwrite
     dataRunDef.df.write.format("jdbc")
       .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
