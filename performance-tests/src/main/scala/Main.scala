@@ -33,6 +33,7 @@ object Main extends App {
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "max_file_size" -> conf.getString("functional-tests.max_file_size"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "hdfs_url" -> conf.getString("functional-tests.filepath"),
     "num_partitions" -> conf.getString("functional-tests.num_partitions")
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
@@ -78,7 +79,15 @@ object Main extends App {
   }
 
   val runJdbcComparison = conf.getBoolean("functional-tests.compareJdbc")
+  val runV1Comparison = conf.getBoolean("functional-tests.compareV1")
 
-  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode, runJdbcComparison, readOpts("num_partitions").toInt)
+  new PerformanceTestSuite(spark).runAndTimeTests(optList,
+    colCounts,
+    rowCounts,
+    runCount,
+    testMode,
+    runJdbcComparison,
+    runV1Comparison,
+    readOpts("num_partitions").toInt)
 
 }

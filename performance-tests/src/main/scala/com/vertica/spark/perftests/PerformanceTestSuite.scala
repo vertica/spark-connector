@@ -9,11 +9,20 @@ case class WriteMode() extends TestMode
 case class ReadMode() extends TestMode
 case class BothMode() extends TestMode
 
-case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode, jdbc: Boolean)
+sealed trait TestDataSourceType
+case class V2Source() extends TestDataSourceType
+case class V1Source() extends TestDataSourceType
+case class JdbcSparkSource() extends TestDataSourceType
+
+case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode, sourceType: TestDataSourceType)
 
 class PerformanceTestSuite(spark: SparkSession) {
   def discardOutliersAndAverageRuns(dataRunDef: DataRunDef): Unit = {
-    if(dataRunDef.jdbc) println("TESTING W/ JDBC")
+    dataRunDef.sourceType match {
+      case _ : JdbcSparkSource => println("TESTING W/ JDBC")
+      case _ : V2Source => println("TESTING W/ V2 Connector")
+      case _ : V1Source => println("TESTING W/ V1 Connector")
+    }
     val mode = dataRunDef.mode
     if(mode.isInstanceOf[ReadMode]) {
       colTestWrite(dataRunDef)
@@ -49,7 +58,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
   def timeWrite(dataRunDef: DataRunDef, runNum: Int) = {
     val startTime: Long = System.currentTimeMillis()
-    if(dataRunDef.jdbc) jdbcTestWrite(dataRunDef) else colTestWrite(dataRunDef)
+    if(dataRunDef.sourceType.isInstanceOf[JdbcSparkSource]) jdbcTestWrite(dataRunDef) else colTestWrite(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
     println("Write run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
@@ -57,7 +66,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
   def timeRead(dataRunDef: DataRunDef, runNum: Int) = {
     val startTime: Long = System.currentTimeMillis()
-    if(dataRunDef.jdbc) jdbcTestRead(dataRunDef) else colTestRead(dataRunDef)
+    if(dataRunDef.sourceType.isInstanceOf[JdbcSparkSource]) jdbcTestRead(dataRunDef) else colTestRead(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
     println("Read run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
@@ -68,12 +77,14 @@ class PerformanceTestSuite(spark: SparkSession) {
   def colTestWrite(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
     val mode = SaveMode.Overwrite
-    dataRunDef.df.write.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).mode(mode).save()
+    val sourceString = if(dataRunDef.sourceType.isInstanceOf[V1Source]) "com.vertica.spark.datasource.DefaultSource" else "com.vertica.spark.datasource.VerticaSource"
+    dataRunDef.df.write.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).mode(mode).save()
   }
 
   def colTestRead(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
-    val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(dataRunDef.opts + ("table" -> tablename)).load()
+    val sourceString = if(dataRunDef.sourceType.isInstanceOf[V1Source]) "com.vertica.spark.datasource.DefaultSource" else "com.vertica.spark.datasource.VerticaSource"
+    val dfRead: DataFrame = spark.read.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).load()
     val count = dfRead.rdd.count()
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
@@ -111,7 +122,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       .save()
   }
 
-  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean, numPartitions: Int): Unit = {
+  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean, testAgainstV1: Boolean, numPartitions: Int): Unit = {
 
     optsList.map(opts => {
       println("Running operation with options: " + opts.toString())
@@ -123,10 +134,14 @@ class PerformanceTestSuite(spark: SparkSession) {
           val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
 
           if(testAgainstJdbc) {
-            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, true)
+            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, JdbcSparkSource())
             discardOutliersAndAverageRuns(jdbcRunDef)
           }
-          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, false)
+          if(testAgainstV1) {
+            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V1Source())
+            discardOutliersAndAverageRuns(jdbcRunDef)
+          }
+          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V2Source())
           discardOutliersAndAverageRuns(runDef)
         })
       })
