@@ -61,7 +61,7 @@ object DataGenUtils  {
       val colType = columnType(i)
 
       val t = colType match {
-        case StringType => "VARCHAR"
+        case StringType => "VARCHAR(1024)"
         case IntegerType => "INTEGER"
         case DecimalType() => "DECIMAL(25, 10)"
         case DateType => "DATE"

@@ -97,8 +97,8 @@ class PerformanceTestSuite(spark: SparkSession) {
   def jdbcTestWrite(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
     val createTableColumns = DataGenUtils.getColumns(dataRunDef.cols)
-    val createTableStatement = "CREATE TABLE " + tablename + "(" + createTableColumns + ")"
-    println("create table statement: " + createTableStatement)
+    //val createTableStatement = "CREATE TABLE " + tablename + "(" + createTableColumns + ")"
+    //println("create table statement: " + createTableStatement)
     val mode = SaveMode.Overwrite
     dataRunDef.df.write.format("jdbc")
       .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
@@ -106,7 +106,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       .option("dbtable", tablename)
       .option("driver", "com.vertica.jdbc.Driver")
       .option("numPartitions", 16)
-      .option("createTableOptions", createTableStatement)
+      .option("createTableColumnTypes", createTableColumns)
       .mode(mode)
       .save()
   }
