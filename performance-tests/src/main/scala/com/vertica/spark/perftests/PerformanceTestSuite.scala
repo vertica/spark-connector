@@ -96,12 +96,16 @@ class PerformanceTestSuite(spark: SparkSession) {
 
   def jdbcTestWrite(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
+    val createTableColumns = DataGenUtils.getColumns(dataRunDef.cols)
+    val mode = SaveMode.Overwrite
     dataRunDef.df.write.format("jdbc")
       .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
         dataRunDef.opts("user")+"&password="+dataRunDef.opts("password"))
       .option("dbtable", tablename)
       .option("driver", "com.vertica.jdbc.Driver")
       .option("numPartitions", 16)
+      .option("createTableColumnTypes", createTableColumns)
+      .mode(mode)
       .save()
   }
 
