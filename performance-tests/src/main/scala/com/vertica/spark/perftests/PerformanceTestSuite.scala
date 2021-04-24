@@ -13,6 +13,7 @@ case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows:
 
 class PerformanceTestSuite(spark: SparkSession) {
   def discardOutliersAndAverageRuns(dataRunDef: DataRunDef): Unit = {
+    if(dataRunDef.jdbc) println("TESTING W/ JDBC")
     val mode = dataRunDef.mode
     if(mode.isInstanceOf[ReadMode]) {
       colTestWrite(dataRunDef)
@@ -32,7 +33,6 @@ class PerformanceTestSuite(spark: SparkSession) {
     }
 
     if(!mode.isInstanceOf[WriteMode]) {
-      if(dataRunDef.jdbc) println("TESTING W/ JDBC")
       println("RUNNING READ PERF TEST FOR ROW COUNT : " + dataRunDef.rows + " , COL COUNT: " + dataRunDef.cols + " -- DOING " + dataRunDef.runs + " RUNS")
       val results = (0 until dataRunDef.runs).map( i => {
         timeRead(dataRunDef, i)
