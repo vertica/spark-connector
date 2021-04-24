@@ -79,6 +79,6 @@ object Main extends App {
 
   val runJdbcComparison = conf.getBoolean("functional-tests.compareJdbc")
 
-  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode, runJdbcComparison)
+  new PerformanceTestSuite(spark).runAndTimeTests(optList, colCounts, rowCounts, runCount, testMode, runJdbcComparison, readOpts("num_partitions").toInt)
 
 }

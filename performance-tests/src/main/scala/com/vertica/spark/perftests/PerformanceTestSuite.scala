@@ -111,7 +111,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       .save()
   }
 
-  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean): Unit = {
+  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean, numPartitions: Int): Unit = {
 
     optsList.map(opts => {
       println("Running operation with options: " + opts.toString())
@@ -119,8 +119,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
       colCounts.split(",").map(x => x.toInt).map(colCount => {
         rowCounts.split(",").map(x => x.toInt).map(rowCount => {
-          val rowsPerPartition = rowCount / 25
-          val numPartitions = 25
+          val rowsPerPartition = rowCount / numPartitions
           val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
 
           if(testAgainstJdbc) {
