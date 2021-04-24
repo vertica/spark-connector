@@ -49,7 +49,7 @@ class PerformanceTestSuite(spark: SparkSession) {
 
   def timeWrite(dataRunDef: DataRunDef, runNum: Int) = {
     val startTime: Long = System.currentTimeMillis()
-    colTestWrite(dataRunDef)
+    if(dataRunDef.jdbc) jdbcTestWrite(dataRunDef) else colTestWrite(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
     println("Write run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
@@ -92,6 +92,17 @@ class PerformanceTestSuite(spark: SparkSession) {
       .load()
     val count = jdbcDf.rdd.count()
     println("JDBC READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
+  }
+
+  def jdbcTestWrite(dataRunDef: DataRunDef): Unit = {
+    val tablename = tableName(dataRunDef)
+    dataRunDef.df.write.format("jdbc")
+      .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
+        dataRunDef.opts("user")+"&password="+dataRunDef.opts("password"))
+      .option("dbtable", tablename)
+      .option("driver", "com.vertica.jdbc.Driver")
+      .option("numPartitions", 16)
+      .save()
   }
 
   def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean): Unit = {
