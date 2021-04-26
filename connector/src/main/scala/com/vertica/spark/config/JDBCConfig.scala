@@ -49,8 +49,25 @@ case class KerberosAuth(username: String,
  * @param port port for the JDBC connection
  * @param db name of the Vertica database to connect to
  * @param auth the authentication details, varies depending on method used
+ * @param sslConfig the ssl configuration settings for the JDBC connection
  */
 final case class JDBCConfig(host: String,
                             port: Int,
                             db: String,
-                            auth: JdbcAuth)
+                            auth: JdbcAuth,
+                            sslConfig: JDBCSSLConfig)
+
+/**
+ * SSL configuration settings for a JDBC connection to Vertica.
+ *
+ * @param ssl flag indicating whether to enable SSL for the connection or not
+ * @param keyStorePath path to the key store
+ * @param keyStorePassword password for the key store
+ * @param trustStorePath path to the trust store
+ * @param trustStorePassword password for the trust store
+ */
+case class JDBCSSLConfig(ssl: Boolean,
+                         keyStorePath: Option[String],
+                         keyStorePassword: Option[String],
+                         trustStorePath: Option[String],
+                         trustStorePassword: Option[String])

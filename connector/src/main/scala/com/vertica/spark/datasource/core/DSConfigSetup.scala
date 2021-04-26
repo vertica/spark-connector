@@ -113,6 +113,32 @@ object DSConfigSetupUtils {
     config.get("jaas_config_name")
   }
 
+  def getSSL(config: Map[String, String]): ValidationResult[Boolean] = {
+    config.get("ssl") match {
+      case Some(value) => Try(value.toBoolean) match {
+        case Success(b) => b.validNec
+        case Failure(_) => SSLFlagParseError().invalidNec
+      }
+      case None => false.validNec
+    }
+  }
+
+  def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("key_store_path").validNec
+  }
+
+  def getKeyStorePassword(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("key_store_password").validNec
+  }
+
+  def getTrustStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("trust_store_path").validNec
+  }
+
+  def getTrustStorePassword(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("trust_store_password").validNec
+  }
+
   def getTablename(config: Map[String, String]): Option[String] = {
     config.get("table")
   }
@@ -183,6 +209,14 @@ object DSConfigSetupUtils {
     }
   }
 
+  def validateAndGetJDBCSSLConfig(config: Map[String, String]): ValidationResult[JDBCSSLConfig] = {
+    (getSSL(config),
+    getKeyStorePath(config),
+    getKeyStorePassword(config),
+    getTrustStorePath(config),
+    getTrustStorePassword(config)).mapN(JDBCSSLConfig)
+  }
+
   /**
    * Parses the config map for JDBC config params, collecting any errors.
    */
@@ -190,7 +224,8 @@ object DSConfigSetupUtils {
     (DSConfigSetupUtils.getHost(config),
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
-    DSConfigSetupUtils.validateAndGetJDBCAuth(config)).mapN(JDBCConfig)
+    DSConfigSetupUtils.validateAndGetJDBCAuth(config),
+    DSConfigSetupUtils.validateAndGetJDBCSSLConfig(config)).mapN(JDBCConfig)
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {

@@ -112,6 +112,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       prop.put("JAASConfigName", jaasConfigName)
   }
 
+  addSSLProperties()
+
   // Load driver
   Class.forName("com.vertica.jdbc.Driver")
 
@@ -133,6 +135,30 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     e match {
       case e: java.sql.SQLException => ConnectionSqlError(e)
       case e: Throwable => ConnectionError(e)
+    }
+  }
+
+  private def addSSLProperties(): Unit = {
+    val sslConfig = cfg.sslConfig
+    prop.put("SSL", sslConfig.ssl.toString)
+    sslConfig.keyStorePath match {
+      case Some(path) => prop.put("KeyStorePath", path)
+      case None => ()
+    }
+
+    sslConfig.keyStorePassword match {
+      case Some(password) => prop.put("KeyStorePassword", password)
+      case None => ()
+    }
+
+    sslConfig.trustStorePath match {
+      case Some(path) => prop.put("TrustStorePath", path)
+      case None => ()
+    }
+
+    sslConfig.trustStorePassword match {
+      case Some(password) => prop.put("TrustStorePassword", password)
+      case None => ()
     }
   }
 

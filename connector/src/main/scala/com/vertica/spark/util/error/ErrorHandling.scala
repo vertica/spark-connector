@@ -253,6 +253,10 @@ case class InvalidPortError() extends ConnectorError {
   def getFullContext: String = "The 'port' param specified is invalid. " +
     "Please specify a valid integer between 1 and 65535."
 }
+case class SSLFlagParseError() extends ConnectorError {
+  def getFullContext: String = "The 'ssl' param specified is invalid. " +
+    "Please specify either 'true' or 'false'."
+}
 case class UnquotedSemiInColumns() extends ConnectorError {
   def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
 }
