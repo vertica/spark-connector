@@ -14,7 +14,14 @@ case class V2Source() extends TestDataSourceType
 case class V1Source() extends TestDataSourceType
 case class JdbcSparkSource() extends TestDataSourceType
 
-case class DataRunDef(opts: Map[String, String], df: DataFrame, cols: Int, rows: Int, runs: Int, mode: TestMode, sourceType: TestDataSourceType)
+case class DataRunDef(opts: Map[String, String],
+                      df: DataFrame,
+                      cols: Int,
+                      rows: Int,
+                      runs: Int,
+                      mode: TestMode,
+                      sourceType: TestDataSourceType,
+                      filter: String)
 
 class PerformanceTestSuite(spark: SparkSession) {
   def discardOutliersAndAverageRuns(dataRunDef: DataRunDef): Unit = {
@@ -84,7 +91,7 @@ class PerformanceTestSuite(spark: SparkSession) {
   def colTestRead(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
     val sourceString = if(dataRunDef.sourceType.isInstanceOf[V1Source]) "com.vertica.spark.datasource.DefaultSource" else "com.vertica.spark.datasource.VerticaSource"
-    val dfRead: DataFrame = spark.read.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).load()
+    val dfRead: DataFrame = spark.read.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).load().filter(dataRunDef.filter)
     val count = dfRead.rdd.count()
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
@@ -100,7 +107,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       .option("lowerBound", Int.MinValue)
       .option("upperBound", Int.MaxValue)
       .option("numPartitions", 16)
-      .load()
+      .load().filter(dataRunDef.filter)
     val count = jdbcDf.rdd.count()
     println("JDBC READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
@@ -122,7 +129,7 @@ class PerformanceTestSuite(spark: SparkSession) {
       .save()
   }
 
-  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean, testAgainstV1: Boolean, numPartitions: Int): Unit = {
+  def runAndTimeTests(optsList: Array[Map[String, String]], colCounts: String, rowCounts: String, runCount: Int, testMode: TestMode, testAgainstJdbc: Boolean, testAgainstV1: Boolean, numPartitions: Int, filter: String): Unit = {
 
     optsList.map(opts => {
       println("Running operation with options: " + opts.toString())
@@ -134,14 +141,14 @@ class PerformanceTestSuite(spark: SparkSession) {
           val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
 
           if(testAgainstJdbc) {
-            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, JdbcSparkSource())
+            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, JdbcSparkSource(), filter)
             discardOutliersAndAverageRuns(jdbcRunDef)
           }
           if(testAgainstV1) {
-            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V1Source())
+            val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V1Source(), filter)
             discardOutliersAndAverageRuns(jdbcRunDef)
           }
-          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V2Source())
+          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V2Source(), filter)
           discardOutliersAndAverageRuns(runDef)
         })
       })
