@@ -91,14 +91,15 @@ class PerformanceTestSuite(spark: SparkSession) {
   def colTestRead(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
     val sourceString = if(dataRunDef.sourceType.isInstanceOf[V1Source]) "com.vertica.spark.datasource.DefaultSource" else "com.vertica.spark.datasource.VerticaSource"
-    val dfRead: DataFrame = spark.read.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).load().filter(dataRunDef.filter)
+    var dfRead: DataFrame = spark.read.format(sourceString).options(dataRunDef.opts + ("table" -> tablename)).load()
+    if(dataRunDef.filter.nonEmpty) dfRead = dfRead.filter(dataRunDef.filter)
     val count = dfRead.rdd.count()
     println("READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
 
   def jdbcTestRead(dataRunDef: DataRunDef): Unit = {
     val tablename = tableName(dataRunDef)
-    val jdbcDf = spark.read.format("jdbc")
+    var jdbcDf = spark.read.format("jdbc")
       .option("url", "jdbc:vertica://" + dataRunDef.opts("host") + ":5433" + "/" + dataRunDef.opts("db") + "?user="+
         dataRunDef.opts("user")+"&password="+dataRunDef.opts("password"))
       .option("dbtable", tablename)
@@ -107,7 +108,8 @@ class PerformanceTestSuite(spark: SparkSession) {
       .option("lowerBound", Int.MinValue)
       .option("upperBound", Int.MaxValue)
       .option("numPartitions", 16)
-      .load().filter(dataRunDef.filter)
+      .load()
+    if(dataRunDef.filter.nonEmpty) jdbcDf = jdbcDf.filter(dataRunDef.filter)
     val count = jdbcDf.rdd.count()
     println("JDBC READ COUNT: " + count + ", EXPECTED " + dataRunDef.rows)
   }
