@@ -1,5 +1,7 @@
 #How to run the examples
 
+Make sure you have docker, docker-compose, and sbt installed.
+
 Clone this repository:
 ```
 git clone https://github.com/vertica/spark-connector.git
