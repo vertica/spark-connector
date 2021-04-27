@@ -31,7 +31,6 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "max_file_size" -> conf.getString("functional-tests.max_file_size"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "hdfs_url" -> conf.getString("functional-tests.filepath"),
     "num_partitions" -> conf.getString("functional-tests.num_partitions"),
@@ -67,8 +66,12 @@ object Main extends App {
   val runCount = conf.getInt("functional-tests.runCount")
 
   val rowGroupSizes = conf.getString("functional-tests.max_row_group_size")
-  val optList = rowGroupSizes.split(",").map(rowGroupSize => {
+  var optList = rowGroupSizes.split(",").map(rowGroupSize => {
     readOpts + ("max_row_group_size" -> rowGroupSize)
+  })
+  val fileSizes = conf.getString("functional-tests.max_file_size")
+  optList = fileSizes.split(",").flatMap(fileSize => {
+    optList.map(m => m + ("max_file_size" -> fileSize))
   })
 
   val testModeStr = conf.getString("functional-tests.testMode")
