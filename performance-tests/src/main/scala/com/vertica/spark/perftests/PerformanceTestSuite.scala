@@ -142,6 +142,8 @@ class PerformanceTestSuite(spark: SparkSession) {
           val rowsPerPartition = rowCount / numPartitions
           val df = dataGenUtils.loadOrGenerateData(rowsPerPartition, numPartitions, colCount)
 
+          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V2Source(), filter)
+          discardOutliersAndAverageRuns(runDef)
           if(testAgainstJdbc) {
             val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, JdbcSparkSource(), filter)
             discardOutliersAndAverageRuns(jdbcRunDef)
@@ -150,8 +152,6 @@ class PerformanceTestSuite(spark: SparkSession) {
             val jdbcRunDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V1Source(), filter)
             discardOutliersAndAverageRuns(jdbcRunDef)
           }
-          val runDef = DataRunDef(opts, df, colCount, rowsPerPartition * numPartitions, runCount, testMode, V2Source(), filter)
-          discardOutliersAndAverageRuns(runDef)
         })
       })
     })
