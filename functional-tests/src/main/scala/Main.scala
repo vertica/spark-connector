@@ -14,9 +14,8 @@
 import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCSSLConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
-import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
 
 object Main extends App {
@@ -51,10 +50,13 @@ object Main extends App {
     )
   }
 
+  val sslConfig = JDBCSSLConfig(ssl = false, None, None, None, None)
+
   val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
                               port = conf.getInt("functional-tests.port"),
                               db = conf.getString("functional-tests.db"),
-                              auth = auth)
+                              auth = auth,
+                              sslConfig = sslConfig)
 
   new JDBCTests(jdbcConfig).execute()
 
