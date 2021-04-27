@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.api.InitContext
+import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
@@ -173,6 +174,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       writer <- Try { builder.withConf(hdfsConfig)
         .enableValidation()
         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+        .withCompressionCodec(CompressionCodecName.SNAPPY)
         .build()}.toEither.left.map(exception => OpenWriteError(exception).context("Error opening write to HDFS."))
     } yield writer
 
