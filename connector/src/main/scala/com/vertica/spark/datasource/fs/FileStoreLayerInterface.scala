@@ -151,6 +151,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       logger.debug("Read and write support schema: " + schema)
       hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
       hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
+      ParquetWriteSupport.setSchema(schema, hdfsConfig)
     case None => ()
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
@@ -174,7 +175,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     val writerOrError = for {
       _ <- removeFile(filename)
       writer <- Try { builder.withConf(hdfsConfig)
-        .enableValidation()
+        //.enableValidation()
         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
         .withCompressionCodec(CompressionCodecName.SNAPPY)
         .build()}.toEither.left.map(exception => OpenWriteError(exception).context("Error opening write to HDFS."))
