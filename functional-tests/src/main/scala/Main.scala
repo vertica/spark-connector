@@ -17,6 +17,7 @@ import com.typesafe.config.Config
 import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCSSLConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
+import scala.util.Try
 
 object Main extends App {
   val conf: Config = ConfigFactory.load()
