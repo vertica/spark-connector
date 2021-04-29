@@ -55,7 +55,15 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   val tablename: TableName = TableName("testtable", None)
   val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
-  val readConfig: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tableSource = tablename, partitionCount = None, metadata = None, ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")), 64, 512)
+  val readConfig: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(jdbcConfig = jdbcConfig,
+    fileStoreConfig = fileStoreConfig,
+    tableSource = tablename,
+    partitionCount = None,
+    metadata = None,
+    ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
+    maxRowGroupSize = 64,
+    maxFileSize = 512)
+
   val writeConfig: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(
     jdbcConfig = jdbcConfig,
     fileStoreConfig = fileStoreConfig,

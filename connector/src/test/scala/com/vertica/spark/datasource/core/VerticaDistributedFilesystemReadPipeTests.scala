@@ -50,7 +50,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       tableSource = tablename,
       partitionCount = None,
       metadata = Some(VerticaReadMetadata(new StructType())),
-      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")), 64, 512)
+      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
+      maxRowGroupSize = 64,
+      maxFileSize = 512)
   }
 
   private def makeIntColumnDef: ColumnDef = {
