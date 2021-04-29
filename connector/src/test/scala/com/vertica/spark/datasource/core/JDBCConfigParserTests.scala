@@ -19,7 +19,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config.{BasicJdbcAuth, KerberosAuth}
 import org.scalamock.scalatest.MockFactory
-import com.vertica.spark.util.error.{DbMissingError, HostMissingError, PasswordMissingError, UserMissingError}
+import com.vertica.spark.util.error.{DbMissingError, HostMissingError, PasswordMissingError, SSLFlagParseError, UserMissingError}
 
 
 class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -54,7 +54,7 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
       "kerberos_service_name" -> "vertica",
       "kerberos_host_name" -> "vertica.example.com",
       "jaas_config_name" -> "Client"
-  )
+    )
 
     DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
       case Invalid(_) =>
@@ -67,6 +67,53 @@ class JDBCConfigParserTests extends AnyFlatSpec with BeforeAndAfterAll with Mock
         assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].kerberosServiceName == "vertica")
         assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].kerberosHostname == "vertica.example.com")
         assert(jdbcConfig.auth.asInstanceOf[KerberosAuth].jaasConfigName == "Client")
+    }
+  }
+
+  it should "parse the JDBC SSL configuration options" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "ssl" -> "true",
+      "key_store_path" -> "/.keystore",
+      "key_store_password" -> "keystorepass",
+      "trust_store_path" -> "/.truststore",
+      "trust_store_password" -> "truststorepass"
+    )
+
+    DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
+      case Invalid(errSeq) =>
+        fail("The configuration was not valid: \n" +
+          errSeq.toList.map(err => err.getUserMessage).mkString("\n"))
+      case Valid(jdbcConfig) =>
+        val sslConfig = jdbcConfig.sslConfig
+        assert(sslConfig.ssl)
+        assert(sslConfig.keyStorePath.contains("/.keystore"))
+        assert(sslConfig.keyStorePassword.contains("keystorepass"))
+        assert(sslConfig.trustStorePath.contains("/.truststore"))
+        assert(sslConfig.trustStorePassword.contains("truststorepass"))
+    }
+  }
+
+  it should "return an error on an invalid SSL parameter" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "ssl" -> "blah"
+    )
+
+    DSConfigSetupUtils.validateAndGetJDBCConfig(opts) match {
+      case Invalid(errSeq) =>
+        assert(errSeq.toNonEmptyList.size == 1)
+        assert(!errSeq.filter(err => err == SSLFlagParseError()).isEmpty)
+      case Valid(jdbcConfig) =>
+        fail // should not succeed
     }
   }
 

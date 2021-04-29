@@ -256,6 +256,10 @@ case class InvalidPortError() extends ConnectorError {
 case class InvalidIntegerField(field: String) extends ConnectorError {
   def getFullContext: String = "Field '" + field + "' is not a valid integer. Should be between " + Int.MinValue + " and " + Int.MaxValue + "."
 }
+case class SSLFlagParseError() extends ConnectorError {
+  def getFullContext: String = "The 'ssl' param specified is invalid. " +
+    "Please specify either 'true' or 'false'."
+}
 case class UnquotedSemiInColumns() extends ConnectorError {
   def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
 }

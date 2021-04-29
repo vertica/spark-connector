@@ -25,7 +25,8 @@ import org.apache.spark.sql.connector.read.InputPartition
 
 class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val tablename: TableName = TableName("testtable", None)
-  val jdbcConfig: JDBCConfig = JDBCConfig("1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"))
+  val jdbcConfig: JDBCConfig = JDBCConfig(
+    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCSSLConfig(ssl = true, None, None, None, None))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   val config: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(
     jdbcConfig = jdbcConfig,
