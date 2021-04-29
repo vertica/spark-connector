@@ -39,5 +39,5 @@ assemblyMergeStrategy in assembly := {
   case x => MergeStrategy.first
 }
 
-unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
+unmanagedClasspath in Runtime += new File("/etc/hadoop/etc/hadoop")
 
