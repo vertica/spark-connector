@@ -80,16 +80,16 @@ object DSConfigSetupUtils {
   }
 
   def getMaxFileSize(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("max_file_size","512").toInt} match {
+    Try {config.getOrElse("max_file_size_export_mb","4096").toInt} match {
       case Success(i) => i.validNec
-      case Failure(_) => InvalidIntegerField("max_file_size").invalidNec
+      case Failure(_) => InvalidIntegerField("max_file_size_export_mb").invalidNec
     }
   }
 
   def getMaxRowGroupSize(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("max_row_group_size","64").toInt} match {
+    Try {config.getOrElse("max_row_group_size_export_mb","16").toInt} match {
       case Success(i) => i.validNec
-      case Failure(_) => InvalidIntegerField("max_row_group_size").invalidNec
+      case Failure(_) => InvalidIntegerField("max_row_group_size_export_mb").invalidNec
     }
   }
 
