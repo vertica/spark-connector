@@ -175,7 +175,6 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     val writerOrError = for {
       _ <- removeFile(filename)
       writer <- Try { builder.withConf(hdfsConfig)
-        //.enableValidation()
         .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
         .withCompressionCodec(CompressionCodecName.SNAPPY)
         .build()}.toEither.left.map(exception => OpenWriteError(exception).context("Error opening write to HDFS."))

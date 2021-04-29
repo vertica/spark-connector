@@ -238,17 +238,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     jdbcLayer.executeUpdate(emptyCopy)
 
-    var startTime: Long = System.currentTimeMillis()
+    val startTime: Long = System.currentTimeMillis()
     val ret = for {
 
       // Explain copy first to verify it's valid.
       rs <- jdbcLayer.query("EXPLAIN " + copyStatement)
       _ = rs.close()
-
-      endTime = System.currentTimeMillis()
-      t = endTime - startTime
-      _ = println("EXPLAIN COPY TOOK: " + t +" MS")
-      _ =  { startTime = System.currentTimeMillis() }
 
       // Real copy
       rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
@@ -256,7 +251,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     val endTime: Long = System.currentTimeMillis()
     val t = endTime - startTime
-    println("COPY TOOK: " + t +" MS")
+    logger.debug("COPY TOOK: " + t +" MS")
 
     ret.left.map(err => CommitError(err).context("performCopy: JDBC error when trying to copy"))
   }
