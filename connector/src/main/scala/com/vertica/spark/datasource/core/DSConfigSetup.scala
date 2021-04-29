@@ -55,6 +55,7 @@ trait DSConfigSetupInterface[T] {
 /**
   * Util class for common config setup functionality.
   */
+// scalastyle:off
 object DSConfigSetupUtils {
   type ValidationResult[A] = ValidatedNec[ConnectorError, A]
 
