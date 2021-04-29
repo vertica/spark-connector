@@ -41,7 +41,7 @@ object Main extends App {
     val tableName = "dftest"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
 
-    val data = Seq(Row(77))
+    val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     val mode = SaveMode.Overwrite
 
