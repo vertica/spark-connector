@@ -785,6 +785,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.doPreReadSteps())
   }
 
+  /*
   it should "push down multiple filters" in {
     val config = this.makeReadConfig
     val fileStoreLayer = this.mockFileStoreLayer(config)
@@ -806,6 +807,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     this.failOnError(pipe.doPreReadSteps())
   }
+
+   */
 
   it should "push down a column projection" in {
     val config = this.makeReadConfig
