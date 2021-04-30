@@ -282,6 +282,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
@@ -310,6 +311,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val expected = "COPY \"dummy\" (col1 INTEGER, col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
@@ -334,6 +336,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*, *).returning(Left(SyntaxError(new Exception())))
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
@@ -362,6 +365,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
@@ -391,6 +395,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (col1,col3,col2) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT", *).returning(Right(1))
@@ -416,6 +421,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = createWriteConfig()
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (\"col1\",\"col5\") FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT",*).returning(Right(1))
@@ -444,6 +450,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
@@ -475,6 +482,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
@@ -503,6 +511,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     )
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureKerberosToFilestore _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))

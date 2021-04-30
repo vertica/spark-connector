@@ -288,7 +288,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         val hadoopConf = session.sparkContext.hadoopConfiguration
         val isKerberosEnabled = hadoopConf.get("hadoop.security.authentication")
         logger.debug("Hadoop impersonation: kerb authentication: " + isKerberosEnabled)
-        if (isKerberosEnabled == "kerberos") {
+        if (isKerberosEnabled != null && isKerberosEnabled == "kerberos") {
           val nameNodeAddress = hadoopConf.get("dfs.namenode.http-address")
           logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
 
@@ -303,7 +303,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
             _ <- this.execute(sql)
           } yield ()
         } else {
-          Left(KerberosNotEnabledInHadoopConf())
+          logger.info("Kerberos is not enabled in the hadoop config.")
+          Right(())
         }
       case None => Left(NoSparkSessionFound())
     }
