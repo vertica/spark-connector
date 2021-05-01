@@ -31,7 +31,10 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "hdfs_url" -> conf.getString("functional-tests.filepath"),
+    "num_partitions" -> conf.getString("functional-tests.num_partitions"),
+    "fileformat" -> "parquet"
   )
   val auth = if(conf.getString("functional-tests.password").nonEmpty) {
     readOpts = readOpts + (
@@ -56,18 +59,20 @@ object Main extends App {
     )
   }
 
-  val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
-                              port = conf.getInt("functional-tests.port"),
-                              db = conf.getString("functional-tests.db"),
-                              auth,
-                              logLevel= if(conf.getBoolean("functional-tests.log")) Level.DEBUG else Level.OFF)
-
-
   // read/write/both
 
   val colCounts = conf.getString("functional-tests.colCounts")
   val rowCounts = conf.getString("functional-tests.rowCounts")
   val runCount = conf.getInt("functional-tests.runCount")
+
+  val rowGroupSizes = conf.getString("functional-tests.max_row_group_size")
+  var optList = rowGroupSizes.split(",").map(rowGroupSize => {
+    readOpts + ("max_row_group_size" -> rowGroupSize)
+  })
+  val fileSizes = conf.getString("functional-tests.max_file_size")
+  optList = fileSizes.split(",").flatMap(fileSize => {
+    optList.map(m => m + ("max_file_size" -> fileSize))
+  })
 
   val testModeStr = conf.getString("functional-tests.testMode")
   val testMode = testModeStr match {
@@ -77,6 +82,19 @@ object Main extends App {
     case _ => throw new Exception("Invalid test mode, must be 'read', 'write' or 'both'")
   }
 
-  new PerformanceTestSuite(spark).runAndTimeTests(readOpts, colCounts, rowCounts, runCount, testMode)
+  val runJdbcComparison = conf.getBoolean("functional-tests.compareJdbc")
+  val runV1Comparison = conf.getBoolean("functional-tests.compareV1")
+
+  val filter = conf.getString("functional-tests.filter")
+
+  new PerformanceTestSuite(spark).runAndTimeTests(optList,
+    colCounts,
+    rowCounts,
+    runCount,
+    testMode,
+    runJdbcComparison,
+    runV1Comparison,
+    readOpts("num_partitions").toInt,
+    filter)
 
 }

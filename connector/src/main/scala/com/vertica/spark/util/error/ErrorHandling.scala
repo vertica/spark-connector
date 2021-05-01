@@ -253,6 +253,9 @@ case class InvalidPortError() extends ConnectorError {
   def getFullContext: String = "The 'port' param specified is invalid. " +
     "Please specify a valid integer between 1 and 65535."
 }
+case class InvalidIntegerField(field: String) extends ConnectorError {
+  def getFullContext: String = "Field '" + field + "' is not a valid integer. Should be between " + Int.MinValue + " and " + Int.MaxValue + "."
+}
 case class SSLFlagParseError() extends ConnectorError {
   def getFullContext: String = "The 'ssl' param specified is invalid. " +
     "Please specify either 'true' or 'false'."

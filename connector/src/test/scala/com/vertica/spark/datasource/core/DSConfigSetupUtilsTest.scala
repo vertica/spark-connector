@@ -239,6 +239,18 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(strlen == 1024)
   }
 
+  it should "default to max file size 4096" in {
+    val opts = Map[String, String]()
+    val fileSize = getResultOrAssert[Int](DSConfigSetupUtils.getMaxFileSize(opts))
+    assert(fileSize == 4096)
+  }
+
+  it should "default to max row group size 16" in {
+    val opts = Map[String, String]()
+    val fileSize = getResultOrAssert[Int](DSConfigSetupUtils.getMaxRowGroupSize(opts))
+    assert(fileSize == 16)
+  }
+
   it should "error with invalid strlen input" in {
     var opts = Map("strlen" -> "abc123")
     var err = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getStrLen(opts))

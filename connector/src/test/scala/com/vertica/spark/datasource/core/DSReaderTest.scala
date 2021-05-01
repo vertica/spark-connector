@@ -28,7 +28,15 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   val jdbcConfig: JDBCConfig = JDBCConfig(
     "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCSSLConfig(ssl = true, None, None, None, None))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
-  val config: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(jdbcConfig = jdbcConfig, fileStoreConfig = fileStoreConfig,  tableSource = tablename, partitionCount = None, metadata = None, ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
+  val config: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(
+    jdbcConfig = jdbcConfig,
+    fileStoreConfig = fileStoreConfig,
+    tableSource = tablename,
+    partitionCount = None,
+    metadata = None,
+    filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
+    maxRowGroupSize = 64,
+    maxFileSize = 512)
 
   override def beforeAll(): Unit = {
   }

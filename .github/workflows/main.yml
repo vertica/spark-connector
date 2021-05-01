@@ -43,8 +43,8 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
-      - name: Add hostfile entry for hdfs
-        run: echo "127.0.0.1 hdfs" | sudo tee -a /etc/hosts
+      - name: Build client image
+        run: docker build -t client ./docker
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Replace HDFS core-site config with our own
@@ -57,7 +57,9 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
+      - name: Copy functional tests to home directory of client container
+        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
       - name: Run the integration tests
-        run: cd functional-tests && sbt run
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down

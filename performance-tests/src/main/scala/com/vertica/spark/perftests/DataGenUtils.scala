@@ -1,6 +1,6 @@
 package com.vertica.spark.perftests
 
-import com.vertica.spark.perftests.DataGenUtils.genDataSchema
+import com.vertica.spark.perftests.DataGenUtils.{columnType, genDataSchema}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.types.{DateType, Decimal, DecimalType, IntegerType, StringType, StructField, StructType}
@@ -54,6 +54,25 @@ object DataGenUtils  {
     StructType(
       (0 until colCount).map(i => StructField("col"+i, columnType(i)))
     )
+  }
+
+  def getColumns(colCount: Int): String = {
+    val cols = (0 until colCount).map(i => {
+      val colType = columnType(i)
+
+      val t = colType match {
+        case StringType => "VARCHAR(1024)"
+        case IntegerType => "INTEGER"
+        case DecimalType() => "DECIMAL(25, 10)"
+        case DateType => "DATE"
+      }
+
+      val n = "col" + i
+
+      n + " " + t
+    })
+
+    cols.mkString(", ")
   }
 }
 

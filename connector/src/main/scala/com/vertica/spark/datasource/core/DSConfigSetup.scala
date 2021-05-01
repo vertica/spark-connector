@@ -55,6 +55,7 @@ trait DSConfigSetupInterface[T] {
 /**
   * Util class for common config setup functionality.
   */
+// scalastyle:off
 object DSConfigSetupUtils {
   type ValidationResult[A] = ValidatedNec[ConnectorError, A]
 
@@ -76,6 +77,20 @@ object DSConfigSetupUtils {
     Try {config.getOrElse("port","5433").toInt} match {
       case Success(i) => if (i >= 1 && i <= 65535) i.validNec else InvalidPortError().invalidNec
       case Failure(_) => InvalidPortError().invalidNec
+    }
+  }
+
+  def getMaxFileSize(config: Map[String, String]): ValidationResult[Int] = {
+    Try {config.getOrElse("max_file_size_export_mb","4096").toInt} match {
+      case Success(i) => i.validNec
+      case Failure(_) => InvalidIntegerField("max_file_size_export_mb").invalidNec
+    }
+  }
+
+  def getMaxRowGroupSize(config: Map[String, String]): ValidationResult[Int] = {
+    Try {config.getOrElse("max_row_group_size_export_mb","16").toInt} match {
+      case Success(i) => i.validNec
+      case Failure(_) => InvalidIntegerField("max_row_group_size_export_mb").invalidNec
     }
   }
 
@@ -286,7 +301,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.validateAndGetTableSource(config),
       DSConfigSetupUtils.getPartitionCount(config),
       None.validNec,
-      DSConfigSetupUtils.getFilePermissions(config)
+      DSConfigSetupUtils.getFilePermissions(config),
+      DSConfigSetupUtils.getMaxRowGroupSize(config),
+      DSConfigSetupUtils.getMaxFileSize(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -323,7 +340,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError(None))
           case Some(metadata) => Right(metadata.schema)
