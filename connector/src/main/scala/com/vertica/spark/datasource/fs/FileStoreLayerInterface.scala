@@ -251,7 +251,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     val readSupport = if(rsCtor.paramLists.nonEmpty &&
       // Spark 3.1+
       rsCtor.paramLists.head.length == 4) {
-      val t = rsCtorm(None, true, LegacyBehaviorPolicy.CORRECTED, LegacyBehaviorPolicy.CORRECTED)
+      val t = rsCtorm(None, true, LegacyBehaviorPolicy.CORRECTED.id, LegacyBehaviorPolicy.CORRECTED.id)
       t.asInstanceOf[ParquetReadSupport]
     }
     else {
