@@ -201,14 +201,7 @@ class VerticaDistributedFilesystemReadPipe(
       _ <- getMetadata
 
       // Set Vertica to work with kerberos and HDFS
-      _ <- config.jdbcConfig.auth match {
-        case _: KerberosAuth =>
-          logger.debug("Using kerberos auth.")
-          jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
-        case _ =>
-          logger.debug("Using regular auth.")
-          Right(())
-      }
+      _ <- jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
 
       // Create unique directory for session
       perm = config.filePermissions
