@@ -242,7 +242,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
     // Reflection used here to determine version of ParquetReadSupport to use between spark 3.0 and 3.1
     import scala.reflect.runtime.{universe => ru}
-    val m = ru.runtimeMirror(ParquetReadSupport.getClass.getClassLoader)
+    val m = ru.runtimeMirror(getClass.getClassLoader)
     val rsClass = ru.typeOf[ParquetReadSupport].typeSymbol.asClass
     val cm = m.reflectClass(rsClass)
     val rsCtor = ru.typeOf[ParquetReadSupport].decl(ru.termNames.CONSTRUCTOR).asMethod
