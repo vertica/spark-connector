@@ -67,5 +67,6 @@ assemblyShadeRules in assembly := Seq(
 
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
-  cp filter {_.data.getName.contains("spark")}
+  cp.filter{_.data.getName.contains("spark")}
+    .filter{_.data.getName.contains("hadoop-annotations")}
 }
