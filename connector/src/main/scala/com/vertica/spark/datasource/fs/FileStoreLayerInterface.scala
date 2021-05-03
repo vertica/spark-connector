@@ -240,11 +240,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   override def openReadParquetFile(file: ParquetFileRange): ConnectorResult[Unit] = {
     val filename = file.filename
 
-    val readSupport = new ParquetReadSupport(
-      convertTz = None,
-      enableVectorizedReader = false,
-      datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
-    )
+    val readSupport = new ParquetReadSupport()
 
     // Get reader
     val readerOrError = Try {
