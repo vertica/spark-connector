@@ -22,7 +22,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetOutputFormat, ParquetWriter}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.datasources.parquet.{ParquetReadSupport, ParquetWriteSupport}
+import org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
@@ -39,6 +39,7 @@ import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
 import org.apache.spark.TaskContext
+import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
 import org.apache.spark.sql.types.StructType
 
 import collection.JavaConverters._
@@ -241,6 +242,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     val filename = file.filename
 
     // Reflection used here to determine version of ParquetReadSupport to use between spark 3.0 and 3.1
+    /*
     import scala.reflect.runtime.{universe => ru}
     val m = ru.runtimeMirror(getClass.getClassLoader)
     val rsClass = ru.typeOf[ParquetReadSupport].typeSymbol.asClass
@@ -258,6 +260,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       // Spark 3.0
       new ParquetReadSupport()
     }
+     */
+    val readSupport = new ParquetReadSupport()
 
     // Get reader
     val readerOrError = Try {
