@@ -156,21 +156,6 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get the error messages from a SchemaDiscoveryError" in {
-    val error = SchemaDiscoveryError(None)
-    assert(error.getFullContext == "Failed to discover the schema of the table. " +
-      "There may be an issue with connectivity to the database.")
-
-    assert(error.getUserMessage == "Failed to discover the schema of the table. This is likely a bug and should be reported to the developers here:\n" +
-      "https://github.com/vertica/spark-connector/issues")
-  }
-
-  it should "get the error messages from a SchemaDiscoveryError wrapping another error" in {
-    val error = SchemaDiscoveryError(Some(MyError()))
-    assert(error.getFullContext == "Failed to discover the schema of the table. " +
-      "There may be an issue with connectivity to the database.\nMy test error")
-  }
-
   it should "get the error messages from a SchemaColumnListError" in {
     val error = SchemaColumnListError(MyError())
     assert(error.getFullContext == "Failed to create a valid column list for the write operation " +
@@ -190,6 +175,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   it should "return full context and user message for static errors without exception" in {
     Try {
       checkErrReturnsMessages(ExpectedRowDidNotExistError())
+      checkErrReturnsMessages(DropTableError())
       checkErrReturnsMessages(InitialSetupPartitioningError())
       checkErrReturnsMessages(FileListEmptyPartitioningError())
       checkErrReturnsMessages(InvalidPartition())
@@ -201,8 +187,6 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(TempTableExistsError())
       checkErrReturnsMessages(FaultToleranceTestFail())
       checkErrReturnsMessages(DuplicateColumnsError())
-      checkErrReturnsMessages(InvalidLoggingLevel())
-      checkErrReturnsMessages(ConfigBuilderError())
       checkErrReturnsMessages(HostMissingError())
       checkErrReturnsMessages(DbMissingError())
       checkErrReturnsMessages(UserMissingError())
@@ -220,6 +204,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(IntermediaryStoreReaderNotInitializedError())
       checkErrReturnsMessages(ConnectionDownError())
       checkErrReturnsMessages(TableNotEnoughRowsError())
+      checkErrReturnsMessages(SchemaDiscoveryError())
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()
@@ -231,14 +216,10 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     Try {
       val suberr = TableNotEnoughRowsError()
 
-      checkErrReturnsMessages(SchemaDiscoveryError(Some(suberr)))
-      checkErrReturnsMessages(SchemaDiscoveryError(None))
       checkErrReturnsMessages(TableCheckError(Some(suberr)))
       checkErrReturnsMessages(TableCheckError(None))
       checkErrReturnsMessages(CreateTableError(Some(suberr)))
       checkErrReturnsMessages(CreateTableError(None))
-      checkErrReturnsMessages(DropTableError(Some(suberr)))
-      checkErrReturnsMessages(DropTableError(None))
       checkErrReturnsMessages(JobStatusUpdateError(Some(suberr)))
       checkErrReturnsMessages(JobStatusUpdateError(None))
 
@@ -299,7 +280,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(CloseReadError(cause))
       checkErrReturnsMessages(ConnectionSqlError(cause))
       checkErrReturnsMessages(ConnectionError(cause))
-      checkErrReturnsMessages(DataTypeError(cause))
+      checkErrReturnsMessages(DataError(cause))
       checkErrReturnsMessages(SyntaxError(cause))
       checkErrReturnsMessages(GenericError(cause))
       checkErrReturnsMessages(DatabaseReadError(cause))

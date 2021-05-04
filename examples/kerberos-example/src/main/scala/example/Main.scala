@@ -38,19 +38,24 @@ object Main extends App {
     .getOrCreate()
 
   try {
-    val tableName = "dftest"
+    val tableName = "test"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
 
     val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     val mode = SaveMode.Overwrite
 
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
-    println("KERBEROS DEMO, WROTE TABLE")
+    //df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
+    //println("KERBEROS DEMO, WROTE TABLE")
 
-    val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).load()
+    val dfRead: DataFrame = spark.read
+      .format("com.vertica.spark.datasource.VerticaSource")
+      .options(opts + ("table" -> tableName)).load()
 
     dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))
+
+    val tableName2 = "test2"
+    dfRead.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName2)).mode(mode).save()
 
   } finally {
     spark.close()

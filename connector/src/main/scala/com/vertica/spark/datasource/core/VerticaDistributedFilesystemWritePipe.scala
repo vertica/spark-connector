@@ -100,7 +100,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tableExistsPre <- tableUtils.tableExists(config.tablename)
 
       // Overwrite safety check
-      _ <- if (config.isOverwrite && tableExistsPre) Left(DropTableError(None)) else Right(())
+      _ <- if (config.isOverwrite && tableExistsPre) Left(DropTableError()) else Right(())
 
       // Check if a view exists or temp table exits by this name
       viewExists <- tableUtils.viewExists(config.tablename)

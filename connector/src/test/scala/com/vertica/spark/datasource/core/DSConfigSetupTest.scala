@@ -138,7 +138,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     // Set mock pipe
     val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError(None))).once()
+    (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
     (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
@@ -146,7 +146,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
     assert(errSeq.size == 1)
-    assert(errSeq.map(_.getError).contains(SchemaDiscoveryError(None)))
+    assert(errSeq.map(_.getError).contains(SchemaDiscoveryError()))
   }
 
   it should "parse a valid write config" in {

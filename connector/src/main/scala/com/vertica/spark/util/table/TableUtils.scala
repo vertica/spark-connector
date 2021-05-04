@@ -207,7 +207,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
 
   def dropTable(tablename: TableName): ConnectorResult[Unit] = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
-      .left.map(err => DropTableError(Some(err)).context("JDBC Error dropping table"))
+      .left.map(err => err.context("JDBC Error dropping table"))
   }
 
   override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit] = {
