@@ -18,7 +18,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JDBCSSLConfig}
-import com.vertica.spark.util.error.{ConnectionSqlError, DataTypeError, SyntaxError}
+import com.vertica.spark.util.error.{ConnectionSqlError, DataError, SyntaxError}
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
@@ -154,7 +154,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Left(err) => {
         println(err.getError.getFullContext)
         assert(err.getError match {
-          case DataTypeError(_) => true
+          case DataError(_) => true
           case _ => false
         })
       }
