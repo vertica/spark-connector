@@ -119,6 +119,10 @@ Below is a detailed list of connector options:
 | max_file_size_export_mb                        | Int                                                | Vertica maximum export file size in MB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | No                                                                 | 4096                        |
 | max_row_group_size_export_mb                   | Int                                                | Vertica maximum row group file size in MB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | No                                                                 | 16                          |
 
+## Examples
+
+If you would like to try out the connector, we have several example applications you can run [in the examples folder](https://github.com/vertica/spark-connector/tree/main/examples).
+
 ## Configuring Logging
 
 The connector uses Spark's log4j configuration for logging. Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
