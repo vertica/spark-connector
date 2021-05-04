@@ -791,7 +791,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(!executedPlanString.contains("excludeMe"))
     assert(executedPlanString.contains("includeMe"))
 
-    assert(dr.sort().collect().mkString(",") == "[2],[2],[2],[3],[3],[3],[3]")
+    assert(dr.sort().collect().mkString(",") == "[3],[3],[3],[3],[2],[2],[2]")
 
     stmt.execute("drop table " + tableName1)
   }
