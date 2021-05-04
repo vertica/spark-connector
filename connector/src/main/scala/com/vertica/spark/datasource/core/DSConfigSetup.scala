@@ -183,7 +183,7 @@ object DSConfigSetupUtils {
 
   def getFilePermissions(config: Map[String, String]): ValidationResult[ValidFilePermissions] = {
     config.get("file_permissions") match {
-      case None => ValidFilePermissions("770") // Default to allowing user and group
+      case None => ValidFilePermissions("700") // Default to allowing user and group
       case Some(str) => ValidFilePermissions(str)
     }
   }
