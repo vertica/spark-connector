@@ -129,5 +129,7 @@ where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
 ## Limitations
 
+The connector supports versions of Spark between 3.0 and 3.1.1.
+
 The connector supports basic Spark types. Complex types are not currently supported.
 
