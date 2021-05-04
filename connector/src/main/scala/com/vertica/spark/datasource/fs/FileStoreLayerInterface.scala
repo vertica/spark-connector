@@ -241,27 +241,11 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   override def openReadParquetFile(file: ParquetFileRange): ConnectorResult[Unit] = {
     val filename = file.filename
 
-    // Reflection used here to determine version of ParquetReadSupport to use between spark 3.0 and 3.1
-    /*
-    import scala.reflect.runtime.{universe => ru}
-    val m = ru.runtimeMirror(getClass.getClassLoader)
-    val rsClass = ru.typeOf[ParquetReadSupport].typeSymbol.asClass
-    val cm = m.reflectClass(rsClass)
-    val rsCtor = ru.typeOf[ParquetReadSupport].decl(ru.termNames.CONSTRUCTOR).asMethod
-    val rsCtorm = cm.reflectConstructor(rsCtor)
-
-    val readSupport = if(rsCtor.paramLists.nonEmpty &&
-      // Spark 3.1+
-      rsCtor.paramLists.head.length == 4) {
-      val t = rsCtorm(None, true, LegacyBehaviorPolicy.CORRECTED, LegacyBehaviorPolicy.CORRECTED)
-      t.asInstanceOf[ParquetReadSupport]
-    }
-    else {
-      // Spark 3.0
-      new ParquetReadSupport()
-    }
-     */
-    val readSupport = new ParquetReadSupport()
+    val readSupport = new ParquetReadSupport(
+      convertTz = None,
+      enableVectorizedReader = false,
+      datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED
+    )
 
     // Get reader
     val readerOrError = Try {
