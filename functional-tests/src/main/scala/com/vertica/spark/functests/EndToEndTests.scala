@@ -1395,7 +1395,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
-  it should "DataFrame with Complex type array" in {
+  it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
 
@@ -1417,7 +1417,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    assert (failureMessage.nonEmpty)
+    println(failureMessage)
+    assert (failureMessage == expectedMessage)
     TestUtils.dropTable(conn, tableName)
   }
 
