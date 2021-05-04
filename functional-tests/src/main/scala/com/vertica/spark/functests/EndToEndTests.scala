@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.{CommitError, ConnectorException, SchemaError}
+import com.vertica.spark.util.error.{CommitError, ConnectorException, ContextError, SchemaError}
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
@@ -1396,6 +1396,19 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
+  def checkErrorType[T](ex: Option[Exception]) = {
+    ex match {
+      case None => fail("Expected error.")
+      case Some(exception) =>
+        assert(exception.isInstanceOf[SparkException])
+        assert(exception.asInstanceOf[SparkException].getCause.isInstanceOf[ConnectorException])
+        val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
+
+        assert(err.isInstanceOf[T] ||
+          (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+    }
+  }
+
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -1409,19 +1422,16 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val peopleRDD = spark.sparkContext.parallelize(json_string :: Nil)
     val df = spark.read.json(peopleRDD)
 
-    var failure: Option[SparkException] = None
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failure = Some(e.asInstanceOf[SparkException])
+      case e: java.lang.Exception => failure = Some(e)
     }
-    val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    failure match {
-      case None => fail("Expected error.")
-      case Some(e) => assert(e.getCause.asInstanceOf[ConnectorException].error.isInstanceOf[CommitError])
-    }
+    checkErrorType[CommitError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
