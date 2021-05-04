@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.{ConnectorException, SchemaError}
+import com.vertica.spark.util.error.{CommitError, ConnectorException, SchemaError}
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
@@ -1420,7 +1420,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     failure match {
       case None => fail("Expected error.")
-      case Some(e) => assert(e.getCause.isInstanceOf[SchemaError])
+      case Some(e) => assert(e.getCause.asInstanceOf[ConnectorException].error.isInstanceOf[CommitError])
     }
     TestUtils.dropTable(conn, tableName)
   }
