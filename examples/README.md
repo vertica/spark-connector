@@ -10,9 +10,10 @@ git clone https://github.com/vertica/spark-connector.git
 From the project's root directory:
 ```
 cd docker
+docker build -t client .
 docker-compose up -d
 ```
-This will create docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
+This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
 Next, change directory to the example you want to run. For example, if you want to run the "demo" example:
 ```
