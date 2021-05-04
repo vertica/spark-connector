@@ -1,3 +1,4 @@
+// scalastyle:off
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,6 +37,7 @@ import org.apache.spark.sql.types.StructType
  * @param datetimeRebaseMode the mode of rebasing date/timestamp from Julian to Proleptic Gregorian
  *                           calendar
  */
+// scalastyle:off
 private[parquet] class ParquetRecordMaterializer(
                                                   parquetSchema: MessageType,
                                                   catalystSchema: StructType,
