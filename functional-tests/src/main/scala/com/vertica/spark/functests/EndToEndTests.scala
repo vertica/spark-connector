@@ -16,8 +16,9 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.ConnectorException
+import com.vertica.spark.util.error.{ConnectorException, SchemaError}
 import org.apache.log4j.Logger
+import org.apache.spark.SparkException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
@@ -1408,17 +1409,19 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val peopleRDD = spark.sparkContext.parallelize(json_string :: Nil)
     val df = spark.read.json(peopleRDD)
 
-    var failureMessage = ""
+    var failure: Option[SparkException] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e.asInstanceOf[SparkException])
     }
     val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
 
-    println(failureMessage)
-    assert (failureMessage == expectedMessage)
+    failure match {
+      case None => fail("Expected error.")
+      case Some(e) => assert(e.getCause.isInstanceOf[SchemaError])
+    }
     TestUtils.dropTable(conn, tableName)
   }
 
