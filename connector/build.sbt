@@ -57,7 +57,8 @@ scalastyleFailOnWarning := true
 // - File Store Layer: excluded as a bottom-layer component that does IO -- covered by integration tests.
 // - Pipe Factory: as the rest of the components rely on abstract interfaces, this is the place
 //   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
-coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*"
+// - Parquet reader files taken from third part spark library
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*"
 coverageMinimum := 59
 coverageFailOnMinimum := true
 
@@ -67,5 +68,6 @@ assemblyShadeRules in assembly := Seq(
 
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
-  cp filter {_.data.getName.contains("spark")}
+  cp.filter{_.data.getName.contains("spark")}
+    .filter{_.data.getName.contains("hadoop")}
 }
