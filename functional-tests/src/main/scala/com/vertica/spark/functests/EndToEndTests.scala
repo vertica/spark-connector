@@ -16,11 +16,12 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.{CommitError, ConnectorException, ContextError, DuplicateColumnsError, SchemaError, TempTableExistsError}
+import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError}
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
+import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalactic.TripleEquals._
@@ -1400,12 +1401,20 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     ex match {
       case None => fail("Expected error.")
       case Some(exception) =>
-        assert(exception.isInstanceOf[SparkException])
-        assert(exception.asInstanceOf[SparkException].getCause.isInstanceOf[ConnectorException])
-        val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
+        exception match {
+          case e: SparkException =>
+            assert(e.getCause.isInstanceOf[ConnectorException])
+            val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
 
-        assert(err.isInstanceOf[T] ||
-          (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+            assert(err.isInstanceOf[T] ||
+              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+
+          case e: ConnectorException =>
+            val err = e.error
+
+            assert(err.isInstanceOf[T] ||
+              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+        }
     }
   }
 
@@ -1619,7 +1628,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType[ViewExistsError](failure)
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1713,7 +1722,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    assert(failure.get.isInstanceOf[TableAlreadyExistsException])
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1805,7 +1814,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    assert(failure.isEmpty)
 
     //since load is ignored so there should be 0 rows in the target table
     var rowsLoaded = -1
@@ -1861,7 +1870,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType[ConnectionSqlError](failure)
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -3004,7 +3013,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    assert(failure.get.isInstanceOf[AnalysisException])
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3039,12 +3048,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType[CreateTableError](failure)
     TestUtils.dropTable(conn, tableName)
     TestUtils.dropTable(conn, "peopleTable")
   }
 
-  it should "fail to save a DF if there are syntax errors in target_table_ddl" in {
+  it should "fail to save a DF if there are syntax errors in target_table_sql" in {
     // table name is inconsistent with the DDL
     val tableName = "targetTable"
     val target_table_ddl = "CREATE TBLE targetTable (name varchar(65000) not null, age integer not null);"
@@ -3071,7 +3080,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType[CreateTableError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 

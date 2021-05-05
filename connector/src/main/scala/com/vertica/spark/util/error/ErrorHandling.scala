@@ -154,7 +154,10 @@ case class CreateTableError(error: Option[ConnectorError]) extends ConnectorErro
     case Some(err) => ErrorHandling.appendErrors(this.message, err.getFullContext)
     case None => this.message
   }
-  override def getUserMessage: String = this.message
+  override def getUserMessage: String = this.error match {
+    case Some(err) => ErrorHandling.appendErrors(this.message, err.getUserMessage)
+    case None => this.message
+  }
 }
 case class DropTableError() extends ConnectorError {
   def getFullContext = "There was a failure trying to drop the table before overwriting."
