@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.JDBCConfig
-import com.vertica.spark.util.error.{CommitError, ConnectorException, ContextError, SchemaError}
+import com.vertica.spark.util.error.{CommitError, ConnectorException, ContextError, DuplicateColumnsError, SchemaError, TempTableExistsError}
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
@@ -1522,15 +1522,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema, "failed_rows_percent_tolerance" -> "0.10")
     val mode = SaveMode.Append
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    val expectedMessage = "Number of columns in the target table should be greater or equal to number of columns in the DataFrame"
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1564,14 +1564,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema, "failed_rows_percent_tolerance" -> "0.10")
 
     val mode = SaveMode.Append
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1611,16 +1612,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    val expectedMessage = "Table name provided cannot refer to an existing view in Vertica"
-    assert (failureMessage.contains(expectedMessage))
+    checkErrorType[CommitError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1706,15 +1706,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.ErrorIfExists
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1799,13 +1798,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Ignore
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
+    checkErrorType[CommitError](failure)
 
     //since load is ignored so there should be 0 rows in the target table
     var rowsLoaded = -1
@@ -1854,16 +1854,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "host" -> (writeOpts("host") + "xx"))
 
     val mode = SaveMode.Overwrite
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
+    checkErrorType[CommitError](failure)
 
-    assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1948,17 +1947,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    val expectedMessage = "Error: Vertica currently does not support ArrayType, MapType, StructType;"
+    checkErrorType[CommitError](failure)
 
-    assert (failureMessage.nonEmpty)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -1983,15 +1980,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
 
     val mode = SaveMode.Overwrite
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2229,15 +2226,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val options = writeOpts + ("table" -> tableName)
 
     val mode = SaveMode.Append
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    assert (failureMessage.nonEmpty)
+    checkErrorType[TempTableExistsError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2551,15 +2548,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Append
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    assert (failureMessage.nonEmpty)
+    checkErrorType[TempTableExistsError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2582,16 +2579,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     "failed_rows_percent_tolerance" -> "0.199")
 
     val mode = SaveMode.Append
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    println("failureMessage=" + failureMessage)
-    val expectedMessage = "Failed rows percent was greater than user specified tolerance for table:"
-    assert (failureMessage.nonEmpty)
+    checkErrorType[TempTableExistsError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2704,15 +2700,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     log.info(s"Test options:" + options.toString)
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    log.info("failureMessage: "+ failureMessage)
-    assert (failureMessage.nonEmpty)
+    checkErrorType[DuplicateColumnsError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2744,15 +2740,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     stmt.execute(tableDDL)
 
     val mode = SaveMode.Append
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-
-    assert (failureMessage.nonEmpty)
+    checkErrorType[DuplicateColumnsError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2781,14 +2776,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[DuplicateColumnsError](failure)
+
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2986,7 +2982,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "fail to save a DF with column names with spaces in parquet format" in {
+  it should "fail to save a DF with column names with spaces" in {
     val tableName = "Quoted_Identifiers"
 
     val options = writeOpts + ("table" -> tableName)
@@ -3001,14 +2997,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[DuplicateColumnsError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3036,14 +3032,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[DuplicateColumnsError](failure)
     TestUtils.dropTable(conn, tableName)
     TestUtils.dropTable(conn, "peopleTable")
   }
@@ -3068,14 +3064,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3103,14 +3099,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3137,14 +3133,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
 
-    var failureMessage = ""
+    var failure: Option[Exception] = None
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
     }
     catch {
-      case e: java.lang.Exception => failureMessage = e.toString
+      case e: java.lang.Exception => failure = Some(e)
     }
-    assert (failureMessage.nonEmpty)
+    checkErrorType[CommitError](failure)
     TestUtils.dropTable(conn, tableName)
   }
 
