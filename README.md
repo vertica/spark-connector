@@ -131,6 +131,10 @@ Here is an example spark-submit command showing how to add Spark's default confi
 `spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
 where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
+## Additional guides
+
+For information on how to configure Kerberos and TLS with the connector, see the KerberosUserManual.md and TLSConfiguration.md files in the root of this repository.
+
 ## Limitations
 
 The connector supports versions of Spark between 3.0 and 3.1.1.
