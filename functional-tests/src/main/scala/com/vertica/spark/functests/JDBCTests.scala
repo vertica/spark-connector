@@ -17,7 +17,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.jdbc._
-import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JDBCSSLConfig}
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JDBCTLSConfig}
+import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.util.error.{ConnectionSqlError, DataTypeError, SyntaxError}
 
 /**
@@ -174,8 +175,8 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   }
 
   it should "Fail to connect to the wrong database" in {
-    val sslConfig = JDBCSSLConfig(ssl = false, None, None, None, None)
-    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test"), sslConfig))
+    val tlsConfig = JDBCTLSConfig(tlsMode = Disable, None, None, None, None)
+    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test"), tlsConfig))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed

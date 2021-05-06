@@ -32,7 +32,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private val tablename = TableName("dummy", None)
   private val jdbcConfig = JDBCConfig(
-    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCSSLConfig(ssl = true, None, None, None, None))
+    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCTLSConfig(tlsMode = Require, None, None, None, None))
   private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   private val metadata = new MetadataBuilder().putString("name", "col1").build()
   private val size = 32

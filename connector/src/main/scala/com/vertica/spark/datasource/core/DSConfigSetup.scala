@@ -51,6 +51,19 @@ trait DSConfigSetupInterface[T] {
   def getTableSchema(config: T): ConnectorResult[StructType]
 }
 
+sealed trait TLSMode
+case object Disable extends TLSMode {
+  override def toString: String = "disable"
+}
+case object Require extends TLSMode {
+  override def toString: String = "require"
+}
+case object VerifyCA extends TLSMode {
+  override def toString: String = "verify-ca"
+}
+case object VerifyFull extends TLSMode {
+  override def toString: String = "verify-full"
+}
 
 /**
   * Util class for common config setup functionality.
@@ -128,13 +141,16 @@ object DSConfigSetupUtils {
     config.get("jaas_config_name")
   }
 
-  def getSSL(config: Map[String, String]): ValidationResult[Boolean] = {
-    config.get("ssl") match {
-      case Some(value) => Try(value.toBoolean) match {
-        case Success(b) => b.validNec
-        case Failure(_) => SSLFlagParseError().invalidNec
+  def getTLS(config: Map[String, String]): ValidationResult[TLSMode] = {
+    config.get("tls_mode") match {
+      case Some(value) => value match {
+        case "disable" => Disable.validNec
+        case "require" => Require.validNec
+        case "verify-ca" => VerifyCA.validNec
+        case "verify-full" => VerifyFull.validNec
+        case _ => TLSModeParseError().invalidNec
       }
-      case None => false.validNec
+      case None => Disable.validNec
     }
   }
 
@@ -224,12 +240,12 @@ object DSConfigSetupUtils {
     }
   }
 
-  def validateAndGetJDBCSSLConfig(config: Map[String, String]): ValidationResult[JDBCSSLConfig] = {
-    (getSSL(config),
+  def validateAndGetJDBCSSLConfig(config: Map[String, String]): ValidationResult[JDBCTLSConfig] = {
+    (getTLS(config),
     getKeyStorePath(config),
     getKeyStorePassword(config),
     getTrustStorePath(config),
-    getTrustStorePassword(config)).mapN(JDBCSSLConfig)
+    getTrustStorePassword(config)).mapN(JDBCTLSConfig)
   }
 
   /**
