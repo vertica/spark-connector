@@ -1,4 +1,4 @@
-#Kerberos Configuration User Guide
+# Kerberos Configuration User Guide
 
 The general flow for setting up a Kerberized environment is as follows:
 
@@ -16,17 +16,17 @@ On the client side:
 
 We will start with the service configuration. Click [here](#configuring-the-client) to go to the Client configuration guide. Note that the steps are meant to be followed in order.
 
-#Configuring the KDC
+# Configuring the KDC
 
 Depending on whether you use Linux KDC or Active Directory as your KDC, you should follow one of the two following guides. In both guides, we assume that the Kerberos realm is example.com.
 
-##Using Linux KDC
+## Using Linux KDC
 
-###Install Kerberos packages
+### Install Kerberos packages
 
 On CentOS, yum install krb5-server krb5-libs krb5-workstation (These packages will be different depending on which Linux distro you use)
 
-###Create the Kerberos configuration file
+### Create the Kerberos configuration file
 
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
@@ -50,7 +50,7 @@ In the /etc folder, create a file named krb5.conf with the following contents:
  .example.com = EXAMPLE.COM
  example.com = EXAMPLE.COM
 ```
-###Create principals and keytabs
+### Create principals and keytabs
 
 Run the following commands:
 ```
@@ -75,9 +75,9 @@ kadmin.local -q "ktadd -norandkey -k hdfs.keytab hdfs/hdfs.example.com@EXAMPLE.C
 ```
 Before moving on to the next step, copy the newly created vertica.keytab file to the / directory on the Vertica host. Copy the hdfs.keytab file to the /root directory on the HDFS host.
 
-##Using Active Directory as KDC
+## Using Active Directory as KDC
 
-###Create principals and keytabs
+### Create principals and keytabs
 
 Run the following powershell script to create the Vertica and HDFS service users and keytab files:
 ```
@@ -109,9 +109,9 @@ Before moving on to the next step, copy the newly created vertica.keytab file to
 
 `dsadd user "CN=user1,CN=Users,DC=example,DC=com" -pwd $$V3rtic4$$`
 
-#Kerberizing Vertica
+# Kerberizing Vertica
 
-###Create the Kerberos configuration file
+### Create the Kerberos configuration file
 
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
@@ -137,7 +137,7 @@ In the /etc folder, create a file named krb5.conf with the following contents:
 ```
 Note that kerberos.example.com is the hostname of our KDC. Yours may be different, so change this accordingly.
 
-###Set the Kerberos configuration parameters
+### Set the Kerberos configuration parameters
 
 Execute the following SQL commands in vsql:
 ```
@@ -161,9 +161,9 @@ Restart the Vertica database:
 ```
 Make sure that the dbadmin user owns the keytab file: `chown dbadmin /vertica.keytab`
 
-#Kerberizing HDFS
+# Kerberizing HDFS
 
-###Create the Kerberos configuration file
+### Create the Kerberos configuration file
 
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
@@ -187,7 +187,7 @@ In the /etc folder, create a file named krb5.conf with the following contents:
  .example.com = EXAMPLE.COM
  example.com = EXAMPLE.COM
 ```
-###Update HDFS configuration files
+### Update HDFS configuration files
 
 Update core-site.xml to set the following properties:
 ```
@@ -455,7 +455,7 @@ Update hdfs-site.xml to set the following properties:
     </property>
 </configuration>
 ```
-#Configuring HDFS as SSL server and Vertica as SSL client
+# Configuring HDFS as SSL server and Vertica as SSL client
 
 In order for Vertica to communicate with HDFS, you will need to make HDFS an SSL server and Vertica an SSL client.
 
@@ -491,9 +491,9 @@ mkdir -p /etc/pki/tls/certs/
 cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 cat /hdfs.cert >> /etc/pki/tls/certs/ca-bundle.crt
 ```
-#Configuring the client
+# Configuring the client
 
-###Create the Kerberos configuration file
+### Create the Kerberos configuration file
 
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
@@ -517,11 +517,11 @@ In the /etc folder, create a file named krb5.conf with the following contents:
  .example.com = EXAMPLE.COM
  example.com = EXAMPLE.COM
 ```
-###Set path to JAAS configuration file
+### Set path to JAAS configuration file
 
 Add `-Djava.security.auth.login.config=/jaas.config` to your JAVA_OPTS environment variable.
 
-###Creating the JAAS configuration file
+### Creating the JAAS configuration file
 
 Create the JAAS config in the / directory (the path specified in the previous step):
 ```
@@ -532,13 +532,13 @@ Client {
   doNotPrompt=true;
 };
 ```
-#Testing the Kerberos configuration
+# Testing the Kerberos configuration
 
-###Getting the TGT
+### Getting the TGT
 
 Since we specified in the JAAS config to use the ticket cache, we will need to run kinit user1. When prompted for the password, enter "user1", as we specified earlier when creating the user principal.
 
-###Running the application
+### Running the application
 
 Run your client application code passing in the following options to Spark:
 ```
