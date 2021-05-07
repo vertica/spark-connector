@@ -45,17 +45,14 @@ object Main extends App {
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     val mode = SaveMode.Overwrite
 
-    //df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
-    //println("KERBEROS DEMO, WROTE TABLE")
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
+    println("KERBEROS DEMO, WROTE TABLE")
 
     val dfRead: DataFrame = spark.read
       .format("com.vertica.spark.datasource.VerticaSource")
       .options(opts + ("table" -> tableName)).load()
 
     dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))
-
-    val tableName2 = "test2"
-    dfRead.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName2)).mode(mode).save()
 
   } finally {
     spark.close()

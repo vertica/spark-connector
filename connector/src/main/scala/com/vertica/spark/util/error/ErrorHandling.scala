@@ -81,7 +81,7 @@ object ErrorHandling {
 }
 
 case class SchemaDiscoveryError() extends ConnectorError {
-  def getFullContext = "Failed to discover the schema of the table. " +
+  def getFullContext: String = "Failed to discover the schema of the table. " +
     "There may be an issue with connectivity to the database."
 
 }
@@ -160,7 +160,7 @@ case class CreateTableError(error: Option[ConnectorError]) extends ConnectorErro
   }
 }
 case class DropTableError() extends ConnectorError {
-  def getFullContext = "There was a failure trying to drop the table before overwriting."
+  def getFullContext: String = "There was a failure trying to drop the table before overwriting."
 }
 case class CommitError(error: ConnectorError) extends ConnectorError {
   private val message = "Error in commit step of write to Vertica. " +
