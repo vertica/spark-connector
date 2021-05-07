@@ -77,7 +77,7 @@ class VerticaDistributedFilesystemReadPipe(
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {
       case Right(schema) => Right(VerticaReadMetadata(schema))
-      case Left(err) => Left(SchemaDiscoveryError(Some(err)))
+      case Left(err) => Left(err)
     }
   }
 

@@ -143,7 +143,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     pipe.getMetadata match {
       case Left(err) => assert(err.getError match {
-        case SchemaDiscoveryError(_) => true
+        case MissingSqlConversionError(_,_) => true
         case _ => false
       })
       case Right(_) => fail

@@ -181,7 +181,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   def handleJDBCException(e: Throwable): ConnectorError = {
     e match {
       case ex: java.sql.SQLSyntaxErrorException => SyntaxError(ex)
-      case ex: java.sql.SQLDataException => DataTypeError(ex)
+      case ex: java.sql.SQLDataException => DataError(ex)
       case _: Throwable => GenericError(e).context("Unexpected SQL Error.")
     }
   }

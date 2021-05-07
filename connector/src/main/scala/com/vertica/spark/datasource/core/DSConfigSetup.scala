@@ -358,7 +358,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _) =>
         verticaMetadata match {
-          case None => Left(SchemaDiscoveryError(None))
+          case None => Left(SchemaDiscoveryError())
           case Some(metadata) => Right(metadata.schema)
         }
     }
@@ -415,6 +415,6 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
    */
   override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
     case Some(schema) => Right(schema)
-    case None => Left(SchemaDiscoveryError(None))
+    case None => Left(SchemaDiscoveryError())
   }
 }
