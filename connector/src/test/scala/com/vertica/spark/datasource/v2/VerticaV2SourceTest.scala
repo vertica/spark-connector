@@ -233,7 +233,6 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
     Try { scan.readSchema() } match {
       case Success(_) => fail
-      case Success(_) => fail
       case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[SchemaDiscoveryError]
     }
   }

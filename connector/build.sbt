@@ -48,6 +48,7 @@ scapegoatVersion in ThisBuild := "1.3.3"
 scapegoatReports := Seq("xml")
 scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
 scalacOptions += "-Ypartial-unification"
+scalacOptions += "-Ywarn-value-discard"
 
 scalastyleFailOnError := true
 scalastyleFailOnWarning := true

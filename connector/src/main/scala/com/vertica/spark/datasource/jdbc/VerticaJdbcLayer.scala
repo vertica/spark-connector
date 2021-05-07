@@ -20,9 +20,10 @@ import java.sql.Statement
 import java.sql.ResultSet
 import java.util
 
-import com.vertica.spark.config.{BasicJdbcAuth, LogProvider, JDBCConfig, KerberosAuth}
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.general.Utils
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
@@ -103,13 +104,13 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   cfg.auth match {
     case BasicJdbcAuth(username, password) =>
-      prop.put("user", username)
-      prop.put("password", password)
+      Utils.ignore(prop.put("user", username))
+      Utils.ignore(prop.put("password", password))
     case KerberosAuth(username, kerberosServiceName, kerberosHostname, jaasConfigName) =>
-      prop.put("user", username)
-      prop.put("KerberosServiceName", kerberosServiceName)
-      prop.put("KerberosHostname", kerberosHostname)
-      prop.put("JAASConfigName", jaasConfigName)
+      Utils.ignore(prop.put("user", username))
+      Utils.ignore(prop.put("KerberosServiceName", kerberosServiceName))
+      Utils.ignore(prop.put("KerberosHostname", kerberosHostname))
+      Utils.ignore(prop.put("JAASConfigName", jaasConfigName))
   }
 
   addSSLProperties()
@@ -140,24 +141,24 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   private def addSSLProperties(): Unit = {
     val sslConfig = cfg.sslConfig
-    prop.put("SSL", sslConfig.ssl.toString)
+    Utils.ignore(prop.put("SSL", sslConfig.ssl.toString))
     sslConfig.keyStorePath match {
-      case Some(path) => prop.put("KeyStorePath", path)
+      case Some(path) => Utils.ignore(prop.put("KeyStorePath", path))
       case None => ()
     }
 
     sslConfig.keyStorePassword match {
-      case Some(password) => prop.put("KeyStorePassword", password)
+      case Some(password) => Utils.ignore(prop.put("KeyStorePassword", password))
       case None => ()
     }
 
     sslConfig.trustStorePath match {
-      case Some(path) => prop.put("TrustStorePath", path)
+      case Some(path) => Utils.ignore(prop.put("TrustStorePath", path))
       case None => ()
     }
 
     sslConfig.trustStorePassword match {
-      case Some(password) => prop.put("TrustStorePassword", password)
+      case Some(password) => Utils.ignore(prop.put("TrustStorePassword", password))
       case None => ()
     }
   }
