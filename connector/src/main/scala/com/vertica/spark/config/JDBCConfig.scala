@@ -13,6 +13,8 @@
 
 package com.vertica.spark.config
 
+import com.vertica.spark.datasource.core.TLSMode
+
 /**
  * Represents any config necessary for authenticating to JDBC.
  *
@@ -49,24 +51,24 @@ case class KerberosAuth(username: String,
  * @param port port for the JDBC connection
  * @param db name of the Vertica database to connect to
  * @param auth the authentication details, varies depending on method used
- * @param sslConfig the ssl configuration settings for the JDBC connection
+ * @param tlsConfig the TLS configuration settings for the JDBC connection
  */
 final case class JDBCConfig(host: String,
                             port: Int,
                             db: String,
                             auth: JdbcAuth,
-                            sslConfig: JDBCSSLConfig)
+                            tlsConfig: JDBCTLSConfig)
 
 /**
- * SSL configuration settings for a JDBC connection to Vertica.
+ * TLS configuration settings for a JDBC connection to Vertica.
  *
- * @param ssl flag indicating whether to enable SSL for the connection or not
+ * @param tlsMode flag indicating whether to enable TLS for the connection or not
  * @param keyStorePath path to the key store
  * @param keyStorePassword password for the key store
  * @param trustStorePath path to the trust store
  * @param trustStorePassword password for the trust store
  */
-case class JDBCSSLConfig(ssl: Boolean,
+case class JDBCTLSConfig(tlsMode: TLSMode,
                          keyStorePath: Option[String],
                          keyStorePassword: Option[String],
                          trustStorePath: Option[String],

@@ -14,9 +14,11 @@
 import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCSSLConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
+
 import scala.util.Try
 
 object Main extends App {
@@ -26,6 +28,9 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+    "tls_mode" -> conf.getString("functional-tests.tlsmode"),
+    "trust_store_path" -> conf.getString("functional-tests.truststorepath"),
+    "trust_store_password" -> conf.getString("functional-tests.truststorepassword"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
@@ -51,13 +56,13 @@ object Main extends App {
     )
   }
 
-  val sslConfig = JDBCSSLConfig(ssl = false, None, None, None, None)
+  val tlsConfig = JDBCTLSConfig(tlsMode = Disable, None, None, None, None)
 
   val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
                               port = conf.getInt("functional-tests.port"),
                               db = conf.getString("functional-tests.db"),
                               auth = auth,
-                              sslConfig = sslConfig)
+                              tlsConfig = tlsConfig)
 
   new JDBCTests(jdbcConfig).execute()
 

@@ -15,7 +15,7 @@ package com.vertica.spark.datasource.core
 
 import java.sql.ResultSet
 
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCSSLConfig, TableName, ValidColumnList, ValidFilePermissions}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, TableName, ValidColumnList, ValidFilePermissions}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -31,7 +31,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
   private val tablename = TableName("dummy", None)
   private val jdbcConfig = JDBCConfig(
-    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCSSLConfig(ssl = true, None, None, None, None))
+    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCTLSConfig(tlsMode = Require, None, None, None, None))
   private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   private val strlen = 1024
 
