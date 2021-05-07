@@ -256,7 +256,6 @@ object Main extends App {
     "basicRead" -> demoCases.basicRead,
     "columnPushdown" -> demoCases.columnPushdown,
     "filterPushdown" -> demoCases.filterPushdown,
-    "filterPushdownDate" -> demoCases.filterPushdownDate,
     "writeAppendMode" -> demoCases.writeAppendMode,
     "writeOverwriteMode" -> demoCases.writeOverwriteMode,
     "writeErrorIfExistsMode" -> demoCases.writeErrorIfExistsMode,

@@ -8,21 +8,11 @@ Why is this connector desired instead of using a more generic JDBC connector? A 
 * Segmentation. We can use the way that Vertica segments data to inform our operations. 
 * Ability to use other technology as an intermediary for data transfer. This is necessary for maximizing performance of parallel loads.
 
-
-This connector is built as a JAR file to be sourced in your spark application. 
+This connector is built as a JAR file to be sourced in your spark application. This is accessible through [maven central](https://repo1.maven.org/maven2/com/vertica/spark/vertica-spark/) or you can build the JAR yourself with sbt assembly.
 
 The connector relies on a distributed filesystem, such as HDFS, to act as a bridge between Spark and Vertica. This is done to allow for maximum performance at high scale. 
 
 ![Overview](img/Overview.png?raw=true "")
-
-## Alpha Disclaimer
-
-This is an alpha version of this connector. Not ready for production use. The purpose of this alpha release is to gather feedback and iterate.  
-
-There is no current artifact release. You can build a jar with instructions in the [Contribution Guide](CONTRIBUTING.md).
-
-Once you have a JAR, you can use it as desired in your spark applications. If you are basing such an application on one of our SBT-based examples programs, make a lib/ directory in the project root, and put the JAR there.
-
 
 ## Getting Started
 
@@ -30,6 +20,8 @@ To get started with using the connector, we'll need to make sure all the prerequ
 - A Vertica installation
 - An HDFS cluster, for use as an intermediary between Spark and Vertica
 - A spark application, either running locally for quick testing, or running on a spark cluster.
+
+For an easier quick test of the connector using a dockerized environment, see [this guide for running our examples.](examples/README.md)
 
 ### Vertica 
 
