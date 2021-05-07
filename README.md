@@ -133,7 +133,7 @@ where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
 ## Additional guides
 
-For information on how to configure Kerberos and TLS with the connector, see the KerberosUserManual.md and TLSConfiguration.md files in the root of this repository.
+For information on how to configure Kerberos and TLS with the connector, see the [KerberosUserManual.md](https://github.com/vertica/spark-connector/blob/main/KerberosUserManual.md) and [TLSConfiguration.md](https://github.com/vertica/spark-connector/blob/main/TLSConfiguration.md) files in the root of this repository.
 
 ## Limitations
 
