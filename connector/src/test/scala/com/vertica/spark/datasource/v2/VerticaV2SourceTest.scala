@@ -24,7 +24,7 @@ import java.util
 
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCSSLConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
@@ -54,7 +54,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   val tablename: TableName = TableName("testtable", None)
   val jdbcConfig: JDBCConfig = JDBCConfig(
-    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCSSLConfig(ssl = true, None, None, None, None))
+    "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCTLSConfig(tlsMode = Disable, None, None, None, None))
   val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
   val readConfig: DistributedFilesystemReadConfig = DistributedFilesystemReadConfig(jdbcConfig = jdbcConfig,
     fileStoreConfig = fileStoreConfig,

@@ -1,6 +1,7 @@
-#How to run the examples
+# How to run the examples
 
-Make sure you have docker, docker-compose, and sbt installed.
+Make sure you have docker and sbt installed.
+Tested using docker 20.10.0, sbt 1.4.1
 
 Clone this repository:
 ```
@@ -10,7 +11,7 @@ git clone https://github.com/vertica/spark-connector.git
 From the project's root directory:
 ```
 cd docker
-docker-compose up -d
+docker compose up -d
 ```
 This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
