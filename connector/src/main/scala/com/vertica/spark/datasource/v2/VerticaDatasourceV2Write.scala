@@ -18,6 +18,7 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{LogProvider, WriteConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
+import com.vertica.spark.util.general.Utils
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
 
@@ -168,7 +169,8 @@ class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends
   * Initiates final stages of writing for a failed write of this partition.
   */
   override def abort(): Unit = {
-    writer.closeWrite()
+    // Ignore the error here because the error that caused the abort is more relevant
+    Utils.ignore(writer.closeWrite())
   }
 
 /**

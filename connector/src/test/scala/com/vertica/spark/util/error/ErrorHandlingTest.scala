@@ -14,6 +14,7 @@
 package com.vertica.spark.util.error
 
 import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError, JobAbortedError}
+import com.vertica.spark.util.general.Utils
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -168,8 +169,8 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   private def checkErrReturnsMessages(error: ConnectorError): Unit = {
-    assert(error.getFullContext.length > 0)
-    assert(error.getUserMessage.length > 0)
+    Utils.ignore(assert(error.getFullContext.length > 0))
+    Utils.ignore(assert(error.getUserMessage.length > 0))
   }
 
   it should "return full context and user message for static errors without exception" in {
