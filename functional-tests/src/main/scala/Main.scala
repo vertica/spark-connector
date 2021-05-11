@@ -18,10 +18,42 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
+import org.scalatest.{Args, DispatchReporter, TestSuite}
+import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
+import org.scalatest.tools.StandardOutReporter
 
 import scala.util.Try
 
+class VReporter extends org.scalatest.Reporter {
+  var testCount = 0
+  var succeededCount = 0
+  var errCount = 0
+
+  def apply(event: Event): Unit = {
+    event match {
+      case TestStarting(ordinal, suiteName, suiteId, suiteClassName, testName, testText, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        testCount += 1
+      case TestSucceeded(ordinal, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        println("TEST SUCCEEDED: " + testName)
+        succeededCount += 1
+      case TestFailed(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, analysis, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+        errCount += 1
+        println("TEST FAILED: " + testName)
+      case _ =>
+        println("UNEXPECTED TEST EVENT: " + event.toString)
+    }
+  }
+}
+
 object Main extends App {
+  def runSuite(suite: TestSuite): Unit = {
+    val reporter = new VReporter()
+    val result = suite.run(None, Args(reporter))
+    if(!result.succeeds()) {
+      throw new Exception("Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+    }
+  }
+
   val conf: Config = ConfigFactory.load()
   var readOpts = Map(
     "host" -> conf.getString("functional-tests.host"),
@@ -64,24 +96,24 @@ object Main extends App {
                               auth = auth,
                               tlsConfig = tlsConfig)
 
-  new JDBCTests(jdbcConfig).execute()
+  runSuite(new JDBCTests(jdbcConfig))
 
   val filename = conf.getString("functional-tests.filepath")
   val dirTestFilename = conf.getString("functional-tests.dirpath")
-  new HDFSTests(
+  runSuite(new HDFSTests(
     FileStoreConfig(filename),
     FileStoreConfig(dirTestFilename),
     jdbcConfig
-  ).execute()
+  ))
 
-  new CleanupUtilTests(
+  runSuite(new CleanupUtilTests(
     FileStoreConfig(filename)
-  ).execute()
+  ))
 
   val writeOpts = readOpts
-  new EndToEndTests(readOpts, writeOpts, jdbcConfig).execute()
+  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))
 
   if (args.length == 1 && args(0) == "Large") {
-    new LargeDataTests(readOpts, writeOpts, jdbcConfig).execute()
+    runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
   }
 }
