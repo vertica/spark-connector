@@ -169,6 +169,7 @@ class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends
   * Initiates final stages of writing for a failed write of this partition.
   */
   override def abort(): Unit = {
+    // Ignore the error here because the error that caused the abort is more relevant
     Utils.ignore(writer.closeWrite())
   }
 
