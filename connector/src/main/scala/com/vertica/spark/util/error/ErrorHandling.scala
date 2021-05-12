@@ -239,6 +239,18 @@ case class TLSModeParseError() extends ConnectorError {
   def getFullContext: String = "The 'tls_mode' param specified is invalid. " +
     "Please specify either 'disable', 'require', 'verify-ca' or 'verify-full'."
 }
+case class MissingAWSSecretAccessKeyVariable() extends ConnectorError {
+  override def getFullContext: String = "The 'AWS_ACCESS_KEY_ID' environment variable was specified, but variable 'AWS_SECRET_ACCESS_KEY' is not specified."
+}
+case class MissingAWSAccessKeyIdVariable() extends ConnectorError {
+  override def getFullContext: String = "The 'AWS_SECRET_ACCESS_KEY' environment variable was specified, but variable 'AWS_ACCESS_KEY_ID' is not specified."
+}
+case class MissingAWSSecretAccessKey() extends ConnectorError {
+  override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
+}
+case class MissingAWSAccessKeyId() extends ConnectorError {
+  override def getFullContext: String = "The 'aws_secret_access_key' param was specified, but 'aws_access_key_id' is not specified."
+}
 case class UnquotedSemiInColumns() extends ConnectorError {
   def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
 }

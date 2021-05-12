@@ -33,7 +33,7 @@ import org.scalatest.BeforeAndAfterAll
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
@@ -43,11 +43,16 @@ class HDFSTests(val fsCfg: FileStoreConfig, val dirTestCfg: FileStoreConfig, val
   private val schema = df.schema
   private val perms = "777"
 
+  val dirTestCfg = fsCfg.copy(address = fsCfg.address + "dirtest/")
   val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
+    jdbcLayer.configureSession(fsLayer) match {
+      case Right(_) => ()
+      case Left(err) => throw new Exception("HDFSTests: Failed to configure session for JDBC layer:\n" + err.getFullContext)
+    }
   }
 
   override def afterAll(): Unit = {

@@ -24,14 +24,21 @@ libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "10.0.1-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.0"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.1"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.1"
+/*
+excludeAll(
+         ExclusionRule("org.apache.hadoop")
+    ),
+    "org.apache.hadoop" % "hadoop-client" % "3.2.0"
+ */
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.4.0"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "2.7.2"
 
 /*
 assemblyMergeStrategy in assembly := {

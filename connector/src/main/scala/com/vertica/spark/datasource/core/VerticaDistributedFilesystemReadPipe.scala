@@ -200,8 +200,8 @@ class VerticaDistributedFilesystemReadPipe(
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
 
-      // Set Vertica to work with kerberos and HDFS
-      _ <- jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+      // Set Vertica to work with kerberos and HDFS/AWS
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       // Create unique directory for session
       perm = config.filePermissions

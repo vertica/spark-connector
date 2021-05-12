@@ -197,4 +197,31 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
 
   }
+
+  it should "get the AWS access key id and secret access key from environment variables" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case config: DistributedFilesystemWriteConfig =>
+        config.fileStoreConfig.awsAuth match {
+          case Some(auth) =>
+            assert(auth.accessKeyId == "test")
+            assert(auth.secretAccessKey == "foo")
+          case None => fail("Failed to get AWS Auth from the environment variables")
+        }
+    }
+  }
 }

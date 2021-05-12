@@ -27,7 +27,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{FileStoreConfig, LogProvider}
+import com.vertica.spark.config.{AWSAuth, FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
@@ -75,6 +75,7 @@ trait FileStoreLayerInterface {
   def fileExists(filename: String) : ConnectorResult[Boolean]
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
+  def getAWSAuth: Option[AWSAuth]
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
@@ -141,6 +142,9 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 }
 
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
+  private val S3_ACCESS_KEY: String = "fs.s3a.access.key"
+  private val S3_SECRET_KEY: String = "fs.s3a.secret.key"
+
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
@@ -153,6 +157,13 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       hdfsConfig.set(ParquetReadSupport.SPARK_ROW_REQUESTED_SCHEMA, schema.json)
       hdfsConfig.set(ParquetWriteSupport.SPARK_ROW_SCHEMA, schema.json)
       ParquetWriteSupport.setSchema(schema, hdfsConfig)
+    case None => ()
+  }
+  private val awsAuth = fileStoreConfig.awsAuth
+  awsAuth match {
+    case Some(auth) =>
+      hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId)
+      hdfsConfig.set(S3_SECRET_KEY, auth.secretAccessKey)
     case None => ()
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
@@ -385,6 +396,10 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
         Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
       }
     })
+  }
+
+  override def getAWSAuth: Option[AWSAuth] = {
+    this.fileStoreConfig.awsAuth
   }
 
   private def useFileSystem[T](filename: String,

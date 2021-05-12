@@ -78,11 +78,11 @@ trait JdbcLayerInterface {
   def rollback(): ConnectorResult[Unit]
 
   /**
-   * Configures the database to be able to communicate with filestore using kerberos
+   * Configures the database session
    *
    * @param fileStoreLayer Interface to a filestore that provides an impersonation token via getImpersonationToken
    */
-  def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit]
+  def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit]
 }
 
 object JdbcUtils {
@@ -282,7 +282,23 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       .left.map(_.context("rollback: JDBC Error while rolling back.")))
   }
 
-  def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+  def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    for {
+      _ <- this.configureKerberosToFilestore(fileStoreLayer)
+      _ <- this.configureAWSParameters(fileStoreLayer)
+    } yield ()
+  }
+
+  private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    fileStoreLayer.getAWSAuth match {
+      case Some(awsAuth) =>
+        val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId}:${awsAuth.secretAccessKey}'"
+        this.execute(sql)
+      case None => Right(())
+    }
+  }
+
+  private def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     SparkSession.getActiveSession match {
       case Some(session) =>
         logger.debug("Hadoop impersonation: found session")

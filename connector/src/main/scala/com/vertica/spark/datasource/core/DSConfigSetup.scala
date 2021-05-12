@@ -154,6 +154,21 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
+    (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+      case (None, None) =>
+        (config.get("aws_access_key_id"), config.get("aws_secret_access_key")) match {
+          case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+          case (None, None) => None.validNec
+          case (Some(_), None) => MissingAWSSecretAccessKey().invalidNec
+          case (None, Some(_)) => MissingAWSAccessKeyId().invalidNec
+        }
+      case (Some(_), None) => MissingAWSSecretAccessKeyVariable().invalidNec
+      case (None, Some(_)) => MissingAWSAccessKeyIdVariable().invalidNec
+    }
+  }
+
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("key_store_path").validNec
   }
@@ -260,17 +275,16 @@ object DSConfigSetupUtils {
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
-    DSConfigSetupUtils.getStagingFsUrl(config).map(
+    (DSConfigSetupUtils.getStagingFsUrl(config).map(
       address => {
         val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
         val uniqueSessionId = sessionId
 
         // Create unique directory for session
-        val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
-
-        FileStoreConfig(uniqueAddress)
+        address.stripSuffix(delimiter) + delimiter + uniqueSessionId
       }
-    )
+    ),
+    DSConfigSetupUtils.getAWSAuth(config)).mapN(FileStoreConfig)
   }
 
   def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {

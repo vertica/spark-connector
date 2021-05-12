@@ -14,7 +14,7 @@
 import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.config.{AWSAuth, BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
@@ -96,24 +96,31 @@ object Main extends App {
                               auth = auth,
                               tlsConfig = tlsConfig)
 
-  runSuite(new JDBCTests(jdbcConfig))
+  /*
+  (new JDBCTests(jdbcConfig)).execute()
 
   val filename = conf.getString("functional-tests.filepath")
-  val dirTestFilename = conf.getString("functional-tests.dirpath")
-  runSuite(new HDFSTests(
-    FileStoreConfig(filename),
-    FileStoreConfig(dirTestFilename),
-    jdbcConfig
-  ))
+  val awsAuth = for {
+    accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
+    secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
+  } yield AWSAuth(accessKeyId, secretAccessKey)
 
-  runSuite(new CleanupUtilTests(
-    FileStoreConfig(filename)
-  ))
+  val fileStoreConfig = FileStoreConfig(filename, awsAuth)
+  (new HDFSTests(
+    fileStoreConfig,
+    jdbcConfig
+  )).execute()
+
+  (new CleanupUtilTests(
+    fileStoreConfig
+  )).execute()
+
+   */
 
   val writeOpts = readOpts
-  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))
+  (new EndToEndTests(readOpts, writeOpts, jdbcConfig)).execute()
 
   if (args.length == 1 && args(0) == "Large") {
-    runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+    (new LargeDataTests(readOpts, writeOpts, jdbcConfig)).execute()
   }
 }
