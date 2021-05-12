@@ -19,7 +19,7 @@ import java.util.Collections
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.fs.{CommonConfigurationKeys, FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetOutputFormat, ParquetWriter}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport
@@ -162,6 +162,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key, "CORRECTED")
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_READ.key, "CORRECTED")
   hdfsConfig.setEnum(ParquetOutputFormat.JOB_SUMMARY_LEVEL, JobSummaryLevel.NONE)
+  hdfsConfig.set(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY, "000")
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
