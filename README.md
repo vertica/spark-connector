@@ -51,6 +51,8 @@ However you set up HDFS, Vertica needs to have a copy of the hadoop configuratio
 ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ```
 
+
+
 ## Connector Usage
 
 Using the connector in Spark is straightforward. It requires the data source name, an options map, and if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/2.2.0/api/java/index.html?org/apache/spark/sql/SaveMode.html).
@@ -80,6 +82,20 @@ df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts ).mod
 // Read it back from Vertica
 val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(opts).load()
 ```
+
+### Note on permissions
+
+The connector, using an intermediary file location between Spark and Vertica, may require both sides to have write access to the intermediary location used. 
+
+The default permission (configurable via the 'file_permissions' option) is '700', or access only for the given user. This is the default for security reasons, but will cause issues if your user running spark and database user are different.
+
+There are a few ways to solve this:
+- Change the file_permissions option to a suitable value. Warning: setting this to '777' means any user with filesystem access could read the data being transfered. Setting this to '770' could work if users on each side of the operation share a group.
+- Change the operation to use the same user for spark and the database
+- Use export HADOOP_USER_NAME=<vertica-db-name> to have spark's hadoop communication use the same user as the DB
+
+
+### Connector Options
 
 Below is a detailed list of connector options:
 
