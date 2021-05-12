@@ -51,8 +51,6 @@ However you set up HDFS, Vertica needs to have a copy of the hadoop configuratio
 ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ```
 
-
-
 ## Connector Usage
 
 Using the connector in Spark is straightforward. It requires the data source name, an options map, and if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/2.2.0/api/java/index.html?org/apache/spark/sql/SaveMode.html).

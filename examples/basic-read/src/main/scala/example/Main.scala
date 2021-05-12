@@ -27,7 +27,6 @@ object Main extends App {
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "password" -> conf.getString("functional-tests.password"),
-    "file_permissions" -> "777",
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
 
