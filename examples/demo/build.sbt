@@ -19,5 +19,7 @@ version := "1.0"
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
-libraryDependencies += "com.typesafe" % "config" % "1.4.1"
-libraryDependencies += "com.vertica.spark" % "vertica-spark" % "2.0.0-rc0"
+libraryDependencies ++= Seq(
+  "com.typesafe" % "config" % "1.4.1",
+  "com.vertica.spark" % "vertica-spark" % "2.0.0-rc0"
+)
