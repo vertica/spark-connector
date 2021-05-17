@@ -110,10 +110,15 @@ object Main extends App {
   (new JDBCTests(jdbcConfig)).execute()
 
   val filename = conf.getString("functional-tests.filepath")
-  val awsAuth = for {
-    accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
-    secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
-  } yield AWSAuth(accessKeyId, secretAccessKey)
+  val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+    case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey))
+    case (None, None) =>
+      for {
+        accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
+        secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
+      } yield AWSAuth(accessKeyId, secretAccessKey)
+    case _ => None
+  }
 
   val fileStoreConfig = FileStoreConfig(filename, AWSOptions(
     awsAuth, Try{conf.getString("functional-tests.aws_region")}.toOption))
