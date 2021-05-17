@@ -169,6 +169,10 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("aws_region").validNec
+  }
+
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("key_store_path").validNec
   }
@@ -284,7 +288,8 @@ object DSConfigSetupUtils {
         address.stripSuffix(delimiter) + delimiter + uniqueSessionId
       }
     ),
-    DSConfigSetupUtils.getAWSAuth(config)).mapN(FileStoreConfig)
+    (DSConfigSetupUtils.getAWSAuth(config),
+    DSConfigSetupUtils.getAWSRegion(config)).mapN(AWSOptions)).mapN(FileStoreConfig)
   }
 
   def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {

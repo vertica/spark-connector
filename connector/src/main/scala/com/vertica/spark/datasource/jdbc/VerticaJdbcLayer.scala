@@ -290,12 +290,21 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
-    fileStoreLayer.getAWSAuth match {
-      case Some(awsAuth) =>
-        val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId}:${awsAuth.secretAccessKey}'"
-        this.execute(sql)
-      case None => Right(())
-    }
+    val awsOptions = fileStoreLayer.getAWSOptions
+    for {
+      _ <- awsOptions.awsAuth match {
+        case Some (awsAuth) =>
+          val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId}:${awsAuth.secretAccessKey}'"
+          this.execute(sql)
+        case None => Right(())
+      }
+      _ <- awsOptions.awsRegion match {
+        case Some (awsRegion) =>
+          val sql = s"ALTER SESSION SET AWSRegion='$awsRegion'"
+          this.execute(sql)
+        case None => Right(())
+      }
+    } yield ()
   }
 
   private def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {

@@ -27,7 +27,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{AWSAuth, FileStoreConfig, LogProvider}
+import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
@@ -75,7 +75,7 @@ trait FileStoreLayerInterface {
   def fileExists(filename: String) : ConnectorResult[Boolean]
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
-  def getAWSAuth: Option[AWSAuth]
+  def getAWSOptions: AWSOptions
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
@@ -159,7 +159,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       ParquetWriteSupport.setSchema(schema, hdfsConfig)
     case None => ()
   }
-  private val awsAuth = fileStoreConfig.awsAuth
+  private val awsOptions = fileStoreConfig.awsOptions
+  private val awsAuth = awsOptions.awsAuth
   awsAuth match {
     case Some(auth) =>
       hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId)
@@ -398,8 +399,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     })
   }
 
-  override def getAWSAuth: Option[AWSAuth] = {
-    this.fileStoreConfig.awsAuth
+  override def getAWSOptions: AWSOptions = {
+    this.fileStoreConfig.awsOptions
   }
 
   private def useFileSystem[T](filename: String,

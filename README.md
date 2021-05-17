@@ -51,6 +51,18 @@ However you set up HDFS, Vertica needs to have a copy of the hadoop configuratio
 ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ```
 
+### AWS S3
+
+To use the connector with S3, you will need to add the `hadoop-aws` dependency to your project:
+```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.2.0"```
+
+You **must** also use Spark pre-built for **Apache Hadoop 3.2** and later.
+
+If you see this error:
+```java.lang.NoClassDefFoundError: org/apache/hadoop/fs/StreamCapabilities```
+it is like because you are not using Spark pre-built for Apache Hadoop 3.2 and hadoop-aws 3.2.0.
+
+
 ## Connector Usage
 
 Using the connector in Spark is straightforward. It requires the data source name, an options map, and if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/2.2.0/api/java/index.html?org/apache/spark/sql/SaveMode.html).
@@ -110,6 +122,11 @@ Below is a detailed list of connector options:
 | file_permissions                               | String                                             | Unix file permissions used for the intermediary filestore, can be in octal format (ie 750) or user-group-other (ie -rwxr--r--)                                                                                                                                                                                                                                                                                                                                                                                                                              | No                                                                 | 770                         |
 | max_file_size_export_mb                        | Int                                                | Vertica maximum export file size in MB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | No                                                                 | 4096                        |
 | max_row_group_size_export_mb                   | Int                                                | Vertica maximum row group file size in MB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | No                                                                 | 16                          |
+| aws_access_key_id                              | String                                             | The access key ID for S3. Specifying this option sets the access key ID at the session level. Alternatively, you can set the environment variable $AWS_ACCESS_KEY_ID.                                                                                                                                                                                                                                                                                                                                                                                          | No (Yes if aws_secret_access_key is specified)                     |                             |
+| aws_secret_access_key                          | String                                             | The secret access key for S3. Specifying this option sets the secret access key at the session level. Alternatively, you can set the environment variable $AWS_SECRET_ACCESS_KEY.                                                                                                                                                                                                                                                                                                                                                                              | No (Yes if aws_access_key_id is specified)                         |                             |
+| aws_region                                     | String                                             | The AWS region for S3. Specifying this option sets the secret access key at the session level.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | No                                                                 |                             |
+
+Note: If you are using the S3 properties, you must either specify both aws_access_key_id and aws_secret_access_key, or both the environment variables $AWS_ACCESS_KEY_ID and $AWS_SECRET_ACCESS_KEY. You cannot mix and match.
 
 ## Examples
 

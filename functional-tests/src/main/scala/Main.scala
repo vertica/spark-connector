@@ -65,6 +65,17 @@ object Main extends App {
     "trust_store_password" -> conf.getString("functional-tests.truststorepassword"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
+
+  if (Try{conf.getString("functional-tests.aws_access_key_id")}.isSuccess) {
+    readOpts = readOpts + ("aws_access_key_id" -> conf.getString("functional-tests.aws_access_key_id"))
+  }
+  if (Try{conf.getString("functional-tests.aws_secret_access_key")}.isSuccess) {
+    readOpts = readOpts + ("aws_secret_access_key" -> conf.getString("functional-tests.aws_secret_access_key"))
+  }
+  if (Try{conf.getString("functional-tests.aws_region")}.isSuccess) {
+    readOpts = readOpts + ("aws_region" -> conf.getString("functional-tests.aws_region"))
+  }
+
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
     readOpts = readOpts + (
         "password" -> conf.getString("functional-tests.password"),
@@ -96,7 +107,6 @@ object Main extends App {
                               auth = auth,
                               tlsConfig = tlsConfig)
 
-  /*
   (new JDBCTests(jdbcConfig)).execute()
 
   val filename = conf.getString("functional-tests.filepath")
@@ -105,7 +115,8 @@ object Main extends App {
     secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
   } yield AWSAuth(accessKeyId, secretAccessKey)
 
-  val fileStoreConfig = FileStoreConfig(filename, awsAuth)
+  val fileStoreConfig = FileStoreConfig(filename, AWSOptions(
+    awsAuth, Try{conf.getString("functional-tests.aws_region")}.toOption))
   (new HDFSTests(
     fileStoreConfig,
     jdbcConfig
@@ -114,8 +125,6 @@ object Main extends App {
   (new CleanupUtilTests(
     fileStoreConfig
   )).execute()
-
-   */
 
   val writeOpts = readOpts
   (new EndToEndTests(readOpts, writeOpts, jdbcConfig)).execute()

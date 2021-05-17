@@ -446,7 +446,11 @@ case class NoSparkSessionFound() extends ConnectorError {
   override def getFullContext: String = "Could not get spark session. " + invariantViolation
 }
 case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
-  private val message = "Error in communication with filestore. Check the 'staging_fs_url' parameter."
+  private val message = cause match {
+    case e: NoClassDefFoundError if e.getMessage.contains("StreamCapabilities") =>
+      "Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later."
+    case _ => "Error in communication with filestore. Check the 'staging_fs_url' parameter."
+  }
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)

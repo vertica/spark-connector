@@ -15,10 +15,12 @@ package com.vertica.spark.config
 
 case class AWSAuth(accessKeyId: String, secretAccessKey: String)
 
+case class AWSOptions(awsAuth: Option[AWSAuth], awsRegion: Option[String])
+
 /**
  * Represents configuration for a filestore used by the connector.
  *
  * There is not currently much user configuration for the filestore beyond the address to connect to.
  * @param address Address of the distributed filestore, ie HDFS, to connect to.
  */
-final case class FileStoreConfig(address: String, awsAuth: Option[AWSAuth])
+final case class FileStoreConfig(address: String, awsOptions: AWSOptions)
