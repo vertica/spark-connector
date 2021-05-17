@@ -216,11 +216,37 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
       case config: DistributedFilesystemWriteConfig =>
-        config.fileStoreConfig.awsAuth match {
+        config.fileStoreConfig.awsOptions.awsAuth match {
           case Some(auth) =>
             assert(auth.accessKeyId == "test")
             assert(auth.secretAccessKey == "foo")
           case None => fail("Failed to get AWS Auth from the environment variables")
+        }
+    }
+  }
+
+  it should "get the AWS region" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+      "aws_region" -> "us-east-1"
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case config: DistributedFilesystemWriteConfig =>
+        config.fileStoreConfig.awsOptions.awsRegion match {
+          case Some(region) => assert(region == "us-east-1")
+          case None => fail("Failed to get AWS region from the configuration")
         }
     }
   }
