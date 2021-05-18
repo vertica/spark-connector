@@ -75,4 +75,8 @@ assemblyExcludedJars in assembly := {
 
 fork in Test := true
 
-envVars in Test := Map("AWS_ACCESS_KEY_ID" -> "test", "AWS_SECRET_ACCESS_KEY" -> "foo")
+envVars in Test := Map(
+  "AWS_ACCESS_KEY_ID" -> "test",
+  "AWS_SECRET_ACCESS_KEY" -> "foo",
+  "AWS_DEFAULT_REGION" -> "us-west-1"
+)

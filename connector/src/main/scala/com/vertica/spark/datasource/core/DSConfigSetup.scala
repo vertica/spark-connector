@@ -170,7 +170,10 @@ object DSConfigSetupUtils {
   }
 
   def getAWSRegion(config: Map[String, String]): ValidationResult[Option[String]] = {
-    config.get("aws_region").validNec
+    sys.env.get("AWS_DEFAULT_REGION") match {
+      case Some(region) => Some(region).validNec
+      case None => config.get("aws_region").validNec
+    }
   }
 
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {

@@ -121,7 +121,10 @@ object Main extends App {
   }
 
   val fileStoreConfig = FileStoreConfig(filename, AWSOptions(
-    awsAuth, Try{conf.getString("functional-tests.aws_region")}.toOption))
+    awsAuth, sys.env.get("AWS_DEFAULT_REGION") match {
+      case Some(region) => Some(region)
+      case None => Try{conf.getString("functional-tests.aws_region")}.toOption
+    }))
   (new HDFSTests(
     fileStoreConfig,
     jdbcConfig
