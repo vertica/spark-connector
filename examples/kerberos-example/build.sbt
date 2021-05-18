@@ -19,8 +19,12 @@ version := "1.0"
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
-libraryDependencies += "com.typesafe" % "config" % "1.4.1"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.0"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.0"
+libraryDependencies ++= Seq(
+  "com.typesafe" % "config" % "1.4.1",
+  "org.apache.spark" %% "spark-core" % "3.0.0",
+  "org.apache.spark" %% "spark-sql" % "3.0.0",
+  "com.vertica.spark" % "vertica-spark" % "2.0.0-rc0"
+)
+
 
 unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")

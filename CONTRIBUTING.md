@@ -40,6 +40,7 @@ Git. You should also setup **vertica/spark-connector** as an "upstream" remote.
 git remote add upstream git@github.com:vertica/spark-connector.git
 git fetch upstream
 ```
+If you get a `git@github.com: Permission denied (publickey)` error, please follow [this guide](https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository) to set up an SSH key.
 
 ### Configure Git for the first time
 
@@ -73,6 +74,9 @@ sbt assembly
 Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-1.0.jar 
 
 ## Step 4: Set up an environment
+The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.][https://github.com/vertica/spark-connector/blob/main/examples/README.md]
+
+Alternatively, you may download the requirements below:
 
 ### Vertica 
 The first requirement for a test environment is [Installing Vertica](https://www.vertica.com/docs/10.0.x/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm?tocpath=Installing%20Vertica%7C_____0). Our integration tests run on a single-node Vertica server and that should be all that's required for development unless you are working on a feature specifically relating to multi-node functionality, or are testing performance.
