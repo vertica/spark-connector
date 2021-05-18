@@ -341,7 +341,12 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   override def createFile(filename: String): ConnectorResult[Unit] = {
     this.useFileSystem(filename, (fs, path) =>
       if (!fs.exists(path)) {
-        Try {fs.create(path); ()}.toEither.left.map(exception => CreateFileError(path, exception)
+        Try {
+          val stream = fs.create(path);
+          stream.write(0)
+          stream.close()
+          ()
+        }.toEither.left.map(exception => CreateFileError(path, exception)
           .context("Error creating HDFS file."))
       } else {
         Left(CreateFileAlreadyExistsError(filename))
