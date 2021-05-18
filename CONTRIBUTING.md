@@ -41,6 +41,7 @@ git remote add upstream git@github.com:vertica/spark-connector.git
 git fetch upstream
 ```
 If you get a `git@github.com: Permission denied (publickey)` error, please follow [this guide](https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository) to set up an SSH key.
+
 ### Configure Git for the first time
 
 Make sure git knows your [name](https://help.github.com/articles/setting-your-username-in-git/ "Set commit username in Git") and [email address](https://help.github.com/articles/setting-your-commit-email-address-in-git/ "Set commit email address in Git"):
@@ -258,9 +259,3 @@ Pull requests are usually reviewed within a few days. If there are comments to a
 That's it! Thank you for your code contribution!
 
 After your pull request is merged, you can safely delete your branch and pull the changes from the upstream repository.
-
-[]: https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository
-
-[]: https://github.com/vertica/spark-connector/blob/main/examples/README.md
-
-[https://github.com/vertica/spark-connector/blob/main/examples/README.md]: https://github.com/vertica/spark-connector/blob/main/examples/README.md
