@@ -24,4 +24,12 @@ docker exec docker_hdfs_1 /opt/hadoop/sbin/start-dfs.sh
 
 Run `docker exec -it docker_client_1 /bin/bash` to enter the sandbox client environment.
 
-Now just run `sbt "run [CASE]"` from the `/spark-connector/examples/demo` directory.
+Now change your working directory to one in `spark-connector/examples` 
+
+After changing your directory to a specific example (such as `spark-connector/examples/kerberos-example`), just enter `sbt run`
+
+If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run `sbt "run [CASE]"` to run the various cases.
+
+
+
+Once you're finished running the examples exit out of the interactive terminal by running `exit`. When you are done using the containers, make sure you are in the docker directory and run: `docker-compose down`. This will shut down and remove the containers safely.
