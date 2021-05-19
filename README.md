@@ -141,6 +141,8 @@ where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
 For information on how to configure Kerberos and TLS with the connector, see the [KerberosUserManual.md](https://github.com/vertica/spark-connector/blob/main/KerberosUserManual.md) and [TLSConfiguration.md](https://github.com/vertica/spark-connector/blob/main/TLSConfiguration.md) files in the root of this repository.
 
+For information on tuning performance, see [here in our performance-tests section.](performance-tests/README.md)
+
 ## Limitations
 
 The connector supports versions of Spark between 3.0 and 3.1.1.
