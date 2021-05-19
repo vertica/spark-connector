@@ -31,7 +31,7 @@ For an explanation of this, any given Vertica query may only reserve its total p
 There are some connector parameters that may affect the performance of a read from Vertica operation.
 
 num_partitions: Will set how many partitions are created, representing how many parallel executors will be reading data from the intermediate location at once. This should roughly correspond to the processing power / number of cores in the spark cluster.
-max_file_size_export_mb and max_row_group_size_export_mb: Represent configuration of the parquet files exported from Vertica to the intermediary location. These values default to where we find the best export performance lies. However, these can be tweaked dependending on details of the given clusters.
+max_file_size_export_mb and max_row_group_size_export_mb: Represent configuration of the parquet files exported from Vertica to the intermediary location. These values default to where we find the best export performance lies: 16MB Row Group Size and 2048MB file size. However, these can be tweaked dependending on details of the given clusters. 
 
 ## Tuning write performance
 
