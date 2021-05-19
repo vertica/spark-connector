@@ -178,7 +178,6 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(ExpectedRowDidNotExistError())
       checkErrReturnsMessages(DropTableError())
       checkErrReturnsMessages(InitialSetupPartitioningError())
-      checkErrReturnsMessages(FileListEmptyPartitioningError())
       checkErrReturnsMessages(InvalidPartition())
       checkErrReturnsMessages(DoneReading())
       checkErrReturnsMessages(UninitializedReadError())

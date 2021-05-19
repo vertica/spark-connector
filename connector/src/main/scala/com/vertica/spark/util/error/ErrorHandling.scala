@@ -109,10 +109,6 @@ case class InitialSetupPartitioningError() extends ConnectorError {
   def getFullContext: String = "Failure when retrieving partitioning information for operation.\n" + invariantViolation
   override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
-case class FileListEmptyPartitioningError() extends ConnectorError {
-  def getFullContext: String = "Failure when retrieving partitioning information for operation. " +
-    "The returned file list was empty, so valid partition info cannot be created."
-}
 case class InvalidPartition() extends ConnectorError {
   def getFullContext: String = "Input Partition was not valid for the given operation."
   override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
