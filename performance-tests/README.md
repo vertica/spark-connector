@@ -24,7 +24,7 @@ The connector's Vertica-to-Spark functionality relies on a query to export data 
 
 It is suggested that the resource pool used for the operation is given as much memory as possible, and has its "plannedconcurrency" value set to as low as possible. 
 
-For an explanation of this, any given Vertica in query may only reserve its total provided memory divided by the plannedconcurrency value. A more detailed explanation can be found [here.](https://www.vertica.com/blog/do-you-need-to-put-your-query-on-a-budgetba-p236830/) The plannedconcurrency value sets how many independent queries are expected to be run, and the connector only uses one query at a time. This query is then parallelized by Vertica.
+For an explanation of this, any given Vertica query may only reserve its total provided memory divided by the plannedconcurrency value. A more detailed explanation can be found [here.](https://www.vertica.com/blog/do-you-need-to-put-your-query-on-a-budgetba-p236830/) The plannedconcurrency value sets how many independent queries are expected to be run, and the connector only uses one query at a time. This query is then parallelized by Vertica.
 
 ### Connector Options
 
