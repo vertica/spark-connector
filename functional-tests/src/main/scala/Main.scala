@@ -52,7 +52,7 @@ object Main extends App {
     if(!result.succeeds()) {
       throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
-    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " + out of " + reporter.testCount + " tests passed.")
+    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
   }
 
   val conf: Config = ConfigFactory.load()
