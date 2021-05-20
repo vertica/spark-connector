@@ -20,6 +20,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.internal.SQLConf
@@ -29,7 +32,6 @@ import org.scalatest.BeforeAndAfterAll
 /**
  * Tests basic functionality of the VerticaHDFSLayer
  *
- * TODO: Update this with write functionality once we figure out how to add parquet footer to written files
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
@@ -77,6 +79,18 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
       case Right(_) => ()
       case Left(error) => fail(error.getFullContext)
     }
+  }
+
+  it should "Create dir with correct permissions" in {
+    val path = dirTestCfg.address
+    fsLayer.removeDir(path)
+    fsLayer.createDir(path, "777")
+
+    val p = new Path(path)
+    val fs = p.getFileSystem(new Configuration())
+
+    val perms = fs.getFileStatus(p).getPermission
+    assert(perms.equals(new FsPermission("777")))
   }
 
   it should "correctly read data from HDFS" in {
@@ -246,4 +260,6 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
       }
     }
   }
+
+
 }

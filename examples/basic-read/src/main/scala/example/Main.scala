@@ -46,14 +46,6 @@ object Main extends App {
     val insert = "insert into " + tableName + " values(2)"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val jdbcDf = spark.read.format("jdbc")
-      .option("url", "jdbc:vertica://" + readOpts("host") + ":5433" + "/" + readOpts("db") + "?user="+
-      readOpts("user")+"&password="+readOpts("password"))
-      .option("dbtable", tableName)
-      .option("driver", "com.vertica.jdbc.Driver")
-      .load()
-    jdbcDf.rdd.foreach(x => println("JDBC VALUE: " + x))
-
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
 
     df.rdd.foreach(x => println("VALUE: " + x))

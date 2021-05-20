@@ -572,8 +572,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
-    val r = dfFiltered1.count
-    val r2 = dfFiltered2.count
 
     assert(!dfFiltered1
       .queryExecution
@@ -586,6 +584,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       .executedPlan
       .toString()
       .contains("Filter"))
+
+    val r = dfFiltered1.count
+    val r2 = dfFiltered2.count
 
     assert(r == n)
     assert(r2 == (n + 1))
