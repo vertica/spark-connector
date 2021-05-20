@@ -210,6 +210,9 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(MissingAWSAccessKeyIdVariable())
       checkErrReturnsMessages(MissingAWSSecretAccessKey())
       checkErrReturnsMessages(MissingAWSAccessKeyId())
+      checkErrReturnsMessages(MissingAWSSecretAccessKeySparkConfig())
+      checkErrReturnsMessages(MissingAWSAccessKeyIdSparkConfig())
+      checkErrReturnsMessages(LoadConfigMissingSparkSessionError())
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()

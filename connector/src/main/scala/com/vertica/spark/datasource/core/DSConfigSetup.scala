@@ -25,6 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.spark.sql.SparkSession
 
 
 /**
@@ -155,24 +156,36 @@ object DSConfigSetupUtils {
   }
 
   def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
-    (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+    (config.get("aws_access_key_id"), config.get("aws_secret_access_key")) match {
       case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
       case (None, None) =>
-        (config.get("aws_access_key_id"), config.get("aws_secret_access_key")) match {
-          case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
-          case (None, None) => None.validNec
-          case (Some(_), None) => MissingAWSSecretAccessKey().invalidNec
-          case (None, Some(_)) => MissingAWSAccessKeyId().invalidNec
+        SparkSession.getActiveSession match {
+          case Some(session) =>
+            val sparkConf = session.sparkContext.getConf
+            (Try(sparkConf.get("spark.hadoop.fs.s3a.access.key")).toOption,
+            Try(sparkConf.get("spark.hadoop.fs.s3a.secret.key")).toOption) match {
+              case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+              case (None, None) =>
+                (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+                  case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+                  case (None, None) => None.validNec
+                  case (Some(_), None) => MissingAWSSecretAccessKeyVariable().invalidNec
+                  case (None, Some(_)) => MissingAWSAccessKeyIdVariable().invalidNec
+                }
+              case (Some(_), None) => MissingAWSSecretAccessKeySparkConfig().invalidNec
+              case (None, Some(_)) => MissingAWSAccessKeyIdSparkConfig().invalidNec
+            }
+          case None => LoadConfigMissingSparkSessionError().invalidNec
         }
-      case (Some(_), None) => MissingAWSSecretAccessKeyVariable().invalidNec
-      case (None, Some(_)) => MissingAWSAccessKeyIdVariable().invalidNec
+      case (Some(_), None) => MissingAWSSecretAccessKey().invalidNec
+      case (None, Some(_)) => MissingAWSAccessKeyId().invalidNec
     }
   }
 
   def getAWSRegion(config: Map[String, String]): ValidationResult[Option[String]] = {
-    sys.env.get("AWS_DEFAULT_REGION") match {
+    config.get("aws_region") match {
       case Some(region) => Some(region).validNec
-      case None => config.get("aws_region").validNec
+      case None => sys.env.get("AWS_DEFAULT_REGION").validNec
     }
   }
 

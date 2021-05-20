@@ -21,6 +21,7 @@ import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 
 class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
@@ -75,130 +76,253 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
 
   it should "parse a valid read config" in {
-    val opts = Map("host" -> "1.1.1.1",
-                   "port" -> "1234",
-                   "db" -> "testdb",
-                   "user" -> "user",
-                   "password" -> "password",
-                   "table" -> "tbl",
-                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-    )
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-    // Set mock pipe
-    val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-    (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    try {
+      val opts = Map("host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
 
-    val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+      // Set mock pipe
+      val mockPipe = mock[DummyReadPipe]
+      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    parseCorrectInitConfig(opts, dsReadConfigSetup) match {
-      case config: DistributedFilesystemReadConfig =>
-        assert(config.jdbcConfig.host == "1.1.1.1")
-        assert(config.jdbcConfig.port == 1234)
-        assert(config.jdbcConfig.db == "testdb")
-        assert(config.tableSource.asInstanceOf[TableName].getFullTableName == "\"tbl\"")
-        config.metadata match {
-          case Some(metadata) => assert(metadata.schema == new StructType())
-          case None => fail
-        }
+      val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsReadConfigSetup) match {
+        case config: DistributedFilesystemReadConfig =>
+          assert(config.jdbcConfig.host == "1.1.1.1")
+          assert(config.jdbcConfig.port == 1234)
+          assert(config.jdbcConfig.db == "testdb")
+          assert(config.tableSource.asInstanceOf[TableName].getFullTableName == "\"tbl\"")
+          config.metadata match {
+            case Some(metadata) => assert(metadata.schema == new StructType())
+            case None => fail
+          }
+      }
+    } finally {
+      spark.close()
     }
   }
 
   it should "Return several parsing errors on read" in {
-    // Should be one error from the jdbc parser for the port and one for the missing log level
-    val opts = Map("host" -> "1.1.1.1",
-                   "db" -> "testdb",
-                   "port" -> "asdf",
-                   "user" -> "user",
-                   "password" -> "password",
-                   "table" -> "tbl",
-                   "staging_fs_url" -> "hdfs://test:8020/tmp/test",
-                   "num_partitions" -> "foo"
-    )
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-    val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+    try {
+      // Should be one error from the jdbc parser for the port and one for the missing log level
+      val opts = Map("host" -> "1.1.1.1",
+        "db" -> "testdb",
+        "port" -> "asdf",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+        "num_partitions" -> "foo"
+      )
 
-    val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
-    assert(errSeq.size == 2)
-    assert(errSeq.contains(InvalidPortError()))
-    assert(errSeq.contains(InvalidPartitionCountError()))
+      val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+
+      val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
+      assert(errSeq.size == 2)
+      assert(errSeq.contains(InvalidPortError()))
+      assert(errSeq.contains(InvalidPartitionCountError()))
+    } finally {
+      spark.close()
+    }
   }
 
   it should "Return error when there's a problem retrieving metadata" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-    val opts = Map("host" -> "1.1.1.1",
-                   "port" -> "1234",
-                   "db" -> "testdb",
-                   "user" -> "user",
-                   "password" -> "password",
-                   "table" -> "tbl",
-                   "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-    )
+    try {
+      val opts = Map("host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
 
-    // Set mock pipe
-    val mockPipe = mock[DummyReadPipe]
-    (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-    (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      // Set mock pipe
+      val mockPipe = mock[DummyReadPipe]
+      (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
 
-    val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+      val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
-    val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
-    assert(errSeq.size == 1)
-    assert(errSeq.map(_.getError).contains(SchemaDiscoveryError()))
+      val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
+      assert(errSeq.size == 1)
+      assert(errSeq.map(_.getError).contains(SchemaDiscoveryError()))
+    } finally {
+      spark.close()
+    }
   }
 
   it should "parse a valid write config" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-    )
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-    // Set mock pipe
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
 
-    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
 
-    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
-      case config: DistributedFilesystemWriteConfig =>
-        assert(config.jdbcConfig.host == "1.1.1.1")
-        assert(config.jdbcConfig.port == 1234)
-        assert(config.jdbcConfig.db == "testdb")
-        assert(config.tablename.getFullTableName == "\"tbl\"")
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case config: DistributedFilesystemWriteConfig =>
+          assert(config.jdbcConfig.host == "1.1.1.1")
+          assert(config.jdbcConfig.port == 1234)
+          assert(config.jdbcConfig.db == "testdb")
+          assert(config.tablename.getFullTableName == "\"tbl\"")
+      }
+    } finally {
+      spark.close()
     }
   }
 
   it should "Return several parsing errors on write" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "db" -> "testdb",
-      "port" -> "asdf",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "failed_rows_percent_tolerance" -> "2.00",
-      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-    )
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-    // Set mock pipe
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "db" -> "testdb",
+        "port" -> "asdf",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "failed_rows_percent_tolerance" -> "2.00",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
 
-    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
 
-    val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
-    assert(errSeq.size == 2)
-    assert(errSeq.map(_.getError).contains(InvalidPortError()))
-    assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
 
+      val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
+      assert(errSeq.size == 2)
+      assert(errSeq.map(_.getError).contains(InvalidPortError()))
+      assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
+    } finally {
+      spark.close()
+    }
   }
 
   it should "get the AWS access key id, secret access key, and region from environment variables" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case config: DistributedFilesystemWriteConfig =>
+          val awsOptions = config.fileStoreConfig.awsOptions
+          awsOptions.awsAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId == "test")
+              assert(auth.secretAccessKey == "foo")
+              awsOptions.awsRegion match {
+                case Some(region) => assert(region == "us-west-1")
+                case None => fail("Failed to get AWS region from the environment variables")
+              }
+            case None => fail("Failed to get AWS Auth from the environment variables")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "get the AWS access key id, secret access key from Spark configuration" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("spark.hadoop.fs.s3a.access.key", "moo")
+      .config("spark.hadoop.fs.s3a.secret.key", "cow")
+      .getOrCreate()
+
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case config: DistributedFilesystemWriteConfig =>
+          val awsOptions = config.fileStoreConfig.awsOptions
+          awsOptions.awsAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId == "moo")
+              assert(auth.secretAccessKey == "cow")
+            case None => fail("Failed to get AWS Auth from the environment variables")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "get the AWS access key id, secret access key, and region from the connector options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
       "port" -> "1234",
@@ -206,7 +330,10 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       "user" -> "user",
       "password" -> "password",
       "table" -> "tbl",
-      "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+      "aws_access_key_id" -> "meow",
+      "aws_secret_access_key" -> "woof",
+      "aws_region" -> "us-east-1"
     )
 
     // Set mock pipe
@@ -219,13 +346,13 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         val awsOptions = config.fileStoreConfig.awsOptions
         awsOptions.awsAuth match {
           case Some(auth) =>
-            assert(auth.accessKeyId == "test")
-            assert(auth.secretAccessKey == "foo")
+            assert(auth.accessKeyId == "meow")
+            assert(auth.secretAccessKey == "woof")
             awsOptions.awsRegion match {
-              case Some(region) => assert(region == "us-west-1")
-              case None => fail("Failed to get AWS region from the environment variables")
+              case Some(region) => assert(region == "us-east-1")
+              case None => fail("Failed to get AWS region from the connector options")
             }
-          case None => fail("Failed to get AWS Auth from the environment variables")
+          case None => fail("Failed to get AWS Auth from the connector options")
         }
     }
   }

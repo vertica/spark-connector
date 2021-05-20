@@ -245,6 +245,12 @@ case class MissingAWSSecretAccessKeyVariable() extends ConnectorError {
 case class MissingAWSAccessKeyIdVariable() extends ConnectorError {
   override def getFullContext: String = "The 'AWS_SECRET_ACCESS_KEY' environment variable was specified, but variable 'AWS_ACCESS_KEY_ID' is not specified."
 }
+case class MissingAWSSecretAccessKeySparkConfig() extends ConnectorError {
+  override def getFullContext: String = "The 'spark.hadoop.fs.s3a.access.key' Spark configuration option was specified, but option 'spark.hadoop.fs.s3a.secret.key' is not specified."
+}
+case class MissingAWSAccessKeyIdSparkConfig() extends ConnectorError {
+  override def getFullContext: String = "The 'spark.hadoop.fs.s3a.secret.key' Spark configuration option was specified, but option 'spark.hadoop.fs.s3a.access.key' is not specified."
+}
 case class MissingAWSSecretAccessKey() extends ConnectorError {
   override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
 }
@@ -454,4 +460,10 @@ case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
+case class MissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: spark context did not exist"
+}
+case class LoadConfigMissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
 }
