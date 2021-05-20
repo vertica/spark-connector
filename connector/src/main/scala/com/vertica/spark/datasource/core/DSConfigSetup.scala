@@ -25,6 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.spark.sql.SparkSession
 
 
 /**
@@ -154,6 +155,40 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
+    (config.get("aws_access_key_id"), config.get("aws_secret_access_key")) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+      case (None, None) =>
+        SparkSession.getActiveSession match {
+          case Some(session) =>
+            val sparkConf = session.sparkContext.getConf
+            (Try(sparkConf.get("spark.hadoop.fs.s3a.access.key")).toOption,
+            Try(sparkConf.get("spark.hadoop.fs.s3a.secret.key")).toOption) match {
+              case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+              case (None, None) =>
+                (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+                  case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+                  case (None, None) => None.validNec
+                  case (Some(_), None) => MissingAWSSecretAccessKeyVariable().invalidNec
+                  case (None, Some(_)) => MissingAWSAccessKeyIdVariable().invalidNec
+                }
+              case (Some(_), None) => MissingAWSSecretAccessKeySparkConfig().invalidNec
+              case (None, Some(_)) => MissingAWSAccessKeyIdSparkConfig().invalidNec
+            }
+          case None => LoadConfigMissingSparkSessionError().invalidNec
+        }
+      case (Some(_), None) => MissingAWSSecretAccessKey().invalidNec
+      case (None, Some(_)) => MissingAWSAccessKeyId().invalidNec
+    }
+  }
+
+  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("aws_region") match {
+      case Some(region) => Some(region).validNec
+      case None => sys.env.get("AWS_DEFAULT_REGION").validNec
+    }
+  }
+
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("key_store_path").validNec
   }
@@ -260,17 +295,17 @@ object DSConfigSetupUtils {
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
-    DSConfigSetupUtils.getStagingFsUrl(config).map(
+    (DSConfigSetupUtils.getStagingFsUrl(config).map(
       address => {
         val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
         val uniqueSessionId = sessionId
 
         // Create unique directory for session
-        val uniqueAddress = address.stripSuffix(delimiter) + delimiter + uniqueSessionId
-
-        FileStoreConfig(uniqueAddress)
+        address.stripSuffix(delimiter) + delimiter + uniqueSessionId
       }
-    )
+    ),
+    (DSConfigSetupUtils.getAWSAuth(config),
+    DSConfigSetupUtils.getAWSRegion(config)).mapN(AWSOptions)).mapN(FileStoreConfig)
   }
 
   def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {

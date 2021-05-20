@@ -36,6 +36,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
+    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .getOrCreate()
 
   override def afterAll(): Unit = {

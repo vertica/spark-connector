@@ -11,16 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.config
+package com.vertica.spark.common
 
-case class AWSAuth(accessKeyId: String, secretAccessKey: String)
+import com.vertica.spark.config.{AWSOptions, FileStoreConfig}
 
-case class AWSOptions(awsAuth: Option[AWSAuth], awsRegion: Option[String])
-
-/**
- * Represents configuration for a filestore used by the connector.
- *
- * There is not currently much user configuration for the filestore beyond the address to connect to.
- * @param address Address of the distributed filestore, ie HDFS, to connect to.
- */
-final case class FileStoreConfig(address: String, awsOptions: AWSOptions)
+object TestObjects {
+  val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", AWSOptions(None, None))
+}
