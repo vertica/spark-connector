@@ -61,6 +61,18 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read nothing from empty table" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.count() == 0)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
   it should "read data from Vertica using query option" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement

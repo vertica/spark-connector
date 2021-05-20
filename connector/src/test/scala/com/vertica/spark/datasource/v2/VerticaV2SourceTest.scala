@@ -29,7 +29,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, FileListEmptyPartitioningError, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
@@ -216,13 +216,13 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "throw error on input partitions" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.performInitialSetup _).expects(readConfig).returning(Left(FileListEmptyPartitioningError()))
+    (readSetup.performInitialSetup _).expects(readConfig).returning(Left(InitialSetupPartitioningError()))
 
     val scan = new VerticaScan(readConfig, readSetup)
 
     Try { scan.planInputPartitions() } match {
       case Success(_) => fail
-      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[FileListEmptyPartitioningError]
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[InitialSetupPartitioningError]
     }
   }
 
@@ -240,7 +240,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "scan return error on partitions" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.performInitialSetup _).expects(readConfig).returning(Left(FileListEmptyPartitioningError()))
+    (readSetup.performInitialSetup _).expects(readConfig).returning(Left(InitialSetupPartitioningError()))
 
     val scan = new VerticaScan(readConfig, readSetup)
 
@@ -249,7 +249,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     } match {
       case Success(_) => fail
       case Failure(e) => e.asInstanceOf[ConnectorException].error match {
-        case _ : FileListEmptyPartitioningError => ()
+        case _ : InitialSetupPartitioningError => ()
         case _ => fail(e)
       }
     }

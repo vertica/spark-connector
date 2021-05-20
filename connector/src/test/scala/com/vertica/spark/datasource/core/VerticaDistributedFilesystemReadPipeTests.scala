@@ -490,7 +490,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "Return an error when there are no files to create partitions from" in {
+  it should "Return empty partitions when data is empty" in {
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -511,13 +511,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
     val cleanupUtils = mock[CleanupUtilsInterface]
-    (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == FileListEmptyPartitioningError())
-      case Right(_) => fail
+      case Left(err) => fail(err.getFullContext)
+      case Right(partitionInfo) => assert(partitionInfo.partitionSeq.isEmpty)
     }
   }
 
