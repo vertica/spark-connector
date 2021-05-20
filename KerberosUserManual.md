@@ -16,7 +16,6 @@ On the client side:
 
 We will start with the service configuration. Click [here](#configuring-the-client) to go to the Client configuration guide. Note that the steps are meant to be followed in order.
 
-
 # Configuring the KDC
 
 Depending on whether you use Linux KDC or Active Directory as your KDC, you should follow one of the two following guides. In both guides, we assume that the Kerberos realm is example.com.
@@ -556,4 +555,3 @@ jaas_config_name="Client"
 Note: This is not a complete list. You will still need to pass in the host name, db, port, etc.
 
 If Kerberos is properly configured, then you'll be able to successfully read/write from/to Vertica without needing to provide a password.
-
