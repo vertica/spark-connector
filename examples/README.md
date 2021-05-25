@@ -30,6 +30,16 @@ After changing your directory to a specific example (such as `spark-connector/ex
 
 If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run `sbt "run [CASE]"` to run the various cases.
 
+Cases to choose from:
+- columnPushdown
+- filterPushdown
+- writeAppendMode
+- writeOverwriteMode
+- writeErrorIfExistsMode
+- writeIgnoreMode
+- writeCustomStatement
+- writeCustomCopyList
 
+To only see the example output without sbt logs, you can write the result to a file using `sbt "run [CASE]" > output.txt `. You may then view this file using the command `cat output.txt`.
 
 Once you're finished running the examples exit out of the interactive terminal by running `exit`. When you are done using the containers, make sure you are in the docker directory and run: `docker-compose down`. This will shut down and remove the containers safely.
