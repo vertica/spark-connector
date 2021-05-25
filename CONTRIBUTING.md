@@ -258,9 +258,3 @@ Pull requests are usually reviewed within a few days. If there are comments to a
 That's it! Thank you for your code contribution!
 
 After your pull request is merged, you can safely delete your branch and pull the changes from the upstream repository.
-
-[]: https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository
-
-[]: https://github.com/vertica/spark-connector/blob/main/examples/README.md
-
-[https://github.com/vertica/spark-connector/blob/main/examples/README.md]: https://github.com/vertica/spark-connector/blob/main/examples/README.md
