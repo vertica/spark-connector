@@ -64,7 +64,7 @@ class DemoCases(conf: Config) {
 
       //reads readtest into a dataframe
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-      //creates a new dataframe using only
+      //creates a new dataframe using only col b
       val dfCol = df.select("b")
 
       //only prints values of col b, since that's what we selected
