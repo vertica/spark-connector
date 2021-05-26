@@ -21,8 +21,8 @@ import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
-    //notice three new options related to kerberos authentication
-    //jaas_config_name defaults to verticajdbc if not specified
+    // Notice three new options related to kerberos authentication
+    // The option, jaas_config_name, defaults to verticajdbc if not specified
     val opts = Map(
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
