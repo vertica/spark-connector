@@ -72,3 +72,11 @@ assemblyExcludedJars in assembly := {
   cp.filter{_.data.getName.contains("spark")}
     .filter{_.data.getName.contains("hadoop")}
 }
+
+fork in Test := true
+
+envVars in Test := Map(
+  "AWS_ACCESS_KEY_ID" -> "test",
+  "AWS_SECRET_ACCESS_KEY" -> "foo",
+  "AWS_DEFAULT_REGION" -> "us-west-1"
+)

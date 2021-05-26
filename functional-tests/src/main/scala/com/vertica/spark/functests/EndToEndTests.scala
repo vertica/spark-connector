@@ -36,6 +36,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   private val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
+    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .getOrCreate()
 
   override def afterAll(): Unit = {
@@ -56,6 +58,18 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.count() == 1)
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read nothing from empty table" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    assert(df.count() == 0)
     TestUtils.dropTable(conn, tableName1)
   }
 
@@ -570,8 +584,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
-    val r = dfFiltered1.count
-    val r2 = dfFiltered2.count
 
     assert(!dfFiltered1
       .queryExecution
@@ -584,6 +596,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       .executedPlan
       .toString()
       .contains("Filter"))
+
+    val r = dfFiltered1.count
+    val r2 = dfFiltered2.count
 
     assert(r == n)
     assert(r2 == (n + 1))

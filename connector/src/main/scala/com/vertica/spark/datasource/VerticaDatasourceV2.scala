@@ -20,14 +20,10 @@ import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.expressions.Transform
 import java.util
 
-import com.vertica.spark.util.error.{ConnectorError, ConnectorException}
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, MissingSparkSessionError}
 import org.apache.spark.sql.SparkSession
 
 import collection.JavaConverters._
-
-case class MissingSparkSessionError() extends ConnectorError {
-  def getFullContext: String = "Fatal error: spark context did not exist"
-}
 
 /**
  * Entry-Point for Spark V2 Datasource.

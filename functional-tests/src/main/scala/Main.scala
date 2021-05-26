@@ -14,7 +14,7 @@
 import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.config.{AWSAuth, AWSOptions, BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
@@ -38,7 +38,7 @@ class VReporter extends org.scalatest.Reporter {
         succeededCount += 1
       case TestFailed(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, analysis, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
         errCount += 1
-        println("TEST FAILED: " + testName)
+        println("TEST FAILED: " + testName + "\n" + message)
       case _ =>
         println("UNEXPECTED TEST EVENT: " + event.toString)
     }
@@ -50,8 +50,9 @@ object Main extends App {
     val reporter = new VReporter()
     val result = suite.run(None, Args(reporter))
     if(!result.succeeds()) {
-      throw new Exception("Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+      throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
+    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
   }
 
   val conf: Config = ConfigFactory.load()
@@ -65,6 +66,17 @@ object Main extends App {
     "trust_store_password" -> conf.getString("functional-tests.truststorepassword"),
     "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
   )
+
+  if (Try{conf.getString("functional-tests.aws_access_key_id")}.isSuccess) {
+    readOpts = readOpts + ("aws_access_key_id" -> conf.getString("functional-tests.aws_access_key_id"))
+  }
+  if (Try{conf.getString("functional-tests.aws_secret_access_key")}.isSuccess) {
+    readOpts = readOpts + ("aws_secret_access_key" -> conf.getString("functional-tests.aws_secret_access_key"))
+  }
+  if (Try{conf.getString("functional-tests.aws_region")}.isSuccess) {
+    readOpts = readOpts + ("aws_region" -> conf.getString("functional-tests.aws_region"))
+  }
+
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
     readOpts = readOpts + (
         "password" -> conf.getString("functional-tests.password"),
@@ -99,15 +111,28 @@ object Main extends App {
   runSuite(new JDBCTests(jdbcConfig))
 
   val filename = conf.getString("functional-tests.filepath")
-  val dirTestFilename = conf.getString("functional-tests.dirpath")
+  val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+    case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey))
+    case (None, None) =>
+      for {
+        accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
+        secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
+      } yield AWSAuth(accessKeyId, secretAccessKey)
+    case _ => None
+  }
+
+  val fileStoreConfig = FileStoreConfig(filename, AWSOptions(
+    awsAuth, sys.env.get("AWS_DEFAULT_REGION") match {
+      case Some(region) => Some(region)
+      case None => Try{conf.getString("functional-tests.aws_region")}.toOption
+    }))
   runSuite(new HDFSTests(
-    FileStoreConfig(filename),
-    FileStoreConfig(dirTestFilename),
+    fileStoreConfig,
     jdbcConfig
   ))
 
   runSuite(new CleanupUtilTests(
-    FileStoreConfig(filename)
+    fileStoreConfig
   ))
 
   val writeOpts = readOpts

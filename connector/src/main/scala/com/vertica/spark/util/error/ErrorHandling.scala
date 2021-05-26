@@ -109,10 +109,6 @@ case class InitialSetupPartitioningError() extends ConnectorError {
   def getFullContext: String = "Failure when retrieving partitioning information for operation.\n" + invariantViolation
   override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
 }
-case class FileListEmptyPartitioningError() extends ConnectorError {
-  def getFullContext: String = "Failure when retrieving partitioning information for operation. " +
-    "The returned file list was empty, so valid partition info cannot be created."
-}
 case class InvalidPartition() extends ConnectorError {
   def getFullContext: String = "Input Partition was not valid for the given operation."
   override def getUserMessage: String = ErrorHandling.appendErrors(this.getFullContext, invariantViolation)
@@ -238,6 +234,24 @@ case class InvalidIntegerField(field: String) extends ConnectorError {
 case class TLSModeParseError() extends ConnectorError {
   def getFullContext: String = "The 'tls_mode' param specified is invalid. " +
     "Please specify either 'disable', 'require', 'verify-ca' or 'verify-full'."
+}
+case class MissingAWSSecretAccessKeyVariable() extends ConnectorError {
+  override def getFullContext: String = "The 'AWS_ACCESS_KEY_ID' environment variable was specified, but variable 'AWS_SECRET_ACCESS_KEY' is not specified."
+}
+case class MissingAWSAccessKeyIdVariable() extends ConnectorError {
+  override def getFullContext: String = "The 'AWS_SECRET_ACCESS_KEY' environment variable was specified, but variable 'AWS_ACCESS_KEY_ID' is not specified."
+}
+case class MissingAWSSecretAccessKeySparkConfig() extends ConnectorError {
+  override def getFullContext: String = "The 'spark.hadoop.fs.s3a.access.key' Spark configuration option was specified, but option 'spark.hadoop.fs.s3a.secret.key' is not specified."
+}
+case class MissingAWSAccessKeyIdSparkConfig() extends ConnectorError {
+  override def getFullContext: String = "The 'spark.hadoop.fs.s3a.secret.key' Spark configuration option was specified, but option 'spark.hadoop.fs.s3a.access.key' is not specified."
+}
+case class MissingAWSSecretAccessKey() extends ConnectorError {
+  override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
+}
+case class MissingAWSAccessKeyId() extends ConnectorError {
+  override def getFullContext: String = "The 'aws_secret_access_key' param was specified, but 'aws_access_key_id' is not specified."
 }
 case class UnquotedSemiInColumns() extends ConnectorError {
   def getFullContext: String = "Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability."
@@ -434,8 +448,18 @@ case class NoSparkSessionFound() extends ConnectorError {
   override def getFullContext: String = "Could not get spark session. " + invariantViolation
 }
 case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
-  private val message = "Error in communication with filestore. Check the 'staging_fs_url' parameter."
+  private val message = cause match {
+    case e: NoClassDefFoundError if e.getMessage.contains("StreamCapabilities") =>
+      "Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later."
+    case _ => "Error in communication with filestore. Check the 'staging_fs_url' parameter."
+  }
 
   def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
   override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
+case class MissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: spark context did not exist"
+}
+case class LoadConfigMissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
 }

@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
+import com.vertica.spark.common.TestObjects
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory
@@ -33,7 +34,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   private val tablename = TableName("dummy", None)
   private val jdbcConfig = JDBCConfig(
     "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCTLSConfig(tlsMode = Require, None, None, None, None))
-  private val fileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test")
+  private val fileStoreConfig = TestObjects.fileStoreConfig
   private val metadata = new MetadataBuilder().putString("name", "col1").build()
   private val size = 32
   private val scale = 32
@@ -62,7 +63,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
   private def mockJdbcLayer(expectedJdbcCommand: String, expectedJdbcParams: Seq[JdbcLayerParam] = Seq()): JdbcLayerInterface = {
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(expectedJdbcCommand, expectedJdbcParams).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
     jdbcLayer
@@ -157,7 +158,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/dummy', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 FROM \"dummy\";"
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(expectedJdbcCommand, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -176,7 +177,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mockFileStoreLayer(config)
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(fileStoreLayer).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(fileStoreLayer).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -195,7 +196,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mockFileStoreLayer(config, fileStoreConfig.address + "/" + query.identifier)
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     val expectedJdbcCommand = "EXPORT TO PARQUET(directory = 'hdfs://example-hdfs:8020/tmp/test/" + query.identifier +
       "', fileSizeMB = 512, rowGroupSizeMB = 64, fileMode = '777', dirMode = '777') AS SELECT col1 " +
       "FROM (SELECT * FROM t where n > 777) AS x;"
@@ -219,7 +220,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.fileExists _).expects(*).returning(Left(ParentDirMissingError("")))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.close _).expects().returning(Right(()))
 
     val cleanupUtils = mock[CleanupUtilsInterface]
@@ -241,7 +242,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Left(ConnectionError(new Exception())))
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -280,7 +281,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right())
 
@@ -328,7 +329,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right())
 
@@ -386,7 +387,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -433,7 +434,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -468,7 +469,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right(()))
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -489,7 +490,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  it should "Return an error when there are no files to create partitions from" in {
+  it should "Return empty partitions when data is empty" in {
     val config = makeReadConfig
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
@@ -501,7 +502,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.getFileList _).expects(*).returning(Right(exportedFiles))
 
     val jdbcLayer = mock[JdbcLayerInterface]
-    (jdbcLayer.configureKerberosToFilestore _).expects(*).returning(Right(()))
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
@@ -510,13 +511,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
     val cleanupUtils = mock[CleanupUtilsInterface]
-    (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == FileListEmptyPartitioningError())
-      case Right(_) => fail
+      case Left(err) => fail(err.getFullContext)
+      case Right(partitionInfo) => assert(partitionInfo.partitionSeq.isEmpty)
     }
   }
 

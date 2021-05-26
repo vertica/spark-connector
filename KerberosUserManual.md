@@ -50,6 +50,11 @@ In the /etc folder, create a file named krb5.conf with the following contents:
  .example.com = EXAMPLE.COM
  example.com = EXAMPLE.COM
 ```
+
+#### Note on ticket lifetimes and expiration
+
+Neither Vertica or the connector will automatically renew Kerberos tickets. You should make sure the ticket lifetime is greater than a given Spark operation will take to complete, or have your own mechanism for renewing such tickets.
+
 ### Create principals and keytabs
 
 Run the following commands:

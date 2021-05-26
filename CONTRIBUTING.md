@@ -41,6 +41,8 @@ git remote add upstream git@github.com:vertica/spark-connector.git
 git fetch upstream
 ```
 If you get a `git@github.com: Permission denied (publickey)` error, please follow [this guide](https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository) to set up an SSH key.
+
+
 ### Configure Git for the first time
 
 Make sure git knows your [name](https://help.github.com/articles/setting-your-username-in-git/ "Set commit username in Git") and [email address](https://help.github.com/articles/setting-your-commit-email-address-in-git/ "Set commit email address in Git"):

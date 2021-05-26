@@ -6,7 +6,8 @@ services:
       - "./..:/spark-connector"
     stdin_open: true
   vertica:
-    image: "glarik/vertica:10.0.0-RHEL7"
+    image: "verticadocker/vertica-k8s"
+    entrypoint: [ "bash", "-c", "/opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
     ports:
       - "5433:5433"
     volumes:

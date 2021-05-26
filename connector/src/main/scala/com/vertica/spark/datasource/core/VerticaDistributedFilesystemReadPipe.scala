@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -118,59 +119,70 @@ class VerticaDistributedFilesystemReadPipe(
     map(filename) - 1
   }
 
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], rowGroupRoom: Int): PartitionInfo = {
-    // Now, create partitions splitting up files roughly evenly
-    var i = 0
-    var partitions = List[VerticaDistributedFilesystemPartition]()
-    var curFileRanges = List[ParquetFileRange]()
-    val rangeCountMap = scala.collection.mutable.Map[String, Int]()
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
+    val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
-    logger.info("Creating partitions.")
-    for(m <- fileMetadata) {
-      val size = m.rowGroupCount
-      logger.debug("Splitting file " + m.filename + " with row group count " + size)
-      var j = 0
-      var low = 0
-      while(j < size){
-        if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
-          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
+    // If no data, return empty partition list
+    if(totalRowGroups == 0) {
+      PartitionInfo(Array[InputPartition]())
+    }
+    else {
+      val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+      val rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
 
-          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+      // Now, create partitions splitting up files roughly evenly
+      var i = 0
+      var partitions = List[VerticaDistributedFilesystemPartition]()
+      var curFileRanges = List[ParquetFileRange]()
+      val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
-          curFileRanges = curFileRanges :+ frange
-          val partition = VerticaDistributedFilesystemPartition(curFileRanges)
-          partitions = partitions :+ partition
-          curFileRanges = List[ParquetFileRange]()
-          logger.debug("Reached partition with file " + m.filename + " , range low: " +
-            low + " , range high: " + j + " , idx: " + rangeIdx)
-          i = 0
-          low = j + 1
+      logger.info("Creating partitions.")
+      for(m <- fileMetadata) {
+        val size = m.rowGroupCount
+        logger.debug("Splitting file " + m.filename + " with row group count " + size)
+        var j = 0
+        var low = 0
+        while(j < size){
+          if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
+            val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
+
+            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+
+            curFileRanges = curFileRanges :+ frange
+            val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+            partitions = partitions :+ partition
+            curFileRanges = List[ParquetFileRange]()
+            logger.debug("Reached partition with file " + m.filename + " , range low: " +
+              low + " , range high: " + j + " , idx: " + rangeIdx)
+            i = 0
+            low = j + 1
+          }
+          else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
+            val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
+            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+            curFileRanges = curFileRanges :+ frange
+            logger.debug("Reached end of file " + m.filename + " , range low: " +
+              low + " , range high: " + j + " , idx: " + rangeIdx)
+            i += 1
+          }
+          else {
+            i += 1
+          }
+          j += 1
         }
-        else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
-          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-          val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
-          curFileRanges = curFileRanges :+ frange
-          logger.debug("Reached end of file " + m.filename + " , range low: " +
-            low + " , range high: " + j + " , idx: " + rangeIdx)
-          i += 1
-        }
-        else {
-          i += 1
-        }
-        j += 1
       }
+
+      // Last partition if leftover (only partition not of rowGroupRoom size)
+      if(curFileRanges.nonEmpty) {
+        val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+        partitions = partitions :+ partition
+      }
+
+      // Add range count map info to partition
+      partitions = partitions.map(part => part.copy(rangeCountMap = Some(rangeCountMap.toMap)))
+
+      PartitionInfo(partitions.toArray)
     }
-
-    // Last partition if leftover (only partition not of rowGroupRoom size)
-    if(curFileRanges.nonEmpty) {
-      val partition = VerticaDistributedFilesystemPartition(curFileRanges)
-      partitions = partitions :+ partition
-    }
-
-    // Add range count map info to partition
-    partitions = partitions.map(part => part.copy(rangeCountMap = Some(rangeCountMap.toMap)))
-
-    PartitionInfo(partitions.toArray)
   }
 
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
@@ -200,8 +212,8 @@ class VerticaDistributedFilesystemReadPipe(
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
 
-      // Set Vertica to work with kerberos and HDFS
-      _ <- jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+      // Set Vertica to work with kerberos and HDFS/AWS
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       // Create unique directory for session
       perm = config.filePermissions
@@ -257,13 +269,9 @@ class VerticaDistributedFilesystemReadPipe(
       // Retrieve all parquet files created by Vertica
       fullFileList <- fileStoreLayer.getFileList(hdfsPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
-      requestedPartitionCount <- if (parquetFileList.isEmpty) {
-        Left(FileListEmptyPartitioningError())
-      } else {
-        config.partitionCount match {
-          case Some(count) => Right(count)
-          case None => Right(parquetFileList.size) // Default to 1 partition / file
-        }
+      requestedPartitionCount = config.partitionCount match {
+          case Some(count) => count
+          case None => parquetFileList.size // Default to 1 partition / file
       }
 
       _ = logger.info("Requested partition count: " + requestedPartitionCount)
@@ -281,11 +289,7 @@ class VerticaDistributedFilesystemReadPipe(
         requestedPartitionCount
       }
 
-      // Get room per partition for row groups in order to split the groups up evenly
-      extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-      rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
-
-      partitionInfo = getPartitionInfo(fileMetadata, rowGroupRoom)
+      partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
 
       _ <- jdbcLayer.close()
     } yield partitionInfo

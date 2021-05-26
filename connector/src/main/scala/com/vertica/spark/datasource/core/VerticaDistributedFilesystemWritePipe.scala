@@ -260,8 +260,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val tableNameMaxLength = 30
 
     val ret = for {
-      // Set Vertica to work with kerberos and HDFS
-      _ <- jdbcLayer.configureKerberosToFilestore(fileStoreLayer)
+      // Set Vertica to work with kerberos and HDFS/AWS
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
