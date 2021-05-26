@@ -50,8 +50,9 @@ object Main extends App {
     val reporter = new VReporter()
     val result = suite.run(None, Args(reporter))
     if(!result.succeeds()) {
-      throw new Exception("Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+      throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
+    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
   }
 
   val conf: Config = ConfigFactory.load()
@@ -107,7 +108,7 @@ object Main extends App {
                               auth = auth,
                               tlsConfig = tlsConfig)
 
-  (new JDBCTests(jdbcConfig)).execute()
+  runSuite(new JDBCTests(jdbcConfig))
 
   val filename = conf.getString("functional-tests.filepath")
   val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
@@ -125,19 +126,19 @@ object Main extends App {
       case Some(region) => Some(region)
       case None => Try{conf.getString("functional-tests.aws_region")}.toOption
     }))
-  (new HDFSTests(
+  runSuite(new HDFSTests(
     fileStoreConfig,
     jdbcConfig
-  )).execute()
+  ))
 
-  (new CleanupUtilTests(
+  runSuite(new CleanupUtilTests(
     fileStoreConfig
-  )).execute()
+  ))
 
   val writeOpts = readOpts
-  (new EndToEndTests(readOpts, writeOpts, jdbcConfig)).execute()
+  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))
 
   if (args.length == 1 && args(0) == "Large") {
-    (new LargeDataTests(readOpts, writeOpts, jdbcConfig)).execute()
+    runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
   }
 }
