@@ -71,7 +71,7 @@ case object VerifyFull extends TLSMode {
   */
 // scalastyle:off
 object DSConfigSetupUtils {
-  type ValidationResult[A] = ValidatedNec[ConnectorError, A]
+  type ValidationResult[+A] = ValidatedNec[ConnectorError, A]
 
   def getHost(config: Map[String, String]): ValidationResult[String] = {
     config.get("host") match {
@@ -157,17 +157,20 @@ object DSConfigSetupUtils {
 
   def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
     (config.get("aws_access_key_id"), config.get("aws_secret_access_key")) match {
-      case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+      case (Some(accessKeyId), Some(secretAccessKey)) => Some(
+        AWSAuth(AWSArg(ConnectorOption, accessKeyId), AWSArg(ConnectorOption, secretAccessKey))).validNec
       case (None, None) =>
         SparkSession.getActiveSession match {
           case Some(session) =>
             val sparkConf = session.sparkContext.getConf
             (Try(sparkConf.get("spark.hadoop.fs.s3a.access.key")).toOption,
             Try(sparkConf.get("spark.hadoop.fs.s3a.secret.key")).toOption) match {
-              case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+              case (Some(accessKeyId), Some(secretAccessKey)) => Some(
+                AWSAuth(AWSArg(SparkConf, accessKeyId), AWSArg(SparkConf, secretAccessKey))).validNec
               case (None, None) =>
                 (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
-                  case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey)).validNec
+                  case (Some(accessKeyId), Some(secretAccessKey)) => Some(
+                    AWSAuth(AWSArg(EnvVar, accessKeyId), AWSArg(EnvVar, secretAccessKey))).validNec
                   case (None, None) => None.validNec
                   case (Some(_), None) => MissingAWSSecretAccessKeyVariable().invalidNec
                   case (None, Some(_)) => MissingAWSAccessKeyIdVariable().invalidNec
@@ -182,11 +185,22 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[String]] = {
+  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
     config.get("aws_region") match {
-      case Some(region) => Some(region).validNec
-      case None => sys.env.get("AWS_DEFAULT_REGION").validNec
+      case Some(region) => Some(AWSArg(ConnectorOption, region)).validNec
+      case None => sys.env.get("AWS_DEFAULT_REGION").map(region => AWSArg(EnvVar, region)).validNec
     }
+  }
+
+  def getAWSSessionToken(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+    config.get("aws_session_token") match {
+      case Some(token) => Some(AWSArg(ConnectorOption, token)).validNec
+      case None => sys.env.get("AWS_SESSION_TOKEN").map(token => AWSArg(EnvVar, token)).validNec
+    }
+  }
+
+  def getAWSCredentialsProvider(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("aws_credentials_provider").validNec
   }
 
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
@@ -305,7 +319,9 @@ object DSConfigSetupUtils {
       }
     ),
     (DSConfigSetupUtils.getAWSAuth(config),
-    DSConfigSetupUtils.getAWSRegion(config)).mapN(AWSOptions)).mapN(FileStoreConfig)
+    DSConfigSetupUtils.getAWSRegion(config),
+    DSConfigSetupUtils.getAWSSessionToken(config),
+    DSConfigSetupUtils.getAWSCredentialsProvider(config)).mapN(AWSOptions)).mapN(FileStoreConfig)
   }
 
   def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {

@@ -293,16 +293,35 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     val awsOptions = fileStoreLayer.getAWSOptions
     for {
       _ <- awsOptions.awsAuth match {
-        case Some (awsAuth) =>
-          val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId}:${awsAuth.secretAccessKey}'"
+        case Some(awsAuth) =>
+          val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"
+          logger.info(s"Setting AWSAuth for session: ${awsAuth.accessKeyId}, ${awsAuth.secretAccessKey}")
           this.execute(sql)
-        case None => Right(())
+        case None =>
+          logger.info("Did not set AWSAuth")
+          Right(())
       }
       _ <- awsOptions.awsRegion match {
-        case Some (awsRegion) =>
-          val sql = s"ALTER SESSION SET AWSRegion='$awsRegion'"
+        case Some(awsRegion) =>
+          val sql = s"ALTER SESSION SET AWSRegion='${awsRegion.arg}'"
+          logger.info(s"Setting AWSRegion for session: $awsRegion")
           this.execute(sql)
-        case None => Right(())
+        case None =>
+          logger.info("Did not set AWSRegion")
+          Right(())
+      }
+      _ <- awsOptions.awsSessionToken match {
+        case Some(token) =>
+          val sql = s"ALTER SESSION SET AWSSessionToken='${token.arg}'"
+          logger.info(s"Setting AWSSessionToken for session: $token")
+          this.execute(sql)
+        case None =>
+          logger.info("Did not set AWSSessionToken")
+          Right(())
+      }
+      rs <- this.query("SHOW SESSION ALL;")
+      _ = while (rs.next()) {
+        logger.info(s"name: ${rs.getString(1)}, setting: ${rs.getString(2)}")
       }
     } yield ()
   }

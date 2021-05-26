@@ -144,7 +144,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
   private val S3_ACCESS_KEY: String = "fs.s3a.access.key"
   private val S3_SECRET_KEY: String = "fs.s3a.secret.key"
-
+  private val S3_SESSION_TOKEN: String = "fs.s3a.session.token"
+  private val AWS_CREDENTIALS_PROVIDER: String = "fs.s3a.aws.credentials.provider"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
@@ -161,11 +162,27 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   }
   private val awsOptions = fileStoreConfig.awsOptions
   private val awsAuth = awsOptions.awsAuth
+
+  awsOptions.awsCredentialsProvider match {
+    case Some(provider) =>
+      hdfsConfig.set(AWS_CREDENTIALS_PROVIDER, provider)
+      logger.info(s"Setting $AWS_CREDENTIALS_PROVIDER: $provider")
+    case None => logger.info("Did not set AWS credentials provider for Hadoop config")
+  }
+
   awsAuth match {
     case Some(auth) =>
-      hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId)
-      hdfsConfig.set(S3_SECRET_KEY, auth.secretAccessKey)
-    case None => ()
+      hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId.arg)
+      logger.info(s"Setting $S3_ACCESS_KEY: ${auth.accessKeyId}")
+      hdfsConfig.set(S3_SECRET_KEY, auth.secretAccessKey.arg)
+      logger.info(s"Setting $S3_SECRET_KEY: ${auth.secretAccessKey}")
+    case None => logger.info("Did not set AWS auth for Hadoop config")
+  }
+  awsOptions.awsSessionToken match {
+    case Some(token) =>
+      hdfsConfig.set(S3_SESSION_TOKEN, token.arg)
+      logger.info(s"Setting $S3_SESSION_TOKEN: $token")
+    case None => logger.info("Did not set AWS session token for Hadoop config")
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")

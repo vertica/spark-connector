@@ -269,10 +269,14 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId == "test")
-              assert(auth.secretAccessKey == "foo")
+              assert(auth.accessKeyId.toString == "AWSArg(EnvVar, arg)")
+              assert(auth.accessKeyId.arg == "test")
+              assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, arg)")
+              assert(auth.secretAccessKey.arg == "foo")
               awsOptions.awsRegion match {
-                case Some(region) => assert(region == "us-west-1")
+                case Some(region) =>
+                  assert(region.toString == "AWSArg(EnvVar, arg)")
+                  assert(region.arg == "us-west-1")
                 case None => fail("Failed to get AWS region from the environment variables")
               }
             case None => fail("Failed to get AWS Auth from the environment variables")
@@ -312,8 +316,10 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId == "moo")
-              assert(auth.secretAccessKey == "cow")
+              assert(auth.accessKeyId.toString == "AWSArg(SparkConf, arg)")
+              assert(auth.accessKeyId.arg == "moo")
+              assert(auth.secretAccessKey.toString == "AWSArg(SparkConf, arg)")
+              assert(auth.secretAccessKey.arg == "cow")
             case None => fail("Failed to get AWS Auth from the environment variables")
           }
       }
@@ -322,7 +328,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get the AWS access key id, secret access key, and region from the connector options" in {
+  it should "get the AWS access key id, secret access key, region, and credentials provider from the connector options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
       "port" -> "1234",
@@ -333,7 +339,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       "staging_fs_url" -> "hdfs://test:8020/tmp/test",
       "aws_access_key_id" -> "meow",
       "aws_secret_access_key" -> "woof",
-      "aws_region" -> "us-east-1"
+      "aws_region" -> "us-east-1",
+      "aws_credentials_provider" -> "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider"
     )
 
     // Set mock pipe
@@ -346,10 +353,13 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         val awsOptions = config.fileStoreConfig.awsOptions
         awsOptions.awsAuth match {
           case Some(auth) =>
-            assert(auth.accessKeyId == "meow")
-            assert(auth.secretAccessKey == "woof")
+            assert(auth.accessKeyId.toString == "AWSArg(ConnectorOption, arg)")
+            assert(auth.accessKeyId.arg == "meow")
+            assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, arg)")
+            assert(auth.secretAccessKey.arg == "woof")
             awsOptions.awsRegion match {
-              case Some(region) => assert(region == "us-east-1")
+              case Some(region) => assert(region.toString == "AWSArg(ConnectorOption, arg)")
+              case Some(region) => assert(region.arg == "us-east-1")
               case None => fail("Failed to get AWS region from the connector options")
             }
           case None => fail("Failed to get AWS Auth from the connector options")
