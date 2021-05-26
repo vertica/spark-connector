@@ -21,7 +21,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
-    //configuration options for the connector
+    // Configuration options for the connector
     val readOpts = Map(
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
@@ -31,9 +31,9 @@ object Main {
       "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
     )
 
-    //Creates a JDBC connection to Vertica
+    // Creates a JDBC connection to Vertica
     val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
-    //Entry-point to all functionality in Spark
+    // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
@@ -43,14 +43,14 @@ object Main {
       val tableName = "dftest"
       val stmt = conn.createStatement
       val n = 20
-      //Creates a table called dftest with an integer attribute
+      // Creates a table called dftest with an integer attribute
       TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
       val insert = "insert into " + tableName + " values(2)"
-      //Inserts 20 rows of the value '2' into dftest
+      // Inserts 20 rows of the value '2' into dftest
       TestUtils.populateTableBySQL(stmt, insert, n)
-      //Read dftest into a dataframe
+      // Read dftest into a dataframe
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-      //and print each element (20 elements of '2')
+      // Print each element (20 elements of '2')
       df.rdd.foreach(x => println("VALUE: " + x))
     } finally {
       spark.close()
