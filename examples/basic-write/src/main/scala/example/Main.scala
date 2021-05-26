@@ -23,7 +23,7 @@ import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 object Main  {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
-    //configuration options for the connector
+    // Configuration options for the connector
     val writeOpts = Map(
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
@@ -32,7 +32,7 @@ object Main  {
       "password" -> conf.getString("functional-tests.password"),
       "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
     )
-    //Entry-point to all functionality in Spark
+    // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
@@ -40,16 +40,16 @@ object Main  {
 
     try {
       val tableName = "dftest"
-      //define schema of a table with a single integer attribute
+      // Define schema of a table with a single integer attribute
       val schema = new StructType(Array(StructField("col1", IntegerType)))
-      //create a row with element '77'
+      // Create a row with element '77'
       val data = Seq(Row(77))
-      //create a dataframe corresponding to the schema and data specified above
+      // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      //outputs dataframe schema
+      // Outputs dataframe schema
       println(df.toString())
       val mode = SaveMode.Overwrite
-      //write dataframe to Vertica
+      // Write dataframe to Vertica
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
 
     } finally {
