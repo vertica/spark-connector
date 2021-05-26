@@ -18,43 +18,46 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
-object Main extends App {
-  val conf: Config = ConfigFactory.load()
+object Main {
+  def main(args: Array[String]): Unit = {
+    val conf: Config = ConfigFactory.load()
+    // Notice three new options related to kerberos authentication
+    // The option, jaas_config_name, defaults to verticajdbc if not specified
+    val opts = Map(
+      "host" -> conf.getString("functional-tests.host"),
+      "user" -> conf.getString("functional-tests.user"),
+      "db" -> conf.getString("functional-tests.db"),
+      "staging_fs_url" -> conf.getString("functional-tests.filepath"),
+      "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
+      "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
+      "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name"),
+      "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+    )
 
-  val opts = Map(
-    "host" -> conf.getString("functional-tests.host"),
-    "user" -> conf.getString("functional-tests.user"),
-    "db" -> conf.getString("functional-tests.db"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
-    "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
-    "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
-  )
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
 
-  val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .getOrCreate()
+    try {
+      val tableName = "test"
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
 
-  try {
-    val tableName = "test"
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
+      val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val mode = SaveMode.Overwrite
 
-    val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    val mode = SaveMode.Overwrite
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
+      println("KERBEROS DEMO, WROTE TABLE")
 
-    df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
-    println("KERBEROS DEMO, WROTE TABLE")
+      val dfRead: DataFrame = spark.read
+        .format("com.vertica.spark.datasource.VerticaSource")
+        .options(opts + ("table" -> tableName)).load()
 
-    val dfRead: DataFrame = spark.read
-      .format("com.vertica.spark.datasource.VerticaSource")
-      .options(opts + ("table" -> tableName)).load()
+      dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))
 
-    dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))
-
-  } finally {
-    spark.close()
+    } finally {
+      spark.close()
+    }
   }
 }

@@ -2,12 +2,12 @@ We appreciate the interest in contributing to the Vertica Spark Connector. This 
 
 There are a number of ways you can help:
 
- - [Bug Reports](#bug-reports)
- - [Feature Requests](#feature-requests)
- - [Code Contributions](#code-contributions)
- 
- 
- # Bug Reports
+- [Bug Reports](#bug-reports)
+- [Feature Requests](#feature-requests)
+- [Code Contributions](#code-contributions)
+
+
+# Bug Reports
 
 If you find a bug, submit an [issue](https://github.com/vertica/spark-connector/issues) with a complete and reproducible bug report. If the issue can't be reproduced, it will be closed. If you opened an issue, but figured out the answer later on your own, comment on the issue to let people know, then close the issue.
 
@@ -42,6 +42,7 @@ git fetch upstream
 ```
 If you get a `git@github.com: Permission denied (publickey)` error, please follow [this guide](https://stackoverflow.com/questions/58429764/git-could-not-read-from-remote-repository) to set up an SSH key.
 
+
 ### Configure Git for the first time
 
 Make sure git knows your [name](https://help.github.com/articles/setting-your-username-in-git/ "Set commit username in Git") and [email address](https://help.github.com/articles/setting-your-commit-email-address-in-git/ "Set commit email address in Git"):
@@ -71,14 +72,14 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-1.0.jar 
+Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-1.0.jar
 
 ## Step 4: Set up an environment
 The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.][https://github.com/vertica/spark-connector/blob/main/examples/README.md]
 
 Alternatively, you may download the requirements below:
 
-### Vertica 
+### Vertica
 The first requirement for a test environment is [Installing Vertica](https://www.vertica.com/docs/10.0.x/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm?tocpath=Installing%20Vertica%7C_____0). Our integration tests run on a single-node Vertica server and that should be all that's required for development unless you are working on a feature specifically relating to multi-node functionality, or are testing performance.
 
 ### Spark
@@ -104,9 +105,9 @@ docker build -t mdouchement/docker-hdfs .
 docker run -p 22022:22 -p 8020:8020 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -it mdouchement/hdfs
 ```
 
-The sudo copy step above copies the hadoop configuration to a location where Vertica can pick it up. If Vertica was on a different machine, the configuration files would have to be copied to that machine. 
+The sudo copy step above copies the hadoop configuration to a location where Vertica can pick it up. If Vertica was on a different machine, the configuration files would have to be copied to that machine.
 
-After spinning up the docker container, it will put you in a shell, where you can manage the hdfs filesystem with commands like 
+After spinning up the docker container, it will put you in a shell, where you can manage the hdfs filesystem with commands like
 
 ```shell
 hadoop fs -mkdir data
@@ -190,7 +191,7 @@ We have two suites of tests that you should care about when making changes to th
 
 #### Unit Tests
 
-For changes to the connector where they are possible and practical, unit tests should be included. The connector is composed of components with interfaces, so that a component can be tested with its dependencies mocked. See existing tests for many examples of this. 
+For changes to the connector where they are possible and practical, unit tests should be included. The connector is composed of components with interfaces, so that a component can be tested with its dependencies mocked. See existing tests for many examples of this.
 
 To see if tests are working, you may run:
 ```shell
@@ -209,7 +210,7 @@ This step will fail if the coverage level falls under the threshold.
 
 #### Integration Tests
 
-The functional-tests project is meant to run against a real environment. See "Set up an Environment" above. To configure the project to connect to an environment, enter the details in src/main/resources/application.conf 
+The functional-tests project is meant to run against a real environment. See "Set up an Environment" above. To configure the project to connect to an environment, enter the details in src/main/resources/application.conf
 
 This project contains a series of end-to-end tests. It also contains tests for components on the bottom layer of the connector, those that do some kind of IO directly, and thus don't make as much sense to unit test.
 
@@ -242,15 +243,15 @@ git push -f origin my-fix-branch
 When you think your work is ready to be pulled into the Spark Connector, you should create a pull request(PR) at GitHub.
 
 A good pull request means:
- - commits with one logical change in each
- - well-formed messages for each commit
- - documentation and tests, if needed
+- commits with one logical change in each
+- well-formed messages for each commit
+- documentation and tests, if needed
 
-Go to https://github.com/YOURUSERNAME/spark-connector and [make a Pull Request](https://help.github.com/articles/creating-a-pull-request/) to `vertica:main`. 
+Go to https://github.com/YOURUSERNAME/spark-connector and [make a Pull Request](https://help.github.com/articles/creating-a-pull-request/) to `vertica:main`.
 
 ### Sign the CLA
 
-Before we can accept a pull request, we first ask people to sign a Contributor License Agreement (or CLA). We ask this so that we know that contributors have the right to donate the code. You should notice a comment from **CLAassistant** on your pull request page, follow this comment to sign the CLA electronically. 
+Before we can accept a pull request, we first ask people to sign a Contributor License Agreement (or CLA). We ask this so that we know that contributors have the right to donate the code. You should notice a comment from **CLAassistant** on your pull request page, follow this comment to sign the CLA electronically.
 
 
 ### Review
