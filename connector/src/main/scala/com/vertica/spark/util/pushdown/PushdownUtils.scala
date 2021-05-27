@@ -1,36 +1,7 @@
-// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
-// Licensed under the Apache License, Version 2.0 (the "License");
-// You may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-package com.vertica.spark.datasource.core
+package com.vertica.spark.util.pushdown
 
 import com.vertica.spark.datasource.v2.{NonPushFilter, PushFilter}
-import org.apache.spark.sql.sources.{
-  And,
-  EqualTo,
-  Filter,
-  GreaterThan,
-  GreaterThanOrEqual,
-  In,
-  IsNotNull,
-  IsNull,
-  LessThan,
-  LessThanOrEqual,
-  Not,
-  Or,
-  StringContains,
-  StringEndsWith,
-  StringStartsWith
-}
+import org.apache.spark.sql.sources._
 
 /**
  * Utils class for translating Spark pushdown filters into Vertica-compatible SQL where clauses.
@@ -59,17 +30,17 @@ object PushdownUtils {
       case EqualTo(attribute, value) => Right(PushFilter(filter,
         "(" + "\"" + attribute + "\"" + " = " + wrapText(value) + ")"))
       case GreaterThan(attribute, value) => Right(PushFilter(filter,
-        "(" + "\"" + attribute + "\""  + " > " + wrapText(value) + ")"))
+        "(" + "\"" + attribute + "\"" + " > " + wrapText(value) + ")"))
       case GreaterThanOrEqual(attribute, value) => Right(PushFilter(filter,
         "(" + "\"" + attribute + "\"" + " >= " + wrapText(value) + ")"))
       case LessThan(attribute, value) => Right(PushFilter(filter,
-        "(" + "\"" + attribute + "\""  + " < " + wrapText(value) + ")"))
+        "(" + "\"" + attribute + "\"" + " < " + wrapText(value) + ")"))
       case LessThanOrEqual(attribute, value) => Right(PushFilter(filter,
-        "(" + "\"" + attribute + "\""  + " <= " + wrapText(value) + ")"))
-      case In(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\""  + " in " +
+        "(" + "\"" + attribute + "\"" + " <= " + wrapText(value) + ")"))
+      case In(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" + " in " +
         "(" + value.map(x => wrapText(x)).mkString(", ") + ")" + ")"))
-      case IsNull(attribute) => Right(PushFilter(filter, "(" + "\"" + attribute + "\""  + " is NULL" + ")"))
-      case IsNotNull(attribute) => Right(PushFilter(filter, "(" + "\"" + attribute + "\""  + " is NOT NULL" + ")"))
+      case IsNull(attribute) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" + " is NULL" + ")"))
+      case IsNotNull(attribute) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" + " is NOT NULL" + ")"))
       case And(left, right) => (for {
         pushFilterLeft <- genFilter(left)
         pushFilterRight <- genFilter(right)
@@ -84,11 +55,11 @@ object PushdownUtils {
         case Left(_) => Left(NonPushFilter(filter))
         case Right(pushFilter) => Right(PushFilter(filter, "(" + " NOT " + pushFilter.filterString + ")"))
       }
-      case StringStartsWith(attribute, value) => Right(PushFilter(filter, "(" +  "\"" + attribute + "\"" +
+      case StringStartsWith(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" +
         " like " + wrapText(value + "%") + ")"))
-      case StringEndsWith(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\""  +
+      case StringEndsWith(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" +
         " like " + wrapText("%" + value) + ")"))
-      case StringContains(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\""  +
+      case StringContains(attribute, value) => Right(PushFilter(filter, "(" + "\"" + attribute + "\"" +
         " like " + wrapText("%" + value + "%") + ")"))
       case _ => Left(NonPushFilter(filter))
     }
