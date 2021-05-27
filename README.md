@@ -54,13 +54,17 @@ ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ### AWS S3
 
 To use the connector with S3, you will need to add the `hadoop-aws` dependency to your project:
-```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.2.0"```
+```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"```
 
-You **must** also use Spark pre-built for **Apache Hadoop 3.2** and later.
+You **must** also use Spark pre-built with **user-provided Apache Hadoop**.
+
+You can [download Hadoop 3.3.0 here](https://hadoop.apache.org/releases.html).
+
+Follow [this guide to setup Spark with a user-provided Hadoop](http://spark.apache.org/docs/latest/hadoop-provided.html)
 
 If you see this error:
 ```java.lang.NoClassDefFoundError: org/apache/hadoop/fs/StreamCapabilities```
-it is like because you are not using Spark pre-built for Apache Hadoop 3.2 and hadoop-aws 3.2.0.
+it is like because you are not using Spark with Hadoop 3.3.0 and hadoop-aws 3.3.0.
 
 
 ## Connector Usage
@@ -139,6 +143,8 @@ Below is a detailed list of connector options that are used in the options map:
 | aws_access_key_id                              | String                                             | The access key ID for S3. Specifying this option sets the access key ID at the session level. Alternatively, you can set the spark.hadoop.fs.s3a.access.key option in the Spark configuration or the environment variable AWS_ACCESS_KEY_ID.                                                                                                                                                                                                                                                                                                                                                                 | No (Yes if aws_secret_access_key is specified)                     |                             |
 | aws_secret_access_key                          | String                                             | The secret access key for S3. Specifying this option sets the secret access key at the session level. Alternatively, you can set the spark.hadoop.fs.s3a.access.key option in the Spark configuration or the environment variable AWS_SECRET_ACCESS_KEY.                                                                                                                                                                                                                                                                                                                                                     | No (Yes if aws_access_key_id is specified)                         |                             |
 | aws_region                                     | String                                             | The AWS region for S3. Specifying this option sets the secret access key at the session level. Alternatively, you can set the environment variable AWS_DEFAULT_REGION.                                                                                                                                                                                                                                                                                                                                                                                                                                       | No                                                                 |                             |
+| aws_session_token                              | String                                             | An AWS session token. Specifying this option sets the session token at the session level. Alternatively, you can set the environment variable AWS_SESSION_TOKEN.                                                                                                                                                                                                                                                                                                                                                                                                                                       | No                                                                 |                             |
+| aws_credentials_provider                       | String                                             | The AWS credentials provider. Specifying this option sets the AWS credentials provider in the Hadoop configuration.                                                                                                                                                                                                                                                                                                                                                                                                                                       | No                                                                 |                             |
 
 Note: If you are using the S3 properties, you must specify both the access key ID and secret access key using the same mechanism.
 For example, you cannot specify the aws_access_key_id connector option and use the AWS_SECRET_ACCESS_KEY environment variable. You cannot mix and match.
