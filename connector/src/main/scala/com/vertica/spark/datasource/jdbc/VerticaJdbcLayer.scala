@@ -319,10 +319,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           logger.info("Did not set AWSSessionToken")
           Right(())
       }
-      rs <- this.query("SHOW SESSION ALL;")
-      _ = while (rs.next()) {
-        logger.info(s"name: ${rs.getString(1)}, setting: ${rs.getString(2)}")
-      }
     } yield ()
   }
 
