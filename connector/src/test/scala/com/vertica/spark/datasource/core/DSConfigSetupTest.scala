@@ -60,17 +60,13 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   def parseErrorInitConfig(opts : Map[String, String], dsReadConfigSetup: DSReadConfigSetup) : Seq[ConnectorError] = {
     dsReadConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(errList) => errList.toNonEmptyList.toList
-      case Valid(_) =>
-        fail
-        List[ConnectorError]()
+      case Valid(_) => fail("The config was valid.")
     }
   }
   def parseErrorInitConfig(opts : Map[String, String], dsWriteConfigSetup: DSWriteConfigSetup) : Seq[ConnectorError] = {
     dsWriteConfigSetup.validateAndGetConfig(opts) match {
       case Invalid(errList) => errList.toNonEmptyList.toList
-      case Valid(_) =>
-        fail
-        List[ConnectorError]()
+      case Valid(_) => fail("The config was valid.")
     }
   }
 
@@ -269,19 +265,19 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(EnvVar, arg)")
+              assert(auth.accessKeyId.toString == "AWSArg(EnvVar, *****)")
               assert(auth.accessKeyId.arg == "test")
-              assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, arg)")
+              assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, *****)")
               assert(auth.secretAccessKey.arg == "foo")
               awsOptions.awsSessionToken match {
                 case Some(token) =>
-                  assert(token.toString == "AWSArg(EnvVar, arg)")
+                  assert(token.toString == "AWSArg(EnvVar, *****)")
                   assert(token.arg == "testsessiontoken")
                 case None => fail("Failed to get AWS session token from the environment variables")
               }
               awsOptions.awsRegion match {
                 case Some(region) =>
-                  assert(region.toString == "AWSArg(EnvVar, arg)")
+                  assert(region.toString == "AWSArg(EnvVar, us-west-1)")
                   assert(region.arg == "us-west-1")
                 case None => fail("Failed to get AWS region from the environment variables")
               }
@@ -299,6 +295,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       .appName("Vertica Connector Test Prototype")
       .config("spark.hadoop.fs.s3a.access.key", "moo")
       .config("spark.hadoop.fs.s3a.secret.key", "cow")
+      .config("spark.hadoop.fs.s3a.session.token", "asessiontoken")
+      .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
       .getOrCreate()
 
     try {
@@ -322,11 +320,24 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(SparkConf, arg)")
+              assert(auth.accessKeyId.toString == "AWSArg(SparkConf, *****)")
               assert(auth.accessKeyId.arg == "moo")
-              assert(auth.secretAccessKey.toString == "AWSArg(SparkConf, arg)")
+              assert(auth.secretAccessKey.toString == "AWSArg(SparkConf, *****)")
               assert(auth.secretAccessKey.arg == "cow")
-            case None => fail("Failed to get AWS Auth from the environment variables")
+            case None => fail("Failed to get AWS Auth from the Spark configuration")
+          }
+          awsOptions.awsSessionToken match {
+            case Some(token) =>
+              assert(token.toString == "AWSArg(SparkConf, *****)")
+              assert(token.arg == "asessiontoken")
+            case None => fail("Failed to get AWS session token from the Spark configuration")
+          }
+          awsOptions.awsCredentialsProvider match {
+            case Some(credentialsProvider) =>
+              assert(credentialsProvider.toString ==
+                "AWSArg(SparkConf, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+              assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+            case None => fail("Failed to get AWS credentials provider from the Spark configuration")
           }
       }
     } finally {
@@ -360,28 +371,30 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         val awsOptions = config.fileStoreConfig.awsOptions
         awsOptions.awsAuth match {
           case Some(auth) =>
-            assert(auth.accessKeyId.toString == "AWSArg(ConnectorOption, arg)")
+            assert(auth.accessKeyId.toString == "AWSArg(ConnectorOption, *****)")
             assert(auth.accessKeyId.arg == "meow")
-            assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, arg)")
+            assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, *****)")
             assert(auth.secretAccessKey.arg == "woof")
             awsOptions.awsRegion match {
               case Some(region) =>
-                assert(region.toString == "AWSArg(ConnectorOption, arg)")
+                assert(region.toString == "AWSArg(ConnectorOption, us-east-1)")
                 assert(region.arg == "us-east-1")
               case None => fail("Failed to get AWS region from the connector options")
             }
             awsOptions.awsSessionToken match {
               case Some(token) =>
-                assert(token.toString == "AWSArg(ConnectorOption, arg)")
+                assert(token.toString == "AWSArg(ConnectorOption, *****)")
                 assert(token.arg == "mysessiontoken")
               case None => fail("Failed to get AWS session token from the connector options")
             }
             awsOptions.awsCredentialsProvider match {
               case Some(credentialsProvider) =>
-                assert(credentialsProvider == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+                assert(credentialsProvider.toString ==
+                  "AWSArg(ConnectorOption, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+                assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
               case None => fail("Failed to get AWS credentials provider from the connector options")
             }
-          case None => fail("Failed to get AWS Auth from the connector options")
+          case None => fail("Failed to get AWS credentials provider from the connector options")
         }
     }
   }

@@ -165,9 +165,10 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
   awsOptions.awsCredentialsProvider match {
     case Some(provider) =>
-      hdfsConfig.set(AWS_CREDENTIALS_PROVIDER, provider)
+      hdfsConfig.set(AWS_CREDENTIALS_PROVIDER, provider.arg)
       logger.info(s"Setting $AWS_CREDENTIALS_PROVIDER: $provider")
-    case None => logger.info("Did not set AWS credentials provider for Hadoop config")
+    case None =>
+      logger.info("Did not set AWS credentials provider for Hadoop config")
   }
 
   awsAuth match {
