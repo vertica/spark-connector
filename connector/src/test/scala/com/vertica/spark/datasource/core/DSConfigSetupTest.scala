@@ -242,7 +242,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get the AWS access key id, secret access key, and region from environment variables" in {
+  it should "get the AWS access key id, secret access key, session token, and region from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
@@ -273,6 +273,12 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
               assert(auth.accessKeyId.arg == "test")
               assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, arg)")
               assert(auth.secretAccessKey.arg == "foo")
+              awsOptions.awsSessionToken match {
+                case Some(token) =>
+                  assert(token.toString == "AWSArg(EnvVar, arg)")
+                  assert(token.arg == "testsessiontoken")
+                case None => fail("Failed to get AWS session token from the environment variables")
+              }
               awsOptions.awsRegion match {
                 case Some(region) =>
                   assert(region.toString == "AWSArg(EnvVar, arg)")
@@ -328,7 +334,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get the AWS access key id, secret access key, region, and credentials provider from the connector options" in {
+  it should "get the AWS parameters from the connector options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
       "port" -> "1234",
@@ -340,6 +346,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       "aws_access_key_id" -> "meow",
       "aws_secret_access_key" -> "woof",
       "aws_region" -> "us-east-1",
+      "aws_session_token" -> "mysessiontoken",
       "aws_credentials_provider" -> "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider"
     )
 
@@ -358,9 +365,21 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
             assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, arg)")
             assert(auth.secretAccessKey.arg == "woof")
             awsOptions.awsRegion match {
-              case Some(region) => assert(region.toString == "AWSArg(ConnectorOption, arg)")
-              case Some(region) => assert(region.arg == "us-east-1")
+              case Some(region) =>
+                assert(region.toString == "AWSArg(ConnectorOption, arg)")
+                assert(region.arg == "us-east-1")
               case None => fail("Failed to get AWS region from the connector options")
+            }
+            awsOptions.awsSessionToken match {
+              case Some(token) =>
+                assert(token.toString == "AWSArg(ConnectorOption, arg)")
+                assert(token.arg == "mysessiontoken")
+              case None => fail("Failed to get AWS session token from the connector options")
+            }
+            awsOptions.awsCredentialsProvider match {
+              case Some(credentialsProvider) =>
+                assert(credentialsProvider == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
+              case None => fail("Failed to get AWS credentials provider from the connector options")
             }
           case None => fail("Failed to get AWS Auth from the connector options")
         }

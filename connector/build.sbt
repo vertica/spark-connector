@@ -78,5 +78,6 @@ fork in Test := true
 envVars in Test := Map(
   "AWS_ACCESS_KEY_ID" -> "test",
   "AWS_SECRET_ACCESS_KEY" -> "foo",
+  "AWS_SESSION_TOKEN" -> "testsessiontoken",
   "AWS_DEFAULT_REGION" -> "us-west-1"
 )
