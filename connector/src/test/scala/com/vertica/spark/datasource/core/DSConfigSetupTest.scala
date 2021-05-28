@@ -242,6 +242,102 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
+  it should "Include error for old connector option on write" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "db" -> "testdb",
+        "port" -> "1234",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "failed_rows_percent_tolerance" -> "2.00",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+        "hdfs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
+      assert(errSeq.size == 2)
+      assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
+      assert(errSeq.map(_.getError).contains(V1ReplacementOption("hdfs_url","staging_fs_url")))
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "Include error for old connector option on read" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    try {
+      // Should be one error from the jdbc parser for the port and one for the missing log level
+      val opts = Map("host" -> "1.1.1.1",
+        "db" -> "testdb",
+        "port" -> "asdf",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+        "num_partitions" -> "foo",
+        "numpartitions" -> "5"
+      )
+
+      val dsReadConfigSetup = new DSReadConfigSetup(mock[VerticaPipeFactoryInterface])
+
+      val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
+      assert(errSeq.size == 3)
+      assert(errSeq.contains(InvalidPortError()))
+      assert(errSeq.contains(InvalidPartitionCountError()))
+      assert(errSeq.map(_.getError).contains(V1ReplacementOption("numpartitions","num_partitions")))
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "Don't error out with old connector options if no other errors" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    try {
+      val opts = Map("host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+        "hdfs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipe = mock[DummyReadPipe]
+      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+
+      val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsReadConfigSetup)
+    } finally {
+      spark.close()
+    }
+  }
+
   it should "get the AWS access key id, secret access key, and region from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")
