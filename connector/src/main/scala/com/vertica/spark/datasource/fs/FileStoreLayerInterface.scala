@@ -174,15 +174,15 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   awsAuth match {
     case Some(auth) =>
       hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId.arg)
-      logger.info(s"Setting $S3_ACCESS_KEY: ${auth.accessKeyId}")
+      logger.info(s"Loaded $S3_ACCESS_KEY from ${auth.accessKeyId.origin}")
       hdfsConfig.set(S3_SECRET_KEY, auth.secretAccessKey.arg)
-      logger.info(s"Setting $S3_SECRET_KEY: ${auth.secretAccessKey}")
+      logger.info(s"Loaded $S3_SECRET_KEY from ${auth.secretAccessKey.origin}")
     case None => logger.info("Did not set AWS auth for Hadoop config")
   }
   awsOptions.awsSessionToken match {
     case Some(token) =>
       hdfsConfig.set(S3_SESSION_TOKEN, token.arg)
-      logger.info(s"Setting $S3_SESSION_TOKEN: $token")
+      logger.info(s"Loaded $S3_SESSION_TOKEN from ${token.origin}")
     case None => logger.info("Did not set AWS session token for Hadoop config")
   }
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
