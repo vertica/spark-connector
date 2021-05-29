@@ -1,5 +1,7 @@
 # How to run the examples
 
+Note: The instructions for running the S3 example are different. If you would like to run that example, please see [the README for that example](https://github.com/vertica/spark-connector/tree/main/examples/s3-example).
+
 Make sure you have docker and sbt installed.
 Tested using docker 20.10.0, sbt 1.4.1
 

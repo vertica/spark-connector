@@ -13,9 +13,29 @@
 
 package com.vertica.spark.config
 
-case class AWSAuth(accessKeyId: String, secretAccessKey: String)
+sealed trait ArgOrigin
+case object EnvVar extends ArgOrigin
+case object SparkConf extends ArgOrigin
+case object ConnectorOption extends ArgOrigin
 
-case class AWSOptions(awsAuth: Option[AWSAuth], awsRegion: Option[String])
+sealed trait Visibility
+case object Secret extends Visibility
+case object Visible extends Visibility
+
+case class AWSArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
+  override def toString: String = this.visibility match {
+    case Secret => s"AWSArg(${origin.toString}, *****)"
+    case Visible => s"AWSArg(${origin.toString}, ${arg.toString})"
+  }
+}
+
+case class AWSAuth(accessKeyId: AWSArg[String], secretAccessKey: AWSArg[String])
+
+case class AWSOptions(
+                       awsAuth: Option[AWSAuth],
+                       awsRegion: Option[AWSArg[String]],
+                       awsSessionToken: Option[AWSArg[String]],
+                       awsCredentialsProvider: Option[AWSArg[String]])
 
 /**
  * Represents configuration for a filestore used by the connector.
