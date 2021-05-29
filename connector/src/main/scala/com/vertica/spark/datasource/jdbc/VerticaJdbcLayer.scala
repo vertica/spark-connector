@@ -295,7 +295,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       _ <- awsOptions.awsAuth match {
         case Some(awsAuth) =>
           val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"
-          logger.info(s"Setting AWSAuth for session: ${awsAuth.accessKeyId}, ${awsAuth.secretAccessKey}")
+          logger.info(s"Loaded AWS access key ID from ${awsAuth.accessKeyId.origin}")
+          logger.info(s"Loaded AWS secret access key from ${awsAuth.secretAccessKey.origin}")
           this.execute(sql)
         case None =>
           logger.info("Did not set AWSAuth")
@@ -313,7 +314,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       _ <- awsOptions.awsSessionToken match {
         case Some(token) =>
           val sql = s"ALTER SESSION SET AWSSessionToken='${token.arg}'"
-          logger.info(s"Setting AWSSessionToken for session: $token")
+          logger.info(s"Loaded AWSSessionToken from ${token.origin}")
           this.execute(sql)
         case None =>
           logger.info("Did not set AWSSessionToken")
