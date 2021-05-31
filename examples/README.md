@@ -1,5 +1,7 @@
 # How to run the examples
 
+Note: The instructions for running the S3 example are different. If you would like to run that example, please see [the README for that example](https://github.com/vertica/spark-connector/tree/main/examples/s3-example).
+
 Make sure you have docker and sbt installed.
 Tested using docker 20.10.0, sbt 1.4.1
 
@@ -10,23 +12,20 @@ git clone https://github.com/vertica/spark-connector.git
 From the project's root directory:
 ```
 cd docker
-docker compose up -d
+./sandbox-clientenv.sh
 ```
-This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
+This will:
+1. Create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
-Run the following commands to update the HDFS configuration files and restart HDFS:
-```
-docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-docker exec docker_hdfs_1 /opt/hadoop/sbin/stop-dfs.sh
-docker exec docker_hdfs_1 /opt/hadoop/sbin/start-dfs.sh
-```
 
-Run `docker exec -it docker_client_1 /bin/bash` to enter the sandbox client environment.
+2. Update the HDFS configuration files and restart HDFS
+
+
+3. Enter the sandbox client environment.
 
 Now change your working directory to one in `spark-connector/examples` 
 
-After changing your directory to a specific example (such as `spark-connector/examples/kerberos-example`), just enter `sbt run`
+After changing your directory to a specific example (such as `spark-connector/examples/basic-read`), just enter `sbt run`
 
 If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run `sbt "run [CASE]"` to run the various cases.
 
