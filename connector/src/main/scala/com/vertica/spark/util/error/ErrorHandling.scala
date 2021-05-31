@@ -451,3 +451,6 @@ case class MissingSparkSessionError() extends ConnectorError {
 case class LoadConfigMissingSparkSessionError() extends ConnectorError {
   def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
 }
+case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
+  override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
+}
