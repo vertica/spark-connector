@@ -52,7 +52,7 @@ ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ```
 ### Java 
 
-The current versions of Java that are compatible with Spark are Java8 and Java11. 
+Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 ### AWS S3
 
