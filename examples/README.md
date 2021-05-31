@@ -12,6 +12,11 @@ From the project's root directory:
 cd docker
 ./sandbox-clientenv.sh
 ```
+On Windows, you can run the equivalent batch file:
+```
+cd docker
+sandbox-clientenv.bat
+```
 This will:
 1. Create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
