@@ -163,3 +163,8 @@ The connector supports versions of Spark between 3.0 and 3.1.1.
 
 The connector supports basic Spark types. Complex types are not currently supported (arrays, maps, structs).
 
+You may see an error such as:
+21/05/31 17:35:21 ERROR DFSClient: Failed to close inode 16447
+
+This is simply an issue with hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.
+
