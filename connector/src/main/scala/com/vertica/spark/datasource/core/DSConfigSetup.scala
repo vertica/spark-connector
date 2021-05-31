@@ -78,12 +78,15 @@ object DSConfigSetupUtils {
     val oldList = Array("target_table_ddl", "numpartitions", "hdfs_url", "web_hdfs_url")
     val replacementsList = Array("target_table_sql", "num_partitions", "staging_fs_url", "staging_fs_url")
 
-    oldList.indices.filter(i => config.contains(oldList(i))).map(i => {
-      V1ReplacementOption(oldList(i), replacementsList(i))
-    })
+    oldList.zip(replacementsList).filter({
+      case (old, replacement) => config.contains(old)
+    }).map {
+      case (old, replacement) =>
+          V1ReplacementOption(old, replacement)
+    }
   }
 
-  def logOrAppendErrorsForOldConnectorOptions[T](config: Map[String, String], res: ValidationResult[T], logger: Logger): ValidationResult[T]= {
+  def logOrAppendErrorsForOldConnectorOptions[T](config: Map[String, String], res: ValidationResult[T], logger: Logger): ValidationResult[T] = {
     val oldConnectorMessages = DSConfigSetupUtils.checkOldConnectorOptions(config)
     val oldConnectorChain = NonEmptyChain.fromChain(Chain.fromSeq(oldConnectorMessages))
 
