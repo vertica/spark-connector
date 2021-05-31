@@ -1,5 +1,6 @@
 *.class
 *.log
+
 project/
 connector/target/
 connector/project/target/
@@ -23,3 +24,7 @@ examples/*/.bsp
 /target/
 /.idea/
 .DS_Store
+
+!examples/s3-example/project
+examples/s3-example/project/target
+examples/s3-example/project/build.properties
