@@ -27,13 +27,13 @@ libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.2.0"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.2.0"
 
 
 
