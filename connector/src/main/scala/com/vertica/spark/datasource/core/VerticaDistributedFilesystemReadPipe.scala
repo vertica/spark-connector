@@ -13,6 +13,8 @@
 
 package com.vertica.spark.datasource.core
 
+import java.util
+
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._

@@ -41,6 +41,12 @@ case class AWSOptions(
  * Represents configuration for a filestore used by the connector.
  *
  * There is not currently much user configuration for the filestore beyond the address to connect to.
- * @param address Address of the distributed filestore, ie HDFS, to connect to.
  */
-final case class FileStoreConfig(address: String, awsOptions: AWSOptions)
+final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOptions: AWSOptions) {
+  def address: String = {
+    val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
+
+    // Create unique directory for session
+    baseAddress.stripSuffix(delimiter) + delimiter + sessionId
+  }
+}

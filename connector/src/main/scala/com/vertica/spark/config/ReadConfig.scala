@@ -15,9 +15,11 @@ package com.vertica.spark.config
 
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
+import com.vertica.spark.datasource.core.SessionId
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
 import org.apache.spark.sql.types.StructType
+
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -38,7 +40,10 @@ trait ReadConfig {
    * @param requiredSchema Schema of subset of data to be read from Vertica table
    */
   def setRequiredSchema(requiredSchema: StructType): Unit
+
   def getRequiredSchema: StructType
+
+  def copyConfig(newId: Boolean = false): ReadConfig
 }
 
 
@@ -105,4 +110,12 @@ final case class DistributedFilesystemReadConfig(
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
+
+  def copyConfig(newId: Boolean): ReadConfig = {
+    if(!newId) {
+      this.copy()
+    } else {
+      this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
+    }
+  }
 }
