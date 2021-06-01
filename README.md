@@ -161,5 +161,7 @@ For information on tuning performance, see [here in our performance-tests sectio
 
 The connector supports versions of Spark between 3.0 and 3.1.1.
 
+If you use Spark 3.1.1, you will also need to use Hadoop version 3.3.0. For example, if you are using HDFS and your project uses SBT, you should add this line to your build.sbt: `libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"`
+
 The connector supports basic Spark types. Complex types are not currently supported (arrays, maps, structs).
 
