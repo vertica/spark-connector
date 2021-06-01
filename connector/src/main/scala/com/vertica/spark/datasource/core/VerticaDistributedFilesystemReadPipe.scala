@@ -267,7 +267,8 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Retrieve all parquet files created by Vertica
-      fullFileList <- fileStoreLayer.getFileList(hdfsPath)
+      dirExists <- fileStoreLayer.fileExists(hdfsPath)
+      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
       requestedPartitionCount = config.partitionCount match {
           case Some(count) => count
