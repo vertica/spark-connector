@@ -16,7 +16,7 @@ name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := "1.0"
 
-val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.0.0")
+val sparkVersion = "3.1.1"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -28,13 +28,13 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % 
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "10.0.1-0"
 libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.4.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.2.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
 
 
 
