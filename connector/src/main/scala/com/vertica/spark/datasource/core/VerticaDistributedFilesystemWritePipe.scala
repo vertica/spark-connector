@@ -74,7 +74,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     SparkSession.getActiveSession match {
       case Some(session) =>
         session.sparkContext.setLocalProperty(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
-        session.sparkContext.setLocalProperty(SQLConf.LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE.key , "CORRECTED")
+        // don't use SQLConf because that breaks things for users on Spark 3.0
+        session.sparkContext.setLocalProperty("spark.sql.legacy.parquet.int96RebaseModeInWrite"
+          , "CORRECTED")
       case None => logger.warn("No spark session found to set config")
     }
   }

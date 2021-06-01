@@ -191,7 +191,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key, "CORRECTED")
   hdfsConfig.set(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_READ.key, "CORRECTED")
-  hdfsConfig.set(SQLConf.LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE.key, "CORRECTED")
+  // don't use SQLConf because that breaks things for users on Spark 3.0
+  hdfsConfig.set("spark.sql.legacy.parquet.int96RebaseModeInWrite", "CORRECTED")
   hdfsConfig.setEnum(ParquetOutputFormat.JOB_SUMMARY_LEVEL, JobSummaryLevel.NONE)
   hdfsConfig.set(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY, "000")
 
