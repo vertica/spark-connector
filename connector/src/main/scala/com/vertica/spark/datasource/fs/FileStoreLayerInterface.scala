@@ -146,6 +146,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val S3_SECRET_KEY: String = "fs.s3a.secret.key"
   private val S3_SESSION_TOKEN: String = "fs.s3a.session.token"
   private val AWS_CREDENTIALS_PROVIDER: String = "fs.s3a.aws.credentials.provider"
+  private val S3_ENDPOINT: String = "fs.s3a.endpoint"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
@@ -185,6 +186,13 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       logger.info(s"Loaded $S3_SESSION_TOKEN from ${token.origin}")
     case None => logger.info("Did not set AWS session token for Hadoop config")
   }
+  awsOptions.awsEndpoint match {
+    case Some(endpoint) =>
+      hdfsConfig.set(S3_ENDPOINT, endpoint.arg)
+      logger.info(s"Loaded $S3_ENDPOINT from ${endpoint.origin}")
+    case None => logger.info("Did not set AWS endpoint, using default.")
+  }
+
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
   hdfsConfig.set(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key, "false")
