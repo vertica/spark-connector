@@ -129,7 +129,6 @@ object Main extends App {
     case _ => None
   }
 
-
   val awsRegion= sys.env.get("AWS_DEFAULT_REGION") match {
     case Some(region) => Some(AWSArg(Visible, EnvVar, region))
     case None => {
