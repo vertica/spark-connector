@@ -50,6 +50,9 @@ However you set up HDFS, Vertica needs to have a copy of the hadoop configuratio
 ```shell
 ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 ```
+### Java 
+
+Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 ### AWS S3
 
@@ -158,5 +161,5 @@ For information on tuning performance, see [here in our performance-tests sectio
 
 The connector supports versions of Spark between 3.0 and 3.1.1.
 
-The connector supports basic Spark types. Complex types are not currently supported.
+The connector supports basic Spark types. Complex types are not currently supported (arrays, maps, structs).
 

@@ -14,7 +14,7 @@
 import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import com.vertica.spark.config.{AWSAuth, AWSOptions, BasicJdbcAuth, DistributedFilesystemReadConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, KerberosAuth, TableName, VerticaMetadata}
+import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
@@ -50,8 +50,9 @@ object Main extends App {
     val reporter = new VReporter()
     val result = suite.run(None, Args(reporter))
     if(!result.succeeds()) {
-      throw new Exception("Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+      throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
+    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
   }
 
   val conf: Config = ConfigFactory.load()
@@ -72,14 +73,20 @@ object Main extends App {
   if (Try{conf.getString("functional-tests.aws_secret_access_key")}.isSuccess) {
     readOpts = readOpts + ("aws_secret_access_key" -> conf.getString("functional-tests.aws_secret_access_key"))
   }
+  if (Try{conf.getString("functional-tests.aws_session_token")}.isSuccess) {
+    readOpts = readOpts + ("aws_session_token" -> conf.getString("functional-tests.aws_session_token"))
+  }
   if (Try{conf.getString("functional-tests.aws_region")}.isSuccess) {
     readOpts = readOpts + ("aws_region" -> conf.getString("functional-tests.aws_region"))
+  }
+  if (Try{conf.getString("functional-tests.aws_credentials_provider")}.isSuccess) {
+    readOpts = readOpts + ("aws_credentials_provider" -> conf.getString("functional-tests.aws_credentials_provider"))
   }
 
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
     readOpts = readOpts + (
-        "password" -> conf.getString("functional-tests.password"),
-      )
+      "password" -> conf.getString("functional-tests.password"),
+    )
     BasicJdbcAuth(
       username = conf.getString("functional-tests.user"),
       password = conf.getString("functional-tests.password"),
@@ -87,9 +94,9 @@ object Main extends App {
   }
   else {
     readOpts = readOpts + (
-        "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
-        "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
-        "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name")
+      "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
+      "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
+      "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name")
     )
     KerberosAuth(
       username = conf.getString("functional-tests.user"),
@@ -102,42 +109,74 @@ object Main extends App {
   val tlsConfig = JDBCTLSConfig(tlsMode = Disable, None, None, None, None)
 
   val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
-                              port = conf.getInt("functional-tests.port"),
-                              db = conf.getString("functional-tests.db"),
-                              auth = auth,
-                              tlsConfig = tlsConfig)
+    port = conf.getInt("functional-tests.port"),
+    db = conf.getString("functional-tests.db"),
+    auth = auth,
+    tlsConfig = tlsConfig)
 
-  (new JDBCTests(jdbcConfig)).execute()
+  runSuite(new JDBCTests(jdbcConfig))
 
   val filename = conf.getString("functional-tests.filepath")
   val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
-    case (Some(accessKeyId), Some(secretAccessKey)) => Some(AWSAuth(accessKeyId, secretAccessKey))
+    case (Some(accessKeyId), Some(secretAccessKey)) => {
+      Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
+    }
     case (None, None) =>
       for {
         accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
         secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
-      } yield AWSAuth(accessKeyId, secretAccessKey)
+      } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
     case _ => None
   }
 
-  val fileStoreConfig = FileStoreConfig(filename, AWSOptions(
-    awsAuth, sys.env.get("AWS_DEFAULT_REGION") match {
-      case Some(region) => Some(region)
-      case None => Try{conf.getString("functional-tests.aws_region")}.toOption
-    }))
-  (new HDFSTests(
+
+  val awsRegion= sys.env.get("AWS_DEFAULT_REGION") match {
+    case Some(region) => Some(AWSArg(Visible, EnvVar, region))
+    case None => {
+        Try{conf.getString("functional-tests.aws_region")}.toOption match {
+          case Some(region) => Some(AWSArg(Visible, ConnectorOption, region))
+          case None => None
+      }
+    }
+  }
+
+  val awsSessionToken= sys.env.get("AWS_SESSION_TOKEN") match {
+    case Some(token)=> Some(AWSArg(Visible, EnvVar, token))
+    case None => {
+      Try{conf.getString("functional-tests.aws_session_token")}.toOption match{
+        case Some(token) =>Some(AWSArg(Visible, ConnectorOption, token))
+        case None => None
+      }
+    }
+  }
+
+  val awsCredentialsProvider= sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
+    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try{conf.getString("functional-tests.aws_credentials_provider")}.toOption match{
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
+      }
+    }
+  }
+
+  val fileStoreConfig = FileStoreConfig(filename, AWSOptions(awsAuth,
+                                                             awsRegion,
+                                                             awsSessionToken,
+                                                             awsCredentialsProvider))
+  runSuite(new HDFSTests(
     fileStoreConfig,
     jdbcConfig
-  )).execute()
+  ))
 
-  (new CleanupUtilTests(
+  runSuite(new CleanupUtilTests(
     fileStoreConfig
-  )).execute()
+  ))
 
   val writeOpts = readOpts
-  (new EndToEndTests(readOpts, writeOpts, jdbcConfig)).execute()
+  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))
 
   if (args.length == 1 && args(0) == "Large") {
-    (new LargeDataTests(readOpts, writeOpts, jdbcConfig)).execute()
+    runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
   }
 }

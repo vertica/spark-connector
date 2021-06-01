@@ -34,12 +34,12 @@ libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.2.0"
 
-/*
+
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
-*/
+
 
 //unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
 

@@ -23,6 +23,7 @@ import scala.util.Failure
 import cats.data._
 import cats.data.Validated._
 import cats.implicits._
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
@@ -72,6 +73,37 @@ case object VerifyFull extends TLSMode {
 // scalastyle:off
 object DSConfigSetupUtils {
   type ValidationResult[+A] = ValidatedNec[ConnectorError, A]
+
+  def checkOldConnectorOptions(config: Map[String, String]): Seq[ConnectorError] = {
+    val oldList = Array("target_table_ddl", "numpartitions", "hdfs_url", "web_hdfs_url")
+    val replacementsList = Array("target_table_sql", "num_partitions", "staging_fs_url", "staging_fs_url")
+
+    oldList.zip(replacementsList).filter({
+      case (old, replacement) => config.contains(old)
+    }).map {
+      case (old, replacement) =>
+          V1ReplacementOption(old, replacement)
+    }
+  }
+
+  def logOrAppendErrorsForOldConnectorOptions[T](config: Map[String, String], res: ValidationResult[T], logger: Logger): ValidationResult[T] = {
+    val oldConnectorMessages = DSConfigSetupUtils.checkOldConnectorOptions(config)
+    val oldConnectorChain = NonEmptyChain.fromChain(Chain.fromSeq(oldConnectorMessages))
+
+    // These are not fatal errors, only add to errors if there is something missing from configuration.
+    // Otherwise, just log a warning
+    res match {
+      case Valid(a) =>
+        oldConnectorMessages.foreach(m => logger.warn(m.getUserMessage))
+        Valid(a)
+      case Invalid(errList) => Invalid(
+        oldConnectorChain match {
+          case Some(chain) => errList.concat(chain)
+          case None => errList
+        }
+      )
+    }
+  }
 
   def getHost(config: Map[String, String]): ValidationResult[String] = {
     config.get("host") match {
@@ -393,6 +425,8 @@ object DSConfigSetupUtils {
   * Implementation for parsing user option map and getting read config
   */
 class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
+  private val logger: Logger = LogProvider.getLogger(classOf[DSReadConfigSetup])
+
   /**
     * Validates the user option map and parses read config
     *
@@ -401,7 +435,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     val sessionId = sessionIdInterface.getId
 
-    (
+    val res = (
       DSConfigSetupUtils.validateAndGetJDBCConfig(config),
       DSConfigSetupUtils.validateAndGetFilestoreConfig(config, sessionId),
       DSConfigSetupUtils.validateAndGetTableSource(config),
@@ -423,6 +457,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
         }
       }
     }
+
+    // Check for options left over from old connector
+    DSConfigSetupUtils.logOrAppendErrorsForOldConnectorOptions(config, res, logger)
   }
 
   /**
@@ -459,6 +496,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   * Implementation for parsing user option map and getting write config
   */
 class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
+  private val logger: Logger = LogProvider.getLogger(classOf[DSWriteConfigSetup])
+
   /**
     * Validates the user option map and parses read config
     *
@@ -468,7 +507,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     val sessionId = sessionIdInterface.getId
 
     // List of configuration errors. We keep these all so that we report all issues with the given configuration to the user at once and they don't have to solve issues one by one.
-    schema match {
+    val res = schema match {
       case Some(passedInSchema) =>
         (
           DSConfigSetupUtils.validateAndGetJDBCConfig(config),
@@ -485,6 +524,9 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
       case None =>
         MissingSchemaError().invalidNec
     }
+
+    // Check for options left over from old connector
+    DSConfigSetupUtils.logOrAppendErrorsForOldConnectorOptions(config, res, logger)
   }
 
   /**
