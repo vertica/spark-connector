@@ -69,8 +69,9 @@ assemblyShadeRules in assembly := Seq(
 
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
-  cp.filter{_.data.getName.contains("spark")}
-    .filter{_.data.getName.contains("hadoop")}
+  cp.filter{f => f.data.getName.contains("spark") ||
+              f.data.getName.contains("hadoop")
+  }
 }
 
 fork in Test := true

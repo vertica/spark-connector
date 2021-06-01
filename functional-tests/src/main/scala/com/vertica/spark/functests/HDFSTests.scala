@@ -45,7 +45,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
   private val schema = df.schema
   private val perms = "777"
 
-  val dirTestCfg = fsCfg.copy(address = fsCfg.address + "dirtest/")
+  val dirTestCfg = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
   val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
