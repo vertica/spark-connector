@@ -41,6 +41,8 @@ case class AWSOptions(
  * Represents configuration for a filestore used by the connector.
  *
  * There is not currently much user configuration for the filestore beyond the address to connect to.
+ * @param baseAddress Address to use in the intermediate filesystem
+ * @param sessionId Unique id for a given connector operation
  */
 final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOptions: AWSOptions) {
   def address: String = {
