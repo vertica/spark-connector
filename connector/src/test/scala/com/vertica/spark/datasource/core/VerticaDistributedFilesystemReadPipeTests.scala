@@ -297,7 +297,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Left(_) => fail
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
-        assert(partitions.length == 3||partitions.length == 0)
+        assert(partitions.length == 3)
         for (p <- partitions) {
           p match {
             case vp: VerticaDistributedFilesystemPartition =>
@@ -346,7 +346,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Left(_) => fail
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
-        assert(partitions.length == 15 || partitions.length == 0 )
+        assert(partitions.length == 15)
         var i = 0
         for (p <- partitions) {
           p match {
@@ -405,7 +405,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Left(_) => fail
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
-        assert(partitions.length == partitionCount || partitions.length==0)
+        assert(partitions.length == partitionCount)
         assert(partitions(0).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,0,3,Some(0)))
         assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,4,4,Some(1)))
         assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname2,0,2,Some(0)))
@@ -453,7 +453,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Left(_) => fail
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
-        assert(partitions.length == partitionCount || partitions.length==0)
+        assert(partitions.length == partitionCount)
         for(partition <- partitions){
           partition.asInstanceOf[VerticaDistributedFilesystemPartition].rangeCountMap match {
             case None => fail
