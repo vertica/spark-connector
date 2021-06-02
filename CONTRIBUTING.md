@@ -214,6 +214,10 @@ The functional-tests project is meant to run against a real environment. See "Se
 
 This project contains a series of end-to-end tests. It also contains tests for components on the bottom layer of the connector, those that do some kind of IO directly, and thus don't make as much sense to unit test.
 
+If you set the sparkVersion in build.sbt to 3.0.0, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
+
+Similarly, if you set the sparkVersion in build.sbt to 3.1.0, you will also need to use hadoop-hdfs version 3.3.0.
+
 If a change is made to one of those bottom-layer components (ie VerticaJdbcLayer, FileStoreLayer), integration tests should be included. Additionally, if a change is large and touches many components of the connector, integration tests should be included.
 
 

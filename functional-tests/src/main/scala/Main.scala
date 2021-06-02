@@ -164,6 +164,7 @@ object Main extends App {
                                                              awsRegion,
                                                              awsSessionToken,
                                                              awsCredentialsProvider))
+  /*
   runSuite(new HDFSTests(
     fileStoreConfig,
     jdbcConfig
@@ -172,6 +173,7 @@ object Main extends App {
   runSuite(new CleanupUtilTests(
     fileStoreConfig
   ))
+   */
 
   val writeOpts = readOpts
   runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))

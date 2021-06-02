@@ -17,7 +17,6 @@ organization := "com.vertica"
 version := "1.0"
 
 val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.0.0")
-val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("2.7.0")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -34,8 +33,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
-libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopVersion
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.4.0"
+libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
 
 
 
