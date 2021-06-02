@@ -197,7 +197,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     case Some(enable) =>
       hdfsConfig.set(S3_ENABLE_SSL, enable.arg)
       logger.info(s"Loaded $S3_ENABLE_SSL from ${enable.origin}")
-    case None => logger.debug("Did not set AWS endpoint SSL enabled flag, using default of true.")
+    case None => logger.debug("Did not set AWS SSL enabled flag, using default of true.")
   }
 
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
