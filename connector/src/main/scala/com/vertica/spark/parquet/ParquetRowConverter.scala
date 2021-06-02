@@ -27,15 +27,14 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.parquet.column.Dictionary
 import org.apache.parquet.io.api.{Binary, Converter, GroupConverter, PrimitiveConverter}
-import org.apache.parquet.schema.{GroupType, MessageType, OriginalType, Type}
-import org.apache.parquet.schema.OriginalType.{INT_32, LIST, UTF8}
-import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.{BINARY, DOUBLE, FIXED_LEN_BYTE_ARRAY, INT32, INT64, INT96}
+import org.apache.parquet.schema.{GroupType, OriginalType, Type}
+import org.apache.parquet.schema.OriginalType.LIST
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.{BINARY, FIXED_LEN_BYTE_ARRAY, INT32, INT64, INT96}
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, CaseInsensitiveMap, DateTimeUtils, GenericArrayData}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp
 import org.apache.spark.sql.execution.datasources.DataSourceUtils
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
@@ -109,11 +108,15 @@ private[parquet] class ParquetPrimitiveConverter(val updater: ParentContainerUpd
  * }}}
  * 5 converters will be created:
  *
- * - a root [[ParquetRowConverter]] for [[MessageType]] `root`, which contains:
- *   - a [[ParquetPrimitiveConverter]] for required [[INT_32]] field `f1`, and
+ * - a root [[ParquetRowConverter]] for [[org.apache.parquet.schema.MessageType]] `root`,
+ * which contains:
+ *   - a [[ParquetPrimitiveConverter]] for required
+ *   [[org.apache.parquet.schema.OriginalType.INT_32]] field `f1`, and
  *   - a nested [[ParquetRowConverter]] for optional [[GroupType]] `f2`, which contains:
- *     - a [[ParquetPrimitiveConverter]] for required [[DOUBLE]] field `f21`, and
- *     - a [[ParquetStringConverter]] for optional [[UTF8]] string field `f22`
+ *     - a [[ParquetPrimitiveConverter]] for required
+ *     [[org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE]] field `f21`, and
+ *     - a [[ParquetStringConverter]] for optional [[org.apache.parquet.schema.OriginalType.UTF8]]
+ *     string field `f22`
  *
  * When used as a root converter, [[NoopUpdater]] should be used since root converters don't have
  * any "parent" container.
@@ -125,6 +128,8 @@ private[parquet] class ParquetPrimitiveConverter(val updater: ParentContainerUpd
  * @param convertTz the optional time zone to convert to int96 data
  * @param datetimeRebaseMode the mode of rebasing date/timestamp from Julian to Proleptic Gregorian
  *                           calendar
+ * @param int96RebaseMode the mode of rebasing INT96 timestamp from Julian to Proleptic Gregorian
+ *                           calendar
  * @param updater An updater which propagates converted field values to the parent container
  */
 private[parquet] class ParquetRowConverter(
@@ -133,6 +138,7 @@ private[parquet] class ParquetRowConverter(
                                             catalystType: StructType,
                                             convertTz: Option[ZoneId],
                                             datetimeRebaseMode: LegacyBehaviorPolicy.Value,
+                                            int96RebaseMode: LegacyBehaviorPolicy.Value,
                                             updater: ParentContainerUpdater)
   extends ParquetGroupConverter(updater) with Logging {
 
@@ -188,6 +194,9 @@ private[parquet] class ParquetRowConverter(
 
   private val timestampRebaseFunc = DataSourceUtils.creteTimestampRebaseFuncInRead(
     datetimeRebaseMode, "Parquet")
+
+  private val int96RebaseFunc = DataSourceUtils.creteTimestampRebaseFuncInRead(
+    int96RebaseMode, "Parquet INT96")
 
   // Converters for each field.
   private[this] val fieldConverters: Array[Converter with HasParentContainerUpdater] = {
@@ -261,17 +270,43 @@ private[parquet] class ParquetRowConverter(
 
       // For INT32 backed decimals
       case t: DecimalType if parquetType.asPrimitiveType().getPrimitiveTypeName == INT32 =>
-        new ParquetIntDictionaryAwareDecimalConverter(t.precision, t.scale, updater)
+        val metadata = parquetType.asPrimitiveType().getDecimalMetadata
+        if (metadata == null) {
+          // If the column is a plain INT32, we should pick the precision that can host the largest
+          // INT32 value.
+          new ParquetIntDictionaryAwareDecimalConverter(
+            DecimalType.IntDecimal.precision, 0, updater)
+        } else {
+          new ParquetIntDictionaryAwareDecimalConverter(
+            metadata.getPrecision, metadata.getScale, updater)
+        }
 
       // For INT64 backed decimals
       case t: DecimalType if parquetType.asPrimitiveType().getPrimitiveTypeName == INT64 =>
-        new ParquetLongDictionaryAwareDecimalConverter(t.precision, t.scale, updater)
+        val metadata = parquetType.asPrimitiveType().getDecimalMetadata
+        if (metadata == null) {
+          // If the column is a plain INT64, we should pick the precision that can host the largest
+          // INT64 value.
+          new ParquetLongDictionaryAwareDecimalConverter(
+            DecimalType.LongDecimal.precision, 0, updater)
+        } else {
+          new ParquetLongDictionaryAwareDecimalConverter(
+            metadata.getPrecision, metadata.getScale, updater)
+        }
 
       // For BINARY and FIXED_LEN_BYTE_ARRAY backed decimals
       case t: DecimalType
         if parquetType.asPrimitiveType().getPrimitiveTypeName == FIXED_LEN_BYTE_ARRAY ||
           parquetType.asPrimitiveType().getPrimitiveTypeName == BINARY =>
-        new ParquetBinaryDictionaryAwareDecimalConverter(t.precision, t.scale, updater)
+        val metadata = parquetType.asPrimitiveType().getDecimalMetadata
+        if (metadata == null) {
+          throw new RuntimeException(s"Unable to create Parquet converter for ${t.typeName} " +
+            s"whose Parquet type is $parquetType without decimal metadata. Please read this " +
+            "column/field as Spark BINARY type." )
+        } else {
+          new ParquetBinaryDictionaryAwareDecimalConverter(
+            metadata.getPrecision, metadata.getScale, updater)
+        }
 
       case t: DecimalType =>
         throw new RuntimeException(
@@ -292,7 +327,7 @@ private[parquet] class ParquetRowConverter(
       case TimestampType if parquetType.getOriginalType == OriginalType.TIMESTAMP_MILLIS =>
         new ParquetPrimitiveConverter(updater) {
           override def addLong(value: Long): Unit = {
-            val micros = DateTimeUtils.fromMillis(value)
+            val micros = DateTimeUtils.millisToMicros(value)
             updater.setLong(timestampRebaseFunc(micros))
           }
         }
@@ -302,17 +337,10 @@ private[parquet] class ParquetRowConverter(
         new ParquetPrimitiveConverter(updater) {
           // Converts nanosecond timestamps stored as INT96
           override def addBinary(value: Binary): Unit = {
-            assert(
-              value.length() == 12,
-              "Timestamps (with nanoseconds) are expected to be stored in 12-byte long binaries, " +
-                s"but got a ${value.length()}-byte binary.")
-
-            val buf = value.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-            val timeOfDayNanos = buf.getLong
-            val julianDay = buf.getInt
-            val rawTime = DateTimeUtils.fromJulianDay(julianDay, timeOfDayNanos)
-            val adjTime = convertTz.map(DateTimeUtils.convertTz(rawTime, _, ZoneOffset.UTC))
-              .getOrElse(rawTime)
+            val julianMicros = ParquetRowConverter.binaryToSQLTimestamp(value)
+            val gregorianMicros = int96RebaseFunc(julianMicros)
+            val adjTime = convertTz.map(DateTimeUtils.convertTz(gregorianMicros, _, ZoneOffset.UTC))
+              .getOrElse(gregorianMicros)
             updater.setLong(adjTime)
           }
         }
@@ -373,6 +401,7 @@ private[parquet] class ParquetRowConverter(
           t,
           convertTz,
           datetimeRebaseMode,
+          int96RebaseMode,
           wrappedUpdater)
 
       case t =>
@@ -744,7 +773,7 @@ private[parquet] object ParquetRowConverter {
     unscaled
   }
 
-  def binaryToSQLTimestamp(binary: Binary): SQLTimestamp = {
+  def binaryToSQLTimestamp(binary: Binary): Long = {
     assert(binary.length() == 12, s"Timestamps (with nanoseconds) are expected to be stored in" +
       s" 12-byte long binaries. Found a ${binary.length()}-byte binary instead.")
     val buffer = binary.toByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
@@ -753,4 +782,3 @@ private[parquet] object ParquetRowConverter {
     DateTimeUtils.fromJulianDay(julianDay, timeOfDayNanos)
   }
 }
-
