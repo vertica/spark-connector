@@ -14,7 +14,7 @@
 scalaVersion := "2.12.10"
 name := "spark-vertica-connector"
 organization := "com.vertica"
-version := "1.0"
+version := "2.0.0"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
