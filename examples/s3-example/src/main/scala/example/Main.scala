@@ -50,7 +50,7 @@ object Main extends App {
     if (Try{conf.getString("functional-tests.aws_endpoint")}.isSuccess) {
       readOpts = readOpts + ("aws_endpoint" -> conf.getString("functional-tests.aws_endpoint"))
     }
-    if (Try{conf.getString("functional-tests.aws_enabled_ssl")}.isSuccess) {
+    if (Try{conf.getString("functional-tests.aws_enable_ssl")}.isSuccess) {
       readOpts = readOpts + ("aws_enable_ssl" -> conf.getString("functional-tests.aws_enable_ssl"))
     }
 

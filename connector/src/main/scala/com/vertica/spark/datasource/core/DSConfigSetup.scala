@@ -246,7 +246,7 @@ object DSConfigSetupUtils {
     val visibility = Visible
     getAWSArgFromConnectorOption(visibility)(
       config,
-      "aws_ssl_enabled",
+      "aws_enable_ssl",
       _ => getAWSArgFromSparkConfig(visibility)(
         "fs.s3a.connection.ssl.enabled", _ => None.validNec))
   }
