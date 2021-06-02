@@ -73,6 +73,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
     (fileStoreLayer.fileExists _).expects(expectedAdd).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(expectedAdd).returning(Right(true))
     (fileStoreLayer.getFileList _).expects(expectedAdd).returning(Right(Array[String]("example.parquet")))
     (fileStoreLayer.getParquetFileMetadata _).expects(*).returning(Right(ParquetFileMetadata("example", 4)))
     fileStoreLayer
@@ -270,7 +271,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*)returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet", expectedAddress+"/t1p2.parquet", expectedAddress+"/t1p3.parquet")
@@ -318,7 +320,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String](expectedAddress+"/t1p1.parquet")
@@ -373,7 +376,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -420,7 +424,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     // Files returned by filesystem (mock of what vertica would create
     val fname1 = expectedAddress+"/t1p1.parquet"
@@ -466,7 +471,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
@@ -495,7 +501,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.createDir _).expects(*,*).returning(Right())
-    (fileStoreLayer.fileExists _).expects(*).returning(Right(false)).anyNumberOfTimes()
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
+    (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String]()

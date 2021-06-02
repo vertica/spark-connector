@@ -21,9 +21,9 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "10.0.1-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.0.0"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.0.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.4.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.1.1"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.1.1"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
@@ -69,8 +69,9 @@ assemblyShadeRules in assembly := Seq(
 
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
-  cp.filter{_.data.getName.contains("spark")}
-    .filter{_.data.getName.contains("hadoop")}
+  cp.filter{f => f.data.getName.contains("spark") ||
+              f.data.getName.contains("hadoop")
+  }
 }
 
 fork in Test := true

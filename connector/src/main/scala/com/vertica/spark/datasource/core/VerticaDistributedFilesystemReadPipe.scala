@@ -13,6 +13,8 @@
 
 package com.vertica.spark.datasource.core
 
+import java.util
+
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -267,7 +269,8 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Retrieve all parquet files created by Vertica
-      fullFileList <- fileStoreLayer.getFileList(hdfsPath)
+      dirExists <- fileStoreLayer.fileExists(hdfsPath)
+      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
       requestedPartitionCount = config.partitionCount match {
           case Some(count) => count

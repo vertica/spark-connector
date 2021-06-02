@@ -399,15 +399,8 @@ object DSConfigSetupUtils {
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
-    (DSConfigSetupUtils.getStagingFsUrl(config).map(
-      address => {
-        val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
-        val uniqueSessionId = sessionId
-
-        // Create unique directory for session
-        address.stripSuffix(delimiter) + delimiter + uniqueSessionId
-      }
-    ),
+    (DSConfigSetupUtils.getStagingFsUrl(config),
+    sessionId.validNec,
     (DSConfigSetupUtils.getAWSAuth(config),
     DSConfigSetupUtils.getAWSRegion(config),
     DSConfigSetupUtils.getAWSSessionToken(config),

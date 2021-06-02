@@ -16,5 +16,5 @@ package com.vertica.spark.common
 import com.vertica.spark.config.{AWSOptions, FileStoreConfig}
 
 object TestObjects {
-  val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/test", AWSOptions(None, None, None, None, None, None))
+  val fileStoreConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", AWSOptions(None, None, None, None, None, None))
 }
