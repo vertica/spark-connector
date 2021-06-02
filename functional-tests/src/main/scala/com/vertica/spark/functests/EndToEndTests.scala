@@ -202,6 +202,40 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "triple join" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    println("Getting count")
+    println("Count: " + df.count())
+
+
+    println("Getting as1")
+    val df_as1 = df.as("df1")
+
+    println("Getting as2")
+    val df_as2 = df.as("df2")
+
+    println("Getting as3")
+    val df_as3 = df.as("df3")
+
+    println("Joining")
+    val joined_df = df_as1.join(
+      df_as2, col("df1.a") === col("df2.b"), "inner").join(
+        df_as3, col("df1.a") === col("df3.b"), "inner")
+    assert(joined_df.collect().length == n*n*n)
+    TestUtils.dropTable(conn, tableName1)
+  }
+
   it should "collect results" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
