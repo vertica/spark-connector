@@ -242,6 +242,15 @@ object DSConfigSetupUtils {
         "spark.hadoop.fs.s3a.endpoint", _ => None.validNec))
   }
 
+  def getAWSSSLEnabled(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+    val visibility = Visible
+    getAWSArgFromConnectorOption(visibility)(
+      config,
+      "aws_ssl_enabled",
+      _ => getAWSArgFromSparkConfig(visibility)(
+        "fs.s3a.connection.ssl.enabled", _ => None.validNec))
+  }
+
   private def getAWSArg(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
@@ -403,7 +412,9 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getAWSRegion(config),
     DSConfigSetupUtils.getAWSSessionToken(config),
     DSConfigSetupUtils.getAWSCredentialsProvider(config),
-    DSConfigSetupUtils.getAWSEndpoint(config) ).mapN(AWSOptions)
+    DSConfigSetupUtils.getAWSEndpoint(config),
+      DSConfigSetupUtils.getAWSSSLEnabled(config)
+      ).mapN(AWSOptions)
       ).mapN(FileStoreConfig)
   }
 

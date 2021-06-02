@@ -147,6 +147,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val S3_SESSION_TOKEN: String = "fs.s3a.session.token"
   private val AWS_CREDENTIALS_PROVIDER: String = "fs.s3a.aws.credentials.provider"
   private val S3_ENDPOINT: String = "fs.s3a.endpoint"
+  private val S3_ENABLE_SSL: String = "fs.s3a.connection.ssl.enabled"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
@@ -190,7 +191,13 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     case Some(endpoint) =>
       hdfsConfig.set(S3_ENDPOINT, endpoint.arg)
       logger.info(s"Loaded $S3_ENDPOINT from ${endpoint.origin}")
-    case None => logger.info("Did not set AWS endpoint, using default.")
+    case None => logger.debug("Did not set AWS endpoint, using default.")
+  }
+  awsOptions.enableSSL match {
+    case Some(enable) =>
+      hdfsConfig.set(S3_ENABLE_SSL, enable.arg)
+      logger.info(s"Loaded $S3_ENABLE_SSL from ${enable.origin}")
+    case None => logger.debug("Did not set AWS endpoint SSL enabling, using default of true.")
   }
 
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")

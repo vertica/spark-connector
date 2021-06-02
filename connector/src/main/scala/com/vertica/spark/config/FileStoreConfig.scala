@@ -36,7 +36,8 @@ case class AWSOptions(
                        awsRegion: Option[AWSArg[String]],
                        awsSessionToken: Option[AWSArg[String]],
                        awsCredentialsProvider: Option[AWSArg[String]],
-                       awsEndpoint: Option[AWSArg[String]])
+                       awsEndpoint: Option[AWSArg[String]],
+                       enableSSL: Option[AWSArg[String]])
 
 /**
  * Represents configuration for a filestore used by the connector.
