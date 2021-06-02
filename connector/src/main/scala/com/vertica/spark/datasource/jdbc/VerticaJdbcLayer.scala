@@ -320,6 +320,15 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           logger.info("Did not set AWSSessionToken")
           Right(())
       }
+      _ <- awsOptions.awsEndpoint match {
+        case Some(endpoint) =>
+          val sql = s"ALTER SESSION SET AWSEndpoint='${endpoint.arg}'"
+          logger.info(s"Loaded AWSEndpoint from ${endpoint.origin}")
+          this.execute(sql)
+        case None =>
+          logger.info("Did not set AWSEndpoint")
+          Right(())
+      }
     } yield ()
   }
 

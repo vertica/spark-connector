@@ -24,6 +24,7 @@ import cats.data._
 import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
+import com.vertica.spark.datasource.core.DSConfigSetupUtils.{getAWSArgFromConnectorOption, getAWSArgFromSparkConfig}
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
@@ -232,6 +233,24 @@ object DSConfigSetupUtils {
         "spark.hadoop.fs.s3a.aws.credentials.provider", _ => None.validNec))
   }
 
+  def getAWSEndpoint(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+    val visibility = Visible
+    getAWSArgFromConnectorOption(visibility)(
+      config,
+      "aws_endpoint",
+      _ => getAWSArgFromSparkConfig(visibility)(
+        "spark.hadoop.fs.s3a.endpoint", _ => None.validNec))
+  }
+
+  def getAWSSSLEnabled(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+    val visibility = Visible
+    getAWSArgFromConnectorOption(visibility)(
+      config,
+      "aws_enable_ssl",
+      _ => getAWSArgFromSparkConfig(visibility)(
+        "fs.s3a.connection.ssl.enabled", _ => None.validNec))
+  }
+
   private def getAWSArg(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
@@ -385,7 +404,11 @@ object DSConfigSetupUtils {
     (DSConfigSetupUtils.getAWSAuth(config),
     DSConfigSetupUtils.getAWSRegion(config),
     DSConfigSetupUtils.getAWSSessionToken(config),
-    DSConfigSetupUtils.getAWSCredentialsProvider(config)).mapN(AWSOptions)).mapN(FileStoreConfig)
+    DSConfigSetupUtils.getAWSCredentialsProvider(config),
+    DSConfigSetupUtils.getAWSEndpoint(config),
+      DSConfigSetupUtils.getAWSSSLEnabled(config)
+      ).mapN(AWSOptions)
+      ).mapN(FileStoreConfig)
   }
 
   def validateAndGetTableSource(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[TableSource] = {

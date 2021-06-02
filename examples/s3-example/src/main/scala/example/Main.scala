@@ -47,6 +47,12 @@ object Main extends App {
     if (Try{conf.getString("functional-tests.aws_credentials_provider")}.isSuccess) {
       readOpts = readOpts + ("aws_credentials_provider" -> conf.getString("functional-tests.aws_credentials_provider"))
     }
+    if (Try{conf.getString("functional-tests.aws_endpoint")}.isSuccess) {
+      readOpts = readOpts + ("aws_endpoint" -> conf.getString("functional-tests.aws_endpoint"))
+    }
+    if (Try{conf.getString("functional-tests.aws_enable_ssl")}.isSuccess) {
+      readOpts = readOpts + ("aws_enable_ssl" -> conf.getString("functional-tests.aws_enable_ssl"))
+    }
 
     val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 
