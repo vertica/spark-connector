@@ -160,10 +160,33 @@ object Main extends App {
     }
   }
 
+  val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
+    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try{conf.getString("functional-tests.aws_enable_ssl")}.toOption match{
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
+      }
+    }
+  }
+
+  val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
+    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try{conf.getString("functional-tests.aws_endpoint")}.toOption match{
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
+      }
+    }
+  }
+
   val fileStoreConfig = FileStoreConfig(filename, "filestoretest", AWSOptions(awsAuth,
                                                              awsRegion,
                                                              awsSessionToken,
-                                                             awsCredentialsProvider))
+                                                             awsCredentialsProvider,
+                                                             awsEndpoint,
+                                                             awsEnableSsl
+  ))
   runSuite(new HDFSTests(
     fileStoreConfig,
     jdbcConfig
