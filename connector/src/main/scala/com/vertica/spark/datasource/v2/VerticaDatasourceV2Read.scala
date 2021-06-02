@@ -43,6 +43,9 @@ case class ExpectedRowDidNotExistError() extends ConnectorError {
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
   SupportsPushDownFilters with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
+
+  private var lastPushedFilters: List[PushFilter] = Nil
+
   private var requiredSchema: StructType = StructType(Nil)
 
 /**
@@ -51,9 +54,16 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
-    config.setPushdownFilters(this.pushFilters)
-    config.setRequiredSchema(this.requiredSchema)
-    new VerticaScan(config, readConfigSetup)
+    // This will be called twice per operation usually, so need to check if filters are different
+    val newOperation = pushFilters != lastPushedFilters
+
+    val cfg = config.copyConfig(newOperation)
+    cfg.setPushdownFilters(this.pushFilters)
+    cfg.setRequiredSchema(this.requiredSchema)
+
+    lastPushedFilters = pushFilters
+
+    new VerticaScan(cfg, readConfigSetup)
   }
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
@@ -130,7 +140,9 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   *
   * @return [[VerticaReaderFactory]]
   */
-  override def createReaderFactory(): PartitionReaderFactory = new VerticaReaderFactory(config)
+  override def createReaderFactory(): PartitionReaderFactory = {
+    new VerticaReaderFactory(config)
+  }
 }
 
 /**
