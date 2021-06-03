@@ -18,8 +18,8 @@ The connector relies on a distributed filesystem, such as HDFS, to act as a brid
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - A Vertica installation
-- An HDFS cluster, for use as an intermediary between Spark and Vertica
-- A spark application, either running locally for quick testing, or running on a spark cluster.
+- An HDFS cluster or S3 bucket, for use as an intermediary between Spark and Vertica
+- A spark application, either running locally for quick testing, or running on a spark cluster. If using S3, Spark must be using hadoop 3.3
 
 For an easier quick test of the connector using a dockerized environment, see [this guide for running our examples.](examples/README.md)
 
@@ -164,6 +164,8 @@ For information on tuning performance, see [here in our performance-tests sectio
 The connector supports versions of Spark between 3.0 and 3.1.1.
 
 The connector supports basic Spark types. Complex types are not currently supported (arrays, maps, structs).
+
+If using S3 rather than HDFS, the spark cluster must be running with hadoop 3.3. Our [S3 user manual](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md) goes over how to configure this.
 
 You may see an error such as:
 21/05/31 17:35:21 ERROR DFSClient: Failed to close inode 16447
