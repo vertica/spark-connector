@@ -33,7 +33,6 @@ object Main extends App {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "hdfs_url" -> conf.getString("functional-tests.filepath"),
     "num_partitions" -> conf.getString("functional-tests.num_partitions"),
     "fileformat" -> "parquet"
@@ -78,9 +77,11 @@ object Main extends App {
   }
   if (Try{conf.getString("functional-tests.aws_endpoint")}.isSuccess) {
     readOpts = readOpts + ("aws_endpoint" -> conf.getString("functional-tests.aws_endpoint"))
+    spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", conf.getString("functional-tests.aws_endpoint"));
   }
   if (Try{conf.getString("functional-tests.aws_enable_ssl")}.isSuccess) {
     readOpts = readOpts + ("aws_enable_ssl" -> conf.getString("functional-tests.aws_enable_ssl"))
+    spark.sparkContext.hadoopConfiguration.set("fs.s3a.connection.ssl.enabled", conf.getString("functional-tests.aws_enable_ssl"));
   }
 
   // read/write/both
