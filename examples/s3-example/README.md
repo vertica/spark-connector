@@ -11,7 +11,6 @@ Change directory to the example project:
 ```
 cd spark-connector/examples/s3-example
 ```
-
 In src/main/resources/application.conf, you must update the filepath to use your S3 bucket, as follows:
 `filepath="s3a://<your S3 bucket name here>/"`
 

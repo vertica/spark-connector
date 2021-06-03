@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.0.0",
   "org.apache.spark" %% "spark-sql" % "3.0.0",
-  "com.vertica.spark" % "vertica-spark" % "2.0.0-rc0"
+  "com.vertica.spark" % "vertica-spark" % "2.0.0-0"
 )
 
 
