@@ -20,6 +20,8 @@ import ch.qos.logback.classic.Level
 import com.vertica.spark.perftests.{BothMode, DataGenUtils, PerformanceTestSuite, ReadMode, WriteMode}
 import org.apache.spark.sql.SparkSession
 
+import scala.util.Try
+
 object Main extends App {
   private val spark = SparkSession.builder()
     .appName("Vertica Connector Test Prototype")
@@ -57,6 +59,28 @@ object Main extends App {
       kerberosHostname = conf.getString("functional-tests.kerberos_host_name"),
       jaasConfigName = conf.getString("functional-tests.jaas_config_name")
     )
+  }
+
+  if (Try{conf.getString("functional-tests.aws_access_key_id")}.isSuccess) {
+    readOpts = readOpts + ("aws_access_key_id" -> conf.getString("functional-tests.aws_access_key_id"))
+  }
+  if (Try{conf.getString("functional-tests.aws_secret_access_key")}.isSuccess) {
+    readOpts = readOpts + ("aws_secret_access_key" -> conf.getString("functional-tests.aws_secret_access_key"))
+  }
+  if (Try{conf.getString("functional-tests.aws_region")}.isSuccess) {
+    readOpts = readOpts + ("aws_region" -> conf.getString("functional-tests.aws_region"))
+  }
+  if (Try{conf.getString("functional-tests.aws_session_token")}.isSuccess) {
+    readOpts = readOpts + ("aws_session_token" -> conf.getString("functional-tests.aws_session_token"))
+  }
+  if (Try{conf.getString("functional-tests.aws_credentials_provider")}.isSuccess) {
+    readOpts = readOpts + ("aws_credentials_provider" -> conf.getString("functional-tests.aws_credentials_provider"))
+  }
+  if (Try{conf.getString("functional-tests.aws_endpoint")}.isSuccess) {
+    readOpts = readOpts + ("aws_endpoint" -> conf.getString("functional-tests.aws_endpoint"))
+  }
+  if (Try{conf.getString("functional-tests.aws_enable_ssl")}.isSuccess) {
+    readOpts = readOpts + ("aws_enable_ssl" -> conf.getString("functional-tests.aws_enable_ssl"))
   }
 
   // read/write/both
