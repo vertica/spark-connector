@@ -83,7 +83,7 @@ jobs:
           name: build-jar-file
           path: ./functional-tests/lib/
       - name: Add config options to application.conf
-        run: cd functional-tests/src/main/resources && echo -e "functional-tests={ \n\thost='vertica' \n\tport='5433' \n\tdb='docker' \n\tuser='dbadmin' \n\tpassword='' \n\tlog=true \n\tfilepath= '$S3_FILEPATH' \n\ttlsmode='disable' \n\ttruststorepath='/truststore.jks' \n\ttruststorepassword='dbadmin'  \n\taws_endpoint='$AWS_ENDPOINT' \n}" > application.conf
+        run: cd functional-tests/src/main/resources && echo -e "functional-tests={ \n\thost='vertica' \n\tport='5433' \n\tdb='docker' \n\tuser='dbadmin' \n\tpassword='' \n\tlog=true \n\tfilepath= '$S3_FILEPATH' \n\ttlsmode='disable' \n\ttruststorepath='/truststore.jks' \n\ttruststorepassword='dbadmin'  \n\taws_endpoint='$AWS_ENDPOINT' \n}\n" > application.conf
         env:
           S3_FILEPATH: ${{ secrets.S3_FILEPATH}}
           AWS_ENDPOINT: ${{ secrets.AWS_ENDPOINT}}
