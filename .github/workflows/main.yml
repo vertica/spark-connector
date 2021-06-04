@@ -59,7 +59,9 @@ jobs:
           path: ./functional-tests/lib/
       - name: Copy functional tests to home directory of client container
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
-      - name: Run the integration tests
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run
+      - name: Run the integration tests on Spark 3.0
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.0.2"
+      - name: Run the integration tests on Spark 3.1
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.1.1"
       - name: Remove docker containers
         run: cd docker && docker-compose down
