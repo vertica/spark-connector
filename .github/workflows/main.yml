@@ -94,6 +94,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           HADOOP_VERSION: "3.3.0"
       - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 s3-functional-tests.sh
+        run: docker exec -w spark-connector/functional-tests docker_client_1 s3-functional-tests.sh
       - name: Remove docker containers
         run: cd docker && docker-compose down
