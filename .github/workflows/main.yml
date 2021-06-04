@@ -85,13 +85,14 @@ jobs:
       - name: Add config options to application.conf
         run: cd functional-tests/src/main/resources && echo -e "functional-tests={ \n\thost='vertica' \n\tport='5433' \n\tdb='docker' \n\tuser='dbadmin' \n\tpassword='' \n\tlog=true \n\tfilepath= '$S3_FILEPATH' \n\ttlsmode='disable' \n\ttruststorepath='/truststore.jks' \n\ttruststorepassword='dbadmin'  \n\taws_endpoint='$AWS_ENDPOINT' \n}" > application.conf
         env:
-          S3_FILEPATH= ${{ secrets.S3_FILEPATH}}
-          AWS_ENDPOINT ${{ secrets.AWS_ENDPOINT}}
+          S3_FILEPATH: ${{ secrets.S3_FILEPATH}}
+          AWS_ENDPOINT: ${{ secrets.AWS_ENDPOINT}}
       - name: Build the functional-tests project
         run: cd functional-tests && sbt assembly
         env:
-          AWS_ACCESS_KEY_ID= ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY= ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          HADOOP_VERSION: "3.3.0"
       - name: Run the integration tests
         run: docker exec -w /home/functional-tests docker_client_1 ./s3-functional-tests.sh
       - name: Remove docker containers
