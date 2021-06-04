@@ -93,6 +93,8 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           HADOOP_VERSION: "3.3.0"
+      - name: Copy functional tests to home directory of client container
+        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
       - name: Run the integration tests
         run: docker exec -w /home/functional-tests docker_client_1 ./s3-functional-tests.sh
       - name: Remove docker containers
