@@ -90,7 +90,7 @@ jobs:
       - name: Build the functional-tests project
         run: cd functional-tests && sbt assembly
       - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; HADOOP_VERSION=$HADOOP_VERSION; ./s3-functional-tests.sh"
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e HADOOP_VERSION=$HADOOP_VERSION /bin/bash ./s3-functional-tests.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
