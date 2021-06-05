@@ -88,12 +88,12 @@ jobs:
           S3_FILEPATH: ${{ secrets.S3_FILEPATH}}
           AWS_ENDPOINT: ${{ secrets.AWS_ENDPOINT}}
       - name: Build the functional-tests project
-        run: AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID && AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY cd functional-tests && sbt assembly
+        run: cd functional-tests && sbt assembly
+      - name: Run the integration tests
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; ./s3-functional-tests.sh"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           HADOOP_VERSION: 3.3.0
-      - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash ./s3-functional-tests.sh
       - name: Remove docker containers
         run: cd docker && docker-compose down
