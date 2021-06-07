@@ -94,6 +94,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           HADOOP_VERSION: 3.3.0
-          SPARK_VERSION: 3.1.2
+          SPARK_VERSION: 3.0.2
       - name: Remove docker containers
         run: cd docker && docker-compose down
