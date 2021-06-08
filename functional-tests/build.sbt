@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.12.10"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := "1.0"
