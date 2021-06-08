@@ -67,7 +67,7 @@ class PerformanceTestSuite(spark: SparkSession) {
     val startTime: Long = System.currentTimeMillis()
     if(dataRunDef.sourceType.isInstanceOf[JdbcSparkSource]) jdbcTestWrite(dataRunDef) else colTestWrite(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
-    println("Write run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
+    println("Write run for " + "col" + dataRunDef.cols + "row" + dataRunDef.rows + " -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
   }
 
@@ -75,7 +75,7 @@ class PerformanceTestSuite(spark: SparkSession) {
     val startTime: Long = System.currentTimeMillis()
     if(dataRunDef.sourceType.isInstanceOf[JdbcSparkSource]) jdbcTestRead(dataRunDef) else colTestRead(dataRunDef)
     val endTime: Long = System.currentTimeMillis()
-    println("Read run for col200row12M -- run " + runNum + " start: " + startTime + ", end: " + endTime)
+    println("Read run for " + "col" + dataRunDef.cols + "row" + dataRunDef.rows + " -- run " + runNum + " start: " + startTime + ", end: " + endTime)
     endTime - startTime
   }
 

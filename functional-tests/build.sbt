@@ -17,7 +17,9 @@ organization := "com.vertica"
 version := "1.0"
 
 val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.0.0")
-val hadoopVersion= Option(System.getProperty("HADOOP_VERSION")).getOrElse("2.4.0")
+
+val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("2.4.0")
+
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
