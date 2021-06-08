@@ -37,13 +37,14 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
 
-
-
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
 
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
+)
 
 //unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
 
