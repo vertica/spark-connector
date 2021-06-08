@@ -72,7 +72,7 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-1.0.jar
+Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-2.0.0.jar
 
 ## Step 4: Set up an environment
 The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.][https://github.com/vertica/spark-connector/blob/main/examples/README.md]
@@ -88,13 +88,13 @@ The next requirement is a spark application that uses the connector jar. Example
 ```shell
 cd examples/basic-read
 mkdir lib
-cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-1.0.jar lib
+cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.0.jar lib
 sbt run
 ```
 
 ### HDFS
 <a name="hdfs"></a>
-The final requirement is an intermediary distributed filesystem such as HDFS. This acts as an intermediary transport method between Spark and Vertica.
+The next requirement is an intermediary distributed filesystem such as HDFS. This acts as an intermediary transport method between Spark and Vertica.
 
 The easiest setup for this in a development environment is to use a docker container with HDFS. We recommend [docker-hdfs](https://github.com/mdouchement/docker-hdfs). You can clone it and then set it up as follows:
 
@@ -120,6 +120,15 @@ A final step may be required for the networking between Vertica and the HDFS doc
 ```
 
 This is assuming a single-node Vertica installation on the same machine as the hdfs container.
+
+### Java 
+
+Spark Connector requires Java 8 (8u92 or later) or Java 11.
+
+### AWS S3
+
+Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md) to learn how to use the connector with S3.
+
 
 
 ## Step 5: Implement your fix or feature
