@@ -28,9 +28,9 @@ This will:
 
 3. Enter the sandbox client environment.
 
-Now change your working directory to one in `spark-connector/examples` 
+Now change your working directory to one in `spark-connector/examples` and follow the instructions in that example's README.
 
-After changing your directory to a specific example (such as `spark-connector/examples/basic-read`), just enter `sbt run`
+//After changing your directory to a specific example (such as `spark-connector/examples/basic-read`), just enter `sbt assembly` (you may want to do this outside the container for a faster build) and then run `./run-example.sh`.
 
 If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run `sbt "run [CASE]"` to run the various cases.
 
