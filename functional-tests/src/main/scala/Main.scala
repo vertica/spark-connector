@@ -203,7 +203,7 @@ object Main extends App {
   ))
 
   val writeOpts = readOpts
-  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig))
+  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
 
   if (args.length == 1 && args(0) == "Large") {
     runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
