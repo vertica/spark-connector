@@ -87,37 +87,4 @@ jobs:
         run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.1.1" -DhadoopVersion="3.3.0"
       - name: Remove docker containers
         run: cd docker && docker-compose down
-  run-integration-tests_s3:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout the project
-        uses: actions/checkout@v2
-      - name: Download the build artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: build-jar-file
-          path: ./functional-tests/lib/
-      - name: Add config options to application.conf
-        run: cd functional-tests/src/main/resources && echo -e 'functional-tests={ \n\thost="'"vertica"'" \n\tport="'"5433"'" \n\tdb="'"docker"'" \n\tuser="'"dbadmin"'" \n\tpassword="'""'" \n\tlog='true' \n\tfilepath="'"$S3_FILEPATH"'" \n\ttlsmode="'"disable"'" \n\ttruststorepath="'"/truststore.jks"'" \n\ttruststorepassword="'"dbadmin"'" \n}\n' > application.conf
-        env:
-          S3_FILEPATH: ${{ secrets.S3_FILEPATH}}
-      - name: Build the functional-tests project
-        run: cd functional-tests && sbt assembly
-      - name: Build client image
-        run: docker build -t client ./docker
-      - name: Run docker compose
-        run: cd docker && docker-compose up -d
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; export hadoopVersion=$HADOOP_VERSION; sparkVersion=$SPARK_VERSION; ./s3-functional-tests.sh"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          hadoopVersion: "3.3.0"
-          SPARK_VERSION: "3.0.2"
-      - name: Remove docker containers
-        run: cd docker && docker-compose down
+
