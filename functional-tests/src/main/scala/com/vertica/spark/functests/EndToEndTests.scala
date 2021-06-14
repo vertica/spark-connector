@@ -47,6 +47,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     .getOrCreate()
 
   override def afterEach(): Unit ={
+    Thread.sleep(30000)
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     assert(anyFiles.right.get.isEmpty)
   }
