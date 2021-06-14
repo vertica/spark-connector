@@ -2,8 +2,8 @@ name: S3-Integration
 
 on:
   schedule:
-    # Every day at 1am
-    - cron: '0 1 * * *'
+    # Every day at 2am
+    - cron: '0 2 * * *'
 
 jobs:
   build:
@@ -52,3 +52,4 @@ jobs:
           SPARK_VERSION: "3.0.2"
       - name: Remove docker containers
         run: cd docker && docker-compose down
+    
