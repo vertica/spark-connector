@@ -1671,7 +1671,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "halt if table name already exists as view." in {
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest17"
     val viewName = tableName + "view"
 
@@ -1700,8 +1699,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> viewName, "dbschema" -> dbschema,
-    "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> viewName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -1719,7 +1717,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "ErrorIfExists mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest18"
     val dbschema = "public"
 
@@ -1743,8 +1740,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.ErrorIfExists
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
@@ -1769,7 +1765,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest19"
     val dbschema = "public"
 
@@ -1794,8 +1789,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.ErrorIfExists
     var failure: Option[Exception] = None
@@ -1812,9 +1806,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Ignore mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest20"
     val dbschema = "public"
+    val path="/test/"
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
 
@@ -1856,12 +1850,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert (rowsLoaded == numDfRows)
     TestUtils.dropTable(conn, tableName)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "Ignore mode should NOT save to Vertica and ignores the load if table already exists in Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest21"
     val dbschema = "public"
 
@@ -1886,8 +1882,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Ignore
     var failure: Option[Exception] = None
@@ -2014,7 +2009,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should throw clear error message if data frame contains a complex data type not supported by Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest24"
     val dbschema = "public"
 
@@ -2035,8 +2029,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -2054,7 +2047,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should not try to save an empty dataframe." in {
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val tableName = "s2vdevtest25"
     val dbschema = "public"
 
@@ -2068,8 +2060,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val numDfRows = df.count
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -2087,7 +2078,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should drop rejects table if it is empty." in {
     val stmt = conn.createStatement()
 
-    val path = "/test/"
     val rand = scala.util.Random.nextInt(10000000)
     val tableName = "s2vdevtest26" + "_" + rand.toString
     val dbschema = "public"
@@ -2113,8 +2103,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
