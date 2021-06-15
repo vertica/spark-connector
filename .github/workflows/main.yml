@@ -3,7 +3,7 @@ name: Tests-CI
 
 on:
   push:
-    branches: [ main, docker_gha ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -43,8 +43,6 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
-      - name: Build client image
-        run: docker build -t client ./docker
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Replace HDFS core-site config with our own
@@ -89,3 +87,4 @@ jobs:
         run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.1.1" -DhadoopVersion="3.3.0"
       - name: Remove docker containers
         run: cd docker && docker-compose down
+
