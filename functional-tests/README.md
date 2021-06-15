@@ -28,7 +28,7 @@ cd spark-connector/functional-tests
 From the functional-tests directory, `sbt run` from the command line. Alternatively, to run the LargeDataTests, use `sbt "run Large"`.
 
 ### Using S3:
-Set the appropriate S3-credentials. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
+Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
 * aws_access_key_id
 * aws_secret_access_key
 * aws_region
