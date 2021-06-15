@@ -1671,7 +1671,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "halt if table name already exists as view." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest17"
     val viewName = tableName + "view"
 
@@ -1719,7 +1719,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "ErrorIfExists mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest18"
     val dbschema = "public"
 
@@ -1769,7 +1769,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest19"
     val dbschema = "public"
 
@@ -1812,7 +1812,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Ignore mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest20"
     val dbschema = "public"
 
@@ -1861,7 +1861,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Ignore mode should NOT save to Vertica and ignores the load if table already exists in Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest21"
     val dbschema = "public"
 
@@ -2014,7 +2014,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should throw clear error message if data frame contains a complex data type not supported by Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest24"
     val dbschema = "public"
 
@@ -2054,7 +2054,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should not try to save an empty dataframe." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val tableName = "s2vdevtest25"
     val dbschema = "public"
 
@@ -2087,7 +2087,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should drop rejects table if it is empty." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
+    val path = "/test/"
     val rand = scala.util.Random.nextInt(10000000)
     val tableName = "s2vdevtest26" + "_" + rand.toString
     val dbschema = "public"
