@@ -504,7 +504,6 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.fileExists _).expects(*).returning(Right(false))
     (fileStoreLayer.fileExists _).expects(*).returning(Right(true))
 
-
     // Files returned by filesystem (mock of what vertica would create
     val exportedFiles = Array[String]()
     (fileStoreLayer.getFileList _).expects(*).returning(Right(exportedFiles))
