@@ -284,6 +284,11 @@ class VerticaDistributedFilesystemReadPipe(
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
       _ = logger.info("Total row groups: " + totalRowGroups)
+      // If table is empty, cleanup
+      _ =  if(totalRowGroups == 0) {
+        logger.info("Cleaning up all files in path: " + hdfsPath)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      }
 
       partitionCount = if (totalRowGroups < requestedPartitionCount) {
         logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)

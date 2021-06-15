@@ -47,7 +47,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     .getOrCreate()
 
   override def afterEach(): Unit ={
-    Thread.sleep(30000)
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     assert(anyFiles.right.get.isEmpty)
   }
@@ -182,7 +181,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(sumDf.head.get(2) == 7)
     TestUtils.dropTable(conn, tableName1)
   }
-
 
   it should "df alias and join" in {
     val tableName1 = "dftest1"
@@ -650,6 +648,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(r2 == (n + 1))
 
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a String-type pushdown filter" in {
@@ -688,6 +689,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(r2 == (n + 1))
 
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a column projection pushdown" in {
@@ -716,6 +720,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with multiple column projection pushdowns" in {
@@ -745,6 +752,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with select * projection pushdown" in {
@@ -828,6 +838,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(dr.collect().sortBy(_.getLong(0)).mkString(",") == "[2],[2],[2],[3],[3],[3],[3]")
 
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a filter pushdown with the correct values" in {
@@ -859,6 +872,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(dfFiltered.collect().mkString(",") == "[4,6],[4,6],[4,6]")
 
     stmt.execute("drop table " + tableName1)
+
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "fetch the correct results when startsWith and endsWith functions are used" in {
@@ -970,6 +987,41 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a TIMESTAMP, b float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
+    val r = dr.count
+
+    assert(!dr
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(r == n + 1)
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+    if(!fsLayer.getFileList(fsConfig.address).right.get.isEmpty) {
+      fsLayer.removeDir(fsConfig.address)
+      // Need to recreate the root directory for the afterEach assertion check
+      fsLayer.createDir(fsConfig.address, "777")
+    }
+
   }
 
   it should "write data to Vertica" in {
@@ -3271,38 +3323,4 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
-    val tableName1 = "dftest1"
-    val stmt = conn.createStatement()
-    val n = 3
-
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a TIMESTAMP, b float)")
-
-    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n + 1)
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
-
-    val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
-    val r = dr.count
-
-    assert(!dr
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("Filter"))
-
-    assert(r == n + 1)
-
-    dr.show
-    stmt.execute("drop table " + tableName1)
-    if(!fsLayer.getFileList(fsConfig.address).right.get.isEmpty) {
-      fsLayer.removeDir(fsConfig.address)
-      // Need to recreate the root directory for the afterEach assertion check
-      fsLayer.createDir(fsConfig.address, "777")
-    }
-
-  }
 }
