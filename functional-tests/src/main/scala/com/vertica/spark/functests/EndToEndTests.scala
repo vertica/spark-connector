@@ -30,7 +30,6 @@ import org.scalactic.TripleEquals._
 import org.scalactic.Tolerance._
 import org.apache.spark.sql.functions._
 
-
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
@@ -3322,5 +3321,4 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
-
 }
