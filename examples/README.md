@@ -32,7 +32,7 @@ This will:
 
 Now change your working directory to one in `spark-connector/examples` 
 
-After changing your directory to a specific example (such as spark-connector/examples/basic-read), just enter sbt run
+After changing your directory to a specific example (such as spark-connector/examples/basic-read), just enter `sbt run`
 
 If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run `sbt "run [CASE]"` to run the various cases.
 
@@ -77,6 +77,12 @@ Once in the examples directory, run:
 ./run-example.sh [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
 ``` 
 Example argument: basic-read/target/scala-2.12/spark-vertica-connector-basic-read-assembly-2.0.jar
+
+Running this script for the first time will install Spark and user-provided Hadoop. This may take some time; however, running the script subsequently will forgo those steps. If you would like to include those steps then add a 'clean' argument to the script:
+```
+./run-example.sh clean [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
+``` 
+
 
 There are additional prerequisites to run the S3, Pyspark, or Kerberos examples. If you want to run these, please take a look at their respective README files. 
 

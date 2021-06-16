@@ -56,7 +56,7 @@ Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 ### Scala
 
-For the Scala API, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
+For the Spark connector, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
 
 ### AWS S3
 
