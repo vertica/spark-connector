@@ -83,7 +83,6 @@ Running this script for the first time will install Spark and user-provided Hado
 ./run-example.sh clean [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
 ``` 
 
-
 There are additional prerequisites to run the S3, Pyspark, or Kerberos examples. If you want to run these, please take a look at their respective README files. 
 
 
