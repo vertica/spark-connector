@@ -32,7 +32,7 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
   }
 
   override def afterAll() = {
-    fsLayer.removeDir(path)
+    fsLayer.removeDir(cfg.address)
   }
 
   it should "Clean up a file" in {

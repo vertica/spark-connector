@@ -513,11 +513,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
+
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
-
-    val cleanupUtils = mock[CleanupUtilsInterface]
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 

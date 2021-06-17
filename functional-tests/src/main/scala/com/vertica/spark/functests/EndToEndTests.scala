@@ -15,23 +15,28 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Date, Timestamp}
 
-import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalactic.TripleEquals._
 import org.scalactic.Tolerance._
 import org.apache.spark.sql.functions._
 
-class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
+  val fsConfig= FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
+  val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()
     .master("local[*]")
@@ -39,6 +44,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .getOrCreate()
+
+  override def afterEach(): Unit ={
+    val anyFiles= fsLayer.getFileList(fsConfig.address)
+    assert(anyFiles.right.get.isEmpty)
+  }
 
   override def afterAll(): Unit = {
     spark.close()
@@ -170,7 +180,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(sumDf.head.get(2) == 7)
     TestUtils.dropTable(conn, tableName1)
   }
-
 
   it should "df alias and join" in {
     val tableName1 = "dftest1"
@@ -638,6 +647,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(r2 == (n + 1))
 
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a String-type pushdown filter" in {
@@ -676,35 +688,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(r2 == (n + 1))
 
     stmt.execute("drop table " + tableName1)
-  }
-
-  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
-    val tableName1 = "dftest1"
-    val stmt = conn.createStatement()
-    val n = 3
-
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a TIMESTAMP, b float)")
-
-    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
-    TestUtils.populateTableBySQL(stmt, insert, n + 1)
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
-
-    val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
-    val r = dr.count
-
-    assert(!dr
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("Filter"))
-
-    assert(r == n + 1)
-
-    dr.show
-    stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a column projection pushdown" in {
@@ -733,6 +719,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with multiple column projection pushdowns" in {
@@ -762,6 +751,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with select * projection pushdown" in {
@@ -845,6 +837,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(dr.collect().sortBy(_.getLong(0)).mkString(",") == "[2],[2],[2],[3],[3],[3],[3]")
 
     stmt.execute("drop table " + tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a filter pushdown with the correct values" in {
@@ -876,6 +871,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(dfFiltered.collect().mkString(",") == "[4,6],[4,6],[4,6]")
 
     stmt.execute("drop table " + tableName1)
+
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "fetch the correct results when startsWith and endsWith functions are used" in {
@@ -987,6 +986,41 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     assert(df.cache.count == n)
     stmt.execute("drop table " + tableName1)
+  }
+
+  it should "load data from Vertica with a TIMESTAMP-type pushdown filter" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement()
+    val n = 3
+
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a TIMESTAMP, b float)")
+
+    var insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:47:32.62', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    insert = "insert into "+ tableName1 + " values(TIMESTAMP '2010-03-25 12:55:49.123456', 2.2)"
+    TestUtils.populateTableBySQL(stmt, insert, n + 1)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
+    val r = dr.count
+
+    assert(!dr
+      .queryExecution
+      .executedPlan
+      .toString()
+      .contains("Filter"))
+
+    assert(r == n + 1)
+
+    dr.show
+    stmt.execute("drop table " + tableName1)
+    if(!fsLayer.getFileList(fsConfig.address).right.get.isEmpty) {
+      fsLayer.removeDir(fsConfig.address)
+      // Need to recreate the root directory for the afterEach assertion check
+      fsLayer.createDir(fsConfig.address, "777")
+    }
+
   }
 
   it should "write data to Vertica" in {
@@ -1637,7 +1671,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "halt if table name already exists as view." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest17"
     val viewName = tableName + "view"
 
@@ -1666,8 +1699,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> viewName, "dbschema" -> dbschema,
-    "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> viewName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -1685,7 +1717,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "ErrorIfExists mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest18"
     val dbschema = "public"
 
@@ -1709,8 +1740,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.ErrorIfExists
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
@@ -1735,7 +1765,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest19"
     val dbschema = "public"
 
@@ -1760,8 +1789,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.ErrorIfExists
     var failure: Option[Exception] = None
@@ -1778,9 +1806,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Ignore mode should save to Vertica if table does not already exist in Vertica." in {
     var stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest20"
     val dbschema = "public"
+    val path="/test/"
 
     stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
 
@@ -1822,12 +1850,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert (rowsLoaded == numDfRows)
     TestUtils.dropTable(conn, tableName)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "Ignore mode should NOT save to Vertica and ignores the load if table already exists in Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest21"
     val dbschema = "public"
 
@@ -1852,8 +1882,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Ignore
     var failure: Option[Exception] = None
@@ -1980,7 +2009,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should throw clear error message if data frame contains a complex data type not supported by Vertica." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest24"
     val dbschema = "public"
 
@@ -2001,8 +2029,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -2020,7 +2047,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should not try to save an empty dataframe." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val tableName = "s2vdevtest25"
     val dbschema = "public"
 
@@ -2034,8 +2060,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val numDfRows = df.count
     println("numDfRows=" + numDfRows)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
@@ -2053,7 +2078,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "Should drop rejects table if it is empty." in {
     val stmt = conn.createStatement()
 
-    val path = "/data/test/"
     val rand = scala.util.Random.nextInt(10000000)
     val tableName = "s2vdevtest26" + "_" + rand.toString
     val dbschema = "public"
@@ -2079,8 +2103,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println("numDfRows=" + numDfRows)
 
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema,
-      "staging_fs_url" -> (writeOpts("staging_fs_url").stripSuffix("/") + path))
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
 
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
