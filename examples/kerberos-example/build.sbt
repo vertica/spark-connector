@@ -14,7 +14,7 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-kerberos-example"
 organization := "com.vertica"
-version := "1.0"
+version := "2.0"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -26,5 +26,9 @@ libraryDependencies ++= Seq(
   "com.vertica.spark" % "vertica-spark" % "2.0.0-0"
 )
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
 
 unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")

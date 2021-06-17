@@ -52,7 +52,6 @@ docker compose up -d
 ```
 Run `docker exec -it docker_client_1 /bin/bash` to enter the sandbox client environment. The following steps assume you are in this container.
 
-You should now be able to run the example:
-`./run-s3-example.sh`
+You should now be able to run the example: `./run-example.sh`
 
-If you get a permission denied issue, run `chmod +x run-s3-example.sh`
+If you get a permission denied issue, run `chmod +x run-example.sh`

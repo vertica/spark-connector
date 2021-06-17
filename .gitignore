@@ -21,6 +21,7 @@ examples/*/project/target/
 examples/*/target
 examples/*/.idea/
 examples/*/.bsp
+examples/target/
 /target/
 /.idea/
 .DS_Store

@@ -54,6 +54,10 @@ ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 
 Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
+### Scala
+
+For the Spark connector, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
+
 ### AWS S3
 
 Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md) to learn how to use the connector with S3.
