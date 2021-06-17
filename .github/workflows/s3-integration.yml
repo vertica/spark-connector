@@ -1,9 +1,9 @@
 name: S3-Integration
 
 on:
-  schedule:
-    # Every day at 2am
-    - cron: '0 2 * * *'
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
