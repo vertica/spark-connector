@@ -286,7 +286,7 @@ class VerticaDistributedFilesystemReadPipe(
       _ = logger.info("Total row groups: " + totalRowGroups)
       // If table is empty, cleanup
       _ =  if(totalRowGroups == 0) {
-        logger.info("Cleaning up all files in path: " + hdfsPath)
+        logger.debug("Cleaning up empty directory in path: " + hdfsPath)
         cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
       }
 
