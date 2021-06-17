@@ -58,6 +58,8 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
   }
 
   override def afterAll(): Unit = {
+    val rootDir= fsCfg.address.stripSuffix("filestoretest")
+    fsLayer.removeDir(rootDir)
     spark.close()
   }
 
