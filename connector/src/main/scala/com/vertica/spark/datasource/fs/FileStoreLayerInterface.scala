@@ -30,13 +30,10 @@ import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_TOKEN_FILES
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
-import org.apache.hadoop.security.UserGroupInformation.AuthenticationMethod
-import org.apache.hadoop.yarn.client.api.YarnClient
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.ParquetOutputFormat.JobSummaryLevel
 import org.apache.parquet.hadoop.api.InitContext
@@ -44,7 +41,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
 import org.apache.spark.sql.types.StructType
 
@@ -429,18 +425,20 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
     // First, see if there is already a delegation token (this is the case when run under YARN)
     var hdfsToken: Option[String] = None
-    val ugiUser = UserGroupInformation.getLoginUser
-    if(ugiUser != null) {
-      logger.debug("Got UGI user.")
-      val existingTokens = ugiUser.getCredentials.getAllTokens
-      val itr = existingTokens.iterator
-      while (itr.hasNext) {
-        val token = itr.next();
-        logger.debug("Existing token kind: " + token.getKind.toString)
-        if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-          hdfsToken = Some(token.encodeToUrlString)
+    val ugiUser = Option(UserGroupInformation.getLoginUser)
+    ugiUser match {
+      case None => ()
+      case Some(user) =>
+        logger.debug("Got UGI user.")
+        val existingTokens = user.getCredentials.getAllTokens
+        val itr = existingTokens.iterator
+        while (itr.hasNext) {
+          val token = itr.next();
+          logger.debug("Existing token kind: " + token.getKind.toString)
+          if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+            hdfsToken = Some(token.encodeToUrlString)
+          }
         }
-      }
     }
 
     this.useFileSystem(fileStoreConfig.address, (fs, _) => {
