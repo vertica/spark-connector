@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.fs
 
+import java.net.URI
 import java.util
 import java.util.Collections
 
@@ -30,7 +31,9 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
+import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.apache.hadoop.io.Text
+import org.apache.hadoop.security.UserGroupInformation
 import org.apache.parquet.filter2.compat.FilterCompat
 import org.apache.parquet.hadoop.ParquetOutputFormat.JobSummaryLevel
 import org.apache.parquet.hadoop.api.InitContext
@@ -38,7 +41,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.hadoop.util.HadoopInputFile
 import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
-import org.apache.spark.TaskContext
 import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
 import org.apache.spark.sql.types.StructType
 
@@ -420,25 +422,43 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
   // scalastyle:off
   override def getImpersonationToken(user: String) : ConnectorResult[String] = {
-    this.useFileSystem(fileStoreConfig.address, (fs, _) => {
-      var hdfsToken = ""
 
+    // First, see if there is already a delegation token (this is the case when run under YARN)
+    var hdfsToken: Option[String] = None
+    val ugiUser = Option(UserGroupInformation.getLoginUser)
+    ugiUser match {
+      case None => ()
+      case Some(user) =>
+        logger.debug("Got UGI user.")
+        val existingTokens = user.getCredentials.getAllTokens
+        val itr = existingTokens.iterator
+        while (itr.hasNext) {
+          val token = itr.next();
+          logger.debug("Existing token kind: " + token.getKind.toString)
+          if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+            hdfsToken = Some(token.encodeToUrlString)
+          }
+        }
+    }
+
+    this.useFileSystem(fileStoreConfig.address, (fs, _) => {
       val tokens = fs.addDelegationTokens(user, null)
       val itr = tokens.iterator
       while (itr.hasNext) {
         val token = itr.next();
         logger.debug("Hadoop impersonation: IT kind: " + token.getKind.toString)
         if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-          hdfsToken = token.encodeToUrlString
+          hdfsToken = Some(token.encodeToUrlString)
         }
       }
 
-      if(hdfsToken.nonEmpty) {
-        Right(hdfsToken)
-      } else {
-        Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
-      }
+      Right(())
     })
+
+    hdfsToken match {
+      case Some(token) => Right(token)
+      case None => Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
+    }
   }
 
   override def getAWSOptions: AWSOptions = {
