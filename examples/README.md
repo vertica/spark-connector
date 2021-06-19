@@ -52,7 +52,7 @@ Once you're finished running the examples exit out of the interactive terminal b
 
 ## Running Example Application in Spark Cluster
 
-Note: this method is required for the S3-example. 
+Note: this method is required for the S3-example and PySpark example. 
 
 In the example's root directory (spark-connector/examples/[EXAMPLE]) , run `sbt assembly`:
 ```
