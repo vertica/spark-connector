@@ -45,13 +45,13 @@ In the project's root directory (spark-connector/examples/s3-example) , run `sbt
 sbt assembly
 ```
 
-Change directory to docker:
+Change directory to docker and run sandbox-clientenv.sh:
 ```
 cd ../../spark-connector/docker
-docker compose up -d
+./sandbox-clientenv.sh
 ```
-Run `docker exec -it docker_client_1 /bin/bash` to enter the sandbox client environment. The following steps assume you are in this container.
+This will put you in the sandbox client environment. The following steps assume you are in this container.
 
-You should now be able to run the example: `./run-example.sh`
+You should now be able to run the example: `./run-example.sh target/scala-2.12/spark-vertica-connector-s3-example-assembly-1.0.jar`
 
 If you get a permission denied issue, run `chmod +x run-example.sh`
