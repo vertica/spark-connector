@@ -27,7 +27,7 @@ import com.vertica.spark.util.error.{ConnectionSqlError, DataError, SyntaxError}
   * Should ensure that the component correctly passes on queries / other statements to vertica and correctly returns results. It should also confirm that error handling works as expected.
   */
 class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
-  var jdbcLayer : JdbcLayerInterface = _
+  var jdbcLayer: JdbcLayerInterface = _
 
   val tablename = "test_table"
 
@@ -38,6 +38,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   override def beforeEach(): Unit = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename + ";")
   }
+
   override def afterEach(): Unit = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename + ";")
   }
@@ -45,11 +46,11 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   it should "Create a table" in {
     jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer, vendor_name varchar(64));")
 
-    try{
+    try {
       jdbcLayer.query("SELECT * FROM " + tablename + " WHERE 1=0;")
     }
     catch {
-      case _ : Throwable => fail // There should be no error loading the created table
+      case _: Throwable => fail // There should be no error loading the created table
     }
   }
 
@@ -176,7 +177,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
   it should "Fail to connect to the wrong database" in {
     val tlsConfig = JDBCTLSConfig(tlsMode = Disable, None, None, None, None)
-    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db+"-doesnotexist123asdf", BasicJdbcAuth( username = "test", password = "test"), tlsConfig))
+    val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db + "-doesnotexist123asdf", BasicJdbcAuth(username = "test", password = "test"), tlsConfig))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
       case Right(u) => assert(false) // should not succeed
@@ -190,5 +191,13 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     }
   }
 
-
+  it should "Insert integer data with param" in {
+    jdbcLayer.query("GET_CLIENT_LABEL();") match {
+      case Right(rs) =>
+        assert(rs.next())
+        assert(rs.getString(1) == "Vertica Spark Connector")
+      case Left(err) =>
+        fail(err.getFullContext)
+    }
+  }
 }

@@ -126,6 +126,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       .toEither.left.map(handleConnectionException)
       .flatMap(conn =>
         this.useConnection(conn, c => {
+          c.setClientInfo("APPLICATIONNAME", "Vertica Spark Connector")
           c.setAutoCommit(false)
           logger.info("Successfully connected to Vertica.")
           c
