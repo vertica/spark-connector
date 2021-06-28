@@ -45,6 +45,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           extends VerticaPipeInterface with VerticaPipeWriteInterface {
 
   private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
+  private val tempTableName = new TableName(config.tablename.name + "_" + config.sessionId, None)
 
   /**
    * No write metadata required for configuration as of yet.
@@ -105,7 +106,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Overwrite safety check
       _ <- if (config.isOverwrite && tableExistsPre) Left(DropTableError()) else Right(())
 
-      // Check if a view exists or temp table exits by this name
+      // Check if a view exists or temp table exists by this name
       viewExists <- tableUtils.viewExists(config.tablename)
       _ <- if (viewExists) Left(ViewExistsError()) else Right(())
       tempTableExists <- tableUtils.tempTableExists(config.tablename)
@@ -116,6 +117,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
       _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
+
+      // Check if merge key was passed in. If so, this creates a temporary table, which will be merged into the target table.
+      _ <- if (config.mergeKey.isDefined) tableUtils.createTable(tempTableName, None, config.schema, config.strlen) else Right(())
 
       // Create the directory to export files to
       perm = config.filePermissions
@@ -145,6 +149,32 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
     s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+  }
+
+  def buildMergeStatement(targetTableName: TableName, columnList: String, tempTable: String, mergeKey: Option[String]): String = {
+    var targetTable = targetTableName.getFullTableName
+    val updateColValues = schemaTools.getUpdateValues(jdbcLayer, targetTableName)
+    val insertColValues = schemaTools.getInsertValues(jdbcLayer, targetTableName)
+    val mergeKeyString = mergeKey match {
+      case Some(key) => key
+      case None => None
+    }
+    s"MERGE INTO $targetTable as target using $tempTable as temp ON (target.$mergeKeyString=temp.$mergeKeyString) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES $insertColValues"
+  }
+
+  def performMerge (mergeStatement: String): ConnectorResult[Int] = {
+    val ret = for {
+
+      // Explain merge first to verify it's valid.
+      rs <- jdbcLayer.query("EXPLAIN " + mergeStatement)
+      _ = rs.close()
+
+      // Real merge
+      rowsCopied <- jdbcLayer.executeUpdate(mergeStatement)
+    } yield rowsCopied
+    logger.info("Executing Merge")
+    ret.left.map(err => CommitError(err).context("performMerge: JDBC error when trying to merge"))
+
   }
 
   /**
@@ -238,7 +268,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Empty copy to make sure a projection is created if it hasn't been yet
     // This will error out, but create the projection
     val emptyCopy = "COPY " + tablename.getFullTableName + " FROM '';"
-
     jdbcLayer.executeUpdate(emptyCopy)
 
     val ret = for {
@@ -259,9 +288,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
-
-    val tableNameMaxLength = 30
-
+    val mergeKey= config.mergeKey match{
+      case Some(mergeKey) => true
+      case None => false
+    }
+    if(mergeKey) logger.info("Merge should take place") else logger.info("Merge key does not exist")
     val ret = for {
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
@@ -269,8 +300,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 
+      // Do not check for mergeKey here, as tableName does not impact merge
       tableName = config.tablename.name
+
+      tableNameMaxLength = 30
+
       sessionId = config.sessionId
+
       rejectsTableName = "\"" +
         EscapeUtils.sqlEscape(tableName.substring(0,Math.min(tableNameMaxLength,tableName.length))) +
         "_" +
@@ -278,21 +314,27 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         "_COMMITS" +
         "\""
 
-      copyStatement = buildCopyStatement(config.tablename.getFullTableName,
+      fullTableName <- if(config.mergeKey.isDefined) Right(tempTableName.getFullTableName) else Right(config.tablename.getFullTableName)
+
+      copyStatement = buildCopyStatement(fullTableName.toString(),
         columnList,
         url,
         rejectsTableName,
         "parquet"
       )
 
-      rowsCopied <- performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows"))
+      rowsCopied <- if (config.mergeKey.isDefined) Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows"))) else Right(performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows")))
 
-      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
+      faultToleranceResults <- testFaultTolerance(rowsCopied.right.getOrElse(0), rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
+
+      mergeStatement = buildMergeStatement(config.tablename, columnList, tempTableName.getFullTableName, config.mergeKey)
+      rowsMerged <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
+
     } yield ()
 
     // Commit or rollback

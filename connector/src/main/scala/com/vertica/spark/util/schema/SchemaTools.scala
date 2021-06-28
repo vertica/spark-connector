@@ -87,6 +87,22 @@ trait SchemaToolsInterface {
    * @return List of columns in matches.
    */
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
+
+  /**
+   * Gets a list of column values to be inserted within a merge.
+   *
+   * @param columnDefs List of column definitions from the Vertica table.
+   * @return String of values to append to INSERT VALUES in merge
+   */
+  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String
+
+  /**
+   * Gets a list of column values and their updates to be updated within a merge.
+   *
+   * @param columnDefs List of column definitions from the Vertica table.
+   * @return String of columns and values to append to UPDATE SET in merge
+   */
+  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -319,6 +335,45 @@ class SchemaTools extends SchemaToolsInterface {
         case _ => info.label
       }
     }).mkString(",")
+  }
+
+  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String = {
+    val columnDefSeq = getColumnInfo(jdbcLayer, tableName)
+    val columnDefs = columnDefSeq.right.get
+    var tempColValues = ""
+    var first = true
+
+    // Create string of insert values to append to INSERT
+    columnDefs.foreach(v => {
+      if (first) {
+        tempColValues = "temp." + v.label
+        first = false
+      }
+      else {
+        tempColValues += ", temp." + v.label
+      }
+    })
+    tempColValues = "(" + tempColValues + ")"
+    tempColValues
+  }
+
+  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String = {
+    val columnDefSeq= getColumnInfo(jdbcLayer, tableName)
+    val columnDefs= columnDefSeq.right.get
+    val fullTableName= tableName.getFullTableName
+    var updateColValues = ""
+    var first = true
+
+    columnDefs.foreach(v => {
+      if (first) {
+        updateColValues = v.label + "=" + "temp." + v.label
+        first = false
+      }
+      else {
+        updateColValues += ", " + v.label + "=" + "temp." + v.label
+      }
+    })
+    updateColValues
   }
 }
 

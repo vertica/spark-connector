@@ -12,7 +12,7 @@
 // limitations under the License.
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-basic-write"
+name := "spark-vertica-connector-merge-example"
 organization := "com.vertica"
 version := "2.0"
 
@@ -23,7 +23,6 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.0.0",
   "org.apache.spark" %% "spark-sql" % "3.0.0",
-  "com.vertica.spark" % "vertica-spark" % "2.0.0-0"
 )
 
 assemblyMergeStrategy in assembly := {
