@@ -285,7 +285,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def commit(): ConnectorResult[Unit] = {
     val globPattern: String = "*.parquet"
-
+    val tableNameMaxLength = 30
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
     val mergeKey= config.mergeKey match{
@@ -302,9 +302,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       // Do not check for mergeKey here, as tableName does not impact merge
       tableName = config.tablename.name
-
-      tableNameMaxLength = 30
-
       sessionId = config.sessionId
 
       rejectsTableName = "\"" +
