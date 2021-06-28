@@ -31,7 +31,7 @@ df.write.mode('overwrite').save(format="com.vertica.spark.datasource.VerticaSour
  user="dbadmin",
  password="",
  db="docker",
- staging_fs_url="hdfs://hdfs:8020/data/dirtest",
+ staging_fs_url="webhdfs://hdfs:50070/data/dirtest",
  table="pysparktest")
 
 # Read the data back into a Spark DataFrame
