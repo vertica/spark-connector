@@ -17,7 +17,7 @@ import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, 
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, SchemaConversionError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.internal.SQLConf
@@ -111,11 +111,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tempTableExists <- tableUtils.tempTableExists(config.tablename)
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
-      _ <- if (!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      //_ <- if (!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
+      /*
       tableExistsPost <- tableUtils.tableExists(config.tablename)
       _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
+       */
 
       // Create the directory to export files to
       perm = config.filePermissions
@@ -229,6 +231,57 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield testResult
   }
 
+  def createExternalTable(tableName: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    val sb = new StringBuilder()
+    sb.append("CREATE EXTERNAL table ")
+    sb.append(tableName.getFullTableName)
+    sb.append(" (")
+
+    var first = true
+    schema.foreach(s => {
+      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
+      if (!first) { sb.append(",\n") }
+      first = false
+      sb.append("\"" + s.name + "\" ")
+
+      // remains empty unless we have a DecimalType with precision/scale
+      var decimal_qualifier: String = ""
+      if (s.dataType.toString.contains("DecimalType")) {
+
+        // has precision only
+        val p = "DecimalType\\((\\d+)\\)".r
+        if (s.dataType.toString.matches(p.toString)) {
+          val p(prec) = s.dataType.toString
+          decimal_qualifier = "(" + prec + ")"
+        }
+
+        // has precision and scale
+        val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
+        if (s.dataType.toString.matches(ps.toString)) {
+          val ps(prec,scale) = s.dataType.toString
+          decimal_qualifier = "(" + prec + "," + scale + ")"
+        }
+      }
+
+      for {
+        col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
+          case Left(err) =>
+            Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+          case Right(datatype) => Right(datatype + decimal_qualifier)
+        }
+        _ = sb.append(col)
+        _ = if (!s.nullable) { sb.append(" NOT NULL") }
+      } yield ()
+    })
+    sb.append(") AS COPY FROM '")
+    sb.append(config.fileStoreConfig.baseAddress + "/test/*.parquet")
+    sb.append("' PARQUET")
+
+    val createExternalTableStr = sb.toString
+
+    jdbcLayer.execute(createExternalTableStr)
+  }
+
   /**
    * Performs copy operations
    *
@@ -285,6 +338,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         "parquet"
       )
 
+      _ <- createExternalTable(config.tablename, config.schema, config.strlen)
+      /*
       rowsCopied <- performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows"))
 
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
@@ -293,6 +348,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
+       */
+      _ <- Right()
     } yield ()
 
     // Commit or rollback
