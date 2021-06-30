@@ -140,7 +140,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case KerberosAuth(_, _, _, _) => "-k"
     }
     val sparkVersion = SparkSession.active.sparkContext.version
-    "vspark" + "-vs" + BuildInfo.version + authMethod + "-" + sparkVersion + "-" + java.util.UUID.randomUUID.toString
+    "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion + "-" + java.util.UUID.randomUUID.toString
   }
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
