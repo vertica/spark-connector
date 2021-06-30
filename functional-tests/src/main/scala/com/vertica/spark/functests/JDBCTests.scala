@@ -20,6 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JDBCTLSConfig}
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.util.error.{ConnectionSqlError, DataError, SyntaxError}
+import org.apache.spark.sql.SparkSession
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
@@ -30,6 +31,13 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   var jdbcLayer: JdbcLayerInterface = _
 
   val tablename = "test_table"
+
+  private val spark = SparkSession.builder()
+    .master("local[*]")
+    .appName("Vertica Connector Test Prototype")
+    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .getOrCreate()
 
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
@@ -198,7 +206,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Right(rs) =>
         assert(rs.next())
         val label = rs.getString(1)
-        assert(label.contains("vspark-vs2.0.0-p-sp3.0.2"))
+        assert(label.contains("vspark-vs2.0.0-p-sp3.0.0"))
       case Left(err) =>
         fail(err.getFullContext)
     }

@@ -295,6 +295,9 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     for {
+      connection <- this.connection
+      label <- Try{connection.getClientInfo("APPLICATIONNAME")}.toEither.left.map(e => handleJDBCException(e))
+      _ <- this.query(s"SELECT SET_CLIENT_LABEL('$label');")
       _ <- this.configureKerberosToFilestore(fileStoreLayer)
       _ <- this.configureAWSParameters(fileStoreLayer)
     } yield ()
