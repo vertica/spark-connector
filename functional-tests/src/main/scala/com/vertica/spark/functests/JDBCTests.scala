@@ -191,11 +191,14 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     }
   }
 
-  it should "Insert integer data with param" in {
-    jdbcLayer.query("GET_CLIENT_LABEL();") match {
+  it should "get the client label" in {
+    val result = jdbcLayer.query("SELECT GET_CLIENT_LABEL();")
+
+    result match {
       case Right(rs) =>
         assert(rs.next())
-        assert(rs.getString(1) == "Vertica Spark Connector")
+        val label = rs.getString(1)
+        assert(label.contains("vspark-vs2.0.0-p-sp3.0.2"))
       case Left(err) =>
         fail(err.getFullContext)
     }
