@@ -206,7 +206,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Right(rs) =>
         assert(rs.next())
         val label = rs.getString(1)
-        assert(label.contains("vspark-vs2.0.0-p-sp3.0.0"))
+        assert(label.contains("vspark-vs2.0.0-p-sp" + SparkSession.active.sparkContext.version))
       case Left(err) =>
         fail(err.getFullContext)
     }
