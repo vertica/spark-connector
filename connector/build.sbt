@@ -83,3 +83,10 @@ envVars in Test := Map(
   "AWS_DEFAULT_REGION" -> "us-west-1",
   "AWS_CREDENTIALS_PROVIDER" -> "test-provider"
 )
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "hello"
+  )
