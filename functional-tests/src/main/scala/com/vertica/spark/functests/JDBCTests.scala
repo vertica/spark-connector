@@ -21,6 +21,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JDBCTLSConfig}
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.util.error.{ConnectionSqlError, DataError, SyntaxError}
 import org.apache.spark.sql.SparkSession
+import buildinfo.BuildInfo
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
@@ -206,7 +207,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
       case Right(rs) =>
         assert(rs.next())
         val label = rs.getString(1)
-        assert(label.contains("vspark-vs2.0.0-p-sp" + SparkSession.active.sparkContext.version))
+        assert(label.contains("vspark-vs" + BuildInfo.version + "-p-sp" + SparkSession.active.sparkContext.version))
       case Left(err) =>
         fail(err.getFullContext)
     }

@@ -24,7 +24,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth, LogPro
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
-import hello.BuildInfo
+import buildinfo.BuildInfo
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
@@ -140,7 +140,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case KerberosAuth(_, _, _, _) => "-k"
     }
     val sparkVersion = SparkSession.active.sparkContext.version
-    "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion + "-" + java.util.UUID.randomUUID.toString
+    "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion
   }
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
