@@ -314,11 +314,18 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       fullTableName <- if(config.mergeKey.isDefined) Right(tempTableName.getFullTableName) else Right(config.tablename.getFullTableName)
 
-      copyStatement <- if(config.mergeKey.isDefined) {Right(buildCopyStatement(fullTableName.toString(), "", url, rejectsTableName, "parquet"))}
-                       else Right(buildCopyStatement(fullTableName.toString(), columnList, url, rejectsTableName, "parquet"))
+      copyStatement <- if(config.mergeKey.isDefined) {
+          Right(buildCopyStatement(fullTableName.toString(), "", url, rejectsTableName, "parquet"))
+        }
+                       else {
+          Right(buildCopyStatement(fullTableName.toString(), columnList, url, rejectsTableName, "parquet"))
+        }
 
-      rowsCopied <- if (config.mergeKey.isDefined) {Right(performCopy(copyStatement.toString, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))}
-                    else Right(performCopy(copyStatement.toString, config.tablename).left.map(_.context("commit: Failed to copy rows into target table")))
+      rowsCopied <- if (config.mergeKey.isDefined) {
+        Right(performCopy(copyStatement.toString, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))}
+                    else {
+        Right(performCopy(copyStatement.toString, config.tablename).left.map(_.context("commit: Failed to copy rows into target table")))
+        }
 
       faultToleranceResults <- testFaultTolerance(rowsCopied.right.getOrElse(0), rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
