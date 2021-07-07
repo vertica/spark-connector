@@ -339,7 +339,7 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): String = {
-    val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.get
+    val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.getOrElse(List())
     val valueList = columnDefSeq.map(x => "temp." + x.label ).mkString(",")
     valueList
   }
