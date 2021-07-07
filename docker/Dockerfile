@@ -6,7 +6,7 @@ ENV SBT_VERSION 1.3.13
 RUN yum install -y java-11-openjdk && \
     yum install -y epel-release && \
     yum update -y && yum install -y wget && \
-    wget http://dl.bintray.com/sbt/rpm/sbt-$SBT_VERSION.rpm && \
-    yum install -y sbt-$SBT_VERSION.rpm
+    wget https://github.com/sbt/sbt/releases/download/v1.3.13/sbt-1.3.13.tgz && \
+    tar xvf sbt-1.3.13.tgz
 
 ENTRYPOINT ["/bin/bash"]
