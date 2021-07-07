@@ -6,7 +6,8 @@ ENV SBT_VERSION 1.3.13
 RUN yum install -y java-11-openjdk && \
     yum install -y epel-release && \
     yum update -y && yum install -y wget && \
-    wget https://github.com/sbt/sbt/releases/download/v1.3.13/sbt-1.3.13.tgz && \
+    wget -P spark-connector https://github.com/sbt/sbt/releases/download/v1.3.13/sbt-1.3.13.tgz && \
+    cd spark-connector && \
     tar xvf sbt-1.3.13.tgz
 
 ENTRYPOINT ["/bin/bash"]
