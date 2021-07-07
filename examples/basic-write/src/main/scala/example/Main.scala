@@ -41,13 +41,15 @@ object Main  {
     try {
       val tableName = "dftest"
       // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", IntegerType)))
       // Create a row with element '77'
-      val data = Seq(Row(77))
+      val data = (1 to 10000).map(x => Row(x, x+1))
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+
+      df.write.partitionBy("col1").parquet(conf.getString("functional-tests.filepath") + "/test.parquet")
+
       // Outputs dataframe schema
-      println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()

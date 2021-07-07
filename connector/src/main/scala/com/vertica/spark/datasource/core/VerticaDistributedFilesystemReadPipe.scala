@@ -31,6 +31,7 @@ import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.InputPartition
+import org.apache.spark.sql.internal.SQLConf.PARTITION_COLUMN_TYPE_INFERENCE
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -206,6 +207,8 @@ class VerticaDistributedFilesystemReadPipe(
    * This way a single file could be split up among 10 partitions to read, or a single partition could read 10 files.
    */
   override def doPreReadSteps(): ConnectorResult[PartitionInfo] = {
+    PARTITION_COLUMN_TYPE_INFERENCE
+
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier

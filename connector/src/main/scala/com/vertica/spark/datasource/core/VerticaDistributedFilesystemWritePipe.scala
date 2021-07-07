@@ -231,7 +231,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield testResult
   }
 
-  def createExternalTable(tableName: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+  def createExternalTable(tableName: TableName, schema: StructType, strlen: Long, url: String): ConnectorResult[Unit] = {
     val sb = new StringBuilder()
     sb.append("CREATE EXTERNAL table ")
     sb.append(tableName.getFullTableName)
@@ -274,7 +274,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       } yield ()
     })
     sb.append(") AS COPY FROM '")
-    sb.append(config.fileStoreConfig.baseAddress + "/test/*.parquet")
+    sb.append(url)
     sb.append("' PARQUET")
 
     val createExternalTableStr = sb.toString
@@ -311,7 +311,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val globPattern: String = "*.parquet"
 
     // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
+    //val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
+    val url: String = config.fileStoreConfig.address + "test.parquet"
 
     val tableNameMaxLength = 30
 
@@ -320,7 +321,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       // Get columnList
-      columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
+      //columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 
       tableName = config.tablename.name
       sessionId = config.sessionId
@@ -331,14 +332,16 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         "_COMMITS" +
         "\""
 
+      /*
       copyStatement = buildCopyStatement(config.tablename.getFullTableName,
         columnList,
         url,
         rejectsTableName,
         "parquet"
       )
+       */
 
-      _ <- createExternalTable(config.tablename, config.schema, config.strlen)
+      _ <- createExternalTable(config.tablename, config.schema, config.strlen, url)
       /*
       rowsCopied <- performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows"))
 
@@ -349,7 +352,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
        */
-      _ <- Right()
     } yield ()
 
     // Commit or rollback
@@ -363,7 +365,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
     }
 
-    fileStoreLayer.removeDir(config.fileStoreConfig.address)
+    //fileStoreLayer.removeDir(config.fileStoreConfig.address)
     jdbcLayer.close()
     result
   }

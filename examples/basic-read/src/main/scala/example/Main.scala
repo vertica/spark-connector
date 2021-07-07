@@ -41,6 +41,7 @@ object Main {
 
     try {
       val tableName = "dftest"
+      /*
       val stmt = conn.createStatement
       val n = 20
       // Creates a table called dftest with an integer attribute
@@ -48,6 +49,8 @@ object Main {
       val insert = "insert into " + tableName + " values(2)"
       // Inserts 20 rows of the value '2' into dftest
       TestUtils.populateTableBySQL(stmt, insert, n)
+       */
+
       // Read dftest into a dataframe
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
       // Print each element (20 elements of '2')

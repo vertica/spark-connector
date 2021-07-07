@@ -1,0 +1,8 @@
+[info] welcome to sbt 1.4.1 (Red Hat, Inc. Java 11.0.11)
+[info] loading settings for project basic-read-build from plugins.sbt ...
+[info] loading project definition from /spark-connector/examples/basic-read/project
+[info] loading settings for project basic-read from build.sbt ...
+[info] set current project to spark-vertica-connector-basic-read (in build file:/spark-connector/examples/basic-read/)
+[info] running example.Main 
+VALUE: [77]
+[success] Total time: 25 s, completed Jul 5, 2021, 5:39:19 PM

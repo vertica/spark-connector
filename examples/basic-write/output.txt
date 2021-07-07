@@ -1,0 +1,9 @@
+[info] welcome to sbt 1.4.1 (Red Hat, Inc. Java 11.0.11)
+[info] loading settings for project basic-write-build from plugins.sbt ...
+[info] loading project definition from /spark-connector/examples/basic-write/project
+[info] loading settings for project basic-write from build.sbt ...
+[info] set current project to spark-vertica-connector-basic-write-example (in build file:/spark-connector/examples/basic-write/)
+[info] compiling 1 Scala source to /spark-connector/examples/basic-write/target/scala-2.12/classes ...
+[info] done compiling
+[info] running example.Main 
+[success] Total time: 215 s (03:35), completed Jul 5, 2021, 6:38:00 PM
