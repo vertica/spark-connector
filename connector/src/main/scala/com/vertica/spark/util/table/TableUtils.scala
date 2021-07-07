@@ -57,6 +57,15 @@ trait TableUtilsInterface {
   def dropTable(tablename: TableName): ConnectorResult[Unit]
 
   /**
+   * Creates a temporary table.
+   *
+   * @param tablename Name of table
+   * @param schema Spark schema of data we want to write to the table
+   * @param strlen Length to use for strings in Vertica string types
+   */
+  def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit]
+
+  /**
    * Creates the job status table if it doesn't exist and adds the entry for this job.
    *
    * The job status table records write jobs in Vertica and their status, so we can have an auditable record of writes from Spark to Vertica.
@@ -208,6 +217,58 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
   def dropTable(tablename: TableName): ConnectorResult[Unit] = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
       .left.map(err => err.context("JDBC Error dropping table"))
+  }
+
+  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    val sb = new StringBuilder()
+    sb.append("CREATE TEMPORARY TABLE ")
+    sb.append(tablename.getFullTableName)
+    sb.append(" (")
+
+    var first = true
+    schema.foreach(s => {
+      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable=" + s.nullable)
+      if (!first) {
+        sb.append(",\n")
+      }
+      first = false
+      sb.append("\"" + s.name + "\" ")
+
+      // remains empty unless we have a DecimalType with precision/scale
+      var decimal_qualifier: String = ""
+      if (s.dataType.toString.contains("DecimalType")) {
+
+        // has precision only
+        val p = "DecimalType\\((\\d+)\\)".r
+        if (s.dataType.toString.matches(p.toString)) {
+          val p(prec) = s.dataType.toString
+          decimal_qualifier = "(" + prec + ")"
+        }
+
+        // has precision and scale
+        val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
+        if (s.dataType.toString.matches(ps.toString)) {
+          val ps(prec, scale) = s.dataType.toString
+          decimal_qualifier = "(" + prec + "," + scale + ")"
+        }
+      }
+
+      for {
+        col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
+          case Left(err) =>
+            Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+          case Right(datatype) => Right(datatype + decimal_qualifier)
+        }
+        _ = sb.append(col)
+        _ = if (!s.nullable) {
+          sb.append(" NOT NULL")
+        }
+      } yield ()
+    })
+    sb.append(") ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ")
+
+    logger.debug(s"BUILDING TABLE WITH COMMAND: " + sb)
+    jdbcLayer.execute(sb.toString).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
   }
 
   override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit] = {

@@ -362,8 +362,11 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getMergeKey(config: Map[String, String]) : ValidationResult[Option[String]] = {
-    config.get("merge_key").validNec
+  def getMergeKeys(config: Map[String, String]) : ValidationResult[Option[ValidColumnList]] = {
+    config.get("merge_key")match {
+      case None => None.validNec
+      case Some(listStr) => ValidColumnList(listStr)
+    }
   }
 
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
@@ -542,7 +545,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           sessionId.validNec,
           DSConfigSetupUtils.getFailedRowsPercentTolerance(config),
           DSConfigSetupUtils.getFilePermissions(config),
-          DSConfigSetupUtils.getMergeKey(config)
+          DSConfigSetupUtils.getmergeKey(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

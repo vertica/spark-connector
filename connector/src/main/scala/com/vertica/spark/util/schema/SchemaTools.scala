@@ -22,7 +22,7 @@ import cats.implicits._
 
 import scala.util.Either
 import cats.instances.list._
-import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource}
+import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 
@@ -92,17 +92,20 @@ trait SchemaToolsInterface {
    * Gets a list of column values to be inserted within a merge.
    *
    * @param columnDefs List of column definitions from the Vertica table.
-   * @return String of values to append to INSERT VALUES in merge
+   * @param copyColumnList String of columns passed in by user as a configuration option.
+   * @return String of values to append to INSERT VALUES in merge.
    */
-  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String
+  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): String
 
   /**
    * Gets a list of column values and their updates to be updated within a merge.
    *
    * @param columnDefs List of column definitions from the Vertica table.
-   * @return String of columns and values to append to UPDATE SET in merge
+   * @param copyColumnList String of columns passed in by user as a configuration option.
+   * @param tempTableName Temporary table created as part of merge statement
+   * @return String of columns and values to append to UPDATE SET in merge.
    */
-  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String
+  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): String
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -214,7 +217,6 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
       case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(65000)")
@@ -245,7 +247,6 @@ class SchemaTools extends SchemaToolsInterface {
       case _ => Left(MissingSparkConversionError(sparkType))
     }
   }
-
 
   def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tableName: TableName, schema: StructType): ConnectorResult[String] = {
     for {
@@ -337,43 +338,28 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String = {
-    val columnDefSeq = getColumnInfo(jdbcLayer, tableName)
-    val columnDefs = columnDefSeq.right.get
-    var tempColValues = ""
-    var first = true
-
-    // Create string of insert values to append to INSERT
-    columnDefs.foreach(v => {
-      if (first) {
-        tempColValues = "temp." + v.label
-        first = false
-      }
-      else {
-        tempColValues += ", temp." + v.label
-      }
-    })
-    tempColValues = "(" + tempColValues + ")"
-    tempColValues
+  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): String = {
+    val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.get
+    val valueList = columnDefSeq.map(x => "temp." + x.label ).mkString(",")
+    valueList
   }
 
-  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName): String = {
-    val columnDefSeq= getColumnInfo(jdbcLayer, tableName)
-    val columnDefs= columnDefSeq.right.get
-    val fullTableName= tableName.getFullTableName
-    var updateColValues = ""
-    var first = true
-
-    columnDefs.foreach(v => {
-      if (first) {
-        updateColValues = v.label + "=" + "temp." + v.label
-        first = false
+  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): String = {
+    val columnList = copyColumnList match {
+      case Some(list) => {
+        val customColList = list.toString.split(",").toList
+        val dfColList = getColumnInfo(jdbcLayer, tempTableName).right.get
+        val tupleList= customColList zip dfColList
+        val colList= tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", ")
+        colList
       }
-      else {
-        updateColValues += ", " + v.label + "=" + "temp." + v.label
+      case None => {
+        val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.get
+        val updateList = columnDefSeq.map(x => x.label + "=temp." + x.label).mkString(", ")
+        updateList
       }
-    })
-    updateColValues
+    }
+    columnList
   }
 }
 

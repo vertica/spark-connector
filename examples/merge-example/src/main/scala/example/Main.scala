@@ -45,21 +45,21 @@ object Main  {
     try {
       val tableName = "dftest"
       val stmt = conn.createStatement
-      val n = 20
+      val n = 2
       // Creates a table called dftest with an integer attribute
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(col1 int, col2 varchar(50))")
-      val insert = "insert into " + tableName + " values(2, 'hi')"
-      // Inserts 20 rows of the value '2' into dftest
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(col1 int, b varchar(50))")
+      val insert = "insert into " + tableName + " values(2, 'hello')"
+      // Inserts 2 rows of the data above into dftest
       TestUtils.populateTableBySQL(stmt, insert, n)
-
+      val copyList= "col1,b"
       // Define schema of a table
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
-      val data = (1 to 20).map(x => Row(x, "test"))
+      val data = (1 to 20).map(x => Row(x, "hola"))
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      val mode = SaveMode.Append
+      val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "copy_column_list" -> copyList)).mode(mode).save()
 
       val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
       df2.rdd.foreach(x => println("VALUE: " + x))

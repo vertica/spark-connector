@@ -1,1 +1,0 @@
-EXPLAIN MERGE INTO dftest as target using dftest_e85027bb_1676_479c_afe5_4e9c5c62d8c7 as temp ON (target.col1=temp.col1) WHEN MATCHED THEN UPDATE SET target.col1=temp.col1, target.col2=temp.col2 WHEN NOT MATCHED THEN INSERT ("col1","col2") VALUES (temp.col1, temp.col2)
