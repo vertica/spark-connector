@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.core.TLSMode
  *
  * Abstract as there are multiple possible methods of authentication.
  */
-trait JdbcAuth {
+sealed trait JdbcAuth {
   def user: String
 }
 

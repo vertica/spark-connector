@@ -24,6 +24,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth, LogPro
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
+import buildinfo.BuildInfo
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
@@ -126,10 +127,20 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       .toEither.left.map(handleConnectionException)
       .flatMap(conn =>
         this.useConnection(conn, c => {
+          c.setClientInfo("APPLICATIONNAME", this.createClientLabel)
           c.setAutoCommit(false)
           logger.info("Successfully connected to Vertica.")
           c
         }, handleConnectionException).left.map(_.context("Initial connection was not valid.")))
+  }
+
+  private def createClientLabel: String = {
+    val authMethod = this.cfg.auth match {
+      case BasicJdbcAuth(_, _) => "-p"
+      case KerberosAuth(_, _, _, _) => "-k"
+    }
+    val sparkVersion = SparkSession.active.sparkContext.version
+    "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion
   }
 
   private def handleConnectionException(e: Throwable): ConnectorError = {
