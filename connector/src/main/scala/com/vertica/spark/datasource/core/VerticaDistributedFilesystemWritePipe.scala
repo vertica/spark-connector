@@ -334,7 +334,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
 
-      mergeStatement = buildMergeStatement(config.tablename, columnList, tempTableName.getFullTableName)
+      mergeStatement <- if (config.mergeKey.isDefined) {
+                          Right(buildMergeStatement(config.tablename, columnList, tempTableName.getFullTableName))
+                        }
+                        else Right((""))
       _ <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
 
     } yield ()

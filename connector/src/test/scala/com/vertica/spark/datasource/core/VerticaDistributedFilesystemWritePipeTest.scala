@@ -296,8 +296,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -327,8 +325,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -388,8 +384,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(fileStoreConfig.address).returning(Right())
@@ -420,8 +414,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -450,8 +442,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right("(\"col1\",\"col5\")"))
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -514,8 +504,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -549,8 +537,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("")
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
@@ -651,8 +637,9 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("a=temp.col1, b=temp.col2")
-    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("temp.col1,temp.col2")
+    (schemaToolsInterface.getUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning("col1=temp.col1")
+    (schemaToolsInterface.getInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning("temp.col1")
+
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
