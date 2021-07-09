@@ -199,6 +199,10 @@ case class HostMissingError() extends ConnectorError {
   def getFullContext: String = "The 'host' param is missing. Please specify the IP address " +
     "or hostname of the Vertica server to connect to."
 }
+case class InvalidCreateExternalTableOption() extends ConnectorError {
+  override def getFullContext: String = "The 'create_external_table' param is invalid. Please specify " +
+    "'true' or 'false'."
+}
 case class DbMissingError() extends ConnectorError {
   def getFullContext: String = "The 'db' param is missing. Please specify the name of the Vertica " +
     "database to connect to."
@@ -453,4 +457,7 @@ case class LoadConfigMissingSparkSessionError() extends ConnectorError {
 }
 case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
   override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
+}
+case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
+  override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
 }

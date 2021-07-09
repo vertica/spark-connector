@@ -113,6 +113,18 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getCreateExternalTable(config: Map[String, String]): ValidationResult[Boolean] = {
+    config.get("create_external_table") match {
+      case Some(str) =>
+        str match {
+          case "true" => true.validNec
+          case "false" => false.validNec
+          case _ => InvalidCreateExternalTableOption().invalidNec
+        }
+      case None => false.validNec
+    }
+  }
+
   def getStagingFsUrl(config: Map[String, String]): ValidationResult[String] = {
     config.get("staging_fs_url") match {
       case Some(address) => address.validNec
@@ -537,7 +549,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getCopyColumnList(config),
           sessionId.validNec,
           DSConfigSetupUtils.getFailedRowsPercentTolerance(config),
-          DSConfigSetupUtils.getFilePermissions(config)
+          DSConfigSetupUtils.getFilePermissions(config),
+          DSConfigSetupUtils.getCreateExternalTable(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

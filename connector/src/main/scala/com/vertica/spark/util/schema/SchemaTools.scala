@@ -87,6 +87,15 @@ trait SchemaToolsInterface {
    * @return List of columns in matches.
    */
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
+
+
+  /**
+   * Converts spark schema to table column defs in Vertica format
+   *
+   * @param schema Schema in spark format
+   * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
+   * */
+  def makeTableColumnDefs(schema: StructType): String
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -319,6 +328,10 @@ class SchemaTools extends SchemaToolsInterface {
         case _ => info.label
       }
     }).mkString(",")
+  }
+
+  def makeTableColumnDefs(schema: StructType): String = {
+
   }
 }
 

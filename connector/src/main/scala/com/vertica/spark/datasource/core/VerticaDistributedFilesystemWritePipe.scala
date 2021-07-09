@@ -17,7 +17,7 @@ import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, 
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, CreateExternalTableAlreadyExistsError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.internal.SQLConf
@@ -105,17 +105,21 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Overwrite safety check
       _ <- if (config.isOverwrite && tableExistsPre) Left(DropTableError()) else Right(())
 
+      // External table mode doesn't work if table exists
+      _ <- if (config.createExternalTable && tableExistsPre) Left(CreateExternalTableAlreadyExistsError()) else Right()
+
       // Check if a view exists or temp table exits by this name
       viewExists <- tableUtils.viewExists(config.tablename)
       _ <- if (viewExists) Left(ViewExistsError()) else Right(())
       tempTableExists <- tableUtils.tempTableExists(config.tablename)
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
-      _ <- if (!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      // Create table unless we're appending, or we're in external table mode (that gets created later)
+      _ <- if (!tableExistsPre && !config.createExternalTable) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
-      _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
+      _ <- if (tableExistsPost || config.createExternalTable) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
       perm = config.filePermissions

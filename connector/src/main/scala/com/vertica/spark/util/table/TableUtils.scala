@@ -158,8 +158,8 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
         val sb = new StringBuilder()
         sb.append("CREATE table ")
         sb.append(tablename.getFullTableName)
-        sb.append(" (")
 
+        sb.append(" (")
         var first = true
         schema.foreach(s => {
           logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
@@ -189,7 +189,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
           for {
             col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
               case Left(err) =>
-                Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+                return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
               case Right(datatype) => Right(datatype + decimal_qualifier)
             }
             _ = sb.append(col)
