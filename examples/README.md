@@ -76,7 +76,7 @@ Once in the examples directory, run:
 ```
 ./run-example.sh [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
 ``` 
-Example argument: basic-read/target/scala-2.12/spark-vertica-connector-basic-read-assembly-2.0.jar
+Example argument: basic-read-example/target/scala-2.12/spark-vertica-connector-basic-read-example-assembly-2.0.jar
 
 Running this script for the first time will install Spark and user-provided Hadoop. This may take some time; however, running the script subsequently will forgo those steps. If you would like to include those steps then add a 'clean' argument to the script:
 ```

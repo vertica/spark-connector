@@ -95,7 +95,7 @@ trait SchemaToolsInterface {
    * @param copyColumnList String of columns passed in by user as a configuration option.
    * @return String of values to append to INSERT VALUES in merge.
    */
-  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): String
+  def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String]
 
   /**
    * Gets a list of column values and their updates to be updated within a merge.
@@ -105,7 +105,7 @@ trait SchemaToolsInterface {
    * @param tempTableName Temporary table created as part of merge statement
    * @return String of columns and values to append to UPDATE SET in merge.
    */
-  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): String
+  def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -338,24 +338,32 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def getInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): String = {
-    val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.getOrElse(List())
-    val valueList = columnDefSeq.map(x => "temp." + x.label ).mkString(",")
+  def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
+    val valueList = getColumnInfo(jdbcLayer, tableName) match {
+      case Right(info) => Right(info.map(x => "temp." + x.label ).mkString(","))
+      case Left(err) => Left(JdbcSchemaError(err))
+    }
     valueList
   }
 
-  def getUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): String = {
+  def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
     val columnList = copyColumnList match {
       case Some(list) => {
         val customColList = list.toString.split(",").toList
-        val dfColList = getColumnInfo(jdbcLayer, tempTableName).right.get
-        val tupleList= customColList zip dfColList
-        val colList= tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", ")
+        val colList = getColumnInfo(jdbcLayer, tempTableName) match {
+          case Right(info) => {
+            val tupleList = customColList zip info
+            Right(tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", "))
+          }
+          case Left(err) => Left(JdbcSchemaError(err))
+        }
         colList
       }
       case None => {
-        val columnDefSeq = getColumnInfo(jdbcLayer, tableName).right.get
-        val updateList = columnDefSeq.map(x => x.label + "=temp." + x.label).mkString(", ")
+        val updateList = getColumnInfo(jdbcLayer, tableName) match {
+         case Right(info) => Right(info.map(x => x.label + "=temp." + x.label).mkString(", "))
+         case Left(err) => Left(JdbcSchemaError(err))
+        }
         updateList
       }
     }

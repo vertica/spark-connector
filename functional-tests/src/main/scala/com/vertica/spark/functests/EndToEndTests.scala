@@ -3389,4 +3389,70 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     })
     TestUtils.dropTable(conn, tableName)
   }
+
+  it should "Merge using multiple columns in merge_key" in {
+    val tableName = "mergetable"
+    val stmt = conn.createStatement
+    val n = 2
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b int, c int)")
+    val insert = "insert into "+ tableName + " values(2, 3, 4)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val schema = new StructType(Array(StructField("a", IntegerType), StructField("b", IntegerType), StructField("c", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "a,b")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 3)
+    df.rdd.foreach(row => {
+      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
+      else assert(row.getAs[Integer](2) == 2)
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Merge with no existing table in Vertica" in {
+    val tableName= "mergetable"
+    val schema = new StructType(Array(StructField("a", IntegerType), StructField("b", IntegerType), StructField("c", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "a,b")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 2)
+    df.rdd.foreach(row => {
+      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
+      else assert(row.getAs[Integer](2) == 2)
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Only perform updates in merge" in {
+    val tableName = "mergetable"
+    val stmt = conn.createStatement
+    val n = 2
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b int, c int)")
+    val insert = "insert into "+ tableName + " values(2, 3, 4)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val schema = new StructType(Array(StructField("a", IntegerType), StructField("b", IntegerType), StructField("c", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 5))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "a,b")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 2)
+    df.rdd.foreach(row => assert(row.getAs[Integer](2) == 5))
+    TestUtils.dropTable(conn, tableName)
+  }
 }

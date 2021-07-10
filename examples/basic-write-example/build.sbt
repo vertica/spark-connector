@@ -12,7 +12,7 @@
 // limitations under the License.
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-basic-write"
+name := "spark-vertica-connector-basic-write-example"
 organization := "com.vertica"
 version := "2.0"
 

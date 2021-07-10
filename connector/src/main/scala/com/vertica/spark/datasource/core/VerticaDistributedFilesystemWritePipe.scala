@@ -17,7 +17,7 @@ import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, 
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{MergeColumnListError, CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.internal.SQLConf
@@ -145,17 +145,26 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
 
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
-    s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+    if (config.mergeKey.isDefined) {
+      s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+    }
+    else {
+      s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+    }
   }
 
   def buildMergeStatement(targetTableName: TableName, columnList: String, tempTable: String): String = {
     val targetTable = targetTableName.getFullTableName
-    val updateColValues = schemaTools.getUpdateValues(jdbcLayer, targetTableName, tempTableName, config.copyColumnList)
-    val insertColValues = schemaTools.getInsertValues(jdbcLayer, tempTableName, config.copyColumnList)
+    val updateColValues = schemaTools.getMergeUpdateValues(jdbcLayer, targetTableName, tempTableName, config.copyColumnList) match {
+      case Right(values) => values
+      case Left(err) => Left(MergeColumnListError(err))
+    }
+    val insertColValues = schemaTools.getMergeInsertValues(jdbcLayer, tempTableName, config.copyColumnList) match {
+      case Right(values) => values
+      case Left(err) => Left(MergeColumnListError(err))
+    }
     val mergeList = config.mergeKey match {
-      case Some(keys) => {
-        keys.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
-      }
+      case Some(keys) => keys.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
       case None => List()
     }
 
@@ -314,18 +323,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       fullTableName <- if(config.mergeKey.isDefined) Right(tempTableName.getFullTableName) else Right(config.tablename.getFullTableName)
 
-      copyStatement <- if(config.mergeKey.isDefined) {
-          Right(buildCopyStatement(fullTableName.toString(), "", url, rejectsTableName, "parquet"))
-        }
-                       else {
-          Right(buildCopyStatement(fullTableName.toString(), columnList, url, rejectsTableName, "parquet"))
-        }
+      copyStatement = buildCopyStatement(fullTableName.toString(), columnList, url, rejectsTableName, "parquet")
 
       rowsCopied <- if (config.mergeKey.isDefined) {
-        Right(performCopy(copyStatement.toString, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))}
+                      Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))
+                    }
                     else {
-        Right(performCopy(copyStatement.toString, config.tablename).left.map(_.context("commit: Failed to copy rows into target table")))
-        }
+                      Right(performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows into target table")))
+                    }
 
       faultToleranceResults <- testFaultTolerance(rowsCopied.right.getOrElse(0), rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
@@ -338,7 +343,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                           Right(buildMergeStatement(config.tablename, columnList, tempTableName.getFullTableName))
                         }
                         else {
-                          Right((""))
+                          Right("")
                         }
       _ <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
 
