@@ -212,7 +212,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
       } yield ()
     })
 
-    if(temp) 	sb.append(") ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
+    if(temp) sb.append(") ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
     sb.toString
   }
 
