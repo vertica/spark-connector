@@ -91,7 +91,6 @@ trait SchemaToolsInterface {
   /**
    * Gets a list of column values to be inserted within a merge.
    *
-   * @param columnDefs List of column definitions from the Vertica table.
    * @param copyColumnList String of columns passed in by user as a configuration option.
    * @return String of values to append to INSERT VALUES in merge.
    */
@@ -100,7 +99,6 @@ trait SchemaToolsInterface {
   /**
    * Gets a list of column values and their updates to be updated within a merge.
    *
-   * @param columnDefs List of column definitions from the Vertica table.
    * @param copyColumnList String of columns passed in by user as a configuration option.
    * @param tempTableName Temporary table created as part of merge statement
    * @return String of columns and values to append to UPDATE SET in merge.
@@ -351,10 +349,9 @@ class SchemaTools extends SchemaToolsInterface {
       case Some(list) => {
         val customColList = list.toString.split(",").toList
         val colList = getColumnInfo(jdbcLayer, tempTableName) match {
-          case Right(info) => {
+          case Right(info) =>
             val tupleList = customColList zip info
             Right(tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", "))
-          }
           case Left(err) => Left(JdbcSchemaError(err))
         }
         colList

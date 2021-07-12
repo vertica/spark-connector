@@ -363,7 +363,7 @@ object DSConfigSetupUtils {
   }
 
   def getMergeKey(config: Map[String, String]) : ValidationResult[Option[ValidColumnList]] = {
-    config.get("merge_key")match {
+    config.get("merge_key") match {
       case None => None.validNec
       case Some(listStr) => ValidColumnList(listStr)
     }

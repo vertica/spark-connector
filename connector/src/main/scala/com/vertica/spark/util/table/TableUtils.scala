@@ -49,7 +49,7 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit]
+  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, temp: Boolean = false): ConnectorResult[Unit]
 
   /**
    * Drops/Deletes a given table if it exists.

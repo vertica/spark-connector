@@ -50,8 +50,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       copyColumnList = None,
       sessionId = "id",
       0.0f,
-      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-      mergeKey = None)
+      ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")))
   }
 
   private def checkResult(result: ConnectorResult[Unit]): Unit = {

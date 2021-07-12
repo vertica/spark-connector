@@ -45,7 +45,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           extends VerticaPipeInterface with VerticaPipeWriteInterface {
 
   private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
-  private val tempTableName = new TableName(config.tablename.name + "_" + config.sessionId, None)
+  private val tempTableName = TableName(config.tablename.name + "_" + config.sessionId, None)
 
   /**
    * No write metadata required for configuration as of yet.
@@ -98,13 +98,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = setSparkCalendarConf()
 
       // If overwrite mode, remove table and force creation of new one before writing
-      _ <- if(config.isOverwrite && !config.mergeKey.isDefined) tableUtils.dropTable(config.tablename) else Right(())
+      _ <- if(config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
 
       // Create the table if it doesn't exist
       tableExistsPre <- tableUtils.tableExists(config.tablename)
 
       // Overwrite safety check
-      _ <- if (config.isOverwrite && !config.mergeKey.isDefined && tableExistsPre) Left(DropTableError()) else Right(())
+      _ <- if (config.isOverwrite && config.mergeKey.isEmpty && tableExistsPre) Left(DropTableError()) else Right(())
 
       // Check if a view exists or temp table exists by this name
       viewExists <- tableUtils.viewExists(config.tablename)
@@ -323,7 +323,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       fullTableName <- if(config.mergeKey.isDefined) Right(tempTableName.getFullTableName) else Right(config.tablename.getFullTableName)
 
-      copyStatement = buildCopyStatement(fullTableName.toString(), columnList, url, rejectsTableName, "parquet")
+      copyStatement = buildCopyStatement(fullTableName, columnList, url, rejectsTableName, "parquet")
 
       rowsCopied <- if (config.mergeKey.isDefined) {
                       Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))
