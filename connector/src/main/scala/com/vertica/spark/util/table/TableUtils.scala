@@ -42,6 +42,16 @@ trait TableUtilsInterface {
   def tempTableExists(table: TableName): ConnectorResult[Boolean]
 
   /**
+   * Helper function to build create table statement
+   *
+   * @param tablename Name of table
+   * @param schema Spark schema of data we want to write to the table
+   * @param strlen Length to use for strings in Vertica string types
+   * @param temp Flag that indicates whether we are creating a temporary table
+   */
+  def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, temp: Boolean = false): String
+
+  /**
    * Creates a table. Will either used passed in statement to create it, or generate it's own create statement here.
    *
    * @param tablename Name of table
@@ -49,7 +59,7 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, temp: Boolean = false): ConnectorResult[Unit]
+  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit]
 
   /**
    * Drops/Deletes a given table if it exists.
@@ -159,78 +169,16 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     }
   }
 
-  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit] = {
-    // Either get the user-supplied statement to create the table, or build our own
-    val statement: String = targetTableSql match {
-      case Some(sql) => sql
-      case None =>
-        val sb = new StringBuilder()
-        sb.append("CREATE table ")
-        sb.append(tablename.getFullTableName)
-        sb.append(" (")
-
-        var first = true
-        schema.foreach(s => {
-          logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
-          if (!first) { sb.append(",\n") }
-          first = false
-          sb.append("\"" + s.name + "\" ")
-
-          // remains empty unless we have a DecimalType with precision/scale
-          var decimal_qualifier: String = ""
-          if (s.dataType.toString.contains("DecimalType")) {
-
-            // has precision only
-            val p = "DecimalType\\((\\d+)\\)".r
-            if (s.dataType.toString.matches(p.toString)) {
-              val p(prec) = s.dataType.toString
-              decimal_qualifier = "(" + prec + ")"
-            }
-
-            // has precision and scale
-            val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
-            if (s.dataType.toString.matches(ps.toString)) {
-              val ps(prec,scale) = s.dataType.toString
-              decimal_qualifier = "(" + prec + "," + scale + ")"
-            }
-          }
-
-          for {
-            col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
-              case Left(err) =>
-                Left(SchemaConversionError(err).context("Schema error when trying to create table"))
-              case Right(datatype) => Right(datatype + decimal_qualifier)
-            }
-            _ = sb.append(col)
-            _ = if (!s.nullable) { sb.append(" NOT NULL") }
-          } yield ()
-        })
-
-        sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
-        sb.toString
-    }
-
-    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
-    jdbcLayer.execute(statement).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
-  }
-
-  def dropTable(tablename: TableName): ConnectorResult[Unit] = {
-    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
-      .left.map(err => err.context("JDBC Error dropping table"))
-  }
-
-  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+  override def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, temp: Boolean = false): String = {
     val sb = new StringBuilder()
-    sb.append("CREATE TEMPORARY TABLE ")
+    if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
     sb.append(tablename.getFullTableName)
     sb.append(" (")
 
     var first = true
     schema.foreach(s => {
-      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable=" + s.nullable)
-      if (!first) {
-        sb.append(",\n")
-      }
+      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
+      if (!first) { sb.append(",\n") }
       first = false
       sb.append("\"" + s.name + "\" ")
 
@@ -248,7 +196,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
         // has precision and scale
         val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
         if (s.dataType.toString.matches(ps.toString)) {
-          val ps(prec, scale) = s.dataType.toString
+          val ps(prec,scale) = s.dataType.toString
           decimal_qualifier = "(" + prec + "," + scale + ")"
         }
       }
@@ -260,15 +208,35 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
           case Right(datatype) => Right(datatype + decimal_qualifier)
         }
         _ = sb.append(col)
-        _ = if (!s.nullable) {
-          sb.append(" NOT NULL")
-        }
+        _ = if (!s.nullable) { sb.append(" NOT NULL") }
       } yield ()
     })
-    sb.append(") ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ")
 
-    logger.debug(s"BUILDING TABLE WITH COMMAND: " + sb)
-    jdbcLayer.execute(sb.toString).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
+    if(temp) 	sb.append(") ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
+    sb.toString
+  }
+
+  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    // Either get the user-supplied statement to create the table, or build our own
+    val statement: String = targetTableSql match {
+      case Some(sql) => sql
+      case None =>
+        buildCreateTableStmt(tablename, schema, strlen)
+    }
+
+    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+    jdbcLayer.execute(statement).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
+  }
+
+  def dropTable(tablename: TableName): ConnectorResult[Unit] = {
+    jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
+      .left.map(err => err.context("JDBC Error dropping table"))
+  }
+
+  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    val statement= buildCreateTableStmt(tablename, schema, strlen, true)
+    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+    jdbcLayer.execute(statement).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
   }
 
   override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit] = {
