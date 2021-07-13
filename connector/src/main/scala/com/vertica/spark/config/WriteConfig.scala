@@ -84,7 +84,7 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   sessionId: String,
                                                   failedRowPercentTolerance: Float,
                                                   filePermissions: ValidFilePermissions,
-                                                  mergeKey: Option[ValidColumnList]= None
+                                                  mergeKey: Option[ValidColumnList] = None
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false
 
