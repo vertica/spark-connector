@@ -31,6 +31,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
   private val tablename = TableName("dummy", None)
+  private val tempTableName = TableName("dummy_id", None)
   private val jdbcConfig = JDBCConfig(
     "1.1.1.1", 1234, "test", BasicJdbcAuth("test", "test"), JDBCTLSConfig(tlsMode = Require, None, None, None, None))
   private val fileStoreConfig = TestObjects.fileStoreConfig
@@ -300,6 +301,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(tablename, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -320,6 +322,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.execute _).expects(*, *).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
@@ -327,6 +330,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -340,6 +344,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*, *).returning(Left(SyntaxError(new Exception())))
+    (jdbcLayerInterface.query _).expects(*, *).returning(Left(SyntaxError(new Exception())))
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
 
@@ -350,6 +355,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -383,6 +389,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -412,6 +419,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -439,6 +447,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -467,6 +476,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -499,6 +509,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -531,9 +542,112 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
+    checkResult(pipe.commit())
+  }
+
+  it should "Create temp table for merge" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = createWriteConfig().copy(
+      mergeKey =  ValidColumnList("col1").getOrElse(None)
+    )
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right("(col1)"))
+    (schemaToolsInterface.getMergeUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning(Right("col1=temp.col1"))
+    (schemaToolsInterface.getMergeInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning(Right("temp.col1"))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.createTempTable _).expects(tempTableName, schema, strlen).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+    checkResult(pipe.commit())
+  }
+
+  it should "Copy data into temporary table if mergeKey exists" in {
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val config = createWriteConfig().copy(
+      mergeKey =  ValidColumnList("col1").getOrElse(None)
+    )
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy_id\" FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT",*).returning(Right(1))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right("(col1)"))
+    (schemaToolsInterface.getMergeUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning(Right("col1=temp.col1"))
+    (schemaToolsInterface.getMergeInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning(Right("temp.col1"))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.createTempTable _).expects(tempTableName, schema, strlen).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+    checkResult(pipe.commit())
+  }
+
+  it should "Use custom copy list in merge" in {
+    val config = createWriteConfig().copy(
+      mergeKey =  ValidColumnList("col1").getOrElse(None),
+      copyColumnList = ValidColumnList("a,b").getOrElse(None),
+      schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", IntegerType)))
+    )
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    (schemaToolsInterface.getMergeUpdateValues _).expects(jdbcLayerInterface, tablename, tempTableName, config.copyColumnList).returning(Right("col1=temp.col1"))
+    (schemaToolsInterface.getMergeInsertValues _).expects(jdbcLayerInterface, tempTableName, config.copyColumnList).returning(Right("temp.col1"))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.createTempTable _).expects(tempTableName, config.schema, strlen).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
     checkResult(pipe.commit())
   }
 }
