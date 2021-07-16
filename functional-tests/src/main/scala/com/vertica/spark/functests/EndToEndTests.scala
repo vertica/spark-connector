@@ -3310,7 +3310,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
-
   it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
@@ -3329,9 +3328,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 3)
-    df.rdd.foreach(row => {
-      if(row.getAs[Integer](0) == 2) assert(row.getAs[Integer](1) == 77)
-      else assert(row.getAs[Integer](1) == 2)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2) assert(row.getAs[Long](1) == 77)
+      else assert(row.getAs[Long](1) == 2)
     })
     TestUtils.dropTable(conn, tableName)
   }
@@ -3356,9 +3355,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 3)
-    df.rdd.foreach(row => {
-      if(row.getAs[Integer](0) == 2) assert(row.getAs[Integer](1) == 77)
-      else assert(row.getAs[Integer](1) == 2)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2) assert(row.getAs[Long](1) == 77)
+      else assert(row.getAs[Long](1) == 2)
     })
     TestUtils.dropTable(conn, tableName)
   }
@@ -3383,9 +3382,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 3)
-    df.rdd.foreach(row => {
-      if(row.getAs[Integer](0) == 2) assert(row.getAs[Integer](1) == 77)
-      else assert(row.getAs[Integer](1) == 2)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2) assert(row.getAs[Long](1) == 77)
+      else assert(row.getAs[Long](1) == 2)
     })
     TestUtils.dropTable(conn, tableName)
   }
@@ -3408,9 +3407,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 3)
-    df.rdd.foreach(row => {
-      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
-      else assert(row.getAs[Integer](2) == 2)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2 && row.getAs[Long](1) == 3) assert(row.getAs[Long](2) == 77)
+      else assert(row.getAs[Long](2) == 2)
     })
     TestUtils.dropTable(conn, tableName)
   }
@@ -3427,9 +3426,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 2)
-    df.rdd.foreach(row => {
-      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
-      else assert(row.getAs[Integer](2) == 2)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2 && row.getAs[Long](1) == 3) assert(row.getAs[Long](2) == 77)
+      else assert(row.getAs[Long](2) == 2)
     })
     TestUtils.dropTable(conn, tableName)
   }
@@ -3452,7 +3451,33 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 2)
-    df.rdd.foreach(row => assert(row.getAs[Integer](2) == 5))
+    df2.rdd.foreach(row => assert(row.getAs[Long](2) == 5))
     TestUtils.dropTable(conn, tableName)
   }
+
+  it should "Merge less columns without copy_column_list" in {
+    val tableName = "mergetable"
+    val stmt = conn.createStatement
+    val n = 2
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b varchar(50), c int)")
+    val insert = "insert into "+ tableName + " values(2, 'hello', 4)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val schema = new StructType(Array(StructField("a", IntegerType), StructField("b", StringType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, "hola"), Row(3, "world"))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "a")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 3)
+    df2.rdd.foreach(row => {
+      if(row.getAs[Long](0) == 2) assert(row.getAs[String](1) == "hola" && row.getAs[Long](2) == 4)
+      else assert(row.getAs[String](1) == "world")
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
 }
