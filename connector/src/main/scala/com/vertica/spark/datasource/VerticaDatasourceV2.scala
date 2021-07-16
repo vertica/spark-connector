@@ -30,7 +30,7 @@ import collection.JavaConverters._
  *
  * Implements Spark V2 datasource class [[http://spark.apache.org/docs/latest/api/java/org/apache/spark/sql/connector/catalog/TableProvider.html here]]
  *
- * This and the tree of classes returned by is are to be kept light, and hook into the core of the connector
+ * This and the tree of classes returned by it are to be kept light, and hook into the core of the connector
  */
 class VerticaSource extends TableProvider with SupportsCatalogOptions {
 

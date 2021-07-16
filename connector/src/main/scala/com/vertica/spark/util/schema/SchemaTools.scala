@@ -22,7 +22,7 @@ import cats.implicits._
 
 import scala.util.Either
 import cats.instances.list._
-import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource}
+import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 
@@ -88,7 +88,6 @@ trait SchemaToolsInterface {
    */
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 
-
   /**
    * Converts spark schema to table column defs in Vertica format
    *
@@ -96,6 +95,23 @@ trait SchemaToolsInterface {
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
   def makeTableColumnDefs(schema: StructType, strlen: Long): ConnectorResult[String]
+
+  /**
+   * Gets a list of column values to be inserted within a merge.
+   *
+   * @param copyColumnList String of columns passed in by user as a configuration option.
+   * @return String of values to append to INSERT VALUES in merge.
+   */
+  def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String]
+
+  /**
+   * Gets a list of column values and their updates to be updated within a merge.
+   *
+   * @param copyColumnList String of columns passed in by user as a configuration option.
+   * @param tempTableName Temporary table created as part of merge statement
+   * @return String of columns and values to append to UPDATE SET in merge.
+   */
+  def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -207,7 +223,6 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
       case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(65000)")
@@ -238,7 +253,6 @@ class SchemaTools extends SchemaToolsInterface {
       case _ => Left(MissingSparkConversionError(sparkType))
     }
   }
-
 
   def getCopyColumnList(jdbcLayer: JdbcLayerInterface, tableName: TableName, schema: StructType): ConnectorResult[String] = {
     for {
@@ -336,8 +350,10 @@ class SchemaTools extends SchemaToolsInterface {
     sb.append(" (")
     var first = true
     schema.foreach(s => {
-      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
-      if (!first) { sb.append(",\n") }
+      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable=" + s.nullable)
+      if (!first) {
+        sb.append(",\n")
+      }
       first = false
       sb.append("\"" + s.name + "\" ")
 
@@ -355,7 +371,7 @@ class SchemaTools extends SchemaToolsInterface {
         // has precision and scale
         val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
         if (s.dataType.toString.matches(ps.toString)) {
-          val ps(prec,scale) = s.dataType.toString
+          val ps(prec, scale) = s.dataType.toString
           decimal_qualifier = "(" + prec + "," + scale + ")"
         }
       }
@@ -367,13 +383,46 @@ class SchemaTools extends SchemaToolsInterface {
           case Right(datatype) => Right(datatype + decimal_qualifier)
         }
         _ = sb.append(col)
-        _ = if (!s.nullable) { sb.append(" NOT NULL") }
+        _ = if (!s.nullable) {
+          sb.append(" NOT NULL")
+        }
       } yield ()
     })
 
     sb.append(")")
 
     Right(sb.toString)
+  }
+
+  def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
+    val valueList = getColumnInfo(jdbcLayer, tableName) match {
+      case Right(info) => Right(info.map(x => "temp." + x.label ).mkString(","))
+      case Left(err) => Left(JdbcSchemaError(err))
+    }
+    valueList
+  }
+
+  def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
+    val columnList = copyColumnList match {
+      case Some(list) => {
+        val customColList = list.toString.split(",").toList
+        val colList = getColumnInfo(jdbcLayer, tempTableName) match {
+          case Right(info) =>
+            val tupleList = customColList zip info
+            Right(tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", "))
+          case Left(err) => Left(JdbcSchemaError(err))
+        }
+        colList
+      }
+      case None => {
+        val updateList = getColumnInfo(jdbcLayer, tableName) match {
+         case Right(info) => Right(info.map(x => x.label + "=temp." + x.label).mkString(", "))
+         case Left(err) => Left(JdbcSchemaError(err))
+        }
+        updateList
+      }
+    }
+    columnList
   }
 }
 

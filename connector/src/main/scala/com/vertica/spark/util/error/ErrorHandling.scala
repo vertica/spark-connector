@@ -458,6 +458,16 @@ case class LoadConfigMissingSparkSessionError() extends ConnectorError {
 case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
   override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
 }
+case class CreateExternalTableMergeKey() extends ConnectorError {
+  override def getFullContext: String = "Options 'merge_key' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
+}
 case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
   override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
+}
+
+case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
+  private val message = "Failed to get column info of table for merge."
+
+  def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }

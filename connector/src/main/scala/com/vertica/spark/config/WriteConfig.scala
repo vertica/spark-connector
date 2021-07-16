@@ -72,6 +72,7 @@ object ValidColumnList {
  * @param copyColumnList Optional list of columns to use in copy statement.
  * @param sessionId Unqiue identifier for this write operation.
  * @param failedRowPercentTolerance Value between 0 and 1, percent of rows that are allowed to fail before the operation fails.
+ * @param mergeKey Attributes that two data sets are joined on in order to execute a merge statement
  */
 final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   fileStoreConfig: FileStoreConfig,
@@ -83,7 +84,8 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   sessionId: String,
                                                   failedRowPercentTolerance: Float,
                                                   filePermissions: ValidFilePermissions,
-                                                  createExternalTable: Boolean
+                                                  createExternalTable: Boolean,
+                                                  mergeKey: Option[ValidColumnList] = None
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false
 

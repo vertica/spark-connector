@@ -76,6 +76,15 @@ trait TableUtilsInterface {
   def dropTable(tablename: TableName): ConnectorResult[Unit]
 
   /**
+   * Creates a temporary table.
+   *
+   * @param tablename Name of table
+   * @param schema Spark schema of data we want to write to the table
+   * @param strlen Length to use for strings in Vertica string types
+   */
+  def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit]
+
+  /**
    * Creates the job status table if it doesn't exist and adds the entry for this job.
    *
    * The job status table records write jobs in Vertica and their status, so we can have an auditable record of writes from Spark to Vertica.
@@ -103,6 +112,24 @@ trait TableUtilsInterface {
  */
 class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = LogProvider.getLogger(classOf[TableUtils])
+
+  private def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, temp: Boolean = false): ConnectorResult[String] = {
+    val sb = new StringBuilder()
+    sb.append(tablename.getFullTableName)
+
+    schemaTools.makeTableColumnDefs(schema, strlen) match {
+      case Right(columnDefs) =>
+        val sb = new StringBuilder()
+        if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
+        sb.append(tablename.getFullTableName)
+
+        sb.append(columnDefs)
+
+        if(temp) sb.append(" ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(" INCLUDE SCHEMA PRIVILEGES ")
+        Right(sb.toString)
+      case Left(err) => Left(err)
+    }
+  }
 
   override def tempTableExists(table: TableName): ConnectorResult[Boolean] = {
     val dbschema = table.dbschema.getOrElse("public")
@@ -211,18 +238,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     val statement: ConnectorResult[String] = targetTableSql match {
       case Some(sql) => Right(sql)
       case None =>
-        schemaTools.makeTableColumnDefs(schema, strlen) match {
-          case Right(columnDefs) =>
-            val sb = new StringBuilder()
-            sb.append("CREATE table ")
-            sb.append(tablename.getFullTableName)
-
-            sb.append(columnDefs)
-
-            sb.append(" INCLUDE SCHEMA PRIVILEGES ")
-            Right(sb.toString)
-          case Left(err) => Left(err)
-        }
+        buildCreateTableStmt(tablename, schema, strlen)
     }
 
     statement match {
@@ -236,6 +252,16 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
   def dropTable(tablename: TableName): ConnectorResult[Unit] = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
       .left.map(err => err.context("JDBC Error dropping table"))
+  }
+
+  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    val statement = buildCreateTableStmt(tablename, schema, strlen, true)
+    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+    statement match {
+      case Left(err) => Left(err)
+      case Right(st) =>
+        jdbcLayer.execute(st).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
+    }
   }
 
   override def createAndInitJobStatusTable(tablename: TableName, user: String, sessionId: String, saveMode: String): ConnectorResult[Unit] = {

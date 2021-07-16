@@ -60,7 +60,7 @@ scalastyleFailOnWarning := true
 //   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
 // - Parquet reader files taken from third part spark library
 coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*"
-coverageMinimum := 59
+coverageMinimum := 80
 coverageFailOnMinimum := true
 
 assemblyShadeRules in assembly := Seq(
@@ -83,3 +83,10 @@ envVars in Test := Map(
   "AWS_DEFAULT_REGION" -> "us-west-1",
   "AWS_CREDENTIALS_PROVIDER" -> "test-provider"
 )
+
+lazy val root = (project in file(".")).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
+    buildInfoPackage := "buildinfo"
+  )
