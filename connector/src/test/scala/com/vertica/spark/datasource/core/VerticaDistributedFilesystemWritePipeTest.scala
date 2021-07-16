@@ -20,7 +20,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{CommitError, ConnectorError, FaultToleranceTestFail, OpenWriteError, SchemaConversionError, SyntaxError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, ConnectionDownError, ConnectorError, FaultToleranceTestFail, JdbcSchemaError, OpenWriteError, SchemaConversionError, SyntaxError, ViewExistsError}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import org.apache.spark.sql.catalyst.InternalRow
@@ -84,7 +84,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     }
   }
 
-  // TODO: Change this based on write modes
   it should "Create a table if it doesn't exist" in {
     val config = createWriteConfig()
 
@@ -178,6 +177,31 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       })
       case Right(_) => fail
     }
+  }
+
+  it should "Skip initial creation of table when external table is specified" in {
+    val config = createWriteConfig().copy(createExternalTable = true)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.createDir _).expects(*,*).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.tableExists _).expects(tablename).returning(Right(false))
+    (tableUtils.viewExists _).expects(tablename).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
+    (tableUtils.tableExists _).expects(tablename).returning(Right(true))
+    (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", "APPEND").returning(Right(()))
+
+    // Should skip
+    (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right()).never()
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    tryDoPreWriteSteps(pipe)
   }
 
   it should "Create the directory for exporting files" in {
@@ -537,5 +561,76 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     checkResult(pipe.commit())
+  }
+
+  it should "create an external table" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+
+    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right(()))
+    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "handle failure creating external table" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+
+    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Left(ConnectionDownError()))
+    (tableUtils.dropTable _).expects(tname).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.commit() match {
+      case Right(()) => fail
+      case Left(err) => assert(err.isInstanceOf[ConnectionDownError])
+    }
+  }
+
+  it should "handle failure validating external table" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+
+    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right())
+    (tableUtils.validateExternalTable _).expects(tname).returning(Left(ConnectionDownError()))
+    (tableUtils.dropTable _).expects(tname).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.commit() match {
+      case Right(()) => fail
+      case Left(err) => assert(err.isInstanceOf[ConnectionDownError])
+    }
   }
 }

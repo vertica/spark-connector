@@ -258,12 +258,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     ret.left.map(err => CommitError(err).context("performCopy: JDBC error when trying to copy"))
   }
 
-  def commit(): ConnectorResult[Unit] = {
-    val globPattern: String = "*.parquet"
-
-    // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
-
+  def commitDataIntoVertica(url: String): ConnectorResult[Unit] = {
     val tableNameMaxLength = 30
 
     val ret = for {
@@ -313,5 +308,48 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     fileStoreLayer.removeDir(config.fileStoreConfig.address)
     jdbcLayer.close()
     result
+  }
+
+  def commitDataAsExternalTable(url: String): ConnectorResult[Unit] = {
+    if(config.copyColumnList.isDefined) {
+      logger.warn("Custom copy column list was specified, but will be ignored when creating new external table.")
+    }
+
+    val ret = for {
+      _ <- tableUtils.createExternalTable(
+        tablename = config.tablename,
+        targetTableSql = config.targetTableSql,
+        schema = config.schema,
+        strlen = config.strlen,
+        urlToCopyFrom = url
+      )
+
+      _ <- tableUtils.validateExternalTable(config.tablename)
+
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true)
+    } yield ()
+
+    // External table creation always commits. So, if an error was detected, drop the table
+    ret match {
+      case Left(err) =>
+        tableUtils.dropTable(config.tablename)
+        Left(err)
+      case Right(_) => Right()
+    }
+
+  }
+
+  def commit(): ConnectorResult[Unit] = {
+    val globPattern: String = "*.parquet"
+
+    // Create url string, escape any ' characters as those surround the url
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
+
+    if(config.createExternalTable) {
+      commitDataAsExternalTable(url)
+    }
+    else {
+      commitDataIntoVertica(url)
+    }
   }
 }

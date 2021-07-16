@@ -95,7 +95,7 @@ trait SchemaToolsInterface {
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
-  def makeTableColumnDefs(schema: StructType): String
+  def makeTableColumnDefs(schema: StructType, strlen: Long): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -330,8 +330,50 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def makeTableColumnDefs(schema: StructType): String = {
+  def makeTableColumnDefs(schema: StructType, strlen: Long): ConnectorResult[String] = {
+    val sb = new StringBuilder()
 
+    sb.append(" (")
+    var first = true
+    schema.foreach(s => {
+      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
+      if (!first) { sb.append(",\n") }
+      first = false
+      sb.append("\"" + s.name + "\" ")
+
+      // remains empty unless we have a DecimalType with precision/scale
+      var decimal_qualifier: String = ""
+      if (s.dataType.toString.contains("DecimalType")) {
+
+        // has precision only
+        val p = "DecimalType\\((\\d+)\\)".r
+        if (s.dataType.toString.matches(p.toString)) {
+          val p(prec) = s.dataType.toString
+          decimal_qualifier = "(" + prec + ")"
+        }
+
+        // has precision and scale
+        val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
+        if (s.dataType.toString.matches(ps.toString)) {
+          val ps(prec,scale) = s.dataType.toString
+          decimal_qualifier = "(" + prec + "," + scale + ")"
+        }
+      }
+
+      for {
+        col <- getVerticaTypeFromSparkType(s.dataType, strlen) match {
+          case Left(err) =>
+            return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+          case Right(datatype) => Right(datatype + decimal_qualifier)
+        }
+        _ = sb.append(col)
+        _ = if (!s.nullable) { sb.append(" NOT NULL") }
+      } yield ()
+    })
+
+    sb.append(")")
+
+    Right(sb.toString)
   }
 }
 

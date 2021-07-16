@@ -51,6 +51,25 @@ trait TableUtilsInterface {
    */
   def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit]
 
+
+  /**
+   * Creates an external table based on parquet data on disk.
+   *
+   * @param tablename Name of table
+   * @param targetTableSql Optional value, if specified this entire string will be used to create the table and other params will be ignored.
+   * @param schema Spark schema of data we want to write to the table
+   * @param strlen Length to use for strings in Vertica string types
+   */
+  def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String): ConnectorResult[Unit]
+
+  /**
+   * Validates that an external table was created properly and can be loaded from without error
+   *
+   * @param tablename
+   * @return Empty result if valid, error otherwise
+   */
+  def validateExternalTable(tablename: TableName): ConnectorResult[Unit]
+
   /**
    * Drops/Deletes a given table if it exists.
    */
@@ -150,59 +169,68 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     }
   }
 
-  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit] = {
-    // Either get the user-supplied statement to create the table, or build our own
-    val statement: String = targetTableSql match {
-      case Some(sql) => sql
+  override def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String): ConnectorResult[Unit] = {
+    val statement: ConnectorResult[String] = targetTableSql match {
+      case Some(sql) => Right(sql)
       case None =>
-        val sb = new StringBuilder()
-        sb.append("CREATE table ")
-        sb.append(tablename.getFullTableName)
+        schemaTools.makeTableColumnDefs(schema, strlen) match {
+          case Right(columnDefs) =>
+            val sb = new StringBuilder()
+            sb.append("CREATE EXTERNAL table ")
+            sb.append(tablename.getFullTableName)
 
-        sb.append(" (")
-        var first = true
-        schema.foreach(s => {
-          logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable="  + s.nullable)
-          if (!first) { sb.append(",\n") }
-          first = false
-          sb.append("\"" + s.name + "\" ")
+            sb.append(columnDefs)
 
-          // remains empty unless we have a DecimalType with precision/scale
-          var decimal_qualifier: String = ""
-          if (s.dataType.toString.contains("DecimalType")) {
-
-            // has precision only
-            val p = "DecimalType\\((\\d+)\\)".r
-            if (s.dataType.toString.matches(p.toString)) {
-              val p(prec) = s.dataType.toString
-              decimal_qualifier = "(" + prec + ")"
-            }
-
-            // has precision and scale
-            val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
-            if (s.dataType.toString.matches(ps.toString)) {
-              val ps(prec,scale) = s.dataType.toString
-              decimal_qualifier = "(" + prec + "," + scale + ")"
-            }
-          }
-
-          for {
-            col <- schemaTools.getVerticaTypeFromSparkType(s.dataType, strlen) match {
-              case Left(err) =>
-                return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
-              case Right(datatype) => Right(datatype + decimal_qualifier)
-            }
-            _ = sb.append(col)
-            _ = if (!s.nullable) { sb.append(" NOT NULL") }
-          } yield ()
-        })
-
-        sb.append(")  INCLUDE SCHEMA PRIVILEGES ")
-        sb.toString
+            sb.append(" AS COPY FROM '")
+            sb.append(urlToCopyFrom)
+            sb.append("' PARQUET INCLUDE SCHEMA PRIVILEGES")
+            Right(sb.toString)
+          case Left(err) => Left(err)
+        }
     }
 
-    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
-    jdbcLayer.execute(statement).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
+    statement match {
+      case Left(err) => Left(err)
+      case Right(st) =>
+        logger.debug(s"BUILDING EXTERNAL TABLE WITH COMMAND: " + statement)
+        jdbcLayer.execute(st).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating external table"))
+    }
+  }
+
+  override def validateExternalTable(tablename: TableName): ConnectorResult[Unit] = {
+    // Load a single row from the table to verify that it can be loaded from properly.
+    // Necessary since basic errors will not be detected upon creation of the external table
+    jdbcLayer.query("SELECT * FROM " + tablename.getFullTableName + " LIMIT 1;") match {
+      case Right(_) => Right(())
+      case Left(err) => Left(err)
+    }
+  }
+
+  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long): ConnectorResult[Unit] = {
+    // Either get the user-supplied statement to create the table, or build our own
+    val statement: ConnectorResult[String] = targetTableSql match {
+      case Some(sql) => Right(sql)
+      case None =>
+        schemaTools.makeTableColumnDefs(schema, strlen) match {
+          case Right(columnDefs) =>
+            val sb = new StringBuilder()
+            sb.append("CREATE table ")
+            sb.append(tablename.getFullTableName)
+
+            sb.append(columnDefs)
+
+            sb.append(" INCLUDE SCHEMA PRIVILEGES ")
+            Right(sb.toString)
+          case Left(err) => Left(err)
+        }
+    }
+
+    statement match {
+      case Left(err) => Left(err)
+      case Right(st) =>
+        logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+        jdbcLayer.execute(st).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
+    }
   }
 
   def dropTable(tablename: TableName): ConnectorResult[Unit] = {
