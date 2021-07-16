@@ -357,7 +357,7 @@ class SchemaTools extends SchemaToolsInterface {
         colList
       }
       case None => {
-        val updateList = getColumnInfo(jdbcLayer, tableName) match {
+        val updateList = getColumnInfo(jdbcLayer, tempTableName) match {
          case Right(info) => Right(info.map(x => x.label + "=temp." + x.label).mkString(", "))
          case Left(err) => Left(JdbcSchemaError(err))
         }
