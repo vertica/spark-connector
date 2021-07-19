@@ -90,6 +90,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
+    if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -164,10 +165,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(MergeColumnListError(err))
     }
     val mergeList = config.mergeKey match {
-      case Some(keys) => keys.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
+      case Some(key) => key.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
       case None => List()
     }
-
     s"MERGE INTO $targetTable as target using $tempTable as temp ON ($mergeList) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES ($insertColValues)"
   }
 
