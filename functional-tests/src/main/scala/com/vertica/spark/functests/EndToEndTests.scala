@@ -145,6 +145,22 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read data from Vertica using reserved keywords as col names" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (\"check\" int, \"timestamp\" int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1) ).load()
+
+    assert(df.count() == 1)
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
+
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -1090,6 +1106,34 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   private def escapeSql(v: String) = v.replace("\"", "\"\"")
+
+  it should "write data to Vertica using reserved keywords" in {
+    val tableName = "basicWriteTest"
+    val schema = new StructType(Array(StructField("check", IntegerType), StructField("timestamp", IntegerType)))
+
+    val data = Seq(Row(77, 88))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
 
   it should "fail to inject SQL w/ tablename to drop table" in {
     val tableName = "blah; DROP TABLE blah2; SELECT * FROM "
@@ -3424,6 +3468,25 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "a,b")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 2)
+    df.rdd.foreach(row => {
+      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
+      else assert(row.getAs[Integer](2) == 2)
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Merge using reserved keywords as col names" in {
+    val tableName= "mergetable"
+    val schema = new StructType(Array(StructField("check", IntegerType), StructField("timestamp", IntegerType), StructField("create", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "check,timestamp")).mode(mode).save()
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 2)

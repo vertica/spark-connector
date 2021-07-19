@@ -164,7 +164,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(MergeColumnListError(err))
     }
     val mergeList = config.mergeKey match {
-      case Some(keys) => keys.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
+      case Some(key) =>
+        val trimmedCols= key.toString.split(",").toList.map(col => col.trim())
+        trimmedCols.map(trimmedCol => s"target.$trimmedCol=temp.$trimmedCol").mkString(" AND ")
       case None => List()
     }
 

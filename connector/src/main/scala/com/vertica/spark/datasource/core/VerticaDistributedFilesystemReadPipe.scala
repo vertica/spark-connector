@@ -255,8 +255,8 @@ class VerticaDistributedFilesystemReadPipe(
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS " + "SELECT " + cols + " FROM " +
-        exportSource + pushdownSql + ";"
+        "') AS " + "SELECT " + cols +
+        " FROM " + exportSource + pushdownSql + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {
