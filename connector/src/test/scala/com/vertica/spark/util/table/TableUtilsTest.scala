@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{ConnectionError, JobStatusCreateError, SyntaxError, TableCheckError}
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -208,16 +208,38 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.execute _).expects(
-      "CREATE table \"dummy\" (\"col1\" INTEGER)  INCLUDE SCHEMA PRIVILEGES ",
+      "CREATE table \"dummy\" (\"col1\" INTEGER) INCLUDE SCHEMA PRIVILEGES ",
       *
     ).returning(Right(()))
 
-    val schemaTools = mock[SchemaToolsInterface]
-    (schemaTools.getVerticaTypeFromSparkType _).expects(IntegerType, strlen).returning(Right("INTEGER"))
+    val schemaTools = new SchemaTools()
 
     val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.createTable(TableName(tablename, None), None, schema, strlen) match {
+      case Left(errors) => fail(errors.getFullContext)
+      case Right(_) => ()
+    }
+  }
+
+  it should "Create an external table building statement" in {
+    val tablename = "dummy"
+
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val url = "hdfs://test:8020/fff"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.execute _).expects(
+      "CREATE EXTERNAL table \"dummy\" (\"col1\" INTEGER) AS COPY FROM '" + url + "' PARQUET",
+      *
+    ).returning(Right(()))
+
+    val schemaTools = new SchemaTools()
+
+    val utils = new TableUtils(schemaTools, jdbcLayerInterface)
+
+    utils.createExternalTable(TableName(tablename, None), None, schema, strlen, url) match {
       case Left(errors) => fail(errors.getFullContext)
       case Right(_) => ()
     }

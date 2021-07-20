@@ -3310,6 +3310,140 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
+
+  it should "create an external table" in {
+    val tableName = "externalWriteTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+    ).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "create an external table with big string" in {
+    val tableName = "externalWriteTest"
+    val schema = new StructType(Array(StructField("col1", StringType)))
+
+    val str = (1 to 10000).mkString(",")
+
+    val data = Seq(Row(str))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+                   "strlen" -> (str.length + 1).toString)
+    ).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    assert(readDf.head().getString(0) == str)
+
+    TestUtils.dropTable(conn, tableName)
+
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "create an external table with decimal data type" in {
+    val tableName = "externalWriteTest"
+    val schema = new StructType(Array(
+      StructField("col1", DecimalType(32,8))
+    ))
+
+    val dec = new java.math.BigDecimal(1.23456)
+    val data = Seq(Row(
+      dec
+    ))
+
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+    ).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    val dec2 = readDf.head().getDecimal(0)
+    assert( dec.subtract(dec2).abs().compareTo(new java.math.BigDecimal(0.001)) < 0)
+
+    TestUtils.dropTable(conn, tableName)
+
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "create an external table with multiple data types" in {
+    val tableName = "externalWriteTest"
+    val schema = new StructType(Array(
+      StructField("col1", StringType),
+      StructField("col2", DateType),
+      StructField("col3", LongType)
+    ))
+
+    val str = (1 to 10).mkString(",")
+    val date = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
+
+    val data = Seq(Row(
+      str,
+      new java.sql.Date(date.getTime),
+      500000L
+    ))
+
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+        "strlen" -> (str.length + 1).toString)
+    ).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
   it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
@@ -3481,3 +3615,4 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
 }
+
