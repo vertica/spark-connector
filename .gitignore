@@ -14,6 +14,7 @@ functional-tests/project/project/
 functional-tests/project/target/
 functional-tests/target/
 functional-tests/.idea/
+performance-tests/target
 examples/*/lib/
 examples/*/project/build.properties
 examples/*/project/project/

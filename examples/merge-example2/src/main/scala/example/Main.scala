@@ -45,18 +45,20 @@ object Main  {
     try {
       val tableName = "dftest"
       val stmt = conn.createStatement
-      val n = 2
-      // Creates a table called dftest with an integer attribute
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(col1 int, b varchar(50))")
-      val insert = "insert into " + tableName + " values(2, 'hello')"
-      // Inserts 2 rows of the data above into dftest
+      val n = 5
+      // Creates a table called dftest with 4 cols
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(col1 int, col2 int, c varchar(50), d varchar(50))")
+      val insert = "insert into " + tableName + " values(2, 3, 'hello', 'world')"
+      // Inserts 5 rows of the data above into dftest
       TestUtils.populateTableBySQL(stmt, insert, n)
-      val copyList= "col1,b"
       // Define schema of a table
-      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
-      val data = (1 to 20).map(x => Row(x, "hola"))
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", IntegerType), StructField("col3", StringType)))
+      val data = (1 to 20).map(x => Row(x, 3, "hola"))
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      // Use copyList to match columns from df schema to target table
+      val copyList = "col1, c, d"
+
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "copy_column_list" -> copyList)).mode(mode).save()
