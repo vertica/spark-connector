@@ -582,6 +582,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -589,8 +591,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right(()))
-    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -604,6 +606,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.rollback _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 
@@ -628,6 +632,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.rollback _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
 

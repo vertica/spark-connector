@@ -210,7 +210,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
 
             sb.append(" AS COPY FROM '")
             sb.append(urlToCopyFrom)
-            sb.append("' PARQUET INCLUDE SCHEMA PRIVILEGES")
+            sb.append("' PARQUET")
             Right(sb.toString)
           case Left(err) => Left(err)
         }

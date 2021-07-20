@@ -231,7 +231,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.execute _).expects(
-      "CREATE EXTERNAL table \"dummy\" (\"col1\" INTEGER) AS COPY FROM '" + url + "' PARQUET INCLUDE SCHEMA PRIVILEGES",
+      "CREATE EXTERNAL table \"dummy\" (\"col1\" INTEGER) AS COPY FROM '" + url + "' PARQUET",
       *
     ).returning(Right(()))
 

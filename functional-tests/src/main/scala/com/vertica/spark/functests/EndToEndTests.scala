@@ -55,7 +55,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-  /*
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -3311,7 +3310,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
   }
-  */
 
   it should "create an external table" in {
     val tableName = "externalWriteTest"

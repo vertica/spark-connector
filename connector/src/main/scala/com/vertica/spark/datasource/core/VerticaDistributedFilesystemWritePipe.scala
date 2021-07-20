@@ -355,20 +355,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     } yield ()
 
-    // Commit or rollback
-    val result: ConnectorResult[Unit] = ret match {
-      case Right(_) =>
-        jdbcLayer.commit().left.map(err => CommitError(err).context("JDBC Error when trying to commit"))
-      case Left(retError) =>
-        jdbcLayer.rollback() match {
-          case Right(_) => Left(retError)
-          case Left(err) => Left(retError.context("JDBC Error when trying to rollback: " + err.getFullContext))
-        }
-    }
-
     fileStoreLayer.removeDir(config.fileStoreConfig.address)
-    jdbcLayer.close()
-    result
+    ret
   }
 
   def commitDataAsExternalTable(url: String): ConnectorResult[Unit] = {
@@ -388,6 +376,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- tableUtils.validateExternalTable(config.tablename)
 
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true)
+
     } yield ()
 
     // External table creation always commits. So, if an error was detected, drop the table
@@ -406,11 +395,25 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
 
-    if(config.createExternalTable) {
+    val ret = if(config.createExternalTable) {
       commitDataAsExternalTable(url)
     }
     else {
       commitDataIntoVertica(url)
     }
+
+    // Commit or rollback
+    val result = ret match {
+      case Right(_) =>
+        jdbcLayer.commit().left.map(err => CommitError(err).context("JDBC Error when trying to commit"))
+      case Left(retError) =>
+        jdbcLayer.rollback() match {
+          case Right(_) => Left(retError)
+          case Left(err) => Left(retError.context("JDBC Error when trying to rollback: " + err.getFullContext))
+        }
+    }
+
+    jdbcLayer.close()
+    result
   }
 }
