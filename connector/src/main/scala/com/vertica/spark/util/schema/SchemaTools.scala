@@ -347,7 +347,7 @@ class SchemaTools extends SchemaToolsInterface {
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
     val columnList = copyColumnList match {
       case Some(list) => {
-        val customColList = list.toString.split(",").toList
+        val customColList = list.toString.split(",").toList.map(col => col.trim())
         val colList = getColumnInfo(jdbcLayer, tempTableName) match {
           case Right(info) =>
             val tupleList = customColList zip info

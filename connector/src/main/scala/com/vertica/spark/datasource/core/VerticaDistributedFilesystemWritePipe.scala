@@ -200,7 +200,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Some(list) =>
         logger.info(s"Using custom COPY column list. " + "Target table: " + config.tablename.getFullTableName +
           ", " + "copy_column_list: " + list + ".")
-        Right("(" + list + ")")
+        Right("(" + list.toString.split(",").map(col => col.trim()).mkString(",") + ")")
       case None =>
         // Default COPY
         logger.info(s"Building default copy column list")
