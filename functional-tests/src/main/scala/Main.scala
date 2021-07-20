@@ -38,7 +38,8 @@ class VReporter extends org.scalatest.Reporter {
         succeededCount += 1
       case TestFailed(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, analysis, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
         errCount += 1
-        println("TEST FAILED: " + testName + "\n" + message)
+        println("TEST FAILED: " + testName + "\n" + message + "\n" )
+        throwable.get.printStackTrace()
       case _ =>
         println("UNEXPECTED TEST EVENT: " + event.toString)
     }
