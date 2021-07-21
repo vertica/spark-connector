@@ -1,14 +1,19 @@
 install.packages("sparklyr", repo = "http://cran.us.r-project.org")
-# install.packages("devtools", repo = "http://cran.us.r-project.org")
-# devtools::install_github("sparklyr/sparklyr")
 library(sparklyr)
 
-#spark_install(version = "3.0")
+# Delete the batch.csv file if it already exists, since we need to wait for it to be created later
+if (dir.exists("batch.csv")) unlink("batch.csv", recursive = TRUE)
 
+# Create the Spark config and give access to our connector jar file
 config <- spark_config()
-config[["spark.driver.extraClassPath"]] <- "../../connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.0.jar"
-config[["sparklyr.log.console"]] <- TRUE
+config$sparklyr.jars.default <- "../../connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.0.jar"
 
-Sys.setenv(SPARK_HOME = "/opt/spark", JAVA_HOME = "/usr/lib/jvm/jre-11-openjdk")
+# Submit a new Spark job that executes sparkapp.r with Spark version 3.1
+spark_submit(master = "spark://localhost:7077", version = "3.1", file = "sparkapp.r", config = config)
 
-spark_submit(master = "local", file = "sparkapp.r", config = config)
+# Wait until the Spark job creates batch.csv. Otherwise, this program will terminate and kill the Spark process too early.
+retries <- 120
+while (!dir.exists("batch.csv") && retries > 0) {
+  Sys.sleep(1)
+  retries <- retries - 1
+}

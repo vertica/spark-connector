@@ -1,25 +1,17 @@
 library(sparklyr)
-library(dplyr)
-
-# spark_install(version = "3.1")
-
-print("connecting to spark")
-
-Sys.setenv(SPARK_HOME = "/opt/spark", JAVA_HOME = "/usr/lib/jvm/jre-11-openjdk")
 
 conf <- spark_config()
-conf$`sparklyr.cores.local` <- 4
-conf$`sparklyr.shell.driver-memory` <- "16G"
-conf$spark.memory.fraction <- 0.9
-conf$sparklyr.log.console <- TRUE
+conf$sparklyr.connect.enablehivesupport <- FALSE
 
-sc <- spark_connect(master = "local", config = conf)
+print("Connecting to Spark.")
 
-print("connected to spark. Getting iris_tbl")
+sc <- spark_connect(master = "spark://localhost:7077", version = "3.1", config = conf)
+
+print("Connected to spark. Getting iris_tbl.")
 
 iris_tbl <- sdf_copy_to(sc = sc, x = iris, overwrite = T)
 
-print("got iris_tbl. writing source")
+print("Got iris_tbl. Writing source.")
 
 spark_write_source(iris_tbl, "com.vertica.spark.datasource.VerticaSource", "overwrite", list(
   "host" = "vertica",
@@ -30,9 +22,9 @@ spark_write_source(iris_tbl, "com.vertica.spark.datasource.VerticaSource", "over
   "table" = "iris"
 ))
 
-print("wrote source. reading source")
+print("Wrote source. Reading source.")
 
-spark_read_source(sc = sc, source = "com.vertica.spark.datasource.VerticaSource", options = list(
+result <- spark_read_source(sc = sc, name = "example", source = "com.vertica.spark.datasource.VerticaSource", options = list(
   "host" = "vertica",
   "user" = "dbadmin",
   "password" = "",
@@ -41,6 +33,12 @@ spark_read_source(sc = sc, source = "com.vertica.spark.datasource.VerticaSource"
   "table" = "iris"
 ))
 
-print("finished reading source")
+print("Finished reading source.")
 
+# Signal to run.r that it can terminate the Spark process
+spark_write_csv(result, "batch.csv")
+
+print("Finished writing batch.csv.")
+
+# Cleanup Spark connection
 spark_disconnect(sc)
