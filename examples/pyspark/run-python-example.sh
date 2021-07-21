@@ -1,7 +1,7 @@
 if [ "$1" == "clean" ]
   then
     yum install -y python3
-    wget -P ../../ https://apache.mirror.colo-serv.net/spark/spark-3.0.2/spark-3.0.2-bin-without-hadoop.tgz
+    wget -P ../../ https://archive.apache.org/dist/spark/spark-3.0.3/spark-3.0.3-bin-without-hadoop.tgz
     wget -P ../../ https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz
     cd ../../
     tar xvf spark-3.0.2-bin-without-hadoop.tgz
@@ -28,7 +28,7 @@ elif [ -a ../../hadoop-3.3.0 ]
 
 else
   yum install -y python3
-  wget -P ../../ https://apache.mirror.colo-serv.net/spark/spark-3.0.2/spark-3.0.2-bin-without-hadoop.tgz
+  wget -P ../../ https://archive.apache.org/dist/spark/spark-3.0.3/spark-3.0.3-bin-without-hadoop.tgz
   wget -P ../../ https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz
   cd ../../
   tar xvf spark-3.0.2-bin-without-hadoop.tgz
