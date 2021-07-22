@@ -165,7 +165,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (\"ch@e#ck\" int, \"timestamp\" int)")
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (\"⺐hњeͶck\" int, \"time†tamp\" int)")
 
     val insert = "insert into "+ tableName1 + " values(2, 3)"
     TestUtils.populateTableBySQL(stmt, insert, n)
@@ -176,7 +176,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
     TestUtils.dropTable(conn, tableName1)
   }
-  
+  /*
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -3534,7 +3534,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "Merge using special characters in col names" in {
     val tableName= "mergetable"
-    val schema = new StructType(Array(StructField("c@heck", IntegerType), StructField("timestam%p", IntegerType), StructField("$c&re#ate", IntegerType)))
+    val schema = new StructType(Array(StructField("c@heck", IntegerType), StructField("timestam%p", IntegerType), StructField("⺐hњeͶck", IntegerType)))
 
     val mode = SaveMode.Append
     val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
