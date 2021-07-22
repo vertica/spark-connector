@@ -1,6 +1,6 @@
 if [ "$1" == "clean" ]
   then
-    wget -P ../../ https://mirror.dsrg.utoronto.ca/apache/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz
+    wget -P ../../ https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz
     wget -P ../../ https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz
     cd ../../
     tar xvf spark-3.1.2-bin-without-hadoop.tgz
@@ -26,7 +26,7 @@ elif [ -a ../../hadoop-3.3.0 ]
     spark-submit --master spark://localhost:7077 $1
 
 else
-  wget -P ../../ https://mirror.dsrg.utoronto.ca/apache/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz
+  wget -P ../../ https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz
   wget -P ../../ https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz
   cd ../../
   tar xvf spark-3.1.2-bin-without-hadoop.tgz

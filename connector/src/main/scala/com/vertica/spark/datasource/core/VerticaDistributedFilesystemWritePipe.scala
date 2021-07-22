@@ -13,16 +13,18 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.config.{DistributedFilesystemWriteConfig, EscapeUtils, KerberosAuth, LogProvider, TableName, VerticaMetadata, VerticaWriteMetadata}
+import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
+import com.vertica.spark.util.error.CreateExternalTableMergeKey
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{MergeColumnListError, CommitError, CreateTableError, DropTableError, DuplicateColumnsError, ExportFromVerticaError, FaultToleranceTestFail, SchemaColumnListError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
 
@@ -90,6 +92,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
+    if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -100,11 +103,17 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // If overwrite mode, remove table and force creation of new one before writing
       _ <- if(config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
 
+      // Creating external table and merging at the same time not supported
+      _ <- if (config.createExternalTable && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
+
       // Create the table if it doesn't exist
       tableExistsPre <- tableUtils.tableExists(config.tablename)
 
       // Overwrite safety check
       _ <- if (config.isOverwrite && config.mergeKey.isEmpty && tableExistsPre) Left(DropTableError()) else Right(())
+
+      // External table mode doesn't work if table exists
+      _ <- if (config.createExternalTable && tableExistsPre) Left(CreateExternalTableAlreadyExistsError()) else Right()
 
       // Check if a view exists or temp table exists by this name
       viewExists <- tableUtils.viewExists(config.tablename)
@@ -112,11 +121,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tempTableExists <- tableUtils.tempTableExists(config.tablename)
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
-      _ <- if (!tableExistsPre) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      // Create table unless we're appending, or we're in external table mode (that gets created later)
+      _ <- if (!tableExistsPre && !config.createExternalTable) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
-      _ <- if (tableExistsPost) Right(()) else Left(CreateTableError(None))
+      _ <- if (tableExistsPost || config.createExternalTable) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
       perm = config.filePermissions
@@ -164,12 +174,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(MergeColumnListError(err))
     }
     val mergeList = config.mergeKey match {
+
       case Some(key) =>
         val trimmedCols = key.toString.split(",").toList.map(col => col.trim())
         trimmedCols.map(trimmedCol => s"target.$trimmedCol=temp.$trimmedCol").mkString(" AND ")
+
       case None => List()
     }
-
     s"MERGE INTO $targetTable as target using $tempTable as temp ON ($mergeList) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES ($insertColValues)"
   }
 
@@ -294,11 +305,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     ret.left.map(err => CommitError(err).context("performCopy: JDBC error when trying to copy"))
   }
 
-  def commit(): ConnectorResult[Unit] = {
-    val globPattern: String = "*.parquet"
+  def commitDataIntoVertica(url: String): ConnectorResult[Unit] = {
     val tableNameMaxLength = 30
-    // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
 
     val ret = for {
       // Set Vertica to work with kerberos and HDFS/AWS
@@ -351,8 +359,55 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     } yield ()
 
+    fileStoreLayer.removeDir(config.fileStoreConfig.address)
+    ret
+  }
+
+  def commitDataAsExternalTable(url: String): ConnectorResult[Unit] = {
+    if(config.copyColumnList.isDefined) {
+      logger.warn("Custom copy column list was specified, but will be ignored when creating new external table.")
+    }
+
+    val ret = for {
+      _ <- tableUtils.createExternalTable(
+        tablename = config.tablename,
+        targetTableSql = config.targetTableSql,
+        schema = config.schema,
+        strlen = config.strlen,
+        urlToCopyFrom = url
+      )
+
+      _ <- tableUtils.validateExternalTable(config.tablename)
+
+      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true)
+
+    } yield ()
+
+    // External table creation always commits. So, if an error was detected, drop the table
+    ret match {
+      case Left(err) =>
+        tableUtils.dropTable(config.tablename)
+        Left(err)
+      case Right(_) => Right()
+    }
+
+  }
+
+  def commit(): ConnectorResult[Unit] = {
+    val globPattern: String = "*.parquet"
+
+    // Create url string, escape any ' characters as those surround the url
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
+
+    val ret = if(config.createExternalTable) {
+      commitDataAsExternalTable(url)
+    }
+    else {
+      commitDataIntoVertica(url)
+    }
+
     // Commit or rollback
-    val result: ConnectorResult[Unit] = ret match {
+    val result = ret match {
       case Right(_) =>
         jdbcLayer.commit().left.map(err => CommitError(err).context("JDBC Error when trying to commit"))
       case Left(retError) =>
@@ -362,7 +417,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
     }
 
-    fileStoreLayer.removeDir(config.fileStoreConfig.address)
     jdbcLayer.close()
     result
   }
