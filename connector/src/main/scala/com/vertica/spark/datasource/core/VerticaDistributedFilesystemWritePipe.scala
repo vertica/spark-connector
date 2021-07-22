@@ -165,7 +165,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
     val mergeList = config.mergeKey match {
       case Some(key) =>
-        val trimmedCols= key.toString.split(",").toList.map(col => col.trim())
+        val trimmedCols = key.toString.split(",").toList.map(col => col.trim())
         trimmedCols.map(trimmedCol => s"target.$trimmedCol=temp.$trimmedCol").mkString(" AND ")
       case None => List()
     }

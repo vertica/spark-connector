@@ -161,6 +161,22 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
+    it should "read data from Vertica with special chars in col names" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (\"ch@e#ck\" int, \"timestamp\" int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1) ).load()
+
+    assert(df.count() == 1)
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
+  
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -3487,6 +3503,44 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "check,timestamp")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 2)
+    df.rdd.foreach(row => {
+      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
+      else assert(row.getAs[Integer](2) == 2)
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Merge with user-provided double-quotes in merge_key" in {
+    val tableName= "mergetable"
+    val schema = new StructType(Array(StructField("check", IntegerType), StructField("timestamp", IntegerType), StructField("create", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "\"check\", \"timestamp\"")).mode(mode).save()
+
+    val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(df2.count() == 2)
+    df.rdd.foreach(row => {
+      if(row.getAs[Integer](0) == 2 && row.getAs[Integer](1) == 3) assert(row.getAs[Integer](2) == 77)
+      else assert(row.getAs[Integer](2) == 2)
+    })
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Merge using special characters in col names" in {
+    val tableName= "mergetable"
+    val schema = new StructType(Array(StructField("c@heck", IntegerType), StructField("timestam%p", IntegerType), StructField("$c&re#ate", IntegerType)))
+
+    val mode = SaveMode.Append
+    val data = Seq(Row(2, 3, 77), Row(3, 2, 2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "merge_key" -> "\"c@heck\",\"timestam%p\"")).mode(mode).save()
 
     val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(df2.count() == 2)
