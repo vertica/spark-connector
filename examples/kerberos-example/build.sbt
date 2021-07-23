@@ -26,9 +26,9 @@ libraryDependencies ++= Seq(
   "com.vertica.spark" % "vertica-spark" % "2.0.0-0"
 )
 
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
 }
 
-unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
+Runtime / unmanagedClasspath += new File("/etc/hadoop/conf/")
