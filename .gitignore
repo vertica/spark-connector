@@ -1,32 +1,22 @@
+# sbt-specific
+.bsp/
+target/
+
+.idea/
+
+.DS_Store
 *.class
 *.log
 
 project/
-connector/target/
-connector/project/target/
 connector/project/project/
-connector/.DS_Store
-connector/.idea
 connector/.scannerwork/
 functional-tests/lib/
 functional-tests/project/build.properties
 functional-tests/project/project/
-functional-tests/project/target/
-functional-tests/target/
-functional-tests/.idea/
-performance-tests/target
 examples/*/lib/
 examples/*/project/build.properties
 examples/*/project/project/
-examples/*/project/target/
-examples/*/target
-examples/*/.idea/
-examples/*/.bsp
-examples/target/
-/target/
-/.idea/
-.DS_Store
 
 !examples/s3-example/project
-examples/s3-example/project/target
 examples/s3-example/project/build.properties
