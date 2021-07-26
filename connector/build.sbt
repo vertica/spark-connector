@@ -30,9 +30,9 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 
-parallelExecution in Test := false
+Test / parallelExecution := false
 
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case n if n.contains("services") => MergeStrategy.concat
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
@@ -44,9 +44,9 @@ sonarProperties ++= Map(
   "sonar.host.url" -> "http://localhost:80",
 )
 
-scapegoatVersion in ThisBuild := "1.3.3"
+ThisBuild / scapegoatVersion := "1.3.3"
 scapegoatReports := Seq("xml")
-scalacOptions in Scapegoat += "-P:scapegoat:overrideLevels:all=Warning"
+Scapegoat / scalacOptions += "-P:scapegoat:overrideLevels:all=Warning"
 scalacOptions += "-Ypartial-unification"
 scalacOptions += "-Ywarn-value-discard"
 
@@ -63,20 +63,20 @@ coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.
 coverageMinimum := 80
 coverageFailOnMinimum := true
 
-assemblyShadeRules in assembly := Seq(
+assembly / assemblyShadeRules := Seq(
   ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
 )
 
-assemblyExcludedJars in assembly := {
-  val cp = (fullClasspath in assembly).value
+assembly / assemblyExcludedJars := {
+  val cp = (assembly / fullClasspath).value
   cp.filter{f => f.data.getName.contains("spark") ||
               f.data.getName.contains("hadoop")
   }
 }
 
-fork in Test := true
+Test / fork := true
 
-envVars in Test := Map(
+Test / envVars := Map(
   "AWS_ACCESS_KEY_ID" -> "test",
   "AWS_SECRET_ACCESS_KEY" -> "foo",
   "AWS_SESSION_TOKEN" -> "testsessiontoken",
