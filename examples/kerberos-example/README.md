@@ -32,9 +32,8 @@ Change directory to the example project:
 cd connector/spark-connector/examples/kerberos-example
 ```
 
-Run `sbt assembly` to build the assembly jar for this example (you may want to do this outside the container for a faster build).
-
 Run the example:
-`./run-example.sh target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-1.0.jar`
 
-If you get a permission denied issue, run `chmod +x run-example.sh`
+`sbt run`
+
+
