@@ -174,7 +174,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(MergeColumnListError(err))
     }
     val mergeList = config.mergeKey match {
-      case Some(key) => key.toString.split(",").toList.map(col => s"target.$col=temp.$col").mkString(" AND ")
+
+      case Some(key) =>
+        val trimmedCols = key.toString.split(",").toList.map(col => col.trim())
+        trimmedCols.map(trimmedCol => s"target.$trimmedCol=temp.$trimmedCol").mkString(" AND ")
+
       case None => List()
     }
     s"MERGE INTO $targetTable as target using $tempTable as temp ON ($mergeList) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES ($insertColValues)"
@@ -207,7 +211,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Some(list) =>
         logger.info(s"Using custom COPY column list. " + "Target table: " + config.tablename.getFullTableName +
           ", " + "copy_column_list: " + list + ".")
-        Right("(" + list + ")")
+        Right("(" + list.toString.split(",").map(col => col.trim()).mkString(",") + ")")
       case None =>
         // Default COPY
         logger.info(s"Building default copy column list")

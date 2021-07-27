@@ -337,7 +337,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   it should "call vertica copy upon commit with a custom copy list" in {
     val config = createWriteConfig().copy(copyColumnList = ValidColumnList("col1 INTEGER, col2 FLOAT").getOrElse(None))
 
-    val expected = "COPY \"dummy\" (col1 INTEGER, col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+    val expected = "COPY \"dummy\" (col1 INTEGER,col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))

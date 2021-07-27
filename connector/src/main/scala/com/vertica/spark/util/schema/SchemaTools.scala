@@ -117,6 +117,10 @@ trait SchemaToolsInterface {
 class SchemaTools extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
 
+  private def addDoubleQuotes(str: String): String = {
+    "\"" + str + "\""
+  }
+
   private def getCatalystType(
     sqlType: Int,
     precision: Int,
@@ -319,7 +323,7 @@ class SchemaTools extends SchemaToolsInterface {
     } yield columnList
   }
 
-  private def castToVarchar: String => String = colName => colName + "::varchar AS " + colName
+  private def castToVarchar: String => String = colName => colName + "::varchar AS " + addDoubleQuotes(colName)
 
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String = {
     val requiredColumnDefs: Seq[ColumnDef] = if (requiredSchema.nonEmpty) {
@@ -336,10 +340,10 @@ class SchemaTools extends SchemaToolsInterface {
             typenameNormalized.startsWith("uuid")) {
             castToVarchar(info.label)
           } else {
-            info.label
+            addDoubleQuotes(info.label)
           }
         case java.sql.Types.TIME => castToVarchar(info.label)
-        case _ => info.label
+        case _ => addDoubleQuotes(info.label)
       }
     }).mkString(",")
   }
@@ -396,7 +400,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
     val valueList = getColumnInfo(jdbcLayer, tableName) match {
-      case Right(info) => Right(info.map(x => "temp." + x.label ).mkString(","))
+      case Right(info) => Right(info.map(x => "temp." + addDoubleQuotes(x.label)).mkString(","))
       case Left(err) => Left(JdbcSchemaError(err))
     }
     valueList
@@ -405,19 +409,19 @@ class SchemaTools extends SchemaToolsInterface {
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
     val columnList = copyColumnList match {
       case Some(list) => {
-        val customColList = list.toString.split(",").toList
+        val customColList = list.toString.split(",").toList.map(col => col.trim())
         val colList = getColumnInfo(jdbcLayer, tempTableName) match {
           case Right(info) =>
             val tupleList = customColList zip info
-            Right(tupleList.map(x => x._1 + "=temp." + x._2.label).mkString(", "))
+            Right(tupleList.map(x => addDoubleQuotes(x._1) + "=temp." + addDoubleQuotes(x._2.label)).mkString(", "))
           case Left(err) => Left(JdbcSchemaError(err))
         }
         colList
       }
       case None => {
         val updateList = getColumnInfo(jdbcLayer, tempTableName) match {
-         case Right(info) => Right(info.map(x => x.label + "=temp." + x.label).mkString(", "))
-         case Left(err) => Left(JdbcSchemaError(err))
+          case Right(info) => Right(info.map(x => addDoubleQuotes(x.label) + "=temp." + addDoubleQuotes(x.label)).mkString(", "))
+          case Left(err) => Left(JdbcSchemaError(err))
         }
         updateList
       }
