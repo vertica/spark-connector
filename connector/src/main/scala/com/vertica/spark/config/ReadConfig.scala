@@ -43,7 +43,10 @@ trait ReadConfig {
 
   def getRequiredSchema: StructType
 
-  def copyConfig(newId: Boolean = false): ReadConfig
+  /**
+   * Copies the read config with a new unique identifier
+   */
+  def copyConfig(): ReadConfig
 }
 
 
@@ -111,11 +114,7 @@ final case class DistributedFilesystemReadConfig(
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
 
-  def copyConfig(newId: Boolean): ReadConfig = {
-    if(!newId) {
-      this.copy()
-    } else {
-      this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
-    }
+  def copyConfig(): ReadConfig = {
+    this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
   }
 }

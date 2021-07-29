@@ -165,7 +165,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "table returns schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(readConfig).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
     val table = new VerticaTable(options, readSetup)
 
@@ -488,7 +488,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "catalog tests if table exists" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(readConfig).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
     val catalog = new VerticaDatasourceV2Catalog()
     catalog.readSetupInterface = readSetup
@@ -497,6 +497,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
     // Implementation currently based on config, not identifier
     assert(catalog.tableExists(mock[Identifier]))
+
   }
 
   it should "catalog loads table on load or create" in {
