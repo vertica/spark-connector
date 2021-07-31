@@ -3384,19 +3384,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       writeOpts + ("table" -> tableName, "create_external_table" -> "true")
     ).mode(mode).save()
 
-    val stmt = conn.createStatement()
-    val query = "SELECT * FROM " + tableName
-    try {
-      val rs = stmt.executeQuery(query)
-      assert (rs.next)
-      assert (rs.getInt(1) ==  77)
-    }
-    catch{
-      case err : Exception => fail(err)
-    }
-    finally {
-      stmt.close()
-    }
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    assert(readDf.head() == data.head)
 
     TestUtils.dropTable(conn, tableName)
 
