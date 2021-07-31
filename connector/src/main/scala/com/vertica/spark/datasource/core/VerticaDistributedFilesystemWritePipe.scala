@@ -369,6 +369,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
 
     val ret = for {
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
       _ <- tableUtils.createExternalTable(
         tablename = config.tablename,
         targetTableSql = config.targetTableSql,
