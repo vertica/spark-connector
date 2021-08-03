@@ -213,7 +213,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
-
   it should "df alias and join" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement

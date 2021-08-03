@@ -497,7 +497,6 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
     // Implementation currently based on config, not identifier
     assert(catalog.tableExists(mock[Identifier]))
-
   }
 
   it should "catalog loads table on load or create" in {
