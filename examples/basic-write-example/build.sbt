@@ -14,7 +14,7 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-basic-write-example"
 organization := "com.vertica"
-version := "2.0"
+version := "2.0.1"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
