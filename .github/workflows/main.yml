@@ -49,6 +49,8 @@ jobs:
         run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
       - name: Replace HDFS hdfs-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Connect to vsql
+        run: docker exec docker_vertica_1 vsql -h vertica -U dbadmin -C
       - name: Increase active sessions in database
         run: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Download the build artifact
@@ -81,6 +83,8 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
+      - name: Connect to vsql
+        run: docker exec docker_vertica_1 vsql -h vertica -U dbadmin -C
       - name: Increase active sessions in database
         run: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
