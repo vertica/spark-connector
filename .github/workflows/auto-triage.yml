@@ -3,7 +3,7 @@ on:
   issues:
     types:
       - labeled
-    workflow_dispatch:
+  workflow_dispatch:
 jobs:
   move-low-priority:
     if: github.event.label.name == 'Low Priority'
