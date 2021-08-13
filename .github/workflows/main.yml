@@ -57,6 +57,7 @@ jobs:
       - name: Increase active sessions in database
         uses: nick-invision/retry@v2
         with:
+          timeout_seconds: 20
           max_attempts: 15
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
