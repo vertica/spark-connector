@@ -158,6 +158,8 @@ Here is an example spark-submit command showing how to add Spark's default confi
 `spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
 where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
 
+Our connector logs major events when reading and writing, such as when it is copying a table from the intermediary file store in to Vertica or exporting from Vertica into the intermediary file store. We also logs errors and caveats around usage of the connector and connector options. Along with errors, the connector logs warnings when the usage of the connector is not as expected. In addition, we log info such as SQL statements, schemas, and filters that are used when manipulating relations or the data in those relations. In order to get a lower level view of our connector operations, a user may change the log level to ‘Debug’. The debug log level will give more details around specific components, such as partition information, impersonation tokens, and cleanup information.
+
 ## Additional guides
 
 For information on how to configure Kerberos and TLS with the connector, see the [KerberosUserManual.md](https://github.com/vertica/spark-connector/blob/main/KerberosUserManual.md) and [TLSConfiguration.md](https://github.com/vertica/spark-connector/blob/main/TLSConfiguration.md) files in the root of this repository.
