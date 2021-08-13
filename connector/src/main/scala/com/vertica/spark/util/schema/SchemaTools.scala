@@ -394,7 +394,6 @@ class SchemaTools extends SchemaToolsInterface {
     })
 
     sb.append(")")
-
     Right(sb.toString)
   }
 

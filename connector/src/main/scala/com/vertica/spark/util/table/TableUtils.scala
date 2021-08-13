@@ -219,7 +219,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     statement match {
       case Left(err) => Left(err)
       case Right(st) =>
-        logger.debug(s"BUILDING EXTERNAL TABLE WITH COMMAND: " + statement)
+        logger.info(s"BUILDING EXTERNAL TABLE WITH COMMAND: " + statement)
         jdbcLayer.execute(st).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating external table"))
     }
   }
@@ -244,7 +244,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     statement match {
       case Left(err) => Left(err)
       case Right(st) =>
-        logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+        logger.info(s"BUILDING TABLE WITH COMMAND: " + statement)
         jdbcLayer.execute(st).left.map(err => CreateTableError(Some(err)).context("JDBC Error creating table"))
     }
   }
@@ -256,7 +256,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
 
   override def createTempTable(tablename: TableName, schema: StructType, strlen: Long): ConnectorResult[Unit] = {
     val statement = buildCreateTableStmt(tablename, schema, strlen, true)
-    logger.debug(s"BUILDING TABLE WITH COMMAND: " + statement)
+    logger.info(s"BUILDING TEMP TABLE WITH COMMAND: " + statement)
     statement match {
       case Left(err) => Left(err)
       case Right(st) =>

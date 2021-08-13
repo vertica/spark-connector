@@ -126,6 +126,7 @@ class VerticaDistributedFilesystemReadPipe(
 
     // If no data, return empty partition list
     if(totalRowGroups == 0) {
+      logger.info("No data. Returning empty partition list.")
       PartitionInfo(Array[InputPartition]())
     }
     else {
@@ -210,6 +211,7 @@ class VerticaDistributedFilesystemReadPipe(
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + hdfsPath)
+    logger.info("Reading data from Parquet file.")
 
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
@@ -248,6 +250,7 @@ class VerticaDistributedFilesystemReadPipe(
         case tablename: TableName => tablename.getFullTableName
         case TableQuery(query, _) => "(" + query + ") AS x"
       }
+      _ = logger.info("Export Source: " + exportSource)
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
@@ -263,7 +266,7 @@ class VerticaDistributedFilesystemReadPipe(
         logger.info("Export already done, skipping export step.")
         Right(())
       } else {
-        logger.info("Exporting.")
+        logger.info("Exporting using statement: \n" + exportStatement)
 
         jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
       }
@@ -433,7 +436,6 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
-    logger.info("Ending partition read.")
     fileStoreLayer.closeReadParquetFile()
   }
 
