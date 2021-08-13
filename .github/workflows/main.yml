@@ -54,10 +54,12 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
-      - name: Sleep
-        run: docker exec docker_vertica_1 sleep 15
       - name: Increase active sessions in database
-        run: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+        uses: nick-invision/retry@v2
+        with:
+          max_attempts: 15
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
       - name: Run the integration tests on Spark 3.0
