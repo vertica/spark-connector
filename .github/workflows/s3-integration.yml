@@ -47,7 +47,7 @@ jobs:
         uses: nick-invision/retry@v2
         with:
           timeout_seconds: 20
-          max_attempts: 15
+          max_attempts: 10
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
