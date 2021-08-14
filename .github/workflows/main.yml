@@ -58,7 +58,7 @@ jobs:
         uses: nick-invision/retry@v2
         with:
           timeout_seconds: 20
-          max_attempts: 15
+          max_attempts: 10
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
@@ -86,9 +86,6 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
-      - name: Sleep
-        run: docker exec docker_vertica_1 sleep 15
-      - name: Increase active sessions in database
       - name: Increase active sessions in database
         uses: nick-invision/retry@v2
         with:
