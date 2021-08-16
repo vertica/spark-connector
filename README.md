@@ -74,7 +74,6 @@ val opts = Map(
     "db" -> "db_name",
     "password" -> "db_password",
     "staging_fs_url" -> "hdfs://hdfs-url:7077/data",
-    "logging_level" -> "ERROR",
     "table" -> "tablename"
   )
 
