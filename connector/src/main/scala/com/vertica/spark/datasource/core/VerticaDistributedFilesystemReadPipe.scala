@@ -211,7 +211,6 @@ class VerticaDistributedFilesystemReadPipe(
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
     val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + hdfsPath)
-    logger.info("Reading data from Parquet file.")
 
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
@@ -311,7 +310,7 @@ class VerticaDistributedFilesystemReadPipe(
         logger.info("Cleaning up all files in path: " + hdfsPath)
         cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
         jdbcLayer.close()
-      case _ => ()
+      case _ => logger.info("Reading data from Parquet file.")
     }
 
     ret

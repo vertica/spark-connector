@@ -157,14 +157,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
     if (config.mergeKey.isDefined) {
-      val copyStatement = s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
-      logger.info("The copy statement is: \n" + copyStatement)
-      copyStatement
+      s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+
     }
     else {
-      val copyStatement = s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
-      logger.info("The copy statement is: \n" + copyStatement)
-      copyStatement
+      s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
     }
   }
 
@@ -185,9 +182,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       case None => List()
     }
-    val mergeStatement = s"MERGE INTO $targetTable as target using $tempTable as temp ON ($mergeList) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES ($insertColValues)"
-    logger.info("The merge statement is: \n" + mergeStatement)
-    mergeStatement
+    s"MERGE INTO $targetTable as target using $tempTable as temp ON ($mergeList) WHEN MATCHED THEN UPDATE SET $updateColValues WHEN NOT MATCHED THEN INSERT $columnList VALUES ($insertColValues)"
   }
 
   def performMerge (mergeStatement: String): ConnectorResult[Unit] = {
@@ -340,6 +335,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       copyStatement = buildCopyStatement(fullTableName, columnList, url, rejectsTableName, "parquet")
 
+      _ = logger.info("The copy statement is: \n" + copyStatement)
+
       rowsCopied <- if (config.mergeKey.isDefined) {
                       Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))
                     }
@@ -360,6 +357,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                         else {
                           Right("")
                         }
+      _ = if(config.mergeKey.isDefined) logger.info("The merge statement is: " + mergeStatement)
       _ <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
 
     } yield ()
