@@ -158,7 +158,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
     if (config.mergeKey.isDefined) {
       s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
-
     }
     else {
       s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
@@ -357,7 +356,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                         else {
                           Right("")
                         }
-      _ = if(config.mergeKey.isDefined) logger.info("The merge statement is: " + mergeStatement)
+      _ = if(config.mergeKey.isDefined) logger.info("The merge statement is: \n" + mergeStatement)
       _ <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
 
     } yield ()
