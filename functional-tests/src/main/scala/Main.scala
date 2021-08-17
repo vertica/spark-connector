@@ -64,9 +64,7 @@ object Main extends App {
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
     "tls_mode" -> conf.getString("functional-tests.tlsmode"),
     "trust_store_path" -> conf.getString("functional-tests.truststorepath"),
-    "trust_store_password" -> conf.getString("functional-tests.truststorepassword"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
-  )
+    "trust_store_password" -> conf.getString("functional-tests.truststorepassword"))
 
   if (Try{conf.getString("functional-tests.aws_access_key_id")}.isSuccess) {
     readOpts = readOpts + ("aws_access_key_id" -> conf.getString("functional-tests.aws_access_key_id"))

@@ -30,9 +30,7 @@ object Main {
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
       "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
-      "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name"),
-      "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
-    )
+      "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name"))
 
     val spark = SparkSession.builder()
       .master("local[*]")

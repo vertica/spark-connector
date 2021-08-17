@@ -93,6 +93,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
+    logger.info("Writing data to Parquet file.")
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -174,7 +175,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(MergeColumnListError(err))
     }
     val mergeList = config.mergeKey match {
-
       case Some(key) =>
         val trimmedCols = key.toString.split(",").toList.map(col => col.trim())
         trimmedCols.map(trimmedCol => s"target.$trimmedCol=temp.$trimmedCol").mkString(" AND ")
@@ -301,13 +301,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Real copy
       rowsCopied <- jdbcLayer.executeUpdate(copyStatement)
     } yield rowsCopied
-
+    logger.info("Performing copy from file store to Vertica")
     ret.left.map(err => CommitError(err).context("performCopy: JDBC error when trying to copy"))
   }
 
   def commitDataIntoVertica(url: String): ConnectorResult[Unit] = {
     val tableNameMaxLength = 30
-
     val ret = for {
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
@@ -335,6 +334,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       copyStatement = buildCopyStatement(fullTableName, columnList, url, rejectsTableName, "parquet")
 
+      _ = logger.info("The copy statement is: \n" + copyStatement)
+
       rowsCopied <- if (config.mergeKey.isDefined) {
                       Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))
                     }
@@ -355,15 +356,17 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                         else {
                           Right("")
                         }
+      _ = if(config.mergeKey.isDefined) logger.info("The merge statement is: \n" + mergeStatement)
       _ <- if (config.mergeKey.isDefined) performMerge(mergeStatement) else Right(())
 
     } yield ()
-
+    logger.info("Committing data into Vertica.")
     fileStoreLayer.removeDir(config.fileStoreConfig.address)
     ret
   }
 
   def commitDataAsExternalTable(url: String): ConnectorResult[Unit] = {
+    logger.info("Committing data as external table.")
     if(config.copyColumnList.isDefined) {
       logger.warn("Custom copy column list was specified, but will be ignored when creating new external table.")
     }
