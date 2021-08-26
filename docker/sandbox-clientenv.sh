@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 function configure_kdc() {
   docker exec docker_kdc_1 /kdc/configure.sh
 }
