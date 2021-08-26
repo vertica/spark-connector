@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 function configure_kdc() {
   docker exec docker_kdc_1 /kdc/configure.sh
 }
@@ -40,5 +41,6 @@ else
   docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
   docker exec docker_hdfs_1 /opt/hadoop/sbin/stop-dfs.sh
   docker exec docker_hdfs_1 /opt/hadoop/sbin/start-dfs.sh
+  docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
   docker exec -it docker_client_1 /bin/bash
 fi

@@ -26,8 +26,7 @@ class DemoCases(conf: Config) {
     "user" -> conf.getString("functional-tests.user"),
     "db" -> conf.getString("functional-tests.db"),
     "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "password" -> conf.getString("functional-tests.password"),
-    "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
+    "password" -> conf.getString("functional-tests.password")
   )
 
   val writeOpts = Map(

@@ -44,8 +44,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   SupportsPushDownFilters with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
 
-  private var lastPushedFilters: List[PushFilter] = Nil
-
   private var requiredSchema: StructType = StructType(Nil)
 
 /**
@@ -54,14 +52,9 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   * @return [[VerticaScan]]
   */
   override def build(): Scan = {
-    // This will be called twice per operation usually, so need to check if filters are different
-    val newOperation = pushFilters != lastPushedFilters
-
-    val cfg = config.copyConfig(newOperation)
+    val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
-
-    lastPushedFilters = pushFilters
 
     new VerticaScan(cfg, readConfigSetup)
   }

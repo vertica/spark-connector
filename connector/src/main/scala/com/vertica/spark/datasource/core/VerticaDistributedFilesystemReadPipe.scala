@@ -126,6 +126,7 @@ class VerticaDistributedFilesystemReadPipe(
 
     // If no data, return empty partition list
     if(totalRowGroups == 0) {
+      logger.info("No data. Returning empty partition list.")
       PartitionInfo(Array[InputPartition]())
     }
     else {
@@ -219,13 +220,13 @@ class VerticaDistributedFilesystemReadPipe(
 
       // Create unique directory for session
       perm = config.filePermissions
-      _ = logger.debug("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
+      _ = logger.info("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
 
       _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
         case Left(err) =>
           err.getError match {
             case CreateDirectoryAlreadyExistsError(_) =>
-              logger.debug("Directory already existed: " + fileStoreConfig.address)
+              logger.info("Directory already existed: " + fileStoreConfig.address)
               Right(())
             case _ => Left(err.context("Failed to create directory: " + fileStoreConfig.address))
           }
@@ -248,6 +249,7 @@ class VerticaDistributedFilesystemReadPipe(
         case tablename: TableName => tablename.getFullTableName
         case TableQuery(query, _) => "(" + query + ") AS x"
       }
+      _ = logger.info("Export Source: " + exportSource)
 
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
@@ -263,7 +265,7 @@ class VerticaDistributedFilesystemReadPipe(
         logger.info("Export already done, skipping export step.")
         Right(())
       } else {
-        logger.info("Exporting.")
+        logger.info("Exporting using statement: \n" + exportStatement)
 
         jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
       }
@@ -308,7 +310,7 @@ class VerticaDistributedFilesystemReadPipe(
         logger.info("Cleaning up all files in path: " + hdfsPath)
         cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
         jdbcLayer.close()
-      case _ => ()
+      case _ => logger.info("Reading data from Parquet file.")
     }
 
     ret
@@ -433,7 +435,6 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
-    logger.info("Ending partition read.")
     fileStoreLayer.closeReadParquetFile()
   }
 

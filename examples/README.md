@@ -1,6 +1,6 @@
 # How to run the examples
 
-**Note**: The instructions for running the S3, Kerberos, and PySpark example are different. If you would like to run those examples, please see their respective READMEs. 
+**Note**: The instructions for running the S3, Kerberos, Sparklyr, and PySpark example are different. If you would like to run those examples, please see their respective READMEs.
 
 Make sure you have docker and sbt installed.
 Tested using docker 20.10.0, sbt 1.4.1
@@ -74,16 +74,11 @@ Now change your working directory to the examples directory `spark-connector/exa
 
 Once in the examples directory, run:
 ```
-./run-example.sh [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
+./run-example.sh [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.1.jar
 ``` 
-Example argument: basic-read-example/target/scala-2.12/spark-vertica-connector-basic-read-example-assembly-2.0.jar
+Example argument: basic-read-example/target/scala-2.12/spark-vertica-connector-basic-read-example-assembly-2.0.1.jar
 
-Running this script for the first time will install Spark and user-provided Hadoop. This may take some time; however, running the script subsequently will forgo those steps. If you would like to include those steps then add a 'clean' argument to the script:
-```
-./run-example.sh clean [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.jar
-``` 
-
-There are additional prerequisites to run the S3, Pyspark, or Kerberos examples. If you want to run these, please take a look at their respective README files. 
+There are additional prerequisites to run the S3, Pyspark, Sparklyr, or Kerberos examples. If you want to run these, please take a look at their respective README files.
 
 
 

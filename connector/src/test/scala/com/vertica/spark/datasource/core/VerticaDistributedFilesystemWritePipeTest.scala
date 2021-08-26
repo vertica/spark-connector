@@ -581,13 +581,14 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right(()))
@@ -605,13 +606,14 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Left(ConnectionDownError()))
@@ -631,13 +633,14 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right())

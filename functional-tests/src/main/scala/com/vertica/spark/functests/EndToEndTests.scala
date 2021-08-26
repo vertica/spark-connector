@@ -243,39 +243,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
-  it should "triple join" in {
-    val tableName1 = "dftest1"
-    val stmt = conn.createStatement
-    val n = 20
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int)")
 
-    val insert = "insert into "+ tableName1 + " values(2, 3)"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-    val insert2 = "insert into "+ tableName1 + " values(3, 7)"
-    TestUtils.populateTableBySQL(stmt, insert2, n)
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
-
-    println("Getting count")
-    println("Count: " + df.count())
-
-
-    println("Getting as1")
-    val df_as1 = df.as("df1")
-
-    println("Getting as2")
-    val df_as2 = df.as("df2")
-
-    println("Getting as3")
-    val df_as3 = df.as("df3")
-
-    println("Joining")
-    val joined_df = df_as1.join(
-      df_as2, col("df1.a") === col("df2.b"), "inner").join(
-        df_as3, col("df1.a") === col("df3.b"), "inner")
-    assert(joined_df.collect().length == n*n*n)
-    TestUtils.dropTable(conn, tableName1)
-  }
 
   it should "collect results" in {
     val tableName1 = "dftest1"
@@ -814,6 +782,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
+
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with no column projection pushdown" in {
@@ -840,6 +812,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     df.show
     stmt.execute("drop table " + tableName1)
+
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "load data from Vertica with a column projection pushdown with the correct values" in {
@@ -3384,19 +3360,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       writeOpts + ("table" -> tableName, "create_external_table" -> "true")
     ).mode(mode).save()
 
-    val stmt = conn.createStatement()
-    val query = "SELECT * FROM " + tableName
-    try {
-      val rs = stmt.executeQuery(query)
-      assert (rs.next)
-      assert (rs.getInt(1) ==  77)
-    }
-    catch{
-      case err : Exception => fail(err)
-    }
-    finally {
-      stmt.close()
-    }
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    assert(readDf.head() == data.head)
 
     TestUtils.dropTable(conn, tableName)
 
@@ -3731,5 +3697,34 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
+  it should "triple join" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 20
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b int, c int)")
+
+    val insert = "insert into "+ tableName1 + " values(2, 3, 10)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+    val insert2 = "insert into "+ tableName1 + " values(3, 7, 10)"
+    TestUtils.populateTableBySQL(stmt, insert2, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+    println("Getting as1")
+    val df_as1 = df.as("df1")
+
+    println("Getting as2")
+    val df_as2 = df.as("df2")
+
+    println("Getting as3")
+    val df_as3 = df.as("df3")
+
+    println("Joining")
+    val joined_df = df_as1.join(
+      df_as2, col("df1.a") === col("df2.b"), "inner").join(
+      df_as3, col("df1.a") === col("df3.b"), "inner")
+    assert(joined_df.collect().length == n*n*n)
+    TestUtils.dropTable(conn, tableName1)
+  }
 }
 

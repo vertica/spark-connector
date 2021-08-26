@@ -13,4 +13,4 @@ export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 start-master.sh
 start-slave.sh spark://localhost:7077
 cd ../../../spark-connector/functional-tests
-spark-submit --master spark://localhost:7077 target/scala-2.12/spark-vertica-connector-functional-tests-assembly-1.0.jar
+spark-submit --master spark://localhost:7077 target/scala-2.12/spark-vertica-connector-functional-tests-assembly-2.0.1.jar
