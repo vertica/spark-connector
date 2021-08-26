@@ -1,0 +1,61 @@
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://hdfs.example.com:8020</value>
+  </property>
+
+  <!--
+  <property>
+    <name>dfs.client.use.datanode.hostname</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>dfs.datanode.use.datanode.hostname</name>
+    <value>true</value>
+  </property>
+  -->
+
+  <property>
+    <name>hadoop.security.authentication</name>
+    <value>kerberos</value>
+  </property>
+
+  <property>
+    <name>hadoop.security.authorization</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>hadoop.security.auth_to_local</name>
+    <value>
+	RULE:[2:$1/$2@$0](.*/.*@EXAMPLE.COM)s/.*/root/
+	DEFAULT
+    </value>
+  </property>
+
+  <property>
+    <name>hadoop.rpc.protection</name>
+    <value>authentication</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.root.groups</name>
+    <value>*</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.root.hosts</name>
+    <value>*</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.superuser.hosts</name>
+    <value>*</value>
+  </property>
+
+  <property>
+    <name>hadoop.proxyuser.superuser.groups</name>
+    <value>*</value>
+  </property>
+</configuration>

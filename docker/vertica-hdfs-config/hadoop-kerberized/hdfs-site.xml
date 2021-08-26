@@ -1,0 +1,192 @@
+<configuration>
+    <property>
+        <name>dfs.replication</name>
+        <value>1</value>
+    </property>
+
+    <property>
+      <name>dfs.permissions</name>
+      <value>false</value>
+    </property>
+
+    <property>
+      <name>dfs.webhdfs.enabled</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>dfs.secondary.http.address</name>
+      <value>hdfs.example.com:50090</value>
+      <description>
+        The secondary namenode http server address and port.
+        If the port is 0 then the server will start on a free port.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.datanode.address</name>
+      <value>hdfs.example.com:50010</value>
+      <description>
+        The address where the datanode server will listen to.
+        If the port is 0 then the server will start on a free port.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.datanode.http.address</name>
+      <value>hdfs.example.com:50075</value>
+      <description>
+        The datanode http server address and port.
+        If the port is 0 then the server will start on a free port.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.data.transfer.protection</name>
+      <value>authentication</value>
+    </property>
+
+    <property>
+      <name>dfs.http.policy</name>
+      <value>HTTPS_ONLY</value>
+    </property>
+
+    <property>
+      <name>dfs.http.address</name>
+      <value>hdfs.example.com:50070</value>
+      <description>
+        The address and the base port where the dfs namenode web ui will listen on.
+        If the port is 0 then the server will start on a free port.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.namenode.https-address</name>
+      <value>hdfs.example.com:50070</value>
+      <description>
+        The address and the base port where the dfs namenode web ui will listen on.
+        If the port is 0 then the server will start on a free port.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.namenode.rpc-bind-host</name>
+      <value>hdfs</value>
+      <description>
+        The actual address the RPC server will bind to. If this optional address is
+        set, it overrides only the hostname portion of dfs.namenode.rpc-address.
+        It can also be specified per name node or name service for HA/Federation.
+        This is useful for making the name node listen on all interfaces by
+        setting it to 0.0.0.0.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.namenode.servicerpc-bind-host</name>
+      <value>hdfs</value>
+      <description>
+        The actual address the service RPC server will bind to. If this optional address is
+        set, it overrides only the hostname portion of dfs.namenode.servicerpc-address.
+        It can also be specified per name node or name service for HA/Federation.
+        This is useful for making the name node listen on all interfaces by
+        setting it to 0.0.0.0.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.namenode.http-bind-host</name>
+      <value>hdfs</value>
+      <description>
+        The actual adress the HTTP server will bind to. If this optional address
+        is set, it overrides only the hostname portion of dfs.namenode.http-address.
+        It can also be specified per name node or name service for HA/Federation.
+        This is useful for making the name node HTTP server listen on all
+        interfaces by setting it to 0.0.0.0.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.namenode.https-bind-host</name>
+      <value>hdfs</value>
+      <description>
+        The actual adress the HTTPS server will bind to. If this optional address
+        is set, it overrides only the hostname portion of dfs.namenode.https-address.
+        It can also be specified per name node or name service for HA/Federation.
+        This is useful for making the name node HTTPS server listen on all
+        interfaces by setting it to 0.0.0.0.
+      </description>
+    </property>
+
+    <!-- Enable NFS -->
+    <!-- https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-hdfs/HdfsNfsGateway.html -->
+    <property>
+      <name>dfs.namenode.accesstime.precision</name>
+      <value>3600000</value>
+      <description>
+        The access time for HDFS file is precise up to this value.
+        The default value is 1 hour. Setting a value of 0 disables
+        access times for HDFS.
+      </description>
+    </property>
+
+    <property>
+      <name>dfs.datanode.data.dir.perm</name>
+      <value>700</value>
+    </property>
+
+    <property>
+      <name>dfs.namenode.kerberos.principal</name>
+      <value>root/hdfs.example.com@EXAMPLE.COM</value>
+    </property>
+
+    <property>
+      <name>dfs.namenode.keytab.file</name>
+      <value>/root/.keytab</value>
+    </property>
+
+    <property>
+      <name>dfs.web.authentication.kerberos.principal</name>
+      <value>root/hdfs.example.com@EXAMPLE.COM</value>
+    </property>
+
+    <property>
+      <name>dfs.web.authentication.keytab.file</name>
+      <value>/root/.keytab</value>
+    </property>
+
+    <property>
+      <name>dfs.datanode.kerberos.principal</name>
+      <value>root/hdfs.example.com@EXAMPLE.COM</value>
+    </property>
+
+    <property>
+      <name>dfs.datanode.keytab.file</name>
+      <value>/root/.keytab</value>
+    </property>
+
+    <property>
+      <name>dfs.block.access.token.enable</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>dfs.nfs3.dump.dir</name>
+      <value>/data/hdfs-nfs/</value>
+    </property>
+
+    <property>
+      <name>dfs.nfs.exports.allowed.hosts</name>
+      <value>* rw</value>
+    </property>
+
+    <property>
+        <name>dfs.client.use.datanode.hostname</name>
+        <value>true</value>
+    </property>
+
+    <property>
+        <name>dfs.datanode.use.datanode.hostname</name>
+        <value>true</value>
+    </property>
+
+</configuration>

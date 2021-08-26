@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+  client:
+    build: ./client-krb
+    volumes:
+      - "./..:/spark-connector"
+      - "./client-krb:/client-krb"
+      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
+    stdin_open: true
+    env_file:
+      - "krb.env"
+  kdc:
+    build: ./kdc
+    hostname: "kerberos.example.com"
+    env_file:
+      - "krb.env"
+    volumes:
+      - "./kdc:/kdc"
+      - "./keytabs:/keytabs"
+    privileged: true
+  vertica:
+    image: "verticadocker/vertica-k8s"
+    hostname: "vertica.example.com"
+    entrypoint: [ "bash", "-c", "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
+    ports:
+      - "5433:5433"
+    volumes:
+      - "./vertica-krb:/vertica-krb"
+      - "./keytabs:/keytabs"
+      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
+    env_file:
+      - "krb.env"
+    privileged: true
+  hdfs:
+    image: "mdouchement/hdfs"
+    hostname: "hdfs.example.com"
+    ports:
+      - "22022:22"
+      - "8020:8020"
+      - "50010:50010"
+      - "50020:50020"
+      - "50070:50070"
+      - "50075:50075"
+    stdin_open: true
+    tty: true
+    volumes:
+      - "./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf"
+      - "./hdfs-krb:/hdfs-krb"
+      - "./keytabs:/keytabs"
+    env_file:
+      - "krb.env"
+    privileged: true

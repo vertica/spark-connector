@@ -20,3 +20,6 @@ examples/*/project/project/
 
 !examples/s3-example/project
 examples/s3-example/project/build.properties
+
+!examples/kerberos-example/project
+examples/kerberos-example/project/target/
