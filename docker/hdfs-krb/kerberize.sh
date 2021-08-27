@@ -28,11 +28,3 @@ cp /hadoop/conf/ssl-server.xml /opt/hadoop/etc/hadoop/ssl-server.xml
 cp /hadoop/conf/keystore /root/.keystore
 
 export PATH=$PATH:/usr/bin
-
-#docker exec $HDFS_NAME /bin/sh -c "echo /$(docker inspect -f "{{.NetworkSettings.Networks.$NETWORK_NAME.IPAddress }}" $HDFS_NAME)/d | sed /etc/hosts > /etc/hosts2"
-#docker exec $HDFS_NAME /bin/sh -c "cat /etc/hosts2 > /etc/hosts"
-#docker exec $HDFS_NAME /bin/sh -c "echo $(docker inspect -f "{{.NetworkSettings.Networks.$NETWORK_NAME.IPAddress }}" $KDC_NAME) kerberos.example.com >> /etc/hosts"
-#docker exec $HDFS_NAME /bin/sh -c "echo $(docker inspect -f "{{.NetworkSettings.Networks.$NETWORK_NAME.IPAddress }}" $HDFS_NAME) hdfs.example.com hdfs >> /etc/hosts"
-
-#docker exec $KDC_NAME /bin/sh -c "echo $(docker inspect -f "{{.NetworkSettings.Networks.$NETWORK_NAME.IPAddress }}" $HDFS_NAME) hdfs.example.com hdfs >> /etc/hosts"
-

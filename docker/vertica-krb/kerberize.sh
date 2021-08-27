@@ -41,6 +41,7 @@ eof
 
 cp /keytabs/vertica.keytab /
 chown dbadmin /vertica.keytab
+chmod 600 /vertica.keytab
 
 echo "Restarting Database to apply Kerberos settings."
 sudo -u dbadmin /opt/vertica/bin/admintools -t stop_db -F -d $DBNAME
