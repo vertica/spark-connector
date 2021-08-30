@@ -83,12 +83,15 @@ If you are using the thin jar and running into an error similar to the following
 `java.lang.NoSuchMethodError: 'void cats.kernel.CommutativeSemigroup.$init$(cats.kernel.CommutativeSemigroup)'`, you may need to shade the cats dependency in your project.
 
 This can be done by adding the following to your build.sbt file:
-`assembly / assemblyShadeRules := {
-  val shadePackage = "com.azavea.shaded.demo"
-  Seq(
-  ShadeRule.rename("cats.kernel.**" -> s"$shadePackage.cats.kernel.@1").inAll
-  )
-}`
+
+```
+assembly / assemblyShadeRules := {
+    val shadePackage = "com.azavea.shaded.demo"
+    Seq(
+        ShadeRule.rename("cats.kernel.**" -> s"$shadePackage.cats.kernel.@1").inAll
+    )
+} 
+```
 
 ### Note
 
