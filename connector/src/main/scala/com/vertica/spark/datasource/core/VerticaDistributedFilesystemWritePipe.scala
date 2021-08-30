@@ -154,7 +154,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     fileStoreLayer.closeWriteParquetFile()
   }
 
-
   def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
     if (config.mergeKey.isDefined) {
       s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"

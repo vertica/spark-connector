@@ -19,9 +19,7 @@ import java.sql.ResultSetMetaData
 
 import cats.data.NonEmptyList
 import cats.implicits._
-
 import scala.util.Either
-import cats.instances.list._
 import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
