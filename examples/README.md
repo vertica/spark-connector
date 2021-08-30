@@ -84,10 +84,10 @@ If you are using the thin jar and running into an error similar to the following
 
 This can be done by adding the following to your build.sbt file:
 `assembly / assemblyShadeRules := {
-val shadePackage = "com.azavea.shaded.demo"
-Seq(
-ShadeRule.rename("cats.kernel.**" -> s"$shadePackage.cats.kernel.@1").inAll
-)
+  val shadePackage = "com.azavea.shaded.demo"
+  Seq(
+  ShadeRule.rename("cats.kernel.**" -> s"$shadePackage.cats.kernel.@1").inAll
+  )
 }`
 
 ### Note
