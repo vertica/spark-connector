@@ -4,5 +4,5 @@ export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 start-master.sh
 start-worker.sh spark://localhost:7077
-spark-submit --master spark://localhost:7077 $1
+spark-submit --master spark://localhost:7077 --conf 'spark.driver.extraJavaOptions=-Djava.security.auth.login.config=/spark-connector/docker/client-krb/jaas.config' $1
 

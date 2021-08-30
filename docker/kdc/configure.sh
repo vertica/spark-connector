@@ -38,6 +38,8 @@ done
 
 $KADMIN -q "addprinc -randkey $V_PRINC"
 $KADMIN -q "ktadd -norandkey -k vertica.keytab $V_PRINC"
+#$KADMIN -q "addprinc -randkey krbtgt/DOCKER_DEFAULT@EXAMPLE.COM"
+#$KADMIN -q "ktadd -norandkey -k vertica.keytab krbtgt/DOCKER_DEFAULT@EXAMPLE.COM"
 chown 777 vertica.keytab
 cp vertica.keytab /keytabs
 

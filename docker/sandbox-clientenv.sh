@@ -1,16 +1,16 @@
 function configure_kdc() {
-  docker exec docker_kdc_1 /kdc/configure.sh
+  docker exec kdc /kdc/configure.sh
 }
 
 function configure_db() {
   sleep 10
-  docker exec -u 0 docker_vertica_1 /vertica-krb/kerberize.sh
+  docker exec -u 0 vertica /vertica-krb/kerberize.sh
 }
 
 function configure_hdfs() {
-  docker exec -u 0 docker_hdfs_1 /hdfs-krb/kerberize.sh
-  docker exec docker_hdfs_1 stop-dfs.sh
-  docker exec docker_hdfs_1 start-dfs.sh
+  docker exec -u 0 hdfs /hdfs-krb/kerberize.sh
+  docker exec hdfs stop-dfs.sh
+  docker exec hdfs start-dfs.sh
 }
 
 function configure_client() {
