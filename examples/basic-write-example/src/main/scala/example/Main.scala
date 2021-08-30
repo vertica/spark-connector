@@ -30,6 +30,7 @@ object Main  {
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password"),
+      "use_external_table" -> conf.getString("functional-tests.external"),
       "logging_level" -> {if(conf.getBoolean("functional-tests.log")) "DEBUG" else "OFF"}
     )
     // Entry-point to all functionality in Spark
@@ -39,13 +40,21 @@ object Main  {
       .getOrCreate()
 
     try {
-      val tableName = "dftest"
-      // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
+      val schema2 = new StructType(Array(StructField("col1", IntegerType)))
       // Create a row with element '77'
       val data = Seq(Row(77))
       // Create a dataframe corresponding to the schema and data specified above
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
+      df2.write.parquet("webhdfs://hdfs:50070/data/empty.parquet")
+
+      val tableName = "dftest"
+      // Define schema of a table with a single integer attribute
+      val schema = new StructType()
+      // Create a row with element '77'
+      //val data = Seq(Row(77))
+      // Create a dataframe corresponding to the schema and data specified above
+      //val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+      val df = spark.emptyDataFrame
       // Outputs dataframe schema
       println(df.toString())
       val mode = SaveMode.Overwrite

@@ -22,8 +22,8 @@ resolvers += "jitpack" at "https://jitpack.io"
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.0.0",
-  "org.apache.spark" %% "spark-sql" % "3.0.0",
-  "com.vertica.spark" % "vertica-spark" % "2.0.1-0"
+  "org.apache.spark" %% "spark-sql" % "3.0.0"
+  //"com.vertica.spark" % "vertica-spark" % "2.0.1-0"
 )
 
 assembly / assemblyMergeStrategy := {

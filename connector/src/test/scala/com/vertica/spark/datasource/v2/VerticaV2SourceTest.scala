@@ -386,6 +386,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
     val physicalInfo = mock[PhysicalWriteInfo]
+    (physicalInfo.numPartitions _).expects().returning(1)
 
     val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
 

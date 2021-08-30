@@ -85,7 +85,8 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   failedRowPercentTolerance: Float,
                                                   filePermissions: ValidFilePermissions,
                                                   createExternalTable: Boolean,
-                                                  mergeKey: Option[ValidColumnList] = None
+                                                  mergeKey: Option[ValidColumnList] = None,
+                                                  useExternalTable: Boolean = false
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false
 

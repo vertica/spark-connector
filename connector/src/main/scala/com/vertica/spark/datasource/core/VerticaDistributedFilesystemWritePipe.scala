@@ -92,6 +92,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
    * - Creates the directory that files will be exported to
    */
   def doPreWriteSteps(): ConnectorResult[Unit] = {
+    // Log a warning if the user wants to perform a merge, but also wants to overwrite data
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     for {
       // Check if schema is valid
@@ -101,10 +102,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = setSparkCalendarConf()
 
       // If overwrite mode, remove table and force creation of new one before writing
-      _ <- if(config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
+      _ <- if (config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
 
       // Creating external table and merging at the same time not supported
-      _ <- if (config.createExternalTable && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
+      _ <- if ((config.createExternalTable || config.useExternalTable) && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
+
+      // Creating an external table from new data and existing data at the same time is not supported
+      _ <- if (config.createExternalTable && config.useExternalTable) Left(CreateExternalTableBothOptions()) else Right(())
 
       // Create the table if it doesn't exist
       tableExistsPre <- tableUtils.tableExists(config.tablename)
@@ -113,7 +117,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (config.isOverwrite && config.mergeKey.isEmpty && tableExistsPre) Left(DropTableError()) else Right(())
 
       // External table mode doesn't work if table exists
-      _ <- if (config.createExternalTable && tableExistsPre) Left(CreateExternalTableAlreadyExistsError()) else Right()
+      _ <- if ((config.createExternalTable || config.useExternalTable) && tableExistsPre) Left(CreateExternalTableAlreadyExistsError()) else Right()
 
       // Check if a view exists or temp table exists by this name
       viewExists <- tableUtils.viewExists(config.tablename)
@@ -122,11 +126,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
       // Create table unless we're appending, or we're in external table mode (that gets created later)
-      _ <- if (!tableExistsPre && !config.createExternalTable) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      _ <- if (!tableExistsPre && !config.createExternalTable && !config.useExternalTable) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
-      _ <- if (tableExistsPost || config.createExternalTable) Right(()) else Left(CreateTableError(None))
+      _ <- if (tableExistsPost || config.createExternalTable || config.useExternalTable) Right(()) else Left(CreateTableError(None))
 
       // Create the directory to export files to
       perm = config.filePermissions
@@ -138,11 +142,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
-    val address = config.fileStoreConfig.address
-    val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
-    val filename = address + delimiter + uniqueId + ".parquet"
-
-    fileStoreLayer.openWriteParquetFile(filename)
+    if(!config.useExternalTable){
+      val address = config.fileStoreConfig.address
+      val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
+      val filename = address + delimiter + uniqueId + ".parquet"
+      fileStoreLayer.openWriteParquetFile(filename)
+    }
+    else Right(())
   }
 
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
@@ -197,6 +203,28 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     logger.info("Executing merge")
     ret.left.map(err => CommitError(err).context("performMerge: JDBC error when trying to merge"))
 
+  }
+
+  def inferExternalTableSchema(): ConnectorResult[String] = {
+    val globPattern: String = "*.parquet"
+    // Create url string, escape any ' characters as those surround the url
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/$globPattern")
+    val tableName =  config.tablename.getFullTableName
+    logger.info("Inferring schema from parquet data")
+    val inferStatement = s"SELECT INFER_EXTERNAL_TABLE_DDL($url, $tableName)"
+    val ret = for {
+      // Explain infer first to verify it's valid.
+      rs <- jdbcLayer.query("EXPLAIN " + inferStatement)
+      _ = rs.close()
+
+      // Real infer schema
+      rs <- jdbcLayer.query(inferStatement)
+      res = Try { if(rs.next){rs.getString("INFER_EXTERNAL_TABLE_DDL")} }
+      _ = rs.close()
+      createExternalTableStmt <- Right(JdbcUtils.tryJdbcToResult(jdbcLayer, res).toString)
+    } yield(createExternalTableStmt)
+
+    ret.left.map(err => InferExternalTableSchemaError(err).context("inferSchema: JDBC error when trying to infer schema"))
   }
 
   /**
@@ -370,13 +398,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     val ret = for {
       _ <- jdbcLayer.configureSession(fileStoreLayer)
+      createExternalTableStmt <- if(config.useExternalTable) Right(inferExternalTableSchema) else Right(())
       _ <- tableUtils.createExternalTable(
-        tablename = config.tablename,
-        targetTableSql = config.targetTableSql,
-        schema = config.schema,
-        strlen = config.strlen,
-        urlToCopyFrom = url
-      )
+                tablename = config.tablename,
+                if(config.useExternalTable) Some(createExternalTableStmt.toString) else config.targetTableSql,
+                schema = config.schema,
+                strlen = config.strlen,
+                urlToCopyFrom = url
+              )
 
       _ <- tableUtils.validateExternalTable(config.tablename)
 
@@ -400,7 +429,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
 
-    val ret = if(config.createExternalTable) {
+    val ret = if(config.createExternalTable || config.useExternalTable) {
       commitDataAsExternalTable(url)
     }
     else {

@@ -17,6 +17,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.catalyst.InternalRow
+import com.vertica.spark.util.error.NonEmptyDataFrameError
 
 /**
   * Interface responsible for writing to the Vertica source.
@@ -69,16 +70,20 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
 
   def writeRow(row: InternalRow): ConnectorResult[Unit] = {
     data = data :+ row
-    if(data.length >= blockSize) {
-      pipe.writeData(DataBlock(data)) match {
-        case Right(_) =>
-          data = List[InternalRow]()
+    config match {
+      case cfg: DistributedFilesystemWriteConfig =>
+        if(data.length >= blockSize && cfg.useExternalTable) Left(NonEmptyDataFrameError)
+        if(data.length >= blockSize) {
+          pipe.writeData(DataBlock(data)) match {
+            case Right(_) =>
+              data = List[InternalRow]()
+              Right(())
+            case Left(errors) => Left(errors)
+          }
+        }
+        else {
           Right(())
-        case Left(errors) => Left(errors)
-      }
-    }
-    else {
-      Right(())
+        }
     }
   }
 
