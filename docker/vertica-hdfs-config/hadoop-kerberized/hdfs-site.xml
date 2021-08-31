@@ -62,7 +62,7 @@
 
     <property>
       <name>dfs.namenode.https-address</name>
-      <value>hdfs:50070</value>
+      <value>hdfs.example.com:50070</value>
       <description>
         The address and the base port where the dfs namenode web ui will listen on.
         If the port is 0 then the server will start on a free port.
@@ -71,7 +71,7 @@
 
     <property>
       <name>dfs.namenode.rpc-bind-host</name>
-      <value>hdfs</value>
+      <value>hdfs.example.com</value>
       <description>
         The actual address the RPC server will bind to. If this optional address is
         set, it overrides only the hostname portion of dfs.namenode.rpc-address.
@@ -83,7 +83,7 @@
 
     <property>
       <name>dfs.namenode.servicerpc-bind-host</name>
-      <value>hdfs</value>
+      <value>hdfs.example.com</value>
       <description>
         The actual address the service RPC server will bind to. If this optional address is
         set, it overrides only the hostname portion of dfs.namenode.servicerpc-address.
@@ -95,7 +95,7 @@
 
     <property>
       <name>dfs.namenode.http-bind-host</name>
-      <value>hdfs</value>
+      <value>hdfs.example.com</value>
       <description>
         The actual adress the HTTP server will bind to. If this optional address
         is set, it overrides only the hostname portion of dfs.namenode.http-address.
@@ -107,7 +107,7 @@
 
     <property>
       <name>dfs.namenode.https-bind-host</name>
-      <value>hdfs</value>
+      <value>hdfs.example.com</value>
       <description>
         The actual adress the HTTPS server will bind to. If this optional address
         is set, it overrides only the hostname portion of dfs.namenode.https-address.

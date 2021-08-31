@@ -19,3 +19,7 @@ echo "[logging]
  [domain_realm]
  .example.com = $REALM
  example.com = $REALM" | tee /etc/krb5.conf
+
+cp /etc/hadoop/conf/* /hadoop-3.3.0/etc/hadoop/
+cp /etc/hadoop/conf/hdfs-site.xml /hadoop-3.3.0/etc/hadoop/
+cp /etc/hadoop/conf/ssl-server.xml /hadoop-3.3.0/etc/hadoop/
