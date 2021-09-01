@@ -13,7 +13,7 @@
 
 package com.vertica.spark.util.cleanup
 
-import cats.implicits.toTraverseOps
+import cats.implicits._
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.{CleanupError, ConnectorError, ParentDirMissingError}
