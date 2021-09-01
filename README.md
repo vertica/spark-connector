@@ -178,3 +178,8 @@ You may see an error such as:
 
 This is simply an issue with hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.
 
+## Videos
+
+[![Overview of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/MSScaz3Q2Pg/0.jpg)](https://www.youtube.com/watch?v=MSScaz3Q2Pg "Overview of the new Vertica Spark open source connector (v2)")
+
+[![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)")
