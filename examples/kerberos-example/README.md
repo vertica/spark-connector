@@ -19,7 +19,7 @@ cd /spark-connector/examples/kerberos-example
 
 Run the example:
 ```
-./run-example.sh kerberos-example/target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-2.0.1.jar
+./run-example.sh /target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-2.0.1.jar
 ``` 
 
 # Tearing down the containers
