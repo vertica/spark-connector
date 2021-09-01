@@ -1,6 +1,6 @@
 # How to run the examples
 
-**Note**: The instructions for running the S3, Sparklyr, and PySpark example are different. If you would like to run those examples, please see their respective READMEs.
+**Note**: The instructions for running the S3, Sparklyr, Kerberos and PySpark examples are different. If you would like to run those examples, please see their respective READMEs.
 
 Make sure you have docker and sbt installed.
 Tested using docker 20.10.0, sbt 1.4.1
