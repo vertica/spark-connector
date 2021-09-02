@@ -21,5 +21,5 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
-  "com.vertica.spark" % "vertica-spark" % "2.0.2-all"
+  "com.vertica.spark" % "vertica-spark" % "2.0.2-slim"
 )
