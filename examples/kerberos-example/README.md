@@ -21,6 +21,13 @@ Run the example:
 ./run-example.sh ./target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-2.0.1.jar
 ``` 
 
+# Rebuilding the images
+
+If, for some reason, you have made changes to the Dockerfiles used in the Kerberos setup, you can rebuild them by running the following:
+```
+docker compose -f docker-compose-kerberos.yml up --build
+```
+
 # Tearing down the containers
 
 From the docker folder, run the following:
