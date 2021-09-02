@@ -42,12 +42,12 @@ object Main  {
     try {
       val schema2 = new StructType(Array(StructField("col1", IntegerType)))
       // Create a row with element '77'
-      val data = Seq(Row(77))
+      val data = (1 to 20).map(x => Row(x))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      df2.write.parquet("webhdfs://hdfs:50070/data/empty.parquet")
+      //df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
 
-      val tableName = "dftest"
+      val tableName = "empty"
       // Define schema of a table with a single integer attribute
       val schema = new StructType()
       // Create a row with element '77'

@@ -61,29 +61,32 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   private var data = List[InternalRow]()
 
   def openWrite(): ConnectorResult[Unit] = {
-    for {
-      size <- pipe.getDataBlockSize
-      _ <- pipe.startPartitionWrite(uniqueId)
-      _ = this.blockSize = size
-    } yield ()
+    config match {
+      case cfg: DistributedFilesystemWriteConfig =>
+        if(cfg.useExternalTable && data.nonEmpty) Left(NonEmptyDataFrameError())
+        else if(!cfg.useExternalTable){
+          for {
+            size <- pipe.getDataBlockSize
+            _ <- pipe.startPartitionWrite(uniqueId)
+            _ = this.blockSize = size
+          } yield ()
+        }
+        else Right(())
+    }
   }
 
   def writeRow(row: InternalRow): ConnectorResult[Unit] = {
     data = data :+ row
-    config match {
-      case cfg: DistributedFilesystemWriteConfig =>
-        if(data.length >= blockSize && cfg.useExternalTable) Left(NonEmptyDataFrameError)
-        if(data.length >= blockSize) {
-          pipe.writeData(DataBlock(data)) match {
-            case Right(_) =>
-              data = List[InternalRow]()
-              Right(())
-            case Left(errors) => Left(errors)
-          }
-        }
-        else {
+    if(data.length >= blockSize) {
+      pipe.writeData(DataBlock(data)) match {
+        case Right(_) =>
+          data = List[InternalRow]()
           Right(())
-        }
+        case Left(errors) => Left(errors)
+      }
+    }
+    else {
+      Right(())
     }
   }
 

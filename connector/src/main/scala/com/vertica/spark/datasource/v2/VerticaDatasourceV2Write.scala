@@ -114,7 +114,6 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * This class is seriazlized and sent to each worker node. On the worker, createWriter will be called with a given unique id for the partition being written.
   */
 class VerticaWriterFactory(config: WriteConfig, physicalInfo: PhysicalWriteInfo) extends DataWriterFactory {
-  println("Number of partitions from PhysicalWriteInfo: " + physicalInfo.numPartitions)
 
 /**
   * Called from the worker node to get the writer for that node

@@ -142,13 +142,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
-    if(!config.useExternalTable){
-      val address = config.fileStoreConfig.address
-      val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
-      val filename = address + delimiter + uniqueId + ".parquet"
-      fileStoreLayer.openWriteParquetFile(filename)
-    }
-    else Right(())
+    val address = config.fileStoreConfig.address
+    val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
+    val filename = address + delimiter + uniqueId + ".parquet"
+    fileStoreLayer.openWriteParquetFile(filename)
+
   }
 
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
@@ -156,7 +154,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
-    fileStoreLayer.closeWriteParquetFile()
+    if(!config.useExternalTable) fileStoreLayer.closeWriteParquetFile()
+    else Right(())
   }
 
 
@@ -206,12 +205,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def inferExternalTableSchema(): ConnectorResult[String] = {
-    val globPattern: String = "*.parquet"
     // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/$globPattern")
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
     val tableName =  config.tablename.getFullTableName
     logger.info("Inferring schema from parquet data")
-    val inferStatement = s"SELECT INFER_EXTERNAL_TABLE_DDL($url, $tableName)"
+    val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\', \'test\')"
+    print("The infer statement is: " + inferStatement)
     val ret = for {
       // Explain infer first to verify it's valid.
       rs <- jdbcLayer.query("EXPLAIN " + inferStatement)
@@ -223,7 +222,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = rs.close()
       createExternalTableStmt <- Right(JdbcUtils.tryJdbcToResult(jdbcLayer, res).toString)
     } yield(createExternalTableStmt)
-
+    println("The create table statement is: " + ret)
     ret.left.map(err => InferExternalTableSchemaError(err).context("inferSchema: JDBC error when trying to infer schema"))
   }
 
