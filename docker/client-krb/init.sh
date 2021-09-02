@@ -1,0 +1,1 @@
+echo "user1" | kinit user1
