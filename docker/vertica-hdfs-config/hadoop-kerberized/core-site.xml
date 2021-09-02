@@ -4,18 +4,6 @@
     <value>hdfs://hdfs.example.com:8020</value>
   </property>
 
-  <!--
-  <property>
-    <name>dfs.client.use.datanode.hostname</name>
-    <value>true</value>
-  </property>
-
-  <property>
-    <name>dfs.datanode.use.datanode.hostname</name>
-    <value>true</value>
-  </property>
-  -->
-
   <property>
     <name>hadoop.security.authentication</name>
     <value>kerberos</value>
