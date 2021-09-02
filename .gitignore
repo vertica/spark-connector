@@ -26,4 +26,6 @@ examples/s3-example/project/build.properties
 examples/kerberos-example/project/target/
 
 docker/keytabs/*.keytab
+!docker/keytabs/.keep
+
 docker/vertica-hdfs-config/hadoop-kerberized/*.cert
