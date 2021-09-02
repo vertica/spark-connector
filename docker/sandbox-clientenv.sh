@@ -3,7 +3,6 @@ function configure_kdc() {
 }
 
 function configure_db() {
-  sleep 10
   docker exec -u 0 vertica /vertica-krb/kerberize.sh
 }
 

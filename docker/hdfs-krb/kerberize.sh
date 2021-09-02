@@ -28,3 +28,11 @@ cp /hadoop/conf/ssl-server.xml /opt/hadoop/etc/hadoop/ssl-server.xml
 cp /hadoop/conf/keystore /root/.keystore
 
 export PATH=$PATH:/usr/bin
+
+# remove the hdfs.cert if it already exists
+rm /hadoop/conf/hdfs.cert
+keytool -delete -alias hdfs -keystore /root/.keystore -storepass password
+keytool -genkey -keyalg RSA -alias hdfs -keystore /root/.keystore -validity 500 -keysize 2048 -dname "CN=test, O=Vertica, L=Vancouver, S=BC, C=CA" -no-prompt -storepass password -keypass password
+echo "password" | keytool -export -alias hdfs -keystore /root/.keystore -rfc -file hdfs.cert
+
+cp hdfs.cert /hadoop/conf/

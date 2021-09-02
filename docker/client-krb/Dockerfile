@@ -17,7 +17,4 @@ RUN yum install -y java-11-openjdk && \
     cd /opt/spark/conf && \
     mv spark-env.sh.template spark-env.sh
 
-COPY ./init.sh /init.sh
-RUN chmod a+x /init.sh
-
 ENTRYPOINT ["/bin/bash"]
