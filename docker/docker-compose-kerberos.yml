@@ -43,7 +43,7 @@ services:
       - "krb.env"
     privileged: true
   hdfs:
-    image: "mdouchement/hdfs"
+    build: ./hdfs-krb
     container_name: "hdfs"
     networks:
       - "example"
@@ -65,6 +65,7 @@ services:
     env_file:
       - "krb.env"
     privileged: true
+    entrypoint: /bin/bash
 networks:
   example:
     name: "EXAMPLE.COM"
