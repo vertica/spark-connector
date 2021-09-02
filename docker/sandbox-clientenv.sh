@@ -8,6 +8,10 @@ function configure_db() {
 }
 
 function configure_hdfs() {
+  docker exec hdfs service ssh start
+  docker exec hdfs start-dfs.sh
+  sleep 10
+#  docker exec hdfs hdfs dfsadmin -safemode forceExit
   docker exec -u 0 hdfs /hdfs-krb/kerberize.sh
   docker exec hdfs stop-dfs.sh
   docker exec hdfs start-dfs.sh
@@ -17,17 +21,18 @@ function configure_client() {
   docker exec docker_client_1 /client-krb/kerberize.sh
   docker exec vertica /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | sudo tee -a /etc/hosts"
   docker exec docker_client_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | tee -a /etc/hosts"
+  docker exec docker_client_1 printf 'user1' | kinit user1
 }
 
 function configure_containers() {
   echo "configuring kdc"
   configure_kdc
-  echo "configuring db"
-  configure_db
   echo "configuring hdfs"
   configure_hdfs
   echo "configuring client"
   configure_client
+  echo "configuring db"
+  configure_db
 }
 
 if [ "$1" == "kerberos" ]
@@ -35,6 +40,7 @@ if [ "$1" == "kerberos" ]
     echo "running kerberos docker compose"
     docker compose -f docker-compose-kerberos.yml up -d
     configure_containers
+    docker exec docker_client_1 /bin/bash init.sh
     docker exec -it docker_client_1 /bin/bash
 else
   echo "running non-kerberized docker compose"
