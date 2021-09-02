@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "3.0.0",
   "org.apache.spark" %% "spark-sql" % "3.0.0",
   "org.apache.hadoop" % "hadoop-aws" % "3.3.0",
-  "com.vertica.spark" % "vertica-spark" % "2.0.2-0"
+  "com.vertica.spark" % "vertica-spark" % "2.0.2-all"
 )
 
 assembly / assemblyMergeStrategy := {
