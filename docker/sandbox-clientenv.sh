@@ -14,9 +14,9 @@ function configure_hdfs() {
 }
 
 function configure_client() {
-  docker exec docker_client_1 /client-krb/kerberize.sh
+  docker exec docker_krbclient_1 /client-krb/kerberize.sh
   docker exec vertica /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | sudo tee -a /etc/hosts"
-  docker exec docker_client_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | tee -a /etc/hosts"
+  docker exec docker_krbclient_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | tee -a /etc/hosts"
 }
 
 function configure_containers() {
@@ -35,7 +35,7 @@ if [ "$1" == "kerberos" ]
     echo "running kerberos docker compose"
     docker compose -f docker-compose-kerberos.yml up -d
     configure_containers
-    docker exec -it docker_client_1 /bin/bash
+    docker exec -it docker_krbclient_1 /bin/bash
 else
   echo "running non-kerberized docker compose"
   docker compose -f docker-compose.yml up -d
