@@ -37,12 +37,9 @@ RUN echo "\nHost *\n" >> ~/.ssh/config && \
 RUN echo "root:root" | chpasswd
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 RUN sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-#RUN sed -i 's/127.0.0.1       localhost/127.0.0.1       localhost hdfs hdfs.example.com/' /etc/hosts
 
 # SSH login fix. Otherwise user is kicked off after login
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
-# => Quick fix for enabling datanode connections
-#    ssh -L 50010:localhost:50010 root@192.168.99.100 -p 22022 -o PreferredAuthentications=password
 
 # Pseudo-Distributed Operation
 COPY ./hadoop/core-site.xml etc/hadoop/core-site.xml
