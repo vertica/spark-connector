@@ -24,3 +24,5 @@ examples/s3-example/project/build.properties
 
 !examples/kerberos-example/project
 examples/kerberos-example/project/target/
+
+*.keytab
