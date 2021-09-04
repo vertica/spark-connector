@@ -1,6 +1,6 @@
 # How to run the examples
 
-**Note**: The instructions for running the S3, Kerberos, Sparklyr, and PySpark example are different. If you would like to run those examples, please see their respective READMEs.
+**Note**: The instructions for running the S3, Sparklyr, Kerberos and PySpark examples are different. If you would like to run those examples, please see their respective READMEs.
 
 Make sure you have docker and sbt installed.
 Tested using docker 20.10.0, sbt 1.4.1
@@ -96,6 +96,3 @@ assembly / assemblyShadeRules := {
 ### Note
 
 There are additional prerequisites to run the S3, Pyspark, Sparklyr, or Kerberos examples. If you want to run these, please take a look at their respective README files.
-
-
-

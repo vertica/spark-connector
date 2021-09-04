@@ -7,6 +7,7 @@ target/
 .DS_Store
 *.class
 *.log
+*.jar
 
 project/
 connector/project/project/
@@ -18,5 +19,33 @@ examples/*/lib/
 examples/*/project/build.properties
 examples/*/project/project/
 
+!examples/basic-read-example/project/
+examples/basic-read-example/project/*
+!examples/basic-read-example/project/plugins.sbt
+
+!examples/basic-write-example/project/
+examples/basic-write-example/project/*
+!examples/basic-write-example/project/plugins.sbt
+
+!examples/demo/project/
+examples/demo/project/*
+!examples/demo/project/plugins.sbt
+
+!examples/merge-example/project/
+examples/merge-example/project/*
+!examples/merge-example/project/plugins.sbt
+
+!examples/merge-example2/project/
+examples/merge-example2/project/*
+!examples/merge-example2/project/plugins.sbt
+
 !examples/s3-example/project
 examples/s3-example/project/build.properties
+
+!examples/kerberos-example/project
+examples/kerberos-example/project/target/
+
+docker/keytabs/*.keytab
+!docker/keytabs/.keep
+
+docker/vertica-hdfs-config/hadoop-kerberized/*.cert
