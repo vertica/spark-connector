@@ -19,6 +19,10 @@ examples/*/lib/
 examples/*/project/build.properties
 examples/*/project/project/
 
+!examples/basic-read-example/project/
+examples/basic-read-example/project/*
+!examples/basic-read-example/project/plugins.sbt
+
 !examples/s3-example/project
 examples/s3-example/project/build.properties
 
