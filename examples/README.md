@@ -76,7 +76,7 @@ Once in the examples directory, run:
 ```
 ./run-example.sh [REPLACE WITH EXAMPLE DIR]/target/scala-2.12/spark-vertica-connector-[REPLACE WITH EXAMPLE DIR]-assembly-2.0.1.jar
 ``` 
-Example argument: basic-read-example/target/scala-2.12/spark-vertica-connector-basic-read-example-assembly-2.0.1.jar
+Example argument: basic-read-example/target/scala-2.12/spark-vertica-connector-basic-read-example-assembly-2.0.2.jar
 
 ### Using Thin Jar
 If you are using the thin jar and running into an error similar to the following:
