@@ -206,24 +206,29 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def inferExternalTableSchema(): ConnectorResult[String] = {
     // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-    val tableName =  config.tablename.getFullTableName
+    val tableName =  config.tablename.getFullTableName.replaceAll("\"","")
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/$tableName.parquet/*.parquet")
     logger.info("Inferring schema from parquet data")
-    val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\', \'test\')"
+    val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
     print("The infer statement is: " + inferStatement)
-    val ret = for {
-      // Explain infer first to verify it's valid.
-      rs <- jdbcLayer.query("EXPLAIN " + inferStatement)
-      _ = rs.close()
 
-      // Real infer schema
-      rs <- jdbcLayer.query(inferStatement)
-      res = Try { if(rs.next){rs.getString("INFER_EXTERNAL_TABLE_DDL")} }
-      _ = rs.close()
-      createExternalTableStmt <- Right(JdbcUtils.tryJdbcToResult(jdbcLayer, res).toString)
-    } yield(createExternalTableStmt)
-    println("The create table statement is: " + ret)
-    ret.left.map(err => InferExternalTableSchemaError(err).context("inferSchema: JDBC error when trying to infer schema"))
+    jdbcLayer.query(inferStatement) match {
+      case Left(err) => Left(InferExternalTableSchemaError(err))
+      case Right(resultSet) =>
+        try {
+          val iterate = resultSet.next
+          val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
+          println("The create external table statement is: " + createExternalTableStatement)
+          Right(createExternalTableStatement)
+        }
+        catch {
+          case e: Throwable =>
+            Left(DatabaseReadError(e).context("Could not infer external table schema"))
+        }
+        finally {
+          resultSet.close()
+        }
+    }
   }
 
   /**
@@ -397,7 +402,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     val ret = for {
       _ <- jdbcLayer.configureSession(fileStoreLayer)
-      createExternalTableStmt <- if(config.useExternalTable) Right(inferExternalTableSchema) else Right(())
+
+      createExternalTableStmt <- if(config.useExternalTable) inferExternalTableSchema else Right(())
+
       _ <- tableUtils.createExternalTable(
                 tablename = config.tablename,
                 if(config.useExternalTable) Some(createExternalTableStmt.toString) else config.targetTableSql,
