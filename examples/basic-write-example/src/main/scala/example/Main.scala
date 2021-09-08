@@ -38,18 +38,26 @@ object Main  {
       .getOrCreate()
 
     try {
+      val schema2 = new StructType(Array(StructField("col1", IntegerType)))
+      // Create a row with element '77'
+      val data = (1 to 20).map(x => Row(x))
+      // Create a dataframe corresponding to the schema and data specified above
+      val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2).coalesce(1)
+      //df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
+      //val parquetdf= spark.read.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
+      //parquetdf.rdd.foreach(x => println("VALUE: " + x))
+
       val tableName = "dftest"
       // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-      // Create a row with element '77'
-      val data = Seq(Row(77))
-      // Create a dataframe corresponding to the schema and data specified above
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val schema = new StructType()
+
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
+      //val df = spark.emptyDataFrame
       // Outputs dataframe schema
       println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
 
     } finally {
       spark.close()

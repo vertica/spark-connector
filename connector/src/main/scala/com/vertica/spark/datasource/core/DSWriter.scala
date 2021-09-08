@@ -63,15 +63,25 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   def openWrite(): ConnectorResult[Unit] = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
-        if(cfg.useExternalTable && data.nonEmpty) Left(NonEmptyDataFrameError())
-        else if(!cfg.useExternalTable){
-          for {
-            size <- pipe.getDataBlockSize
-            _ <- pipe.startPartitionWrite(uniqueId)
-            _ = this.blockSize = size
-          } yield ()
+        cfg.createExternalTable match {
+          case Some(value) =>
+            if(value == "existing" && data.nonEmpty) Left(NonEmptyDataFrameError())
+
+            else if(value != "existing"){
+              for {
+                size <- pipe.getDataBlockSize
+                _ <- pipe.startPartitionWrite(uniqueId)
+                _ = this.blockSize = size
+              } yield ()
+            }
+            else Right(())
+          case None =>
+            for {
+              size <- pipe.getDataBlockSize
+              _ <- pipe.startPartitionWrite(uniqueId)
+              _ = this.blockSize = size
+            } yield ()
         }
-        else Right(())
     }
   }
 

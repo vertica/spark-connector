@@ -51,7 +51,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       sessionId = "id",
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-      false
+      None
     )
   }
 
@@ -181,7 +181,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Skip initial creation of table when external table is specified" in {
-    val config = createWriteConfig().copy(createExternalTable = true)
+    val config = createWriteConfig().copy(createExternalTable = Some("true"))
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -577,7 +577,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -602,7 +602,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "handle failure creating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -629,7 +629,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "handle failure validating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 

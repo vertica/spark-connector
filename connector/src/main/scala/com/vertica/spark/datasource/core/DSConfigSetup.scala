@@ -113,27 +113,15 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getCreateExternalTable(config: Map[String, String]): ValidationResult[Boolean] = {
+  def getCreateExternalTable(config: Map[String, String]): ValidationResult[Option[String]] = {
     config.get("create_external_table") match {
       case Some(str) =>
         str match {
-          case "true" => true.validNec
-          case "false" => false.validNec
+          case "true" => Some(str).validNec
+          case "existing" => Some(str).validNec
           case _ => InvalidCreateExternalTableOption().invalidNec
         }
-      case None => false.validNec
-    }
-  }
-
-  def getUseExternalTable(config: Map[String, String]): ValidationResult[Boolean] = {
-    config.get("use_external_table") match {
-      case Some(str) =>
-        str match {
-          case "true" => true.validNec
-          case "false" => false.validNec
-          case _ => InvalidCreateExternalTableOption().invalidNec
-        }
-      case None => false.validNec
+      case None => None.validNec
     }
   }
 
@@ -570,8 +558,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getFailedRowsPercentTolerance(config),
           DSConfigSetupUtils.getFilePermissions(config),
           DSConfigSetupUtils.getCreateExternalTable(config),
-          DSConfigSetupUtils.getMergeKey(config),
-          DSConfigSetupUtils.getUseExternalTable(config)
+          DSConfigSetupUtils.getMergeKey(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

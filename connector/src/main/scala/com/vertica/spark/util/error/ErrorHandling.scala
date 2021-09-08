@@ -461,9 +461,9 @@ case class V1ReplacementOption(oldParam: String, newParam: String) extends Conne
 case class CreateExternalTableMergeKey() extends ConnectorError {
   override def getFullContext: String = "Options 'merge_key' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
 }
-case class CreateExternalTableBothOptions() extends ConnectorError {
+/*case class CreateExternalTableBothOptions() extends ConnectorError {
   override def getFullContext: String = "Options 'use_external_table' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
-}
+}*/
 case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
   override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
 }
