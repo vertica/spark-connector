@@ -15,9 +15,10 @@ package com.vertica.spark.datasource.v2
 
 import cats.data.Validated.{Invalid, Valid}
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{LogProvider, WriteConfig}
+import com.vertica.spark.config.{LogProvider, WriteConfig, DistributedFilesystemWriteConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
+import com.vertica.spark.util.error.{NonEmptyDataFrameError, JobAbortedError}
 import com.vertica.spark.util.general.Utils
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -26,10 +27,6 @@ import collection.JavaConverters._
 
 object WriteSucceeded extends WriterCommitMessage
 object WriteFailed extends WriterCommitMessage
-
-case class JobAbortedError() extends ConnectorError {
-  def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
-}
 
 /**
   * Builds the class for use in writing to Vertica
@@ -137,10 +134,26 @@ class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends
 
   // Construct a unique identifier string based on the partition and task IDs we've been passed for this operation
 
-  writer.openWrite() match {
-    case Right(_) => ()
-    case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+  config match {
+    case cfg: DistributedFilesystemWriteConfig =>
+      cfg.createExternalTable match {
+        case Some(value) =>
+          if (value != "existing") {
+            writer.openWrite() match {
+              case Right(_) => ()
+              case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+            }
+          }
+          else { () }
+
+        case None =>
+          writer.openWrite() match {
+            case Right(_) => ()
+            case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+          }
+    }
   }
+
 
   /**
   * Writes the row to datasource. Not permanent until a commit from the driver happens

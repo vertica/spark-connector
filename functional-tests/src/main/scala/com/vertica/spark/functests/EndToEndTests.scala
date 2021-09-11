@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError, NonEmptyDataFrameError}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
@@ -55,7 +55,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-  it should "read data from Vertica" in {
+/*  it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -1515,7 +1515,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
-
+ */
   def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
       case None => fail("Expected error.")
@@ -1536,7 +1536,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
-
+/*
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -3468,9 +3468,96 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir(fsConfig.address)
     // Need to recreate the root directory for the afterEach assertion check
     fsLayer.createDir(fsConfig.address, "777")
+  }*/
+
+  it should "create an external table with existing data in FS" in {
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val df2 = spark.emptyDataFrame
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
-  it should "Merge with existing table in Vertica" in {
+  it should "create an external table with existing data in FS and multiple data types" in {
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(
+      StructField("col1", StringType),
+      StructField("col2", DateType),
+      StructField("col3", LongType)
+    ))
+    val str = (1 to 10).mkString(",")
+    val date = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
+    val data = Seq(Row(
+      str,
+      new java.sql.Date(date.getTime),
+      500000L
+    ))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val schema2 = new StructType()
+    val df2 = spark.emptyDataFrame
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "fail to create an external table with existing data and non-empty DF" in {
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+    }
+    catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+    finally {
+      //checkErrorType[NonEmptyDataFrameError](failure)
+      failure match {
+        case Some(e) => e match {
+          case e: SparkException => print("The cause is: " + e.getCause)
+        }
+      }
+      TestUtils.dropTable(conn, tableName)
+      // Extra cleanup for external table
+      fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+      fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    }
+
+  }
+
+  /*it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
     val n = 2
@@ -3725,6 +3812,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       df_as3, col("df1.a") === col("df3.b"), "inner")
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
-  }
+  }*/
 }
 

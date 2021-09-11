@@ -43,7 +43,7 @@ object Main  {
       val data = (1 to 20).map(x => Row(x))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2).coalesce(1)
-      //df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
+      df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
       //val parquetdf= spark.read.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
       //parquetdf.rdd.foreach(x => println("VALUE: " + x))
 
@@ -51,8 +51,8 @@ object Main  {
       // Define schema of a table with a single integer attribute
       val schema = new StructType()
 
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      //val df = spark.emptyDataFrame
+      //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
+      val df = spark.emptyDataFrame
       // Outputs dataframe schema
       println(df.toString())
       val mode = SaveMode.Overwrite

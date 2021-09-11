@@ -147,7 +147,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
-    fileStoreLayer.writeDataToParquetFile(data)
+    config.createExternalTable match {
+      case Some(value) =>
+        if(value == "existing") Left(NonEmptyDataFrameError())
+        else fileStoreLayer.writeDataToParquetFile(data)
+      case None => fileStoreLayer.writeDataToParquetFile(data)
+    }
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
@@ -206,7 +211,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def inferExternalTableSchema(): ConnectorResult[String] = {
     // Create url string, escape any ' characters as those surround the url
     val tableName =  config.tablename.getFullTableName.replaceAll("\"","")
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/$tableName.parquet/*.parquet")
+    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
     logger.info("Inferring schema from parquet data")
     val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
     logger.info("The infer statement is: " + inferStatement)
@@ -217,7 +222,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         try {
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
-          println("The create external table statement is: " + createExternalTableStatement)
+          logger.info("The create external table statement is: " + createExternalTableStatement)
           Right(createExternalTableStatement)
         }
         catch {
@@ -436,7 +441,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val globPattern: String = "*.parquet"
 
     // Create url string, escape any ' characters as those surround the url
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.address.stripSuffix("/")}/$globPattern")
+    val url: String = config.createExternalTable match {
+      case Some(value) =>
+        if(value == "true") EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
+        else EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
+
+      case None => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
+    }
 
     val ret = if(config.createExternalTable.isDefined) {
       commitDataAsExternalTable(url)
