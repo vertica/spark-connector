@@ -78,7 +78,7 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * @param physicalWriteInfo Structure containing partition information.
   * @return [[VerticaWriterFactory]]
   */
-  override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory(config,)
+  override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory(config)
 
 /**
   * Responsible for commiting the write operation.
