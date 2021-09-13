@@ -55,7 +55,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-/*  it should "read data from Vertica" in {
+  it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -1515,7 +1515,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
- */
   def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
       case None => fail("Expected error.")
@@ -1536,7 +1535,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
-/*
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -3468,7 +3466,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir(fsConfig.address)
     // Need to recreate the root directory for the afterEach assertion check
     fsLayer.createDir(fsConfig.address, "777")
-  }*/
+  }
 
   it should "create an external table with existing data in FS" in {
     fsLayer.removeDir("webhdfs://hdfs:50070/data/")
@@ -3545,8 +3543,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     finally {
       //checkErrorType[NonEmptyDataFrameError](failure)
       failure match {
-        case Some(e) => e match {
-          case e: SparkException => print("The cause is: " + e.getCause)
+        case Some(exception) => exception match {
+          case e: SparkException =>
+            print("The cause is: " + e.getCause)
+            assert(e.getCause.isInstanceOf[SparkException])
+            val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
+            assert(err.isInstanceOf[NonEmptyDataFrameError] ||
+              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[NonEmptyDataFrameError]))
         }
       }
       TestUtils.dropTable(conn, tableName)
@@ -3557,7 +3560,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   }
 
-  /*it should "Merge with existing table in Vertica" in {
+  it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
     val n = 2
@@ -3812,6 +3815,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       df_as3, col("df1.a") === col("df3.b"), "inner")
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
-  }*/
+  }
 }
 
