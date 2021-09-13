@@ -1,39 +1,36 @@
 # How to run this example
 
-Make sure you have Docker and SBT installed. Tested using docker 3.3.1, sbt 1.4.1
+Make sure you have Docker and SBT installed. Tested using docker 3.3.1 and SBT 1.4.1.
 
-Clone the following repository to get the Kerberized Docker setup:
-```
-git clone https://github.com/jonathanl-bq/vertica-testenv
-```
+First, clone the connector repository.
 
-Change directory to the connector directory of this environment and clone the connector repository:
-```
-cd vertica-testenv/spark-connector
-git clone https://github.com/vertica/spark-connector.git
-```
+In this (kerberos-example) folder, run `sbt assembly` to build the project jar.
 
-Change directory back to the root of the vertica-testenv project and start up the containers:
+In the docker folder, run this command:
 ```
-cd ..
-./vertica_testenv start
-./vertica_testenv sandbox
+./sandbox-clientenv.sh kerberos
 ```
-
-You will now be in the sandbox container. Run kinit to get a TGT:
-```
-kinit user1
-```
-
-The password for this user is "user1".
 
 Change directory to the example project:
 ```
-cd connector/spark-connector/examples/kerberos-example
+cd /spark-connector/examples/kerberos-example
 ```
 
 Run the example:
+```
+./run-example.sh ./target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-2.0.1.jar
+``` 
 
-`sbt run`
+# Rebuilding the images
 
+If, for some reason, you have made changes to the Dockerfiles used in the Kerberos setup, you can rebuild them by running the following:
+```
+docker compose -f docker-compose-kerberos.yml up --build
+```
 
+# Tearing down the containers
+
+From the docker folder, run the following:
+```
+docker compose -f docker-compose-kerberos.yml down
+```

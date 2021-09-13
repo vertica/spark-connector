@@ -1,0 +1,16 @@
+<configuration>
+    <property>
+        <name>ssl.server.keystore.keypassword</name>
+        <value>password</value>
+    </property>
+
+    <property>
+        <name>ssl.server.keystore.password</name>
+        <value>password</value>
+    </property>
+
+    <property>
+        <name>ssl.server.keystore.location</name>
+        <value>/root/.keystore</value>
+    </property>
+</configuration>

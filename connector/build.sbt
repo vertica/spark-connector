@@ -14,7 +14,7 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector"
 organization := "com.vertica"
-version := "2.0.1"
+version := "2.0.2"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -28,7 +28,7 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2" % Test
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.1"
 
 Test / parallelExecution := false
 
