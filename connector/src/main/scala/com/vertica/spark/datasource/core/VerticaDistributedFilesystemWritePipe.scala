@@ -150,8 +150,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
     config.createExternalTable match {
       case Some(value) =>
-        if(value == "existing") Left(NonEmptyDataFrameError())
-        else fileStoreLayer.writeDataToParquetFile(data)
+        if(value == "existing") {
+          Left(NonEmptyDataFrameError())
+        }
+        else {
+          fileStoreLayer.writeDataToParquetFile(data)
+        }
       case None => fileStoreLayer.writeDataToParquetFile(data)
     }
   }
@@ -445,8 +449,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = config.createExternalTable match {
       case Some(value) =>
-        if(value == "true") EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
-        else EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
+        if(value == "true") {
+          EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
+        }
+        else {
+          EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
+        }
 
       case None => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
     }
