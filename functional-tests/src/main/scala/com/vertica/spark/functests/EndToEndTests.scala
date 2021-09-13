@@ -1536,7 +1536,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
-  
+
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
