@@ -1515,6 +1515,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
+
   def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
       case None => fail("Expected error.")
@@ -1535,6 +1536,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
+  
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
