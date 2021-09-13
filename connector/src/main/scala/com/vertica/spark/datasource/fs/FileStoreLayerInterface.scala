@@ -220,7 +220,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   }
 
   def openWriteParquetFile(filename: String): ConnectorResult[Unit] = {
-    logger.debug("Opening write to file: " + filename)
+    logger.info("Opening write to file: " + filename)
     val builder = new VerticaParquetBuilder(new Path(s"$filename"))
 
     val writerOrError = for {
@@ -290,7 +290,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
   override def openReadParquetFile(file: ParquetFileRange): ConnectorResult[Unit] = {
     val filename = file.filename
-
+    logger.info("Opening read from file: " + filename)
     val readSupport = new ParquetReadSupport(
       convertTz = None,
       enableVectorizedReader = false,
