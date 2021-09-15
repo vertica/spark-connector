@@ -454,7 +454,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "skip write when creating external table from existing data" in {
     val dsWriter = mock[DSWriterInterface]
     (dsWriter.closeWrite _).expects().returning(Right())
-    val config = writeConfig.copy(createExternalTable = Some("existing"))
+    val config = writeConfig.copy(createExternalTable = Some(ExistingData))
     val batchWriter = new VerticaBatchWriter(config, dsWriter)
 
     assert(batchWriter.commit() == WriteSucceeded)

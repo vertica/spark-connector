@@ -68,6 +68,14 @@ case object VerifyFull extends TLSMode {
   override def toString: String = "verify-full"
 }
 
+sealed trait CreateExternalTableOption
+case object ExistingData extends CreateExternalTableOption {
+  override def toString: String = "existing-data"
+}
+case object NewData extends CreateExternalTableOption {
+  override def toString: String = "new-data"
+}
+
 /**
   * Util class for common config setup functionality.
   */
@@ -113,12 +121,12 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getCreateExternalTable(config: Map[String, String]): ValidationResult[Option[String]] = {
+  def getCreateExternalTable(config: Map[String, String]): ValidationResult[Option[CreateExternalTableOption]] = {
     config.get("create_external_table") match {
       case Some(str) =>
         str match {
-          case "true" => Some(str).validNec
-          case "existing" => Some(str).validNec
+          case "new-data" => Some(NewData).validNec
+          case "existing-data" => Some(ExistingData).validNec
           case _ => InvalidCreateExternalTableOption().invalidNec
         }
       case None => None.validNec

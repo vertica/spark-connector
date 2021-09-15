@@ -470,7 +470,7 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 case class NonEmptyDataFrameError() extends ConnectorError {
-  override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"true\" instead."
+  override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
 }
 case class InferExternalTableSchemaError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to get schema for external table using INFER_EXTERNAL_TABLE_DDL."

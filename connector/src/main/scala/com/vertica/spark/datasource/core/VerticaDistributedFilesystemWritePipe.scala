@@ -150,7 +150,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
     config.createExternalTable match {
       case Some(value) =>
-        if(value == "existing") {
+        if(value.toString == "existing-data") {
           Left(NonEmptyDataFrameError())
         }
         else {
@@ -162,7 +162,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
     config.createExternalTable match {
-      case Some(value) => if(value == "existing") Right(()) else fileStoreLayer.closeWriteParquetFile()
+      case Some(value) => if(value.toString == "existing-data") Right(()) else fileStoreLayer.closeWriteParquetFile()
       case _ =>  fileStoreLayer.closeWriteParquetFile()
     }
   }
@@ -413,15 +413,15 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val ret = for {
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
-      existingData = config.createExternalTable match {
-        case Some(str) => str
+      createExternalTableOption = config.createExternalTable match {
+        case Some(value) => value.toString
         case None => None
       }
-      createExternalTableStmt <- if(existingData == "existing") inferExternalTableSchema else Right(())
+      createExternalTableStmt <- if(createExternalTableOption == "existing-data") inferExternalTableSchema else Right(())
 
       _ <- tableUtils.createExternalTable(
                 tablename = config.tablename,
-                if(existingData == "existing") Some(createExternalTableStmt.toString) else config.targetTableSql,
+                if(createExternalTableOption == "existing-data") Some(createExternalTableStmt.toString) else config.targetTableSql,
                 schema = config.schema,
                 strlen = config.strlen,
                 urlToCopyFrom = url
@@ -449,7 +449,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = config.createExternalTable match {
       case Some(value) =>
-        if(value == "true") {
+        if(value.toString == "new-data") {
           EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
         }
         else {

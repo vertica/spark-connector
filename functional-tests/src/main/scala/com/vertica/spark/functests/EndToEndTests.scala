@@ -3357,7 +3357,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3384,7 +3384,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data",
                    "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 
@@ -3416,7 +3416,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3454,7 +3454,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data",
         "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 
@@ -3482,7 +3482,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val df2 = spark.emptyDataFrame
     val mode = SaveMode.Overwrite
-    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(readDf.head() == data.head)
@@ -3515,7 +3515,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema2 = new StructType()
     val df2 = spark.emptyDataFrame
     val mode = SaveMode.Overwrite
-    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(readDf.head() == data.head)
@@ -3537,7 +3537,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     var failure: Option[Exception] = None
 
     try {
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing")).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
     }
     catch {
       case e: java.lang.Exception => failure = Some(e)
@@ -3553,6 +3553,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
             assert(err.isInstanceOf[NonEmptyDataFrameError] ||
               (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[NonEmptyDataFrameError]))
         }
+        case None => fail
       }
       TestUtils.dropTable(conn, tableName)
       // Extra cleanup for external table

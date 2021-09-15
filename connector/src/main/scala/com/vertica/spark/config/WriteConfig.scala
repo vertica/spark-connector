@@ -15,6 +15,7 @@ package com.vertica.spark.config
 
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
+import com.vertica.spark.datasource.core.CreateExternalTableOption
 import com.vertica.spark.util.error.UnquotedSemiInColumns
 import org.apache.spark.sql.types.StructType
 
@@ -84,7 +85,7 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   sessionId: String,
                                                   failedRowPercentTolerance: Float,
                                                   filePermissions: ValidFilePermissions,
-                                                  createExternalTable: Option[String],
+                                                  createExternalTable: Option[CreateExternalTableOption],
                                                   mergeKey: Option[ValidColumnList] = None
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false

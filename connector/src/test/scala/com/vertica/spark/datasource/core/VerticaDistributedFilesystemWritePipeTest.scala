@@ -190,7 +190,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Skip initial creation of table when external table is specified" in {
-    val config = createWriteConfig().copy(createExternalTable = Some("true"))
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData))
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -586,7 +586,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -611,7 +611,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table with existing data" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some("existing"), fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"), tablename = TableName("testtable", None))
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData), fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"), tablename = TableName("testtable", None))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
@@ -635,7 +635,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "handle failure creating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -662,7 +662,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "handle failure validating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some("true"), tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
