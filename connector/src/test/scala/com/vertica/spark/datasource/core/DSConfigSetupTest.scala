@@ -25,6 +25,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 
 class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+  /*
   override def beforeAll(): Unit = {
   }
 
@@ -494,4 +495,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         }
     }
   }
+
+   */
 }

@@ -95,6 +95,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     logger.info("Writing data to Parquet file.")
     for {
+      //_ <- this.jdbcLayer.configureSession(this.fileStoreLayer)
+
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
