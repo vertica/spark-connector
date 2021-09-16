@@ -3454,7 +3454,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data",
+      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
         "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 

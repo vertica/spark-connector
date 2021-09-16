@@ -127,6 +127,7 @@ object DSConfigSetupUtils {
         str match {
           case "new-data" => Some(NewData).validNec
           case "existing-data" => Some(ExistingData).validNec
+          case "true" =>  Some(NewData).validNec
           case _ => InvalidCreateExternalTableOption().invalidNec
         }
       case None => None.validNec
