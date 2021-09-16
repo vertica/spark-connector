@@ -14,7 +14,7 @@ Change directory to the example project:
 cd /spark-connector/examples/kerberos-example
 ```
 
-Build the assembly if it hasn't been built already
+Build the assembly if it hasn't been built already.  Note: building within docker may be slower.
 ```
 sbt assembly
 ```
