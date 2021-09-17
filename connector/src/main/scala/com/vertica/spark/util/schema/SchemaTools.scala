@@ -425,5 +425,21 @@ class SchemaTools extends SchemaToolsInterface {
     }
     columnList
   }
+
+  def inferExternalTableSchema(statement: ConnectorResult[String], schema: StructType): ConnectorResult[String] = {
+    val createExternalTableStmt = statement match {
+      Right(stmt) => stmt
+      Left(err) => err
+    }
+    val indexOfOpeningParantheses = createExternalTableStmt.indexOf("(")
+    val indexOfClosingParantheses = createExternalTableStmt.indexOf(")")
+
+    val schemaString = createExternalTableStmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
+    val schemaList = schemaString.split(",").toList
+
+
+
+
+  }
 }
 

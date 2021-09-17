@@ -17,13 +17,12 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
-
     // Configuration options for the connector
     val writeOpts = Map(
       "host" -> conf.getString("functional-tests.host"),
@@ -31,10 +30,8 @@ object Main  {
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password"),
-      "merge_key" -> conf.getString("functional-tests.merge_key")
+      "use_external_table" -> conf.getString("functional-tests.external")
     )
-
-    val conn: Connection = TestUtils.getJDBCConnection(writeOpts("host"), db = writeOpts("db"), user = writeOpts("user"), password = writeOpts("password"))
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
       .master("local[*]")
@@ -42,28 +39,25 @@ object Main  {
       .getOrCreate()
 
     try {
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      val n = 5
-      // Creates a table called dftest with 4 cols
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(col1 int, col2 int, c varchar(50), d varchar(50))")
-      val insert = "insert into " + tableName + " values(2, 3, 'hello', 'world')"
-      // Inserts 5 rows of the data above into dftest
-      TestUtils.populateTableBySQL(stmt, insert, n)
-      // Define schema of a table
-      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", IntegerType), StructField("col3", StringType)))
-      val data = (1 to 20).map(x => Row(x, 3, "hola"))
+      val schema2 = new StructType(Array(StructField("col1", IntegerType)))
+      // Create a row with element '77'
+      val data = (1 to 20).map(x => Row(x))
       // Create a dataframe corresponding to the schema and data specified above
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      // Use copyList to match columns from df schema to target table
-      val copyList = "col1, c, d"
+      val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
+      df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
 
+
+      val tableName = "dftest"
+      // Define schema of a table with a single integer attribute
+      val schema = new StructType()
+
+      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+      //val df = spark.emptyDataFrame
+      // Outputs dataframe schema
+      println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "copy_column_list" -> copyList)).mode(mode).save()
-
-      val df2: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
-      df2.rdd.foreach(x => println("VALUE: " + x))
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
 
     } finally {
       spark.close()

@@ -225,8 +225,16 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         try {
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
-          logger.info("The create external table statement is: " + createExternalTableStatement)
-          Right(createExternalTableStatement)
+
+          if(config.schema.nonEmpty) {
+            val partitionedColStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
+            logger.info("The create external table statement is: " + partitionedColStatement)
+            partitionedColStatement
+          }
+          else {
+            logger.info("The create external table statement is: " + createExternalTableStatement)
+            Right(statement)
+          }
         }
         catch {
           case e: Throwable =>
