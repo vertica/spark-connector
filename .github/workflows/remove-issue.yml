@@ -1,0 +1,39 @@
+name: Remove Closed Issue
+on:
+  issues:
+    types:
+      - closed
+  workflow_dispatch:
+jobs:
+  remove-low-priority:
+    if: github.event.label.name == 'Low Priority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: Backlog
+          column: Low Priority
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          action: delete
+
+  remove-normal-priority:
+    if: github.event.label.name == 'Normal Priority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: Backlog
+          column: Normal Priority
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          action: delete
+
+  remove-high-priority:
+    if: github.event.label.name == 'High Priority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: Backlog
+          column: High Priority
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          action: delete
