@@ -21,7 +21,7 @@ sbt assembly
 
 Run the example:
 ```
-./run-example.sh ./target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-2.0.2.jar
+./run-kerberos-example.sh 
 ``` 
 
 # Rebuilding the images
