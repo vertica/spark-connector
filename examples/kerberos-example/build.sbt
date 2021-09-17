@@ -23,9 +23,9 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.0.0",
   "org.apache.spark" %% "spark-sql" % "3.0.0",
-  //"com.vertica.spark" % "vertica-spark" % "2.0.2-slim"
 )
 
+// Temporary addition until 2.0.3 the release, where webhdfs delegation tokens are fixed
 assembly / assemblyShadeRules := {
   val shadePackage = "com.azavea.shaded.demo"
   Seq(
