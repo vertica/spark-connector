@@ -18,7 +18,7 @@ cd /spark-connector/examples/kerberos-example
 
 Run the example:
 ```
-./run-example.sh kerberos-example
+./run-kerberos-example.sh 
 ``` 
 
 # Rebuilding the images
