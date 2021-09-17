@@ -429,7 +429,7 @@ case class TableNotEnoughRowsError() extends SchemaError {
 }
 
 case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
-  override def getFullContext: String = "Could not retrieve an impersonation token for the desginated user " + username + " on address: " + address
+  override def getFullContext: String = "Could not retrieve an impersonation token for the designated user " + username + " on address: " + address
 }
 
 case class KerberosNotEnabledInHadoopConf() extends ConnectorError {

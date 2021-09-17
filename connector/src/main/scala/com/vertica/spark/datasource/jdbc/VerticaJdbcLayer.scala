@@ -351,7 +351,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         val authMethod = hadoopConf.get("hadoop.security.authentication")
         logger.debug("Hadoop impersonation: auth method: " + authMethod)
         if (authMethod != null && authMethod == "kerberos") {
-          val nameNodeAddress = hadoopConf.get("dfs.namenode.http-address")
+          val nameNodeAddress = hadoopConf.get("dfs.namenode.https-address")
           logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
 
           for {
