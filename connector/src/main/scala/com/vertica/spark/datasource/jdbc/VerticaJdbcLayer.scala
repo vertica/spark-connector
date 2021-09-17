@@ -348,25 +348,27 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case Some(session) =>
         logger.debug("Hadoop impersonation: found session")
         val hadoopConf = session.sparkContext.hadoopConfiguration
-        val authMethod = hadoopConf.get("hadoop.security.authentication")
+        val authMethod = Option(hadoopConf.get("hadoop.security.authentication"))
         logger.debug("Hadoop impersonation: auth method: " + authMethod)
-        if (authMethod != null && authMethod == "kerberos") {
-          val nameNodeAddress = hadoopConf.get("dfs.namenode.https-address")
-          logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
-
-          for {
-            encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
-            jsonString = s"""
+        authMethod match {
+          case Some(authMethod) if authMethod == "kerberos" =>
+            for {
+              nameNodeAddress <- Option(hadoopConf.get("dfs.namenode.http-address"))
+                .orElse(Option(hadoopConf.get("dfs.namenode.https-address")))
+                .toRight(MissingNameNodeAddressError())
+              _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
+              encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
+              jsonString = s"""
                 {
                    "authority": "$nameNodeAddress",
                    "token": "$encodedDelegationToken"
                 }"""
-            sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
-            _ <- this.execute(sql)
-          } yield ()
-        } else {
-          logger.info("Kerberos is not enabled in the hadoop config.")
-          Right(())
+              sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
+              _ <- this.execute(sql)
+            } yield ()
+          case _ =>
+            logger.info("Kerberos is not enabled in the hadoop config.")
+            Right(())
         }
       case None => Left(NoSparkSessionFound())
     }
