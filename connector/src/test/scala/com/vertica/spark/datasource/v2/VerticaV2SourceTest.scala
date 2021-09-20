@@ -29,7 +29,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError, JobAbortedError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
@@ -77,7 +77,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     sessionId = "id",
     failedRowPercentTolerance =  0.0f,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-    createExternalTable = false
+    createExternalTable = None
   )
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))
@@ -449,6 +449,15 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       case Success(_) => fail
       case Failure(e) => ()
     }
+  }
+
+  it should "skip write when creating external table from existing data" in {
+    val dsWriter = mock[DSWriterInterface]
+    (dsWriter.closeWrite _).expects().returning(Right())
+    val config = writeConfig.copy(createExternalTable = Some(ExistingData))
+    val batchWriter = new VerticaBatchWriter(config, dsWriter)
+
+    assert(batchWriter.commit() == WriteSucceeded)
   }
 
   it should "throws error on writer commit" in {

@@ -13,7 +13,7 @@
 
 package com.vertica.spark.util.error
 
-import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError, JobAbortedError}
+import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError}
 import com.vertica.spark.util.general.Utils
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -208,6 +208,10 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(MissingAWSSecretAccessKey())
       checkErrReturnsMessages(MissingAWSAccessKeyId())
       checkErrReturnsMessages(LoadConfigMissingSparkSessionError())
+      checkErrReturnsMessages(NonEmptyDataFrameError())
+      checkErrReturnsMessages(CreateExternalTableAlreadyExistsError())
+      checkErrReturnsMessages(CreateExternalTableMergeKey())
+
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()
@@ -243,6 +247,8 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(CommitError(suberr))
       checkErrReturnsMessages(JobStatusCreateError(suberr))
       checkErrReturnsMessages(JdbcSchemaError(suberr))
+      checkErrReturnsMessages(InferExternalTableSchemaError(suberr))
+      checkErrReturnsMessages(MergeColumnListError(suberr))
     }
     match {
       case Failure(e) => fail(e)
@@ -301,6 +307,19 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       checkErrReturnsMessages(MissingSqlConversionError(sqlType, sqlType))
       checkErrReturnsMessages(MissingSparkConversionError(sparkType))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for errors that take two string params" in {
+    Try {
+      val firstStr = "dsfjnjs"
+      val secondStr = "389rh#@$#Tldfn"
+
+      checkErrReturnsMessages(V1ReplacementOption(firstStr, secondStr))
     }
     match {
       case Failure(e) => fail(e)

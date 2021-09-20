@@ -53,4 +53,10 @@ final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOpti
     // Create unique directory for session
     baseAddress.stripSuffix(delimiter) + delimiter + sessionId
   }
+
+  def externalTableAddress: String = {
+    val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
+    // URL for directory without session ID
+    baseAddress.stripSuffix(delimiter) + delimiter
+  }
 }

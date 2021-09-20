@@ -35,9 +35,9 @@ examples/demo/project/*
 examples/merge-example/project/*
 !examples/merge-example/project/plugins.sbt
 
-!examples/merge-example2/project/
-examples/merge-example2/project/*
-!examples/merge-example2/project/plugins.sbt
+!examples/external-table-example/project/
+examples/external-table-example/project/*
+!examples/external-table-example/project/plugins.sbt
 
 !examples/s3-example/project
 examples/s3-example/project/build.properties
@@ -49,3 +49,5 @@ docker/keytabs/*.keytab
 !docker/keytabs/.keep
 
 docker/vertica-hdfs-config/hadoop-kerberized/*.cert
+
+
