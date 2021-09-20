@@ -150,7 +150,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
     config.createExternalTable match {
       case Some(value) =>
-        if(value.toString == "existing-data") {
+        if(value== ExistingData) {
           Left(NonEmptyDataFrameError())
         }
         else {
@@ -162,7 +162,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
     config.createExternalTable match {
-      case Some(value) => if(value.toString == "existing-data") Right(()) else fileStoreLayer.closeWriteParquetFile()
+      case Some(value) => if(value == ExistingData) Right(()) else fileStoreLayer.closeWriteParquetFile()
       case _ =>  fileStoreLayer.closeWriteParquetFile()
     }
   }
@@ -215,7 +215,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val tableName =  config.tablename.getFullTableName.replaceAll("\"","")
     val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-    logger.info("Inferring schema from parquet data")
     val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
     logger.info("The infer statement is: " + inferStatement)
 
@@ -227,13 +226,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
 
           if(config.schema.nonEmpty) {
+            logger.info("Inferring schema from dataframe")
             val partitionedColStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
-            logger.info("The create external table statement is: " + partitionedColStatement)
+            val stringStmt = partitionedColStatement match {
+              case Right(stmt) => stmt
+              case Left(err) => err
+            }
+            logger.info("The create external table statement is: " + stringStmt)
             partitionedColStatement
           }
           else {
+            logger.info("Inferring schema from parquet data")
             logger.info("The create external table statement is: " + createExternalTableStatement)
-            Right(statement)
+            Right(createExternalTableStatement)
           }
         }
         catch {
@@ -422,14 +427,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       createExternalTableOption = config.createExternalTable match {
-        case Some(value) => value.toString
+        case Some(value) => value
         case None => None
       }
-      createExternalTableStmt <- if(createExternalTableOption == "existing-data") inferExternalTableSchema else Right(())
+      createExternalTableStmt <- if(createExternalTableOption == ExistingData) inferExternalTableSchema else Right(())
 
       _ <- tableUtils.createExternalTable(
                 tablename = config.tablename,
-                if(createExternalTableOption == "existing-data") Some(createExternalTableStmt.toString) else config.targetTableSql,
+                if(createExternalTableOption == ExistingData) Some(createExternalTableStmt.toString) else config.targetTableSql,
                 schema = config.schema,
                 strlen = config.strlen,
                 urlToCopyFrom = url
@@ -457,7 +462,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = config.createExternalTable match {
       case Some(value) =>
-        if(value.toString == "new-data") {
+        if(value == NewData) {
           EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
         }
         else {

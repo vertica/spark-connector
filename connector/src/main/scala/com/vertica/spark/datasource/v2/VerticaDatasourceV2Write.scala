@@ -138,7 +138,7 @@ class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends
     case cfg: DistributedFilesystemWriteConfig =>
       cfg.createExternalTable match {
         case Some(value) =>
-          if (value.toString != "existing-data") {
+          if (value != ExistingData) {
             writer.openWrite() match {
               case Right(_) => ()
               case Left(err) => ErrorHandling.logAndThrowError(logger, err)

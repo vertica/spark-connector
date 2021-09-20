@@ -17,7 +17,7 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
@@ -30,7 +30,7 @@ object Main  {
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password"),
-      "use_external_table" -> conf.getString("functional-tests.external")
+      "create_external_table" -> conf.getString("functional-tests.external")
     )
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
@@ -39,9 +39,9 @@ object Main  {
       .getOrCreate()
 
     try {
-      val schema2 = new StructType(Array(StructField("col1", IntegerType)))
+      val schema2 = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
       // Create a row with element '77'
-      val data = (1 to 20).map(x => Row(x))
+      val data = (1 to 20).map(x => Row(x, x.toFloat))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
       df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
@@ -51,7 +51,7 @@ object Main  {
       // Define schema of a table with a single integer attribute
       val schema = new StructType()
 
-      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       //val df = spark.emptyDataFrame
       // Outputs dataframe schema
       println(df.toString())

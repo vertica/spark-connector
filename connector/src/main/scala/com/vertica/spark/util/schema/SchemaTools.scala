@@ -110,6 +110,15 @@ trait SchemaToolsInterface {
    * @return String of columns and values to append to UPDATE SET in merge.
    */
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String]
+
+  /**
+  * Replaces columns of unknown type with partial schema specified with empty DF
+  *
+  * @param createExternalTableStmt Original create table statement retrieved using SELECT INFER_EXTERNAL_TABLE_DDL
+  * @param schema Schema passed in with empty dataframe
+  * @return Updated create external table statement
+  */
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -426,20 +435,33 @@ class SchemaTools extends SchemaToolsInterface {
     columnList
   }
 
-  def inferExternalTableSchema(statement: ConnectorResult[String], schema: StructType): ConnectorResult[String] = {
-    val createExternalTableStmt = statement match {
-      Right(stmt) => stmt
-      Left(err) => err
-    }
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String] = {
+
     val indexOfOpeningParantheses = createExternalTableStmt.indexOf("(")
     val indexOfClosingParantheses = createExternalTableStmt.indexOf(")")
 
     val schemaString = createExternalTableStmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
     val schemaList = schemaString.split(",").toList
 
+    val updatedSchema= schemaList.map(col => {
+      if(col.contains("UNKNOWN")) {
+        val indexOfSpace = col.indexOf(" ")
+        val colName = col.substring(0, indexOfSpace)
+        breakable{
+          schema.foreach(field => {
+            if(field.name == colName) {
+              colName + field.dataType
+              break
+            }
+          })
+        }
+      }
+      else { col }
+    }).mkString(",")
 
-
-
+    val updatedCreateTableStmt = createExternalTableStmt.replace(schemaString, updatedSchema)
+    logger.info("Edited create table statement: " + updatedCreateTableStmt)
+    Right(updatedCreateTableStmt)
   }
 }
 

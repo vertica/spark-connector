@@ -12,7 +12,7 @@
 // limitations under the License.
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-merge-example2"
+name := "spark-vertica-connector-external-table-example"
 organization := "com.vertica"
 version := "2.0.2"
 

@@ -611,7 +611,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table with existing data" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData), fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"), tablename = TableName("testtable", None))
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData), fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"), tablename = TableName("testtable", None), schema = new StructType())
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 

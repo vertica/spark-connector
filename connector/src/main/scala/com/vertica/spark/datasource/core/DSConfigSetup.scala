@@ -125,9 +125,8 @@ object DSConfigSetupUtils {
     config.get("create_external_table") match {
       case Some(str) =>
         str match {
-          case "new-data" => Some(NewData).validNec
+          case "new-data" | "true" => Some(NewData).validNec
           case "existing-data" => Some(ExistingData).validNec
-          case "true" =>  Some(NewData).validNec
           case _ => InvalidCreateExternalTableOption().invalidNec
         }
       case None => None.validNec
