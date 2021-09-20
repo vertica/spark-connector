@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 jobs:
   remove-low-priority:
-    if: github.event.label.name == 'Low Priority'
+    if: contains(github.event.issue.labels.*.name, 'Low Priority')
     runs-on: ubuntu-latest
     steps:
       - uses: alex-page/github-project-automation-plus@v0.8.1
@@ -17,7 +17,7 @@ jobs:
           action: delete
 
   remove-normal-priority:
-    if: github.event.label.name == 'Normal Priority'
+    if: contains(github.event.issue.labels.*.name, 'Normal Priority')
     runs-on: ubuntu-latest
     steps:
       - uses: alex-page/github-project-automation-plus@v0.8.1
@@ -28,7 +28,7 @@ jobs:
           action: delete
 
   remove-high-priority:
-    if: github.event.label.name == 'High Priority'
+    if: contains(github.event.issue.labels.*.name, 'High Priority')
     runs-on: ubuntu-latest
     steps:
       - uses: alex-page/github-project-automation-plus@v0.8.1
