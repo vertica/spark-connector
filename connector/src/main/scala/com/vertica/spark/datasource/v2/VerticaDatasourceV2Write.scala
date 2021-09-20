@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.v2
 import cats.data.Validated.{Invalid, Valid}
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{LogProvider, WriteConfig, DistributedFilesystemWriteConfig}
-import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface}
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface, ExistingData, NewData}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
 import com.vertica.spark.util.error.{NonEmptyDataFrameError, JobAbortedError}
 import com.vertica.spark.util.general.Utils
@@ -138,13 +138,14 @@ class VerticaBatchWriter(config: WriteConfig, writer: DSWriterInterface) extends
     case cfg: DistributedFilesystemWriteConfig =>
       cfg.createExternalTable match {
         case Some(value) =>
-          if (value != ExistingData) {
-            writer.openWrite() match {
-              case Right(_) => ()
-              case Left(err) => ErrorHandling.logAndThrowError(logger, err)
-            }
+          value match {
+            case ExistingData => ()
+            case NewData =>
+              writer.openWrite() match {
+                case Right(_) => ()
+                case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+              }
           }
-
         case None =>
           writer.openWrite() match {
             case Right(_) => ()

@@ -150,20 +150,23 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
     config.createExternalTable match {
       case Some(value) =>
-        if(value== ExistingData) {
-          Left(NonEmptyDataFrameError())
+        value match {
+          case ExistingData => Left(NonEmptyDataFrameError())
+          case NewData => fileStoreLayer.writeDataToParquetFile(data)
         }
-        else {
-          fileStoreLayer.writeDataToParquetFile(data)
-        }
+
       case None => fileStoreLayer.writeDataToParquetFile(data)
     }
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
     config.createExternalTable match {
-      case Some(value) => if(value == ExistingData) Right(()) else fileStoreLayer.closeWriteParquetFile()
-      case _ =>  fileStoreLayer.closeWriteParquetFile()
+      case Some(value) =>
+        value match {
+          case ExistingData => Right(())
+          case NewData => fileStoreLayer.closeWriteParquetFile()
+        }
+      case None =>  fileStoreLayer.closeWriteParquetFile()
     }
   }
 
@@ -426,15 +429,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val ret = for {
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
-      createExternalTableOption = config.createExternalTable match {
-        case Some(value) => value
-        case None => None
+      existingData = config.createExternalTable match {
+        case Some(value) =>
+          value match {
+            case ExistingData => true
+            case NewData => false
+          }
+        case None => false
       }
-      createExternalTableStmt <- if(createExternalTableOption == ExistingData) inferExternalTableSchema else Right(())
+      createExternalTableStmt <- if(existingData) inferExternalTableSchema else Right(())
 
       _ <- tableUtils.createExternalTable(
                 tablename = config.tablename,
-                if(createExternalTableOption == ExistingData) Some(createExternalTableStmt.toString) else config.targetTableSql,
+                if(existingData) Some(createExternalTableStmt.toString) else config.targetTableSql,
                 schema = config.schema,
                 strlen = config.strlen,
                 urlToCopyFrom = url
@@ -462,13 +469,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Create url string, escape any ' characters as those surround the url
     val url: String = config.createExternalTable match {
       case Some(value) =>
-        if(value == NewData) {
-          EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
+        value match {
+          case NewData => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
+          case ExistingData => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
         }
-        else {
-          EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
-        }
-
       case None => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
     }
 
