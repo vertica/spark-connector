@@ -86,6 +86,9 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   private var rowCount = 0L
   private var curRowGroup = 0L
 
+  private val SWebHdfsDelegationTokenText = "SWEBHDFS delegation"
+  private val HdfsDelegationTokenText = "HDFS_DELEGATION_TOKEN"
+
   private def doneReading() : Unit = {
     this.recordReader = None
     rowCount = -1
@@ -436,8 +439,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
           val token = itr.next()
           val tokenKind = token.getKind
           logger.debug("Existing token kind: " + tokenKind.toString)
-          if (new Text("SWEBHDFS delegation").equals(tokenKind) ||
-            new Text("HDFS_DELEGATION_TOKEN").equals(tokenKind)) {
+          if (new Text(SWebHdfsDelegationTokenText).equals(tokenKind) ||
+            new Text(HdfsDelegationTokenText).equals(tokenKind)) {
             hdfsToken = Some(token.encodeToUrlString)
           }
         }
@@ -450,8 +453,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
         val token = itr.next();
         val tokenKind = token.getKind
         logger.debug("Hadoop impersonation: IT kind: " + tokenKind.toString)
-        if (new Text("SWEBHDFS delegation").equals(tokenKind) ||
-          new Text("HDFS_DELEGATION_TOKEN").equals(tokenKind)) {
+        if (new Text(SWebHdfsDelegationTokenText).equals(tokenKind) ||
+          new Text(HdfsDelegationTokenText).equals(tokenKind)) {
           hdfsToken = Some(token.encodeToUrlString)
         }
       }

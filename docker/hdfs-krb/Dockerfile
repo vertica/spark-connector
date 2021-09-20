@@ -14,8 +14,8 @@ RUN mkdir -p /opt
 WORKDIR /opt
 
 # Install Hadoop
-RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz -s -o - | tar -xzf -
-RUN mv hadoop-3.3.0 hadoop
+RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz -s -o - | tar -xzf -
+RUN mv hadoop-3.3.1 hadoop
 
 # Setup
 WORKDIR /opt/hadoop
