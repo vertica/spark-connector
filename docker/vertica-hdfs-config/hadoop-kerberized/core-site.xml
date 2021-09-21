@@ -46,4 +46,19 @@
     <name>hadoop.proxyuser.superuser.groups</name>
     <value>*</value>
   </property>
+
+  <property>
+    <name>hadoop.http.authentication.type</name>
+    <value>kerberos</value>
+  </property>
+
+  <property>
+    <name>hadoop.http.authentication.kerberos.keytab</name>
+    <value>/root/.keytab</value>
+  </property>
+
+  <property>
+    <name>hadoop.http.authentication.kerberos.principal</name>
+    <value>HTTP/hdfs.example.com@EXAMPLE.COM</value>
+  </property>
 </configuration>

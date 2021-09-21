@@ -356,6 +356,49 @@ case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorErro
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
   override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
 }
+case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
+  override def getFullContext: String = "Could not retrieve an impersonation token for the designated user " + username + " on address: " + address
+}
+case class KerberosNotEnabledInHadoopConf() extends ConnectorError {
+  override def getFullContext: String = "Trying to use Kerberos, but did not detect hadoop configuration with Kerberos enabled."
+}
+case class NoSparkSessionFound() extends ConnectorError {
+  override def getFullContext: String = "Could not get spark session. " + invariantViolation
+}
+case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
+  private val message = cause match {
+    case e: NoClassDefFoundError if e.getMessage.contains("StreamCapabilities") =>
+      "Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later."
+    case _ => "Error in communication with filestore. Check the 'staging_fs_url' parameter."
+  }
+
+  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
+}
+case class MissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error: spark context did not exist"
+}
+case class LoadConfigMissingSparkSessionError() extends ConnectorError {
+  def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
+}
+case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
+  override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
+}
+case class CreateExternalTableMergeKey() extends ConnectorError {
+  override def getFullContext: String = "Options 'merge_key' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
+}
+case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
+  override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
+}
+case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
+  private val message = "Failed to get column info of table for merge."
+
+  def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
+}
+case class MissingNameNodeAddressError() extends ConnectorError {
+  override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
+}
 
 /**
   * Enumeration of the list of possible JDBC errors.
@@ -428,46 +471,3 @@ case class TableNotEnoughRowsError() extends SchemaError {
   def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
 }
 
-case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
-  override def getFullContext: String = "Could not retrieve an impersonation token for the desginated user " + username + " on address: " + address
-}
-
-case class KerberosNotEnabledInHadoopConf() extends ConnectorError {
-  override def getFullContext: String = "Trying to use Kerberos, but did not detect hadoop configuration with Kerberos enabled."
-}
-
-case class NoSparkSessionFound() extends ConnectorError {
-  override def getFullContext: String = "Could not get spark session. " + invariantViolation
-}
-case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
-  private val message = cause match {
-    case e: NoClassDefFoundError if e.getMessage.contains("StreamCapabilities") =>
-      "Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later."
-    case _ => "Error in communication with filestore. Check the 'staging_fs_url' parameter."
-  }
-
-  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
-}
-case class MissingSparkSessionError() extends ConnectorError {
-  def getFullContext: String = "Fatal error: spark context did not exist"
-}
-case class LoadConfigMissingSparkSessionError() extends ConnectorError {
-  def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
-}
-case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
-  override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
-}
-case class CreateExternalTableMergeKey() extends ConnectorError {
-  override def getFullContext: String = "Options 'merge_key' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
-}
-case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
-  override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
-}
-
-case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
-  private val message = "Failed to get column info of table for merge."
-
-  def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
-}

@@ -22,4 +22,6 @@ echo "[logging]
 
 cp /etc/hadoop/conf/* /hadoop-3.3.0/etc/hadoop/
 
+keytool -import -file /hadoop-3.3.0/etc/hadoop/hdfs.cert -alias hdfs -keystore cacerts.jks -no-prompt -storepass password
+
 echo 'user1' | kinit user1

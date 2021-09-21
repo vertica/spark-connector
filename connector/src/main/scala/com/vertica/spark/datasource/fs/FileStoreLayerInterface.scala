@@ -152,6 +152,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val S3_ENABLE_SSL: String = "fs.s3a.connection.ssl.enabled"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
+  private val SWebHdfsDelegationTokenText = "SWEBHDFS delegation"
+  private val HdfsDelegationTokenText = "HDFS_DELEGATION_TOKEN"
+
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
 
@@ -433,9 +436,11 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
         val existingTokens = user.getCredentials.getAllTokens
         val itr = existingTokens.iterator
         while (itr.hasNext) {
-          val token = itr.next();
-          logger.debug("Existing token kind: " + token.getKind.toString)
-          if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+          val token = itr.next()
+          val tokenKind = token.getKind
+          logger.debug("Existing token kind: " + tokenKind.toString)
+          if (new Text(SWebHdfsDelegationTokenText).equals(tokenKind) ||
+            new Text(HdfsDelegationTokenText).equals(tokenKind)) {
             hdfsToken = Some(token.encodeToUrlString)
           }
         }
@@ -446,8 +451,10 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       val itr = tokens.iterator
       while (itr.hasNext) {
         val token = itr.next();
-        logger.debug("Hadoop impersonation: IT kind: " + token.getKind.toString)
-        if (token.getKind.equals(new Text("HDFS_DELEGATION_TOKEN"))) {
+        val tokenKind = token.getKind
+        logger.debug("Hadoop impersonation: IT kind: " + tokenKind.toString)
+        if (new Text(SWebHdfsDelegationTokenText).equals(tokenKind) ||
+          new Text(HdfsDelegationTokenText).equals(tokenKind)) {
           hdfsToken = Some(token.encodeToUrlString)
         }
       }
