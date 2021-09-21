@@ -56,6 +56,11 @@
     </property>
 
     <property>
+        <name>dfs.http.policy</name>
+        <value>HTTPS_ONLY</value>
+    </property>
+
+    <property>
       <name>dfs.namenode.https-address</name>
       <value>hdfs.example.com:50070</value>
       <description>

@@ -86,9 +86,6 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   private var rowCount = 0L
   private var curRowGroup = 0L
 
-  private val SWebHdfsDelegationTokenText = "SWEBHDFS delegation"
-  private val HdfsDelegationTokenText = "HDFS_DELEGATION_TOKEN"
-
   private def doneReading() : Unit = {
     this.recordReader = None
     rowCount = -1
@@ -154,6 +151,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val S3_ENDPOINT: String = "fs.s3a.endpoint"
   private val S3_ENABLE_SSL: String = "fs.s3a.connection.ssl.enabled"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
+
+  private val SWebHdfsDelegationTokenText = "SWEBHDFS delegation"
+  private val HdfsDelegationTokenText = "HDFS_DELEGATION_TOKEN"
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
