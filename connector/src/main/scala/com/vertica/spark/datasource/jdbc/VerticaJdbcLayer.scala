@@ -25,6 +25,7 @@ import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
+import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Try
@@ -353,8 +354,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
             for {
-              nameNodeAddress <- Option(hadoopConf.get("dfs.namenode.https-address"))
-                .orElse(Option(hadoopConf.get("dfs.namenode.http-address")))
+              nameNodeAddress <- Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY))
+                .orElse(Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY)))
                 .toRight(MissingNameNodeAddressError())
               _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)

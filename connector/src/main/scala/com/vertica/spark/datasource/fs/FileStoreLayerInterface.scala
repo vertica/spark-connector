@@ -152,9 +152,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val S3_ENABLE_SSL: String = "fs.s3a.connection.ssl.enabled"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
-  private val WebHdfsDelegationTokenText = new Text("WEBHDFS delegation")
-  private val SWebHdfsDelegationTokenText = new Text("SWEBHDFS delegation")
-  private val HdfsDelegationTokenText = new Text("HDFS_DELEGATION_TOKEN")
+  private val WEBHDFS_DELEGATION_TOKEN_TEXT = new Text("WEBHDFS delegation")
+  private val SWEBHDFS_DELEGATION_TOKEN_TEXT = new Text("SWEBHDFS delegation")
+  private val HDFS_DELEGATION_TOKEN_TEXT = new Text("HDFS_DELEGATION_TOKEN")
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -440,9 +440,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
           val token = itr.next()
           val tokenKind = token.getKind
           logger.debug("Existing token kind: " + tokenKind.toString)
-          if (WebHdfsDelegationTokenText.equals(tokenKind) ||
-            SWebHdfsDelegationTokenText.equals(tokenKind) ||
-            HdfsDelegationTokenText.equals(tokenKind)) {
+          if (WEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+            SWEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+            HDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind)) {
             hdfsToken = Some(token.encodeToUrlString)
           }
         }
@@ -455,9 +455,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
         val token = itr.next();
         val tokenKind = token.getKind
         logger.debug("Hadoop impersonation: IT kind: " + tokenKind.toString)
-        if (WebHdfsDelegationTokenText.equals(tokenKind) ||
-          SWebHdfsDelegationTokenText.equals(tokenKind) ||
-          HdfsDelegationTokenText.equals(tokenKind)) {
+        if (WEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+          SWEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+          HDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind)) {
           hdfsToken = Some(token.encodeToUrlString)
         }
       }
