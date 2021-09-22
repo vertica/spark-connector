@@ -225,7 +225,7 @@ This project contains a series of end-to-end tests. It also contains tests for c
 
 If you set the sparkVersion in build.sbt to 3.0.0, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
 
-Similarly, if you set the sparkVersion in build.sbt to 3.1.0, you will also need to use hadoop-hdfs version 3.3.0.
+Similarly, if you set the sparkVersion in build.sbt to 3.1.0, you will also need to use hadoop-hdfs version 3.3.1.
 
 If a change is made to one of those bottom-layer components (ie VerticaJdbcLayer, FileStoreLayer), integration tests should be included. Additionally, if a change is large and touches many components of the connector, integration tests should be included.
 

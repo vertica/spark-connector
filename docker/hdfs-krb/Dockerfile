@@ -42,8 +42,8 @@ RUN sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # Pseudo-Distributed Operation
-COPY ./hadoop/core-site.xml etc/hadoop/core-site.xml
-COPY ./hadoop/hdfs-site.xml etc/hadoop/hdfs-site.xml
+# COPY ./hadoop/core-site.xml etc/hadoop/core-site.xml
+# COPY ./hadoop/hdfs-site.xml etc/hadoop/hdfs-site.xml
 
 RUN echo "export JAVA_HOME=/usr/local/openjdk-8" >> /opt/hadoop/etc/hadoop/hadoop-env.sh
 RUN hdfs namenode -format

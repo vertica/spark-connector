@@ -24,6 +24,15 @@
     </property>
 
     <property>
+        <name>dfs.secondary.https.address</name>
+        <value>hdfs.example.com:50091</value>
+        <description>
+            The secondary namenode http server address and port.
+            If the port is 0 then the server will start on a free port.
+        </description>
+    </property>
+
+    <property>
       <name>dfs.datanode.address</name>
       <value>hdfs.example.com:50010</value>
       <description>
@@ -42,6 +51,15 @@
     </property>
 
     <property>
+        <name>dfs.datanode.https.address</name>
+        <value>hdfs.example.com:50076</value>
+        <description>
+            The datanode http server address and port.
+            If the port is 0 then the server will start on a free port.
+        </description>
+    </property>
+
+    <property>
       <name>dfs.data.transfer.protection</name>
       <value>authentication</value>
     </property>
@@ -56,17 +74,40 @@
     </property>
 
     <property>
-        <name>dfs.http.policy</name>
-        <value>HTTPS_ONLY</value>
+        <name>dfs.https.address</name>
+        <value>hdfs.example.com:50071</value>
+        <description>
+            The address and the base port where the dfs namenode web ui will listen on.
+            If the port is 0 then the server will start on a free port.
+        </description>
     </property>
 
     <property>
-      <name>dfs.namenode.https-address</name>
-      <value>hdfs.example.com:50070</value>
-      <description>
-        The address and the base port where the dfs namenode web ui will listen on.
-        If the port is 0 then the server will start on a free port.
-      </description>
+        <name>dfs.namenode.http-address</name>
+        <value>hdfs.example.com:50070</value>
+        <description>
+            The address and the base port where the dfs namenode web ui will listen on.
+            If the port is 0 then the server will start on a free port.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.namenode.https-address</name>
+        <value>hdfs.example.com:50071</value>
+        <description>
+            The address and the base port where the dfs namenode web ui will listen on.
+            If the port is 0 then the server will start on a free port.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.http.policy</name>
+        <value>HTTP_AND_HTTPS</value>
+    </property>
+
+    <property>
+        <name>ignore.secure.ports.for.testing</name>
+        <value>true</value>
     </property>
 
     <property>

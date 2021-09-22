@@ -9,9 +9,9 @@ What you will need:
 - An S3 bucket configured to use either A) access key ID + secret access key or B) IAM roles for authentication
 
 To use the connector with S3, you will need to add the `hadoop-aws` dependency to your project. Here is how it is added for an sbt project:
-```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"```
+```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.1"```
 
-Some features may work with older versions of hadoop-aws, but we only support 3.3.0.
+Some features may work with older versions of hadoop-aws, but we only support 3.3.1.
 
 You **must** also use Spark pre-built with **user-provided Apache Hadoop**. To download Spark, [go here](https://spark.apache.org/downloads.html). Be sure to select package type "Pre-built with user-provided Apache Hadoop".
 
@@ -23,7 +23,7 @@ Note: All instructions here are for MacOS or Linux users.
 First, you will need to decompress the Spark tar file and Hadoop tar file:
 ```
 tar xvf spark-3.0.2-bin-without-hadoop.tgz
-tar xvf hadoop-3.3.0.tar.gz
+tar xvf hadoop-3.3.1.tar.gz
 ```
 
 Move the resulting folder to /opt/spark/:
@@ -39,7 +39,7 @@ Next, set the JAVA_HOME environment variable:
 `export JAVA_HOME=/usr/lib/jvm/jre-11-openjdk`
 
 Now, edit spark-env.sh and point SPARK_DIST_CLASSPATH to the Hadoop folder you extracted earlier. For example, if you extracted it to /myhadoop, you should add the following line:
-`export SPARK_DIST_CLASSPATH=$(/myhadoop/hadoop-3.3.0/bin/hadoop classpath)`
+`export SPARK_DIST_CLASSPATH=$(/myhadoop/hadoop-3.3.1/bin/hadoop classpath)`
 See [Spark's documentation](http://spark.apache.org/docs/latest/hadoop-provided.html) for more information.
 
 Finally, set the SPARK_HOME environment variable:
@@ -53,4 +53,4 @@ export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 # Troubleshooting
 If you see this error:
 ```java.lang.NoClassDefFoundError: org/apache/hadoop/fs/StreamCapabilities```
-it is like because you are not using Spark with Hadoop 3.3.0 and hadoop-aws 3.3.0.
+it is like because you are not using Spark with Hadoop 3.3.1 and hadoop-aws 3.3.1.
