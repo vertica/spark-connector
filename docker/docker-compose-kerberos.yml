@@ -12,6 +12,8 @@ services:
     stdin_open: true
     env_file:
       - "krb.env"
+    ports:
+      - "5050:5050"
   kdc:
     build: ./kdc
     container_name: "kdc"
@@ -55,7 +57,9 @@ services:
       - "50010:50010"
       - "50020:50020"
       - "50070:50070"
+      - "50071:50071"
       - "50075:50075"
+      - "50076:50076"
     stdin_open: true
     tty: true
     volumes:

@@ -20,8 +20,8 @@ echo "[logging]
  .example.com = $REALM
  example.com = $REALM" | tee /etc/krb5.conf
 
-cp /etc/hadoop/conf/* /hadoop-3.3.0/etc/hadoop/
+cp /etc/hadoop/conf/* /hadoop-3.3.1/etc/hadoop/
 
-keytool -import -file /hadoop-3.3.0/etc/hadoop/hdfs.cert -alias hdfs -keystore cacerts.jks -no-prompt -storepass password
+keytool -import -file /hadoop-3.3.1/etc/hadoop/hdfs.cert -alias hdfs -keystore cacerts.jks -no-prompt -storepass password
 
 echo 'user1' | kinit user1
