@@ -51,7 +51,7 @@ Change your working directory to one in `spark-connector/examples/[EXAMPLE]`, su
 sbt run
 ```
 
-Alternatively, you can run the demo example from the `/spark-connector/examples/demo` directory, by running on of the various cases:
+If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run:
 ```
 sbt "run [CASE]"
 ```
@@ -69,9 +69,9 @@ Cases to choose from:
 
 ### Running Application in Spark Cluster
 
-Note: this method is required for the S3-example.
+**Note**: _This method is required for the S3-example._
 
-In the example's root directory (`spark-connector/examples/[EXAMPLE]`) run::
+In the example's root directory (`spark-connector/examples/[EXAMPLE]`) run:
 
 ```
 sbt assembly
@@ -117,9 +117,9 @@ assembly / assemblyShadeRules := {
 
 ## Output file
 
-To only see the example output without sbt logs, you can write the result to a file using: 
+To only see the example output without sbt logs, you can write the result to a file by appending the following to any run command: 
 ```
-sbt "run [CASE]" > output.txt
+[run command] > output.txt
 ```
 
 You may then view this file using the command `cat output.txt`.

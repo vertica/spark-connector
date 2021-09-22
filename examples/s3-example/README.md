@@ -47,7 +47,6 @@ aws_region="<your region>"
 
 # Running the example
 
-Following are the same steps as described in [Running Application in Spark Cluster](/examples/README.md#running-application-in-spark-cluster).
 ## Build Assembly
 
 In the project's root directory `spark-connector/examples/s3-example` run:
