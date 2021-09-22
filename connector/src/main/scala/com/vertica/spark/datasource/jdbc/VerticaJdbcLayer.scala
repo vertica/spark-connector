@@ -353,8 +353,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
             for {
-              nameNodeAddress <- Option(hadoopConf.get("dfs.namenode.http-address"))
-                .orElse(Option(hadoopConf.get("dfs.namenode.https-address")))
+              nameNodeAddress <- Option(hadoopConf.get("dfs.namenode.https-address"))
+                .orElse(Option(hadoopConf.get("dfs.namenode.http-address")))
                 .toRight(MissingNameNodeAddressError())
               _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
