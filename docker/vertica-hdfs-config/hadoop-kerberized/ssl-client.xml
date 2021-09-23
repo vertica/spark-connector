@@ -1,0 +1,11 @@
+<configuration>
+    <property>
+        <name>ssl.client.truststore.location</name>
+        <value>/cacerts.jks</value>
+    </property>
+
+    <property>
+        <name>ssl.client.truststore.password</name>
+        <value>password</value>
+    </property>
+</configuration>

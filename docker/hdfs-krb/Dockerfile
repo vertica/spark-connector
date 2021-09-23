@@ -14,8 +14,8 @@ RUN mkdir -p /opt
 WORKDIR /opt
 
 # Install Hadoop
-RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-2.10.1/hadoop-2.10.1.tar.gz -s -o - | tar -xzf -
-RUN mv hadoop-2.10.1 hadoop
+RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz -s -o - | tar -xzf -
+RUN mv hadoop-3.3.1 hadoop
 
 # Setup
 WORKDIR /opt/hadoop
@@ -42,10 +42,12 @@ RUN sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd
 RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
 
 # Pseudo-Distributed Operation
-COPY ./hadoop/core-site.xml etc/hadoop/core-site.xml
-COPY ./hadoop/hdfs-site.xml etc/hadoop/hdfs-site.xml
+RUN echo "export JAVA_HOME=/usr/local/openjdk-8" >> /opt/hadoop/etc/hadoop/hadoop-env.sh
 RUN hdfs namenode -format
 
+ENV HDFS_NAMENODE_USER root
+ENV HDFS_DATANODE_USER root
+ENV HDFS_SECONDARYNAMENODE_USER root
 
 # SSH
 EXPOSE 22

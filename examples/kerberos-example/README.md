@@ -4,7 +4,25 @@ Make sure you have Docker and SBT installed, and that Docker client is running. 
 
 First, clone the connector repository as mentioned in [examples](/examples/README.md).
 
-## Build Assembly
+## Build Connector Assembly
+Change directory to the `connector` folder of the project:
+```
+cd /spark-connector/connector
+```
+
+Build the connector's assembly jar:
+```
+sbt assembly
+```
+
+## Add Connector Assembly as a Dependency to the Example Project
+Create a `lib` folder under the `kerberos-example` folder and copy the assembled connector jar to it.
+```
+mkdir /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.2.jar /spark-connector/examples/kerberos-example/lib
+```
+
+## Build Example Assembly
 
 Change directory to the kerberos example project `examples/kerberos-example`.
 
@@ -21,6 +39,7 @@ In the docker folder (`spark-connector/docker`), run this command to start the v
 ```
 ./sandbox-clientenv.sh kerberos
 ```
+
 
 On Windows, you can run the equivalent batch file:
 
