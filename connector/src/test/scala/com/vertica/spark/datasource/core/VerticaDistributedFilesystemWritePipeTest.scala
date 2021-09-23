@@ -614,6 +614,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val config = createWriteConfig().copy(createExternalTable = Some(ExistingData), fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"), tablename = TableName("testtable", None), schema = new StructType())
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.getGlobStatus _).expects("hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet").returning(Right(Array[String]("example.parquet")))
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.query _).expects("SELECT INFER_EXTERNAL_TABLE_DDL(\'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\',\'testtable\')",*).returning(Right(getStringResultSet))

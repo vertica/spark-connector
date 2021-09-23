@@ -436,24 +436,27 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String] = {
-
     val indexOfOpeningParantheses = createExternalTableStmt.indexOf("(")
     val indexOfClosingParantheses = createExternalTableStmt.indexOf(")")
 
     val schemaString = createExternalTableStmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
+
     val schemaList = schemaString.split(",").toList
 
-    val updatedSchema= schemaList.map(col => {
+    val updatedSchema: String = schemaList.map(col => {
       if(col.contains("UNKNOWN")) {
-        val indexOfSpace = col.indexOf(" ")
-        val colName = col.substring(0, indexOfSpace)
-        breakable{
-          schema.foreach(field => {
-            if(field.name == colName) {
-              colName + field.dataType
-              break
-            }
-          })
+        val indexOfFirstDoubleQuote = col.indexOf("\"")
+        val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
+        val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
+        val fieldType = schema.collect {
+          case field if(addDoubleQuotes(field.name) == colName) => field.dataType.simpleString
+        }
+        if(fieldType.nonEmpty) {
+          colName + " " + fieldType.head
+        }
+        else {
+          Left(UnknownColumnTypesError)
+          col
         }
       }
       else { col }

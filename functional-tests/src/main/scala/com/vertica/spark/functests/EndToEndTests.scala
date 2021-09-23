@@ -1516,7 +1516,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
-  def checkErrorType[T](ex: Option[Exception]) = {
+   def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
       case None => fail("Expected error.")
       case Some(exception) =>
@@ -3471,7 +3471,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "create an external table with existing data in FS" in {
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
@@ -3494,7 +3493,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "create an external table with existing data in FS and multiple data types" in {
-    // Write data to parquet
     val tableName = "existingData"
     val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
     val schema = new StructType(Array(
@@ -3526,6 +3524,50 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
+  it should "create an external table with existing data and non-empty schema" in {
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "use provided schema when creating an external table with partition columns" in {
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val data = (1 to 20).map(x => Row(x, x.toFloat))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.count() == 20)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
   it should "fail to create an external table with existing data and non-empty DF" in {
     val tableName = "existingData"
     val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
@@ -3543,7 +3585,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     finally {
-      //checkErrorType[NonEmptyDataFrameError](failure)
       failure match {
         case Some(exception) => exception match {
           case e: SparkException =>

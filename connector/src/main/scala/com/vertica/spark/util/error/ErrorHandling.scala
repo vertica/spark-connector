@@ -472,6 +472,9 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class NonEmptyDataFrameError() extends ConnectorError {
   override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
 }
+case class UnknownColumnTypesError() extends ConnectorError {
+  override def getFullContext: String = "Incorrect partition column name provided in schema. Please ensure column names match in the schema provided and parquet data."
+}
 case class InferExternalTableSchemaError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to get schema for external table using INFER_EXTERNAL_TABLE_DDL."
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)

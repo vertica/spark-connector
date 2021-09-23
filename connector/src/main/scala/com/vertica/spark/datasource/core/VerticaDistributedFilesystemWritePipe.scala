@@ -217,8 +217,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def inferExternalTableSchema(): ConnectorResult[String] = {
     // Create url string, escape any ' characters as those surround the url
     val tableName =  config.tablename.getFullTableName.replaceAll("\"","")
-    val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-    val inferStatement = "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+    val inferStatement = fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
+      case Right(list) =>
+        if(list.size > 0) {
+          val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+        }
+        else {
+          val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+        }
+      case Left(err) => ""
+    }
+
     logger.info("The infer statement is: " + inferStatement)
 
     jdbcLayer.query(inferStatement) match {
@@ -231,11 +242,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           if(config.schema.nonEmpty) {
             logger.info("Inferring schema from dataframe")
             val partitionedColStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
-            val stringStmt = partitionedColStatement match {
-              case Right(stmt) => stmt
-              case Left(err) => err
-            }
-            logger.info("The create external table statement is: " + stringStmt)
             partitionedColStatement
           }
           else {

@@ -75,6 +75,7 @@ trait FileStoreLayerInterface {
   def createFile(filename: String) : ConnectorResult[Unit]
   def createDir(filename: String, permission: String) : ConnectorResult[Unit]
   def fileExists(filename: String) : ConnectorResult[Boolean]
+  def getGlobStatus(pattern: String): ConnectorResult[Seq[String]]
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
   def getAWSOptions: AWSOptions
@@ -459,6 +460,14 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       case Some(token) => Right(token)
       case None => Left(MissingHDFSImpersonationTokenError(user, fileStoreConfig.address))
     }
+  }
+
+  override def getGlobStatus(pattern: String): ConnectorResult[Seq[String]] = {
+    this.useFileSystem(pattern, (fs, path) =>
+      Try {fs.globStatus(path)} match {
+        case Success(fileStatuses) => Right(fileStatuses.map(_.getPath.toString).toSeq)
+        case Failure(exception) => Left(FileListError(exception).context("Error getting file list from HDFS."))
+      })
   }
 
   override def getAWSOptions: AWSOptions = {

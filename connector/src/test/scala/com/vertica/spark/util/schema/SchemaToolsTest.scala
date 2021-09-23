@@ -536,4 +536,21 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       case Right(str) => assert(str == "(\"col1\",\"col2\")")
     }
   }
+
+  it should "Return an updated create external table statement" in {
+
+    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", StringType, nullable = true)))
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" UNKNOWN" +
+      ") as copy from \'/data/\' parquet"
+    val schemaTools = new SchemaTools
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+      case Left(err) =>
+        fail(err.getFullContext)
+      case Right(str) =>
+        assert(str == "create external table \"sales\"(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
+    }
+  }
 }
