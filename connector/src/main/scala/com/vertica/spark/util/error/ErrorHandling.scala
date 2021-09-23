@@ -470,50 +470,13 @@ case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
 case class TableNotEnoughRowsError() extends SchemaError {
   def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
 }
-case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
-  override def getFullContext: String = "Could not retrieve an impersonation token for the desginated user " + username + " on address: " + address
-}
-case class KerberosNotEnabledInHadoopConf() extends ConnectorError {
-  override def getFullContext: String = "Trying to use Kerberos, but did not detect hadoop configuration with Kerberos enabled."
-}
-case class NoSparkSessionFound() extends ConnectorError {
-  override def getFullContext: String = "Could not get spark session. " + invariantViolation
-}
-case class FileStoreThrownError(cause: Throwable) extends ConnectorError {
-  private val message = cause match {
-    case e: NoClassDefFoundError if e.getMessage.contains("StreamCapabilities") =>
-      "Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later."
-    case _ => "Error in communication with filestore. Check the 'staging_fs_url' parameter."
-  }
-
-  def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
-  override def getUserMessage: String = ErrorHandling.addUserFriendlyCause(this.message, cause)
-}
-case class MissingSparkSessionError() extends ConnectorError {
-  def getFullContext: String = "Fatal error: spark context did not exist"
-}
-case class LoadConfigMissingSparkSessionError() extends ConnectorError {
-  def getFullContext: String = "Fatal error while loading configuration: spark context did not exist"
-}
-case class V1ReplacementOption(oldParam: String, newParam: String) extends ConnectorError {
-  override def getFullContext: String = "Option '" + oldParam + "' is not longer supported, please use '" + newParam + "' instead."
-}
-case class CreateExternalTableMergeKey() extends ConnectorError {
-  override def getFullContext: String = "Options 'merge_key' and 'create_external_table' both specified, but are not compatible. Please specify one or the other."
-}
-case class CreateExternalTableAlreadyExistsError() extends ConnectorError {
-  override def getFullContext: String = "External table specified, but table already exists. Please specify overwrite mode to replace the existing table."
-}
-case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
-  private val message = "Failed to get column info of table for merge."
-  def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
-  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
-}
 case class NonEmptyDataFrameError() extends ConnectorError {
   override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
 }
 case class UnknownColumnTypesError() extends ConnectorError {
-  override def getFullContext: String = "Incorrect partition column name provided in schema. Please ensure column names match in the schema provided and parquet data."
+  def getFullContext: String = "The parquet data uses partition columns. " +
+    "Types of partition column cannot be determined from the data. " +
+    "Please provide a partial schema with the dataframe detailing the relevant partition columns."
 }
 case class InferExternalTableSchemaError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to get schema for external table using INFER_EXTERNAL_TABLE_DDL."

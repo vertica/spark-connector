@@ -144,7 +144,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".parquet"
     fileStoreLayer.openWriteParquetFile(filename)
-
   }
 
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
@@ -215,19 +214,14 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def inferExternalTableSchema(): ConnectorResult[String] = {
-    // Create url string, escape any ' characters as those surround the url
-    val tableName =  config.tablename.getFullTableName.replaceAll("\"","")
+    val tableName = config.tablename.getFullTableName.replaceAll("\"","")
     val inferStatement = fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
       case Right(list) =>
-        if(list.size > 0) {
-          val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
-        }
-        else {
-          val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
-          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
-        }
-      case Left(err) => ""
+        val url: String = if(list.nonEmpty) EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+                          else EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+        "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+
+      case Left(err) => err.getFullContext
     }
 
     logger.info("The infer statement is: " + inferStatement)
@@ -239,10 +233,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
 
-          if(config.schema.nonEmpty) {
+          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))) {
             logger.info("Inferring schema from dataframe")
-            val partitionedColStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
-            partitionedColStatement
+            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
           }
           else {
             logger.info("Inferring schema from parquet data")

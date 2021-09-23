@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError, NonEmptyDataFrameError}
+import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
@@ -1516,7 +1516,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
-   def checkErrorType[T](ex: Option[Exception]) = {
+  def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
       case None => fail("Expected error.")
       case Some(exception) =>
@@ -3561,6 +3561,61 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(readDf.count() == 20)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+  it should "fail to create external table if partial schema does not match partition columns" in {
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val data = (1 to 20).map(x => Row(x, x.toFloat))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+
+    val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+    try {
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()    }
+    catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+
+    checkErrorType[UnknownColumnTypesError](failure)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "fail to create external table data is partitioned and no schema provided" in {
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val data = (1 to 20).map(x => Row(x, x.toFloat))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+
+    val schema2 = new StructType()
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+    try {
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()    }
+    catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+
+    checkErrorType[UnknownColumnTypesError](failure)
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table

@@ -40,11 +40,10 @@ object Main  {
 
     try {
       val schema2 = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-      // Create a row with element '77'
-      val data = (1 to 20).map(x => Row(x, x-1f))
+      val data = (1 to 20).map(x => Row(x, x - 1f))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      df2.write.parquet("webhdfs://hdfs:50070/data/dftest.parquet")
+      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/dftest.parquet")
 
 
       val tableName = "dftest"

@@ -455,16 +455,24 @@ class SchemaTools extends SchemaToolsInterface {
           colName + " " + fieldType.head
         }
         else {
-          Left(UnknownColumnTypesError)
           col
         }
       }
       else { col }
     }).mkString(",")
 
-    val updatedCreateTableStmt = createExternalTableStmt.replace(schemaString, updatedSchema)
-    logger.info("Edited create table statement: " + updatedCreateTableStmt)
-    Right(updatedCreateTableStmt)
+    if(updatedSchema.contains("UNKNOWN")) {
+      Left(UnknownColumnTypesError().context("UNKNOWN partitioned column data type."))
+    }
+    else {
+      val updatedCreateTableStmt = createExternalTableStmt.replace(schemaString, updatedSchema)
+      logger.info("Edited create table statement: " + updatedCreateTableStmt)
+      Right(updatedCreateTableStmt)
+    }
   }
 }
 
+/*
+logger.warn("The parquet data uses partition columns. " +
+"Types of partition column cannot be determined from the data. " +
+"Please provide a partial schema with the dataframe detailing the relevant partition columns.")*/
