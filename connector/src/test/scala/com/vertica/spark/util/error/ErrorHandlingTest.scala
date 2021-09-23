@@ -209,6 +209,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(MissingAWSAccessKeyId())
       checkErrReturnsMessages(LoadConfigMissingSparkSessionError())
       checkErrReturnsMessages(NonEmptyDataFrameError())
+      checkErrReturnsMessages(UnknownColumnTypesError())
       checkErrReturnsMessages(CreateExternalTableAlreadyExistsError())
       checkErrReturnsMessages(CreateExternalTableMergeKey())
 

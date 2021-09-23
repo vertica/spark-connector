@@ -217,8 +217,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val tableName = config.tablename.getFullTableName.replaceAll("\"","")
     val inferStatement = fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
       case Right(list) =>
-        val url: String = if(list.nonEmpty) EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-                          else EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+        val url: String =
+        if(list.nonEmpty) {
+          EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+        }
+        else {
+          EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+        }
         "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
 
       case Left(err) => err.getFullContext

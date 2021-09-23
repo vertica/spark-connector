@@ -448,6 +448,7 @@ class SchemaTools extends SchemaToolsInterface {
         val indexOfFirstDoubleQuote = col.indexOf("\"")
         val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
         val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
+
         val fieldType = schema.collect {
           case field if(addDoubleQuotes(field.name) == colName) => field.dataType.simpleString
         }
@@ -471,8 +472,3 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 }
-
-/*
-logger.warn("The parquet data uses partition columns. " +
-"Types of partition column cannot be determined from the data. " +
-"Please provide a partial schema with the dataframe detailing the relevant partition columns.")*/
