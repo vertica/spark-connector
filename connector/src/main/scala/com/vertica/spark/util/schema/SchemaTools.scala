@@ -123,6 +123,7 @@ trait SchemaToolsInterface {
 
 class SchemaTools extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
+  private val unknown - "UNKNOWN"
 
   private def addDoubleQuotes(str: String): String = {
     "\"" + str + "\""
@@ -444,7 +445,7 @@ class SchemaTools extends SchemaToolsInterface {
     val schemaList = schemaString.split(",").toList
 
     val updatedSchema: String = schemaList.map(col => {
-      if(col.contains("UNKNOWN")) {
+      if(col.contains(unknown)) {
         val indexOfFirstDoubleQuote = col.indexOf("\"")
         val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
         val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
@@ -462,8 +463,8 @@ class SchemaTools extends SchemaToolsInterface {
       else { col }
     }).mkString(",")
 
-    if(updatedSchema.contains("UNKNOWN")) {
-      Left(UnknownColumnTypesError().context("UNKNOWN partitioned column data type."))
+    if(updatedSchema.contains(unknown)) {
+      Left(UnknownColumnTypesError().context(unknown + " partitioned column data type."))
     }
     else {
       val updatedCreateTableStmt = createExternalTableStmt.replace(schemaString, updatedSchema)
