@@ -43,10 +43,10 @@ object Main  {
       val data = (1 to 20).map(x => Row(x, x - 1f))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/dftest.parquet")
+      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/3.1.1/dftest.parquet")
 
 
-      val tableName = "dftest"
+     /* val tableName = "dftest"
       // Define schema of a table with a single integer attribute
       val schema = new StructType()
 
@@ -56,7 +56,7 @@ object Main  {
       println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()*/
 
     } finally {
       spark.close()

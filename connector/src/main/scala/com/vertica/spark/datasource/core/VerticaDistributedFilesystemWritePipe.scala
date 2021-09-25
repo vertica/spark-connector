@@ -215,18 +215,27 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def inferExternalTableSchema(): ConnectorResult[String] = {
     val tableName = config.tablename.getFullTableName.replaceAll("\"","")
-    val inferStatement = fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
-      case Right(list) =>
-        val url: String =
-        if(list.nonEmpty) {
-          EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
-        }
-        else {
-          EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
-        }
-        "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
 
-      case Left(err) => err.getFullContext
+    val inferStatement =
+    if(config.fileStoreConfig.externalTableAddress.contains("hdfs")) {
+      fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
+        case Right(list) =>
+          val url: String =
+            if(list.nonEmpty) {
+              EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+            }
+            else {
+              EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+            }
+          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+
+        case Left(err) => err.getFullContext
+      }
+    }
+    else {
+      val url: String = EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}")
+      "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+
     }
 
     logger.info("The infer statement is: " + inferStatement)
@@ -238,7 +247,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
 
-          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))) {
+          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")) ||
+            inferStatement.contains("3.1.1")) {
             logger.info("Inferring schema from dataframe")
             schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
           }

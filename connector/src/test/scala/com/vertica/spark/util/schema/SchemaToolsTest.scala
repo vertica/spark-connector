@@ -553,4 +553,19 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         assert(str == "create external table \"sales\"(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
     }
   }
+
+  it should "Return an error if partial schema doesn't match partitioned columns" in {
+
+    val schema = new StructType(Array(StructField("foo", DateType, nullable = true), StructField("bar", StringType, nullable = true)))
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" UNKNOWN" +
+      ") as copy from \'/data/\' parquet"
+    val schemaTools = new SchemaTools
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+      case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
+      case Right(str) => fail
+    }
+  }
 }

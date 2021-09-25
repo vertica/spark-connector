@@ -55,7 +55,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-  it should "read data from Vertica" in {
+/*  it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -1514,7 +1514,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
-  }
+  }*/
 
   def checkErrorType[T](ex: Option[Exception]) = {
     ex match {
@@ -1536,7 +1536,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
-
+/*
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -3345,7 +3345,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
-  }
+  }*/
 
   it should "create an external table" in {
     val tableName = "externalWriteTest"
@@ -3546,7 +3546,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "use provided schema when creating an external table with partition columns" in {
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
@@ -3567,15 +3566,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir("webhdfs://hdfs:50070/data/")
     fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
+
   it should "fail to create external table if partial schema does not match partition columns" in {
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
-    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val filePath = "src/main/resources/partitioned/3.1.1/test/col1=?/*.parquet"
+/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)*/
+    //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
@@ -3591,19 +3590,18 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+/*   fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")*/
   }
 
   it should "fail to create external table data is partitioned and no schema provided" in {
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
-    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val filePath = "/src/main/resources/partitioned/3.1.1/test/col1=?/*.parquet"
+/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)*/
+    //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType()
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
@@ -3659,7 +3657,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   }
 
-  it should "Merge with existing table in Vertica" in {
+/*  it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
     val n = 2
@@ -3914,6 +3912,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       df_as3, col("df1.a") === col("df3.b"), "inner")
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
-  }
+  }*/
 }
 

@@ -123,7 +123,7 @@ trait SchemaToolsInterface {
 
 class SchemaTools extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
-  private val unknown - "UNKNOWN"
+  private val unknown = "UNKNOWN"
 
   private def addDoubleQuotes(str: String): String = {
     "\"" + str + "\""
@@ -437,11 +437,10 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String] = {
+    println("The passed in create external table statement is: \n" + createExternalTableStmt)
     val indexOfOpeningParantheses = createExternalTableStmt.indexOf("(")
     val indexOfClosingParantheses = createExternalTableStmt.indexOf(")")
-
     val schemaString = createExternalTableStmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
-
     val schemaList = schemaString.split(",").toList
 
     val updatedSchema: String = schemaList.map(col => {
