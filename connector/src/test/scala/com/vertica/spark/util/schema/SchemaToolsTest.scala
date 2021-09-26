@@ -409,7 +409,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 4)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.size == 4
           case _ => false
         })
@@ -426,18 +426,18 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.size == 2
           case _ => false
         })
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.head match {
             case MissingSqlConversionError(_, _) => true
             case _ => false
           }
           case _ => false
         })
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.tail.head match {
             case MissingSqlConversionError(_, _) => true
             case _ => false
@@ -456,7 +456,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        err.getError match {
+        err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
             "Could not find conversion for unsupported SQL type: invalid-type" +
             "\nSQL type value: 50000"))
@@ -469,7 +469,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
     (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
       case Left(err) =>
-        err.getError match {
+        err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
             "Could not find conversion for unsupported Spark type: CharType"))
           case _ => false
@@ -485,7 +485,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case JdbcSchemaError(_) => true
           case _ => false
         })

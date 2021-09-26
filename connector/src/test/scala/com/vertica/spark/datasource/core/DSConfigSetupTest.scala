@@ -166,7 +166,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
       assert(errSeq.size == 1)
-      assert(errSeq.map(_.getError).contains(SchemaDiscoveryError()))
+      assert(errSeq.map(_.getUnderlyingError).contains(SchemaDiscoveryError()))
     } finally {
       spark.close()
     }
@@ -231,8 +231,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
       assert(errSeq.size == 2)
-      assert(errSeq.map(_.getError).contains(InvalidPortError()))
-      assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
+      assert(errSeq.map(_.getUnderlyingError).contains(InvalidPortError()))
+      assert(errSeq.map(_.getUnderlyingError).contains(InvalidFailedRowsTolerance()))
     } finally {
       spark.close()
     }
@@ -264,8 +264,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       val errSeq = parseErrorInitConfig(opts, dsWriteConfigSetup)
       assert(errSeq.size == 2)
-      assert(errSeq.map(_.getError).contains(InvalidFailedRowsTolerance()))
-      assert(errSeq.map(_.getError).contains(V1ReplacementOption("hdfs_url","staging_fs_url")))
+      assert(errSeq.map(_.getUnderlyingError).contains(InvalidFailedRowsTolerance()))
+      assert(errSeq.map(_.getUnderlyingError).contains(V1ReplacementOption("hdfs_url","staging_fs_url")))
 
     } finally {
       spark.close()
@@ -297,7 +297,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       assert(errSeq.size == 3)
       assert(errSeq.contains(InvalidPortError()))
       assert(errSeq.contains(InvalidPartitionCountError()))
-      assert(errSeq.map(_.getError).contains(V1ReplacementOption("numpartitions","num_partitions")))
+      assert(errSeq.map(_.getUnderlyingError).contains(V1ReplacementOption("numpartitions","num_partitions")))
     } finally {
       spark.close()
     }

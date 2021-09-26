@@ -33,7 +33,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
   val tablename = "test_table"
 
-  private val spark = SparkSession.builder()
+  private val _ = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
@@ -83,7 +83,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   it should "Insert integer data with param" in {
     jdbcLayer.execute("CREATE TABLE " + tablename + "(vendor_key integer);")
 
-    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerIntParam(123)))
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(JdbcLayerIntParam(123)))
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
       case Right(rs) =>
@@ -111,16 +111,13 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
   it should "Insert string data to table with param" in {
     jdbcLayer.execute("CREATE TABLE " + tablename + "(name varchar(64));")
 
-    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(new JdbcLayerStringParam("abc123")))
+    jdbcLayer.execute("INSERT INTO " + tablename + " VALUES(?);", Seq(JdbcLayerStringParam("abc123")))
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
+      case Right(rs) =>
         assert(rs.next())
         assert(rs.getString(1) == "abc123")
-      }
-      case Left(err) => {
-        fail(err.getFullContext)
-      }
+      case Left(err) => fail(err.getFullContext)
     }
   }
 
@@ -130,29 +127,24 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123', 5);")
 
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
+      case Right(rs) =>
         assert(rs.next())
         assert(rs.getString(1) == "abc123")
         assert(rs.getInt(2) == 5)
-      }
-      case Left(err) => {
-        fail(err.getFullContext)
-      }
+      case Left(err) => fail(err.getFullContext)
     }
   }
 
   it should "Fail to load results from a table that doesn't exist" in {
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
-        assert(false)
-      }
-      case Left(err) => {
-        println(err.getError.getFullContext)
-        assert(err.getError match {
+      case Right(_) =>
+        fail
+      case Left(err) =>
+        println(err.getUnderlyingError.getFullContext)
+        assert(err.getUnderlyingError match {
           case SyntaxError(_) => true
           case _ => false
         })
-      }
     }
   }
 
@@ -161,26 +153,24 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     jdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);")
 
     jdbcLayer.execute("INSERT INTO " + tablename + " VALUES('abc123');") match {
-      case Right(u) => assert(false) // should not succeed
-      case Left(err) => {
-        println(err.getError.getFullContext)
-        assert(err.getError match {
+      case Right(_) => fail // should not succeed
+      case Left(err) =>
+        println(err.getUnderlyingError.getFullContext)
+        assert(err.getUnderlyingError match {
           case DataError(_) => true
           case _ => false
         })
-      }
     }
   }
 
   it should "Fail to create a table with bad syntax" in {
     jdbcLayer.execute("CREATE TABLE " + tablename + ";") match {
-      case Right(u) => assert(false) // should not succeed
-      case Left(err) => {
-        assert(err.getError match {
+      case Right(_) => fail // should not succeed
+      case Left(err) =>
+        assert(err.getUnderlyingError match {
           case _: SyntaxError => true
           case _ => false
         })
-      }
     }
   }
 
@@ -189,14 +179,13 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
     val badJdbcLayer = new VerticaJdbcLayer(JDBCConfig(host = jdbcCfg.host, port = jdbcCfg.port, db = jdbcCfg.db + "-doesnotexist123asdf", BasicJdbcAuth(username = "test", password = "test"), tlsConfig))
 
     badJdbcLayer.execute("CREATE TABLE " + tablename + "(name integer);") match {
-      case Right(u) => assert(false) // should not succeed
-      case Left(err) => {
+      case Right(_) => fail // should not succeed
+      case Left(err) =>
         println(err.getFullContext)
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case _: ConnectionSqlError => true
           case _ => false
         })
-      }
     }
   }
 

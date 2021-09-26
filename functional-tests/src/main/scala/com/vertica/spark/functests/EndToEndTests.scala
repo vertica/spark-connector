@@ -35,7 +35,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
-  val fsConfig= FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
+  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
   val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()
@@ -55,7 +55,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-/*  it should "read data from Vertica" in {
+  /*
+  it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -1023,7 +1024,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
-    if(!fsLayer.getFileList(fsConfig.address).right.get.isEmpty) {
+    if(fsLayer.getFileList(fsConfig.address).right.get.nonEmpty) {
       fsLayer.removeDir(fsConfig.address)
       // Need to recreate the root directory for the afterEach assertion check
       fsLayer.createDir(fsConfig.address, "777")
@@ -1219,7 +1220,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -1254,7 +1255,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -1514,29 +1515,32 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
-  }*/
+  }
+  */
 
-  def checkErrorType[T](ex: Option[Exception]) = {
+  def checkErrorType(ex: Option[Exception], errTypeHandler: ConnectorError => Boolean): Unit = {
     ex match {
       case None => fail("Expected error.")
       case Some(exception) =>
-        exception match {
+        val err: ConnectorError = exception match {
           case e: SparkException =>
             assert(e.getCause.isInstanceOf[ConnectorException])
-            val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
-
-            assert(err.isInstanceOf[T] ||
-              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+            exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error.getUnderlyingError
 
           case e: ConnectorException =>
-            val err = e.error
+            e.error.getUnderlyingError
 
-            assert(err.isInstanceOf[T] ||
-              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+          case _ => fail("Exception type was neither SparkException nor ConnectorException.")
+        }
+
+        if (!errTypeHandler(err)) {
+          fail("Error type did not match expected. Actual error: " + err.getFullContext)
         }
     }
   }
-/*
+
+  /*
+
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
     val dbschema = "public"
@@ -1558,7 +1562,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
 
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1657,7 +1664,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1699,7 +1709,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1745,7 +1758,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[ViewExistsError](failure)
+    checkErrorType(failure, {
+      case ViewExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1984,7 +2000,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[ConnectionSqlError](failure)
+    checkErrorType(failure, {
+      case ConnectionSqlError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2075,7 +2094,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2106,7 +2128,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2186,7 +2211,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -2350,7 +2375,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case TempTableExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2672,7 +2700,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case TempTableExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2703,7 +2734,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case TempTableExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2731,7 +2765,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // get prev count
     var countold = 0
     val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    var rs = stmt.executeQuery(query)
+    val rs = stmt.executeQuery(query)
     if (rs.next) { countold = rs.getInt("cnt") }
 
     // S2V append
@@ -2755,7 +2789,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -2824,7 +2858,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2864,7 +2901,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2900,7 +2940,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -3156,7 +3199,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CreateTableError](failure)
+    checkErrorType(failure, {
+      case CreateTableError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
     TestUtils.dropTable(conn, "peopleTable")
   }
@@ -3188,7 +3234,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CreateTableError](failure)
+    checkErrorType(failure, {
+      case CreateTableError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3223,7 +3272,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3257,7 +3309,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3345,7 +3400,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
     assert ( rowsLoaded == numDfRows )
     TestUtils.dropTable(conn, tableName)
-  }*/
+  }
 
   it should "create an external table" in {
     val tableName = "externalWriteTest"
@@ -3567,13 +3622,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
+   */
+
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "src/main/resources/partitioned/3.1.1/test/col1=?/*.parquet"
-/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)*/
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
@@ -3581,26 +3638,30 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
     try {
-      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()    }
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    }
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
 
-    checkErrorType[UnknownColumnTypesError](failure)
+    checkErrorType(failure, {
+      case UnknownColumnTypesError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-/*   fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")*/
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
   it should "fail to create external table data is partitioned and no schema provided" in {
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "/src/main/resources/partitioned/3.1.1/test/col1=?/*.parquet"
-/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)*/
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType()
@@ -3608,12 +3669,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     var failure: Option[Exception] = None
     try {
-      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()    }
-    catch {
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    } catch {
       case e: java.lang.Exception => failure = Some(e)
     }
 
-    checkErrorType[UnknownColumnTypesError](failure)
+    checkErrorType(failure, {
+      case UnknownColumnTypesError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
@@ -3644,8 +3708,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
             print("The cause is: " + e.getCause)
             assert(e.getCause.isInstanceOf[SparkException])
             val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
-            assert(err.isInstanceOf[NonEmptyDataFrameError] ||
-              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[NonEmptyDataFrameError]))
+            assert(err.getUnderlyingError match {
+              case NonEmptyDataFrameError() => true
+              case _ => false
+            })
         }
         case None => fail
       }
@@ -3657,7 +3723,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   }
 
-/*  it should "Merge with existing table in Vertica" in {
+  /*
+  it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
     val n = 2
@@ -3912,6 +3979,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       df_as3, col("df1.a") === col("df3.b"), "inner")
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
-  }*/
+  }
+
+   */
 }
 

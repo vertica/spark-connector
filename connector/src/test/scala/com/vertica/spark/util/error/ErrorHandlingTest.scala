@@ -87,14 +87,14 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "allow downcasting to the TestError type" in {
-    assert(addContextA().getError match {
+    assert(addContextA().getUnderlyingError match {
       case _: TestError => true
       case _ => false
     })
   }
 
   it should "allow downcasting to the more specific MyError type" in {
-    assert(addContextA().getError match {
+    assert(addContextA().getUnderlyingError match {
       case MyError() => true
       case _ => false
     })
@@ -104,7 +104,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     try {
       throw new ConnectorException(addContextA())
     } catch {
-      case e: ConnectorException => assert(e.error.getError match {
+      case e: ConnectorException => assert(e.error.getUnderlyingError match {
         case MyError() => true
         case _ => false
       })
@@ -136,7 +136,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "still allow accessing the underlying error" in {
-    addContextC().getError match {
+    addContextC().getUnderlyingError match {
       case InterceptError(err) => assert(err.getFullContext ==
         "Failure when calling addContextA\n" +
         "Failure when calling addContextB\n" +

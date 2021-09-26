@@ -31,15 +31,15 @@ trait ConnectorError {
   def getFullContext: String
 
   // Get the underlying error object. This can be used to determine what kind of error occurred.
-  def getError: ConnectorError = this
+  def getUnderlyingError: ConnectorError = this
 
   // Gets a user-friendly error message.
   def getUserMessage: String = this.getFullContext
 }
 
-case class ContextError(ctxt: String, error: ConnectorError) extends ConnectorError {
+case class ContextError(ctxt: String, private val error: ConnectorError) extends ConnectorError {
   def getFullContext: String = this.ctxt + "\n" + error.getFullContext
-  override def getError: ConnectorError = this.error.getError
+  override def getUnderlyingError: ConnectorError = this.error.getUnderlyingError
   override def getUserMessage: String = this.error.getUserMessage
 }
 

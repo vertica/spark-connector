@@ -181,7 +181,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     pipe.doPreWriteSteps() match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case SchemaConversionError(_) => true
         case _ => false
       })
@@ -254,7 +254,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     pipe.doPreWriteSteps() match {
-      case Left(err) => assert(err.getError == ViewExistsError())
+      case Left(err) => assert(err.getUnderlyingError == ViewExistsError())
       case Right(_) => fail
     }
   }
@@ -304,7 +304,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.startPartitionWrite(uniqueId) match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case OpenWriteError(_) => true
         case _ => false
       })
@@ -396,7 +396,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.commit() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case CommitError(_) => true
         case _ => false
       })
@@ -517,7 +517,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.commit() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError == FaultToleranceTestFail())
+      case Left(err) => assert(err.getUnderlyingError == FaultToleranceTestFail())
     }
   }
 

@@ -13,7 +13,7 @@
 
 package com.vertica.spark.functests
 
-import java.sql.{Connection, Timestamp}
+import java.sql.Connection
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types._
 import org.scalatest.BeforeAndAfterAll
 
@@ -45,7 +44,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
   private val schema = df.schema
   private val perms = "777"
 
-  val dirTestCfg = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
+  val dirTestCfg: FileStoreConfig = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
   val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
 
@@ -207,15 +206,12 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
     // Verify proper copy of data
     var results = List[Int]()
     jdbcLayer.query("SELECT * FROM " + tablename + ";") match {
-      case Right(rs) => {
-        for(i <- 1 to 100) {
+      case Right(rs) =>
+        for(_ <- 1 to 100) {
           assert(rs.next())
-          results :+ rs.getInt(1)
+          results = results :+ rs.getInt(1)
         }
-      }
-      case Left(err) => {
-        assert(false)
-      }
+      case Left(err) => fail(err.getFullContext)
     }
 
     results.sorted
@@ -253,13 +249,10 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
     }
 
     jdbcLayer.query("SELECT count(*) FROM " + tablename + ";") match {
-      case Right(rs) => {
+      case Right(rs) =>
         assert(rs.next())
         assert(rs.getInt(1) == 1)
-      }
-      case Left(err) => {
-        fail
-      }
+      case Left(err) => fail(err.getFullContext)
     }
   }
 
