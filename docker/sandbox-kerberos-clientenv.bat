@@ -10,6 +10,8 @@ docker exec hdfs start-dfs.sh
 docker exec -u 0 hdfs /hdfs-krb/kerberize.sh
 docker exec hdfs stop-dfs.sh
 docker exec hdfs start-dfs.sh
+docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
 echo "configuring client"
 docker exec docker_krbclient_1 /client-krb/kerberize.sh
 FOR /F "tokens=* USEBACKQ" %%F IN (`docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs`) DO (

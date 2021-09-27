@@ -3627,12 +3627,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "src/main/resources/3.1.1/col1=1/part-00000-a69ed01f-68f6-48f7-9a69-60c3952d2ac5.c000.snappy.parquet"
-    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-    //val data = (1 to 20).map(x => Row(x, x.toFloat))
-    //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
-
+    val filePath = "webhdfs://hdfs:50070/3.1.1/col1=?/*.parquet"
     val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
     val mode = SaveMode.Overwrite
@@ -3650,20 +3645,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     })
 
     TestUtils.dropTable(conn, tableName)
-    // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
   it should "fail to create external table data is partitioned and no schema provided" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "src/main/resources/3.1.1/col1=1/part-00000-a69ed01f-68f6-48f7-9a69-60c3952d2ac5.c000.snappy.parquet"
-    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-    //val data = (1 to 20).map(x => Row(x, x.toFloat))
-    //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
-
+    val filePath = "webhdfs://hdfs:50070/3.1.1/col1=?/*.parquet"
     val schema2 = new StructType()
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
     val mode = SaveMode.Overwrite
@@ -3680,9 +3667,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     })
 
     TestUtils.dropTable(conn, tableName)
-    // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
   /* it should "fail to create an external table with existing data and non-empty DF" in {
