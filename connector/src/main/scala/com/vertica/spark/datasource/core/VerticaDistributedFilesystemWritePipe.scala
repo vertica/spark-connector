@@ -248,7 +248,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
 
-          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))  {
+          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")))  {
             logger.info("Inferring partial schema from dataframe")
             schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
           }

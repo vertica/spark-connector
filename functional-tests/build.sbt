@@ -16,8 +16,8 @@ name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := "2.0.2"
 
-val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.1.2")
-val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("2.4.1")
+val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.1.1")
+val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("3.3.1")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
