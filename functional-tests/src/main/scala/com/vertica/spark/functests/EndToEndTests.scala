@@ -3627,7 +3627,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "src/main/resources/partitioned/3.1.1/test/col1=1/part-00000-d2063723-495d-4342-91ca-dbb6c4cffdf3.c000.snappy.parquet"
+    val filePath = "src/main/resources/3.1.1/col1=1/part-00000-a69ed01f-68f6-48f7-9a69-60c3952d2ac5.c000.snappy.parquet"
     val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     //val data = (1 to 20).map(x => Row(x, x.toFloat))
     //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
@@ -3658,7 +3658,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "fail to create external table data is partitioned and no schema provided" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "src/main/resources/partitioned/3.1.1/test/col1=1/part-00000-d2063723-495d-4342-91ca-dbb6c4cffdf3.c000.snappy.parquet"
+    val filePath = "src/main/resources/3.1.1/col1=1/part-00000-a69ed01f-68f6-48f7-9a69-60c3952d2ac5.c000.snappy.parquet"
     val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
     //val data = (1 to 20).map(x => Row(x, x.toFloat))
     //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)

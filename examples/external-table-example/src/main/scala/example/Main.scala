@@ -43,7 +43,7 @@ object Main  {
       val data = (1 to 20).map(x => Row(x, x - 1f))
       // Create a dataframe corresponding to the schema and data specified above
       val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/3.1.1/dftest.parquet")
+      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/3.1.1/")
 
 
      /* val tableName = "dftest"
