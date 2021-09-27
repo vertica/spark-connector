@@ -303,7 +303,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     } yield ()
 
     ret match {
-      case Left(err) => err.getError match {
+      case Left(err) => err.getUnderlyingError match {
         case er: JdbcError => Left(JobStatusCreateError(er)
           .context("JDBC error when trying to initialize job status table"))
         case _: ConnectorError => Left(err)

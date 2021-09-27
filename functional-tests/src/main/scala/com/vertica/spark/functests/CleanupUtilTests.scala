@@ -13,7 +13,7 @@
 
 package com.vertica.spark.functests
 
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, LogProvider}
+import com.vertica.spark.config.FileStoreConfig
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.cleanup.{CleanupUtils, FileCleanupInfo}
 import org.scalatest.BeforeAndAfterAll
@@ -22,16 +22,16 @@ import org.scalatest.flatspec.AnyFlatSpec
 class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll {
 
   val fsLayer = new HadoopFileStoreLayer(cfg, None)
-  val path = cfg.address + "/CleanupTest"
+  val path: String = cfg.address + "/CleanupTest"
   private val perms = "777"
 
   val cleanupUtils = new CleanupUtils
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     fsLayer.createDir(path, perms)
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     fsLayer.removeDir(cfg.address)
   }
 
@@ -45,19 +45,19 @@ class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with Before
     cleanupUtils.checkAndCleanup(fsLayer, FileCleanupInfo(filename, 2, 3))
 
     fsLayer.fileExists(filename) match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(exists) => assert(!exists)
     }
     fsLayer.fileExists(filename+".cleanup0") match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(exists) => assert(!exists)
     }
     fsLayer.fileExists(filename+".cleanup1") match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(exists) => assert(!exists)
     }
     fsLayer.fileExists(filename+".cleanup2") match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(exists) => assert(!exists)
     }
   }

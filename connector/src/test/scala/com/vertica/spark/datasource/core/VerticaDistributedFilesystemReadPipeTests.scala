@@ -144,7 +144,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
 
     pipe.getMetadata match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case MissingSqlConversionError(_,_) => true
         case _ => false
       })
@@ -230,7 +230,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == ParentDirMissingError(""))
+      case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))
       case Right(_) => fail
     }
   }
@@ -257,7 +257,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case ExportFromVerticaError(_) => true
         case _ => false
       })
@@ -491,7 +491,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (fileStoreLayer.getFileList _).expects(*).returning(Left(ParentDirMissingError("")))
 
     pipe.doPreReadSteps() match {
-      case Left(err) => assert(err.getError == ParentDirMissingError(""))
+      case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))
       case Right(_) => fail
     }
   }
@@ -674,7 +674,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.getError == InvalidPartition())
+      case Left(err) => assert(err.getUnderlyingError == InvalidPartition())
       case Right(_) => fail
     }
   }
@@ -693,7 +693,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
 
     pipe.startPartitionRead(partition) match {
-      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
+      case Left(err) => assert(err.getUnderlyingError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
@@ -715,7 +715,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.startPartitionRead(partition))
 
     pipe.readData match {
-      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
+      case Left(err) => assert(err.getUnderlyingError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
@@ -743,7 +743,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     this.failOnError(pipe.readData)
 
     pipe.endPartitionRead() match {
-      case Left(err) => assert(err.getError == StagingFsUrlMissingError())
+      case Left(err) => assert(err.getUnderlyingError == StagingFsUrlMissingError())
       case Right(_) => fail
     }
   }
