@@ -141,7 +141,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     writer.openWrite() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError == MissingSchemaError())
+      case Left(err) => assert(err.getUnderlyingError == MissingSchemaError())
     }
   }
 

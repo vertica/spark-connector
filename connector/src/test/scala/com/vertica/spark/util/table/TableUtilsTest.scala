@@ -116,7 +116,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tableExists(TableName(tablename, None)) match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case TableCheckError(_) => true
         case _ => false
       })
@@ -196,7 +196,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
     utils.tempTableExists(TableName(tablename, None)) match {
-      case Left(errors) => errors.getError.isInstanceOf[SyntaxError]
+      case Left(errors) => errors.getUnderlyingError.isInstanceOf[SyntaxError]
       case Right(_) => fail
     }
   }
@@ -334,7 +334,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     utils.createAndInitJobStatusTable(TableName(tablename, None), user, sessionId, "OVERWRITE") match {
       case Right(_) => fail
-      case Left(errors) => assert(errors.getError match {
+      case Left(errors) => assert(errors.getUnderlyingError match {
         case JobStatusCreateError(_) => true
         case _ => false
       })

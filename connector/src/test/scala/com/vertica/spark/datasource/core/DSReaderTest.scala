@@ -187,7 +187,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     // Open
     reader.openRead() match {
-      case Left(err) => assert(err.getError == InvalidPartition())
+      case Left(err) => assert(err.getUnderlyingError == InvalidPartition())
       case Right(()) => fail
     }
   }
@@ -203,7 +203,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     // Open
     reader.openRead() match {
-      case Left(err) => assert(err.getError == InitialSetupPartitioningError())
+      case Left(err) => assert(err.getUnderlyingError == InitialSetupPartitioningError())
       case Right(()) => fail
     }
   }

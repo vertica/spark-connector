@@ -95,7 +95,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 0, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case CreateFileError(_, _) => true
         case _ => false
       })
@@ -108,7 +108,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 1, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case CreateFileError(_, _) => true
         case _ => false
       })
@@ -124,7 +124,7 @@ class CleanupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     cleanupUtils.checkAndCleanup(fileStoreLayer, FileCleanupInfo(filename, 2, 3)) match {
       case Right(_) => ()
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case RemoveFileError(_, _) => true
         case _ => false
       })
