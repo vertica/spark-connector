@@ -3627,7 +3627,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/3.1.1/col1=?/*.parquet"
+    val filePath = "webhdfs://hdfs:50070/3.1.1/"
     val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
     val mode = SaveMode.Overwrite
@@ -3650,7 +3650,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "fail to create external table data is partitioned and no schema provided" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/3.1.1/col1=?/*.parquet"
+    val filePath = "webhdfs://hdfs:50070/3.1.1/"
     val schema2 = new StructType()
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
     val mode = SaveMode.Overwrite
