@@ -3628,9 +3628,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "src/main/resources/partitioned/3.1.1/test/col1=1/part-00000-d2063723-495d-4342-91ca-dbb6c4cffdf3.c000.snappy.parquet"
-/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-    val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    //val data = (1 to 20).map(x => Row(x, x.toFloat))
+    //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
@@ -3659,9 +3659,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Write data to parquet
     val tableName = "existingData"
     val filePath = "src/main/resources/partitioned/3.1.1/test/col1=1/part-00000-d2063723-495d-4342-91ca-dbb6c4cffdf3.c000.snappy.parquet"
-/*  val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-    val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    //val data = (1 to 20).map(x => Row(x, x.toFloat))
+    //val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     //df.write.parquet("webhdfs://hdfs:50070/data/existingData.parquet")
 
     val schema2 = new StructType()
@@ -3723,7 +3723,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   }
 
-  /*
   it should "Merge with existing table in Vertica" in {
     val tableName = "mergetable"
     val stmt = conn.createStatement
