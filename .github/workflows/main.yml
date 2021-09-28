@@ -50,7 +50,7 @@ jobs:
       - name: Replace HDFS hdfs-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
       - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
       - name: Copy partitioned parquet data to hadoop from local
         run: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
       - name: Download the build artifact
@@ -86,7 +86,7 @@ jobs:
       - name: Replace HDFS hdfs-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
       - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
       - name: Copy partitioned parquet data to hadoop from local
         run: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
       - name: Download the build artifact
