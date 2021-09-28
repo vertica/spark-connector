@@ -55,7 +55,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     conn.close()
   }
 
-  /*
   it should "read data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -1516,7 +1515,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert ( rows == (rows_exist + numDfRows) )
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
-  */
 
   def checkErrorType(ex: Option[Exception], errTypeHandler: ConnectorError => Boolean): Unit = {
     ex match {
@@ -1538,8 +1536,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         }
     }
   }
-
-  /*
 
   it should "Fail DataFrame with Complex type array" in {
     val tableName = "s2vdevtest08"
@@ -3622,8 +3618,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
   }
 
-   */
-
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
@@ -3669,7 +3663,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  /* it should "fail to create an external table with existing data and non-empty DF" in {
+   it should "fail to create an external table with existing data and non-empty DF" in {
     val tableName = "existingData"
     val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
@@ -3964,6 +3958,5 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName1)
   }
 
-   */
 }
 

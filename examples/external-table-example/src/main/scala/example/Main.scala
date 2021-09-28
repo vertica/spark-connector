@@ -39,24 +39,16 @@ object Main  {
       .getOrCreate()
 
     try {
-      val schema2 = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-      val data = (1 to 20).map(x => Row(x, x - 1f))
-      // Create a dataframe corresponding to the schema and data specified above
-      val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data), schema2)
-      df2.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/3.1.1/")
-
-
-     /* val tableName = "dftest"
-      // Define schema of a table with a single integer attribute
-      val schema = new StructType()
-
+      val tableName = "dftest"
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
       val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
       //val df = spark.emptyDataFrame
       // Outputs dataframe schema
-      println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()*/
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
+      readDf.rdd.foreach(x => println("External Table Rows: " + x))
 
     } finally {
       spark.close()
