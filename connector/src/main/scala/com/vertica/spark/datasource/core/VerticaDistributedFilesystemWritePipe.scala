@@ -106,7 +106,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
 
       // Creating external table and merging at the same time not supported
-      _ <- if ((config.createExternalTable.isDefined) && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
+      _ <- if (config.createExternalTable.isDefined && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
 
       // Create the table if it doesn't exist
       tableExistsPre <- tableUtils.tableExists(config.tablename)
