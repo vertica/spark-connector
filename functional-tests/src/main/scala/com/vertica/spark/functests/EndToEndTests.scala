@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Timestamp}
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.util.error.{CommitError, ConnectionSqlError, ConnectorException, ContextError, CreateTableError, DuplicateColumnsError, SchemaError, TempTableExistsError, ViewExistsError}
+import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
@@ -35,7 +35,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
-  val fsConfig= FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
+  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
   val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()
@@ -1023,7 +1023,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     dr.show
     stmt.execute("drop table " + tableName1)
-    if(!fsLayer.getFileList(fsConfig.address).right.get.isEmpty) {
+    if(fsLayer.getFileList(fsConfig.address).right.get.nonEmpty) {
       fsLayer.removeDir(fsConfig.address)
       // Need to recreate the root directory for the afterEach assertion check
       fsLayer.createDir(fsConfig.address, "777")
@@ -1219,7 +1219,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val datafile = "src/main/resources/datafile-100cols-100rows.csv"
     val testdata = spark.sparkContext.textFile(datafile)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -1254,7 +1254,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -1516,23 +1516,23 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName, Some(dbschema))
   }
 
-  def checkErrorType[T](ex: Option[Exception]) = {
+  def checkErrorType(ex: Option[Exception], errTypeHandler: ConnectorError => Boolean): Unit = {
     ex match {
       case None => fail("Expected error.")
       case Some(exception) =>
-        exception match {
+        val err: ConnectorError = exception match {
           case e: SparkException =>
             assert(e.getCause.isInstanceOf[ConnectorException])
-            val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
-
-            assert(err.isInstanceOf[T] ||
-              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+            exception.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error.getUnderlyingError
 
           case e: ConnectorException =>
-            val err = e.error
+            e.error.getUnderlyingError
 
-            assert(err.isInstanceOf[T] ||
-              (err.isInstanceOf[ContextError] && err.asInstanceOf[ContextError].error.isInstanceOf[T]))
+          case _ => fail("Exception type was neither SparkException nor ConnectorException.")
+        }
+
+        if (!errTypeHandler(err)) {
+          fail("Error type did not match expected. Actual error: " + err.getFullContext)
         }
     }
   }
@@ -1558,7 +1558,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
 
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1657,7 +1660,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case SchemaColumnListError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1699,7 +1705,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1745,7 +1754,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[ViewExistsError](failure)
+    checkErrorType(failure, {
+      case ViewExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -1984,7 +1996,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[ConnectionSqlError](failure)
+    checkErrorType(failure, {
+      case ConnectionSqlError(_) => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2075,7 +2090,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2106,7 +2124,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2186,7 +2207,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -2350,7 +2371,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case TempTableExistsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2672,7 +2696,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2703,7 +2730,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[TempTableExistsError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2731,7 +2761,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // get prev count
     var countold = 0
     val query = "SELECT COUNT(*) AS cnt FROM \"" + options("table") + "\""
-    var rs = stmt.executeQuery(query)
+    val rs = stmt.executeQuery(query)
     if (rs.next) { countold = rs.getInt("cnt") }
 
     // S2V append
@@ -2755,7 +2785,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName)
 
-    val schema = TestUtils.getKmeans100colFloatSchema()
+    val schema = TestUtils.getKmeans100colFloatSchema
     val rowRDD = TestUtils.getKmeans100colFloatRowRDD(testdata)
     val df = spark.createDataFrame(rowRDD,schema)
     val numDfRows = df.count()
@@ -2824,7 +2854,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -2864,7 +2897,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -2900,7 +2936,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[DuplicateColumnsError](failure)
+    checkErrorType(failure, {
+      case DuplicateColumnsError() => true
+      case _ => false
+    })
 
     TestUtils.dropTable(conn, tableName)
   }
@@ -3156,7 +3195,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CreateTableError](failure)
+    checkErrorType(failure, {
+      case CreateTableError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
     TestUtils.dropTable(conn, "peopleTable")
   }
@@ -3188,7 +3230,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CreateTableError](failure)
+    checkErrorType(failure, {
+      case CreateTableError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3223,7 +3268,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case CommitError(_) => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3257,7 +3305,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    checkErrorType[CommitError](failure)
+    checkErrorType(failure, {
+      case FaultToleranceTestFail() => true
+      case _ => false
+    })
     TestUtils.dropTable(conn, tableName)
   }
 
@@ -3357,7 +3408,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3384,7 +3435,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data",
                    "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 
@@ -3416,7 +3467,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true")
+      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3468,6 +3519,186 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir(fsConfig.address)
     // Need to recreate the root directory for the afterEach assertion check
     fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "create an external table with existing data in FS" in {
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val df2 = spark.emptyDataFrame
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "create an external table with existing data in FS and multiple data types" in {
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(
+      StructField("col1", StringType),
+      StructField("col2", DateType),
+      StructField("col3", LongType)
+    ))
+    val str = (1 to 10).mkString(",")
+    val date = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
+    val data = Seq(Row(
+      str,
+      new java.sql.Date(date.getTime),
+      500000L
+    ))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val schema2 = new StructType()
+    val df2 = spark.emptyDataFrame
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "create an external table with existing data and non-empty schema" in {
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.head() == data.head)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "use provided schema when creating an external table with partition columns" in {
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
+    val data = (1 to 20).map(x => Row(x, x.toFloat))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
+
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    assert(readDf.count() == 20)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+  }
+
+  it should "fail to create external table if partial schema does not match partition columns" in {
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/3.1.1/"
+    val schema2 = new StructType(Array(StructField("foo", IntegerType), StructField("bar", FloatType)))
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+    try {
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    }
+    catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+
+    checkErrorType(failure, {
+      case UnknownColumnTypesError() => true
+      case _ => false
+    })
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "fail to create external table data is partitioned and no schema provided" in {
+    // Write data to parquet
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/3.1.1/"
+    val schema2 = new StructType()
+    val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+    try {
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    } catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+
+    checkErrorType(failure, {
+      case UnknownColumnTypesError() => true
+      case _ => false
+    })
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+   it should "fail to create an external table with existing data and non-empty DF" in {
+    val tableName = "existingData"
+    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = (1 to 20).map(x => Row(x))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+    val mode = SaveMode.Overwrite
+    var failure: Option[Exception] = None
+
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    }
+    catch {
+      case e: java.lang.Exception => failure = Some(e)
+    }
+    finally {
+      failure match {
+        case Some(exception) => exception match {
+          case e: SparkException =>
+            print("The cause is: " + e.getCause)
+            assert(e.getCause.isInstanceOf[SparkException])
+            val err = exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error
+            assert(err.getUnderlyingError match {
+              case NonEmptyDataFrameError() => true
+              case _ => false
+            })
+        }
+        case None => fail
+      }
+      TestUtils.dropTable(conn, tableName)
+      // Extra cleanup for external table
+      fsLayer.removeDir("webhdfs://hdfs:50070/data/")
+      fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    }
+
   }
 
   it should "Merge with existing table in Vertica" in {
@@ -3726,5 +3957,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
   }
+
 }
 

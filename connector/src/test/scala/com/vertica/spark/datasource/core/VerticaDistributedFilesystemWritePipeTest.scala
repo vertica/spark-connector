@@ -51,7 +51,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       sessionId = "id",
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-      false
+      None
     )
   }
 
@@ -66,6 +66,15 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val resultSet = mock[ResultSet]
     (resultSet.next _).expects().returning(true)
     (resultSet.getInt(_: String)).expects("count").returning(count)
+    (resultSet.close _).expects().returning(())
+
+    resultSet
+  }
+
+  private def getStringResultSet(): ResultSet = {
+    val resultSet = mock[ResultSet]
+    (resultSet.next _).expects().returning(true)
+    (resultSet.getString(_: String)).expects("INFER_EXTERNAL_TABLE_DDL").returning("create external table \"testtable\"(\"col1\" int) as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet")
     (resultSet.close _).expects().returning(())
 
     resultSet
@@ -172,7 +181,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     pipe.doPreWriteSteps() match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case SchemaConversionError(_) => true
         case _ => false
       })
@@ -181,7 +190,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Skip initial creation of table when external table is specified" in {
-    val config = createWriteConfig().copy(createExternalTable = true)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData))
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -245,7 +254,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     pipe.doPreWriteSteps() match {
-      case Left(err) => assert(err.getError == ViewExistsError())
+      case Left(err) => assert(err.getUnderlyingError == ViewExistsError())
       case Right(_) => fail
     }
   }
@@ -295,7 +304,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.startPartitionWrite(uniqueId) match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case OpenWriteError(_) => true
         case _ => false
       })
@@ -387,7 +396,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.commit() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
         case CommitError(_) => true
         case _ => false
       })
@@ -508,7 +517,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     pipe.commit() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError == FaultToleranceTestFail())
+      case Left(err) => assert(err.getUnderlyingError == FaultToleranceTestFail())
     }
   }
 
@@ -577,7 +586,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -600,9 +609,40 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     checkResult(pipe.commit())
   }
 
+  it should "create an external table with existing data" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
+      fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
+      tablename = TableName("testtable", None), schema = new StructType())
+    val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Right(Array[String]("example.parquet")))
+    val inferStmt = s"SELECT INFER_EXTERNAL_TABLE_DDL(\'$url\',\'testtable\')"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(inferStmt,*).returning(Right(getStringResultSet))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val createExternalTableStmt = "create external table \"testtable\"(\"col1\" int) " +
+      "as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet"
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+
   it should "handle failure creating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 
@@ -629,7 +669,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "handle failure validating external table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = true, tablename = tname)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
     val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
 

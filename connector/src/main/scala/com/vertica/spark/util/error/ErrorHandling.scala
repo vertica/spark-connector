@@ -31,15 +31,15 @@ trait ConnectorError {
   def getFullContext: String
 
   // Get the underlying error object. This can be used to determine what kind of error occurred.
-  def getError: ConnectorError = this
+  def getUnderlyingError: ConnectorError = this
 
   // Gets a user-friendly error message.
   def getUserMessage: String = this.getFullContext
 }
 
-case class ContextError(ctxt: String, error: ConnectorError) extends ConnectorError {
+case class ContextError(ctxt: String, private val error: ConnectorError) extends ConnectorError {
   def getFullContext: String = this.ctxt + "\n" + error.getFullContext
-  override def getError: ConnectorError = this.error.getError
+  override def getUnderlyingError: ConnectorError = this.error.getUnderlyingError
   override def getUserMessage: String = this.error.getUserMessage
 }
 
@@ -201,7 +201,7 @@ case class HostMissingError() extends ConnectorError {
 }
 case class InvalidCreateExternalTableOption() extends ConnectorError {
   override def getFullContext: String = "The 'create_external_table' param is invalid. Please specify " +
-    "'true' or 'false'."
+    "'new-data' or 'existing-data'."
 }
 case class DbMissingError() extends ConnectorError {
   def getFullContext: String = "The 'db' param is missing. Please specify the name of the Vertica " +
@@ -469,5 +469,21 @@ case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
 }
 case class TableNotEnoughRowsError() extends SchemaError {
   def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
+}
+case class NonEmptyDataFrameError() extends ConnectorError {
+  override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
+}
+case class UnknownColumnTypesError() extends ConnectorError {
+  def getFullContext: String = "The parquet data uses partition columns. " +
+    "Types of partition column cannot be determined from the data. " +
+    "Please provide a partial schema with the dataframe detailing the relevant partition columns."
+}
+case class InferExternalTableSchemaError(error: ConnectorError) extends ConnectorError {
+  private val message = "Failed to get schema for external table using INFER_EXTERNAL_TABLE_DDL."
+  def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
+  override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
+}
+case class JobAbortedError() extends ConnectorError {
+  def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
 

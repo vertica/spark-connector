@@ -409,7 +409,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 4)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(err) => assert(err.getError match {
+      case Left(err) => assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.size == 4
           case _ => false
         })
@@ -426,18 +426,18 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.size == 2
           case _ => false
         })
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.head match {
             case MissingSqlConversionError(_, _) => true
             case _ => false
           }
           case _ => false
         })
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case ErrorList(errors) => errors.tail.head match {
             case MissingSqlConversionError(_, _) => true
             case _ => false
@@ -456,7 +456,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        err.getError match {
+        err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
             "Could not find conversion for unsupported SQL type: invalid-type" +
             "\nSQL type value: 50000"))
@@ -469,7 +469,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
     (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
       case Left(err) =>
-        err.getError match {
+        err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
             "Could not find conversion for unsupported Spark type: CharType"))
           case _ => false
@@ -485,7 +485,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) =>
-        assert(err.getError match {
+        assert(err.getUnderlyingError match {
           case JdbcSchemaError(_) => true
           case _ => false
         })
@@ -534,6 +534,38 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     schemaTools.getCopyColumnList(jdbcLayer, tablename, schema) match {
       case Left(err) => fail(err.getFullContext)
       case Right(str) => assert(str == "(\"col1\",\"col2\")")
+    }
+  }
+
+  it should "Return an updated create external table statement" in {
+
+    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", StringType, nullable = true)))
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" UNKNOWN" +
+      ") as copy from \'/data/\' parquet"
+    val schemaTools = new SchemaTools
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+      case Left(err) =>
+        fail(err.getFullContext)
+      case Right(str) =>
+        assert(str == "create external table \"sales\"(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
+    }
+  }
+
+  it should "Return an error if partial schema doesn't match partitioned columns" in {
+
+    val schema = new StructType(Array(StructField("foo", DateType, nullable = true), StructField("bar", StringType, nullable = true)))
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" UNKNOWN" +
+      ") as copy from \'/data/\' parquet"
+    val schemaTools = new SchemaTools
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+      case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
+      case Right(str) => fail
     }
   }
 }

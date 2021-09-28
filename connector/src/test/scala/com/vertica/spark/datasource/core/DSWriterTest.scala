@@ -42,7 +42,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     sessionId = "id",
     failedRowPercentTolerance =  0.0f,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-    createExternalTable = false
+    createExternalTable = None
   )
 
   val uniqueId = "unique-id"
@@ -141,7 +141,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     writer.openWrite() match {
       case Right(_) => fail
-      case Left(err) => assert(err.getError == MissingSchemaError())
+      case Left(err) => assert(err.getUnderlyingError == MissingSchemaError())
     }
   }
 

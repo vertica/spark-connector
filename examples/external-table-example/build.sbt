@@ -12,7 +12,7 @@
 // limitations under the License.
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-merge-example2"
+name := "spark-vertica-connector-external-table-example"
 organization := "com.vertica"
 version := "2.0.2"
 
@@ -21,9 +21,9 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
-  "org.apache.spark" %% "spark-core" % "3.0.0",
-  "org.apache.spark" %% "spark-sql" % "3.0.0",
-  "com.vertica.spark" % "vertica-spark" % "2.0.2-slim"
+  "org.apache.spark" %% "spark-core" % "3.0.2",
+  "org.apache.spark" %% "spark-sql" % "3.0.2",
+  // Add connector dependency for next release
 )
 
 assembly / assemblyMergeStrategy := {

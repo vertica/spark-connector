@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
 
-import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, JdbcAuth, KerberosAuth}
+import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth}
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 
@@ -130,10 +130,10 @@ object TestUtils {
     }.toList
   }
 
-  def getKmeans100colFloatSchema(): org.apache.spark.sql.types.StructType = {
+  def getKmeans100colFloatSchema: org.apache.spark.sql.types.StructType = {
     val colNames = (for(i<-Range(1,101)) yield "feature"+i).toArray
     val nullable = false
-    val cols = for (i <-Range(0,colNames.size)) yield StructField(colNames(i), org.apache.spark.sql.types.FloatType, nullable)
+    val cols = for (i <-colNames.indices) yield StructField(colNames(i), org.apache.spark.sql.types.FloatType, nullable)
     val schema = StructType(cols.toArray)
     schema
   }

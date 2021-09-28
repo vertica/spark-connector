@@ -332,19 +332,25 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(err.toNonEmptyList.head.isInstanceOf[InvalidFilePermissions])
   }
 
-  it should "parse create_external_table option" in {
-    val opts = Map("create_external_table" -> "true")
-    val v = getResultOrAssert[Boolean](DSConfigSetupUtils.getCreateExternalTable(opts))
-    assert(v)
+  it should "parse first create_external_table option" in {
+    val opts = Map("create_external_table" -> "new-data")
+    val v = getResultOrAssert[Option[CreateExternalTableOption]](DSConfigSetupUtils.getCreateExternalTable(opts))
+    v match {
+      case Some(value) => assert (value.toString == "new-data")
+      case _ => fail
+    }
   }
 
-  it should "default create_external_table to false" in {
-    val opts = Map[String, String]()
-    val v = getResultOrAssert[Boolean](DSConfigSetupUtils.getCreateExternalTable(opts))
-    assert(!v)
+  it should "parse second create_external_table option" in {
+    val opts = Map("create_external_table" -> "existing-data")
+    val v = getResultOrAssert[Option[CreateExternalTableOption]](DSConfigSetupUtils.getCreateExternalTable(opts))
+    v match {
+      case Some(value) => assert (value.toString == "existing-data")
+      case _ => fail
+    }
   }
 
-  it should "error if create_external_table is not true/false" in {
+  it should "error if create_external_table is not new-data/existing-data" in {
     val opts = Map("create_external_table" -> "asdf")
     val v = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getCreateExternalTable(opts))
     assert(v.toNonEmptyList.head.isInstanceOf[InvalidCreateExternalTableOption])
