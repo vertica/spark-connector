@@ -1559,7 +1559,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -1661,7 +1661,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case TableNotEnoughRowsError() => true
       case _ => false
     })
 
@@ -1706,7 +1706,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -2091,7 +2091,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -2125,7 +2125,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -2697,7 +2697,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case TempTableExistsError() => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -2731,7 +2731,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case TempTableExistsError() => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
 
@@ -3306,7 +3306,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case CommitError(_) => true
+      case FaultToleranceTestFail() => true
       case _ => false
     })
     TestUtils.dropTable(conn, tableName)
