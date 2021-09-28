@@ -1661,7 +1661,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case TableNotEnoughRowsError() => true
+      case SchemaColumnListError => true
       case _ => false
     })
 
