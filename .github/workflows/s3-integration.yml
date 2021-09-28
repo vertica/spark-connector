@@ -46,7 +46,12 @@ jobs:
       - name: Copy partitioned parquet data to HDFS container
         run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
       - name: Copy partitioned parquet data to hadoop from local
-        run: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+        uses: nick-invision/retry@v2
+          with:
+            timeout_seconds: 20
+            max_attempts: 10
+            retry_on: error
+            command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
       - name: Increase active sessions in database
         uses: nick-invision/retry@v2
         with:
