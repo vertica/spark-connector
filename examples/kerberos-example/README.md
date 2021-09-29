@@ -19,7 +19,7 @@ sbt assembly
 Create a `lib` folder under the `kerberos-example` folder and copy the assembled connector jar to it.
 ```
 mkdir /spark-connector/examples/kerberos-example/lib
-cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.2.jar /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-2.0.3.jar /spark-connector/examples/kerberos-example/lib
 ```
 
 ## Build Example Assembly
@@ -33,6 +33,8 @@ sbt assembly
 ```
 
 ## Prepare test environment
+
+If you have used the `sandbox-clientenv.sh` script to create a docker environment already, please do a `docker compose down` before continuing.
 
 In the docker folder (`spark-connector/docker`), run this command to start the vertica, spark, hdfs, kerberos services and enter the CLI environment:
 
