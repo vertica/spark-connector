@@ -3524,7 +3524,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create an external table with existing data in FS" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val filePath = fsConfig.address + "existingData"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val data = (1 to 20).map(x => Row(x))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
@@ -3539,13 +3539,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "create an external table with existing data in FS and multiple data types" in {
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val filePath = fsConfig.address + "existingData.parquet/"
     val schema = new StructType(Array(
       StructField("col1", StringType),
       StructField("col2", DateType),
@@ -3571,13 +3571,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "create an external table with existing data and non-empty schema" in {
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val filePath = fsConfig.address + "existingData"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val data = (1 to 20).map(x => Row(x))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
@@ -3592,19 +3592,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "use provided schema when creating an external table with partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
-    val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", FloatType)))
-    val data = (1 to 20).map(x => Row(x, x.toFloat))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    df.write.partitionBy("col1").format("parquet").save("webhdfs://hdfs:50070/data/existingData.parquet")
-
+    val filePath = "webhdfs://hdfs:50070/3.1.1/"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
     val mode = SaveMode.Overwrite
     df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
@@ -3614,8 +3610,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
-    fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-    fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
   it should "fail to create external table if partial schema does not match partition columns" in {
@@ -3665,7 +3661,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
    it should "fail to create an external table with existing data and non-empty DF" in {
     val tableName = "existingData"
-    val filePath = "webhdfs://hdfs:50070/data/existingData.parquet"
+    val filePath = fsConfig.address + "existingData"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val data = (1 to 20).map(x => Row(x))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
@@ -3695,8 +3691,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       }
       TestUtils.dropTable(conn, tableName)
       // Extra cleanup for external table
-      fsLayer.removeDir("webhdfs://hdfs:50070/data/")
-      fsLayer.createDir("webhdfs://hdfs:50070/data/", "777")
+      fsLayer.removeDir(fsConfig.address)
+      fsLayer.createDir(fsConfig.address, "777")
     }
 
   }
