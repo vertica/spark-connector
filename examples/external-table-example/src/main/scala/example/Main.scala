@@ -39,14 +39,17 @@ object Main  {
       .getOrCreate()
 
     try {
-      val tableName = "dftest"
+      val tableName = "externaltest"
       val schema = new StructType(Array(StructField("col1", IntegerType)))
-      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
-      //val df = spark.emptyDataFrame
-      // Outputs dataframe schema
+      val data = (1 to 20).map(x => Row(x))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      df.write.parquet(writeOpts("staging_fs_url"))
+
+      val schema2 = new StructType()
+      val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema2)
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
       val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
       readDf.rdd.foreach(x => println("External Table Rows: " + x))
 

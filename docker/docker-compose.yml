@@ -5,6 +5,7 @@ services:
     volumes:
       - "./..:/spark-connector"
     stdin_open: true
+
   vertica:
     image: "verticadocker/vertica-k8s"
     entrypoint: [ "bash", "-c", "/opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
@@ -12,6 +13,11 @@ services:
       - "5433:5433"
     volumes:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
+
+  slave:
+    build: ./slave
+    stdin_open: true
+
   hdfs:
     image: "mdouchement/hdfs"
     ports:
