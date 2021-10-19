@@ -3595,7 +3595,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
   }
-  
+
   it should "use provided schema when creating an external table with partition columns" in {
     // Write data to parquet
     val tableName = "existingData"

@@ -239,7 +239,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => err.getFullContext
     }
 
-    logger.info("The infer statement is: " + inferStatement)
+    logger.debug("The infer statement is: " + inferStatement)
 
     jdbcLayer.query(inferStatement) match {
       case Left(err) => Left(InferExternalTableSchemaError(err))
@@ -255,7 +255,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           else {
             logger.info("Inferring schema from parquet data")
             val updatedStatement = createExternalTableStatement.replace("\"" + tableName + "\"", tableName)
-            logger.info("The create external table statement is: " + updatedStatement)
+            logger.debug("The create external table statement is: " + updatedStatement)
             Right(updatedStatement)
           }
         }
