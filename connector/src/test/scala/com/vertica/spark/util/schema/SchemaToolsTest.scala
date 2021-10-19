@@ -546,11 +546,11 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table \"sales\"(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
     }
   }
 
@@ -563,7 +563,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema) match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
       case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
       case Right(str) => fail
     }

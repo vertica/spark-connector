@@ -626,7 +626,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
-    val createExternalTableStmt = "create external table \"testtable\"(\"col1\" int) " +
+    val createExternalTableStmt = "create external table testtable(\"col1\" int) " +
       "as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet"
 
     val tableUtils = mock[TableUtilsInterface]

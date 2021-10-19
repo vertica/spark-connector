@@ -250,12 +250,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
           if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")))  {
             logger.info("Inferring partial schema from dataframe")
-            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema)
+            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName)
           }
           else {
             logger.info("Inferring schema from parquet data")
-            logger.info("The create external table statement is: " + createExternalTableStatement)
-            Right(createExternalTableStatement)
+            val updatedStatement = createExternalTableStatement.replace("\"" + tableName + "\"", tableName)
+            logger.info("The create external table statement is: " + updatedStatement)
+            Right(updatedStatement)
           }
         }
         catch {
