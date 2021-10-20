@@ -118,7 +118,7 @@ trait SchemaToolsInterface {
   * @param schema Schema passed in with empty dataframe
   * @return Updated create external table statement
   */
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String]
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -436,11 +436,11 @@ class SchemaTools extends SchemaToolsInterface {
     columnList
   }
 
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType): ConnectorResult[String] = {
-    println("The passed in create external table statement is: \n" + createExternalTableStmt)
-    val indexOfOpeningParantheses = createExternalTableStmt.indexOf("(")
-    val indexOfClosingParantheses = createExternalTableStmt.indexOf(")")
-    val schemaString = createExternalTableStmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String): ConnectorResult[String] = {
+    val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
+    val indexOfOpeningParantheses = stmt.indexOf("(")
+    val indexOfClosingParantheses = stmt.indexOf(")")
+    val schemaString = stmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
     val schemaList = schemaString.split(",").toList
 
     val updatedSchema: String = schemaList.map(col => {
@@ -466,7 +466,7 @@ class SchemaTools extends SchemaToolsInterface {
       Left(UnknownColumnTypesError().context(unknown + " partitioned column data type."))
     }
     else {
-      val updatedCreateTableStmt = createExternalTableStmt.replace(schemaString, updatedSchema)
+      val updatedCreateTableStmt = stmt.replace(schemaString, updatedSchema)
       logger.info("Edited create table statement: " + updatedCreateTableStmt)
       Right(updatedCreateTableStmt)
     }
