@@ -52,18 +52,39 @@ services:
     hostname: "hdfs"
     domainname: "example.com"
     ports:
-      - "22022:22"
-      - "8020:8020"
-      - "50010:50010"
-      - "50020:50020"
-      - "50070:50070"
-      - "50071:50071"
-      - "50075:50075"
-      - "50076:50076"
+      - "8020"
+      - "8022"
+      - "9870"
+      - "9871"
+      - "22"
     stdin_open: true
     tty: true
     volumes:
       - "./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf"
+      - "./hdfs-krb:/hdfs-krb"
+      - "./keytabs:/keytabs"
+    env_file:
+      - "krb.env"
+    privileged: true
+    entrypoint: /bin/bash
+  hdfs2:
+    build: ./standby
+    container_name: "hdfs2"
+    networks:
+      - "example"
+    hostname: "hdfs2"
+    domainname: "example.com"
+    ports:
+      - "8020"
+      - "8022"
+      - "9870"
+      - "9871"
+      - "22"
+    stdin_open: true
+    tty: true
+    volumes:
+      - "./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf"
+      - "./standby:/standby"
       - "./hdfs-krb:/hdfs-krb"
       - "./keytabs:/keytabs"
     env_file:

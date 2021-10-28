@@ -46,3 +46,9 @@ $KADMIN	-q "addprinc -randkey $HTTP_HDFS_PRINC"
 $KADMIN -q "ktadd -norandkey -k hdfs.keytab $HDFS_PRINC $HTTP_HDFS_PRINC"
 chown 777 hdfs.keytab
 cp hdfs.keytab /keytabs
+
+$KADMIN -q "addprinc -randkey $HDFS2_PRINC"
+$KADMIN	-q "addprinc -randkey $HTTP_HDFS2_PRINC"
+$KADMIN -q "ktadd -norandkey -k hdfs2.keytab $HDFS2_PRINC $HTTP_HDFS2_PRINC"
+chown 777 hdfs2.keytab
+cp hdfs2.keytab /keytabs

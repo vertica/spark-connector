@@ -15,89 +15,74 @@
     </property>
 
     <property>
-      <name>dfs.secondary.http.address</name>
-      <value>hdfs.example.com:50090</value>
-      <description>
-        The secondary namenode http server address and port.
-        If the port is 0 then the server will start on a free port.
-      </description>
+        <name>dfs.nameservices</name>
+        <value>hacluster</value>
     </property>
 
     <property>
-        <name>dfs.secondary.https.address</name>
-        <value>hdfs.example.com:50091</value>
-        <description>
-            The secondary namenode http server address and port.
-            If the port is 0 then the server will start on a free port.
-        </description>
+        <name>dfs.ha.namenodes.hacluster</name>
+        <value>nn1,nn2</value>
     </property>
 
     <property>
-      <name>dfs.datanode.address</name>
-      <value>hdfs.example.com:50010</value>
-      <description>
-        The address where the datanode server will listen to.
-        If the port is 0 then the server will start on a free port.
-      </description>
+        <name>dfs.namenode.rpc-address.hacluster.nn1</name>
+        <value>hdfs:8020</value>
+    </property>
+    <property>
+        <name>dfs.namenode.rpc-address.hacluster.nn2</name>
+        <value>hdfs2:8020</value>
     </property>
 
     <property>
-      <name>dfs.datanode.http.address</name>
-      <value>hdfs.example.com:50075</value>
-      <description>
-        The datanode http server address and port.
-        If the port is 0 then the server will start on a free port.
-      </description>
+        <name>dfs.namenode.http-address.hacluster.nn1</name>
+        <value>hdfs:9870</value>
+    </property>
+    <property>
+        <name>dfs.namenode.http-address.hacluster.nn2</name>
+        <value>hdfs2:9870</value>
     </property>
 
     <property>
-        <name>dfs.datanode.https.address</name>
-        <value>hdfs.example.com:50076</value>
-        <description>
-            The datanode http server address and port.
-            If the port is 0 then the server will start on a free port.
-        </description>
+        <name>dfs.namenode.https-address.hacluster.nn1</name>
+        <value>hdfs:9871</value>
+    </property>
+    <property>
+        <name>dfs.namenode.https-address.hacluster.nn2</name>
+        <value>hdfs2:9871</value>
+    </property>
+
+    <property>
+        <name>dfs.namenode.servicerpc-address.hacluster.nn1</name>
+        <value>hdfs:8022</value>
+    </property>
+    <property>
+        <name>dfs.namenode.servicerpc-address.hacluster.nn2</name>
+        <value>hdfs2:8022</value>
+    </property>
+
+    <property>
+        <name>dfs.namenode.shared.edits.dir</name>
+        <value>file:///hdfs-krb/shared-dir</value>
+    </property>
+
+    <property>
+        <name>dfs.client.failover.proxy.provider.hacluster</name>
+        <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+    </property>
+
+    <property>
+        <name>dfs.ha.fencing.methods</name>
+        <value>sshfence</value>
+    </property>
+
+    <property>
+        <name>dfs.ha.fencing.ssh.private-key-files</name>
+        <value>/root/.ssh/id_rsa</value>
     </property>
 
     <property>
       <name>dfs.data.transfer.protection</name>
-      <value>authentication</value>
-    </property>
-
-    <property>
-      <name>dfs.http.address</name>
-      <value>hdfs.example.com:50070</value>
-      <description>
-        The address and the base port where the dfs namenode web ui will listen on.
-        If the port is 0 then the server will start on a free port.
-      </description>
-    </property>
-
-    <property>
-        <name>dfs.https.address</name>
-        <value>hdfs.example.com:50071</value>
-        <description>
-            The address and the base port where the dfs namenode web ui will listen on.
-            If the port is 0 then the server will start on a free port.
-        </description>
-    </property>
-
-    <property>
-        <name>dfs.namenode.http-address</name>
-        <value>hdfs.example.com:50070</value>
-        <description>
-            The address and the base port where the dfs namenode web ui will listen on.
-            If the port is 0 then the server will start on a free port.
-        </description>
-    </property>
-
-    <property>
-        <name>dfs.namenode.https-address</name>
-        <value>hdfs.example.com:50071</value>
-        <description>
-            The address and the base port where the dfs namenode web ui will listen on.
-            If the port is 0 then the server will start on a free port.
-        </description>
+      <value>privacy</value>
     </property>
 
     <property>
@@ -110,53 +95,6 @@
         <value>true</value>
     </property>
 
-    <property>
-      <name>dfs.namenode.rpc-bind-host</name>
-      <value>hdfs.example.com</value>
-      <description>
-        The actual address the RPC server will bind to. If this optional address is
-        set, it overrides only the hostname portion of dfs.namenode.rpc-address.
-        It can also be specified per name node or name service for HA/Federation.
-        This is useful for making the name node listen on all interfaces by
-        setting it to 0.0.0.0.
-      </description>
-    </property>
-
-    <property>
-      <name>dfs.namenode.servicerpc-bind-host</name>
-      <value>hdfs.example.com</value>
-      <description>
-        The actual address the service RPC server will bind to. If this optional address is
-        set, it overrides only the hostname portion of dfs.namenode.servicerpc-address.
-        It can also be specified per name node or name service for HA/Federation.
-        This is useful for making the name node listen on all interfaces by
-        setting it to 0.0.0.0.
-      </description>
-    </property>
-
-    <property>
-      <name>dfs.namenode.http-bind-host</name>
-      <value>hdfs.example.com</value>
-      <description>
-        The actual adress the HTTP server will bind to. If this optional address
-        is set, it overrides only the hostname portion of dfs.namenode.http-address.
-        It can also be specified per name node or name service for HA/Federation.
-        This is useful for making the name node HTTP server listen on all
-        interfaces by setting it to 0.0.0.0.
-      </description>
-    </property>
-
-    <property>
-      <name>dfs.namenode.https-bind-host</name>
-      <value>hdfs.example.com</value>
-      <description>
-        The actual adress the HTTPS server will bind to. If this optional address
-        is set, it overrides only the hostname portion of dfs.namenode.https-address.
-        It can also be specified per name node or name service for HA/Federation.
-        This is useful for making the name node HTTPS server listen on all
-        interfaces by setting it to 0.0.0.0.
-      </description>
-    </property>
 
     <!-- Enable NFS -->
     <!-- https://hadoop.apache.org/docs/r2.4.1/hadoop-project-dist/hadoop-hdfs/HdfsNfsGateway.html -->
@@ -222,12 +160,7 @@
 
     <property>
         <name>dfs.client.use.datanode.hostname</name>
-        <value>true</value>
-    </property>
-
-    <property>
-        <name>dfs.datanode.use.datanode.hostname</name>
-        <value>true</value>
+        <value>false</value>
     </property>
 
 </configuration>

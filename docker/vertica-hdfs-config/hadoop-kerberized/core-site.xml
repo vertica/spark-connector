@@ -1,7 +1,7 @@
 <configuration>
   <property>
     <name>fs.defaultFS</name>
-    <value>hdfs://hdfs.example.com:8020</value>
+    <value>hdfs://hacluster</value>
   </property>
 
   <property>
@@ -24,7 +24,7 @@
 
   <property>
     <name>hadoop.rpc.protection</name>
-    <value>authentication</value>
+    <value>privacy</value>
   </property>
 
   <property>

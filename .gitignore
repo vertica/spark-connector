@@ -49,5 +49,6 @@ docker/keytabs/*.keytab
 !docker/keytabs/.keep
 
 docker/vertica-hdfs-config/hadoop-kerberized/*.cert
+docker/hdfs-krb/shared-dir/*
 
 
