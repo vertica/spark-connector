@@ -3,6 +3,8 @@ function configure_kdc() {
 }
 
 function configure_db() {
+  docker exec vertica /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+  docker exec vertica /bin/sh -c "sudo /usr/sbin/sshd -D"
   docker exec -u 0 vertica /vertica-krb/kerberize.sh
 }
 
@@ -12,8 +14,6 @@ function configure_hdfs() {
   docker exec -u 0 hdfs /hdfs-krb/kerberize.sh
   docker exec hdfs stop-dfs.sh
   docker exec hdfs start-dfs.sh
-  docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-  docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
 }
 
 function configure_client() {
@@ -42,6 +42,8 @@ if [ "$1" == "kerberos" ]
 else
   echo "running non-kerberized docker compose"
   docker compose -f docker-compose.yml up -d
+  docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+  docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
   docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
   docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
   docker exec docker_hdfs_1 /opt/hadoop/sbin/stop-dfs.sh
