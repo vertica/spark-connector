@@ -37,28 +37,8 @@ jobs:
         run: cd functional-tests && sbt assembly
       - name: Build client image
         run: docker build -t client ./docker
-      - name: Run docker compose
-        run: cd docker && docker-compose up -d
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Run environment setup
+        run: cd docker && ./sandbox-clientenv.sh
       - name: Run the integration tests
         run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; export hadoopVersion=$HADOOP_VERSION; sparkVersion=$SPARK_VERSION; ./s3-functional-tests.sh"
         env:
