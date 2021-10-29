@@ -444,22 +444,20 @@ class SchemaTools extends SchemaToolsInterface {
     val schemaList = schemaString.split(",").toList
 
     val updatedSchema: String = schemaList.map(col => {
-      if(col.contains(unknown)) {
-        val indexOfFirstDoubleQuote = col.indexOf("\"")
-        val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
-        val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
+      val indexOfFirstDoubleQuote = col.indexOf("\"")
+      val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
+      val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
 
-        val fieldType = schema.collect {
-          case field if(addDoubleQuotes(field.name) == colName) => field.dataType.simpleString
-        }
-        if(fieldType.nonEmpty) {
-          colName + " " + fieldType.head
-        }
-        else {
-          col
-        }
+      val fieldType = schema.collect {
+        case field if(addDoubleQuotes(field.name) == colName) => field.dataType.simpleString
       }
-      else { col }
+      if(fieldType.nonEmpty) {
+        colName + " " + fieldType.head
+      }
+
+      else {
+        col
+      }
     }).mkString(",")
 
     if(updatedSchema.contains(unknown)) {

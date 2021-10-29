@@ -240,13 +240,21 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
 
     logger.debug("The infer statement is: " + inferStatement)
-
     jdbcLayer.query(inferStatement) match {
       case Left(err) => Left(InferExternalTableSchemaError(err))
       case Right(resultSet) =>
         try {
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
+
+          val containsVarchar = createExternalTableStatement.toLowerCase.contains("varchar")
+          val containsVarbinary = createExternalTableStatement.toLowerCase.contains("varbinary")
+
+          if(containsVarchar || containsVarbinary) {
+            logger.warn("The parquet data contains a column of type varchar or varbinary. " +
+              "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
+              "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
+          }
 
           if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")))  {
             logger.info("Inferring partial schema from dataframe")
