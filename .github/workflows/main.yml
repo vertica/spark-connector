@@ -47,8 +47,6 @@ jobs:
         run: cd docker && docker-compose up -d
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Un-detatch sshd in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
       - name: Replace HDFS core-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
       - name: Replace HDFS hdfs-site config with our own
@@ -92,8 +90,6 @@ jobs:
         run: cd docker && docker-compose up -d
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Un-detatch sshd in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
       - name: Replace HDFS core-site config with our own
         run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
       - name: Replace HDFS hdfs-site config with our own
