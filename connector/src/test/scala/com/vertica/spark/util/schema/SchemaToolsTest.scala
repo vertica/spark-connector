@@ -543,7 +543,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +
       "\"date\" UNKNOWN," +
-      "\"region\" UNKNOWN" +
+      "\"region\" varchar" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
     schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
