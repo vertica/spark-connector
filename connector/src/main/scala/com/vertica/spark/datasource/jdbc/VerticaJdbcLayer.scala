@@ -359,19 +359,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
                 .toRight(MissingNameNodeAddressError())
               _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
-              jsonString = Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMESERVICES)) match {
-                case Some(nameservice) => s"""
-                  {
-                     "nameservice": "$nameservice",
-                     "token": "$encodedDelegationToken"
-                  }"""
-
-                case None => s"""
-                  {
-                     "authority": "$nameNodeAddress",
-                     "token": "$encodedDelegationToken"
-                  }"""
-              }
+              jsonString = s"""
+                {
+                   "authority": "$nameNodeAddress",
+                   "token": "$encodedDelegationToken"
+                }"""
               sql = s"ALTER SESSION SET HadoopImpersonationConfig='[$jsonString]'"
               _ <- this.execute(sql)
             } yield ()
