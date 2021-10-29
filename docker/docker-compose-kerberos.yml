@@ -28,13 +28,13 @@ services:
       - "./keytabs:/keytabs"
     privileged: true
   vertica:
-    image: "verticadocker/vertica-k8s"
+    image: "vertica/vertica-k8s"
     container_name: "vertica"
     networks:
       - "example"
     hostname: "vertica"
     domainname: "example.com"
-    entrypoint: [ "bash", "-c", "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
+    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:
       - "5433:5433"
     volumes:
