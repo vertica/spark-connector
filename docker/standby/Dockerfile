@@ -8,13 +8,14 @@ RUN apt-get update
 RUN apt-get -qy dist-upgrade
 
 RUN apt-get install -qy rsync curl openssh-server openssh-client vim nfs-common
+RUN apt -y install krb5-kdc krb5-admin-server krb5-config
 
 RUN mkdir -p /data/hdfs-nfs/
 RUN mkdir -p /opt
 WORKDIR /opt
 
 # Install Hadoop
-RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-2.4.1/hadoop-2.4.1.tar.gz -s -o - | tar -xzf -
+RUN curl -L https://dlcdn.apache.org/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz -s -o - | tar -xzf -
 RUN mv hadoop-3.3.1 hadoop
 RUN apt -y install krb5-kdc krb5-admin-server krb5-config
 
