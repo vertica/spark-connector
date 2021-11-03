@@ -3,6 +3,8 @@ function configure_kdc() {
 }
 
 function configure_db() {
+  docker exec vertica /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+  docker exec vertica /bin/sh -c "sudo /usr/sbin/sshd -D"
   docker exec -u 0 vertica /vertica-krb/kerberize.sh
 }
 
@@ -19,11 +21,14 @@ function configure_client() {
   docker exec docker_slave_1 bin/sh -c "chmod +x /client-krb/slave-kerberize.sh"
   docker exec docker_slave_1 /client-krb/slave-kerberize.sh
   docker exec docker_krbclient_1 bin/sh -c "echo SPARK_MASTER_HOST='$(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" docker_krbclient_1)' | tee -a /opt/spark/conf/spark-env.sh"
+  docker exec docker_krbclient_1 bin/sh -c "echo JAVA_HOME=/usr/lib/jvm/jre-11-openjdk | tee -a /opt/spark/conf/spark-env.sh"
   docker exec docker_krbclient_1 bin/sh -c "echo SPARK_DIST_CLASSPATH=\$(/hadoop-3.3.1/bin/hadoop classpath) | tee -a /opt/spark/conf/spark-env.sh"
-  docker exec docker_slave_1 bin/sh -c "echo SPARK_DIST_CLASSPATH=\$(/hadoop-3.3.0/bin/hadoop classpath) | tee -a /opt/spark/conf/spark-env.sh"
-  docker exec docker_krbclient_1 bin/sh -c "echo -e \"master\nslave01\" | tee -a opt/spark/conf/workers"
+  docker exec docker_slave_1 bin/sh -c "echo JAVA_HOME=/usr/lib/jvm/jre-11-openjdk | tee -a /opt/spark/conf/spark-env.sh"
+  docker exec docker_slave_1 bin/sh -c "echo SPARK_DIST_CLASSPATH=\$(/hadoop-3.3.1/bin/hadoop classpath) | tee -a /opt/spark/conf/spark-env.sh"
+  docker exec docker_krbclient_1 bin/sh -c "echo slave01 | tee -a opt/spark/conf/workers"
   docker exec vertica /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | sudo tee -a /etc/hosts"
   docker exec docker_krbclient_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | tee -a /etc/hosts"
+  docker exec docker_slave_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" hdfs) hdfs.example.com hdfs | tee -a /etc/hosts"
   docker exec docker_krbclient_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" docker_slave_1) slave01 | tee -a /etc/hosts"
   docker exec docker_krbclient_1 /bin/sh -c "echo $(docker inspect -f "{{with index .NetworkSettings.Networks \"EXAMPLE.COM\"}}{{.IPAddress}}{{end}}" docker_krbclient_1) master | tee -a /etc/hosts"
   docker exec docker_krbclient_1 /bin/sh -c "systemctl restart sshd"
@@ -33,7 +38,7 @@ function configure_client() {
   docker exec docker_slave_1 /bin/sh -c "systemctl restart sshd"
   docker exec docker_krbclient_1 /bin/sh -c "start-master.sh"
   docker exec docker_slave_1 /bin/sh -c "start-worker.sh spark://master:7077"
-  docker exec docker_krbclient_1 /bin/sh -c "start-worker.sh spark://master:7077"
+  #docker exec docker_krbclient_1 /bin/sh -c "start-worker.sh spark://master:7077"
 }
 
 function configure_containers() {

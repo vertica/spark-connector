@@ -2,12 +2,15 @@ version: "3.9"
 services:
   client:
     build: .
+    container_name: docker_client_1
     volumes:
       - "./..:/spark-connector"
     stdin_open: true
 
+
   vertica:
     image: "verticadocker/vertica-k8s"
+    container_name: docker_vertica_1
     entrypoint: [ "bash", "-c", "/opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
     ports:
       - "5433:5433"
@@ -16,10 +19,12 @@ services:
 
   slave:
     build: ./slave
+    container_name: docker_slave_1
     stdin_open: true
 
   hdfs:
     image: "mdouchement/hdfs"
+    container_name: docker_hdfs_1
     ports:
       - "22022:22"
       - "8020:8020"

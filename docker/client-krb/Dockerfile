@@ -22,5 +22,6 @@ RUN yum install -y java-11-openjdk && \
     cp /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 
 ENV PATH "$PATH:opt/spark/bin:opt/spark/sbin"
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/sbin/init"]

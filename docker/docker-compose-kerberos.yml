@@ -2,6 +2,7 @@ version: "3.9"
 services:
   krbclient:
     build: ./client-krb
+    container_name: docker_krbclient_1
     networks:
       - "example"
     domainname: "example.com"
@@ -14,15 +15,18 @@ services:
       - "krb.env"
     ports:
       - "5050:5050"
+      - "8080:7077"
     privileged: true
 
   slave:
     build: ./slave
+    container_name: docker_slave_1
     networks:
       - "example"
     hostname: "slave"
     domainname: "example.com"
     volumes:
+      - "./..:/spark-connector"
       - "./client-krb:/client-krb"
       - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
       - "./keytabs:/keytabs"
@@ -46,13 +50,13 @@ services:
     privileged: true
 
   vertica:
-    image: "verticadocker/vertica-k8s"
+    image: "vertica/vertica-k8s"
     container_name: "vertica"
     networks:
       - "example"
     hostname: "vertica"
     domainname: "example.com"
-    entrypoint: [ "bash", "-c", "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost && sudo /usr/sbin/sshd -D"]
+    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:
       - "5433:5433"
     volumes:

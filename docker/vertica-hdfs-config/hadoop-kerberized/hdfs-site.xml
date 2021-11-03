@@ -61,7 +61,7 @@
 
     <property>
       <name>dfs.data.transfer.protection</name>
-      <value>authentication</value>
+      <value>privacy</value>
     </property>
 
     <property>

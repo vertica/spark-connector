@@ -42,7 +42,7 @@ object Main {
       val schema = new StructType(Array(StructField("col1", IntegerType)))
 
       val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
       val mode = SaveMode.Overwrite
 
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
