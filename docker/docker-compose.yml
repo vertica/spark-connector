@@ -2,11 +2,13 @@ version: "3.9"
 services:
   client:
     build: .
+    container_name: docker_client_1
     volumes:
       - "./..:/spark-connector"
     stdin_open: true
   vertica:
     image: "vertica/vertica-k8s"
+    container_name: docker_vertica_1
     entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
 
     ports:
@@ -15,6 +17,7 @@ services:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
   hdfs:
     image: "mdouchement/hdfs"
+    container_name: docker_hdfs_1
     ports:
       - "22022:22"
       - "8020:8020"

@@ -2,6 +2,7 @@ version: "3.9"
 services:
   krbclient:
     build: ./client-krb
+    container_name: docker_krbclient_1
     networks:
       - "example"
     domainname: "example.com"
