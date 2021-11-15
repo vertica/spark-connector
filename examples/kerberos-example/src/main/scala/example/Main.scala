@@ -33,7 +33,7 @@ object Main {
       "jaas_config_name" -> conf.getString("functional-tests.jaas_config_name"))
 
     val spark = SparkSession.builder()
-      .master("local[*]")
+      .master("spark://172.31.0.5:7077")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 
@@ -43,7 +43,9 @@ object Main {
 
       val data = Seq.iterate(0,1000)(_ + 1).map(x => Row(x))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
-      val mode = SaveMode.Overwrite
+      df.write.parquet("hdfs://hdfs:8020/data/test")
+
+      /*val mode = SaveMode.Overwrite
 
       df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts + ("table" -> tableName)).mode(mode).save()
       println("KERBEROS DEMO, WROTE TABLE")
@@ -52,7 +54,7 @@ object Main {
         .format("com.vertica.spark.datasource.VerticaSource")
         .options(opts + ("table" -> tableName)).load()
 
-      dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))
+      dfRead.rdd.foreach(x => println("KERBEROS DEMO, READ: " + x))*/
 
     } finally {
       spark.close()

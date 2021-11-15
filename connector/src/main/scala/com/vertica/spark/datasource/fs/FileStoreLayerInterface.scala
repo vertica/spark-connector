@@ -18,7 +18,7 @@ import java.util
 import java.util.Collections
 
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
+import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError, NoSparkSessionFound}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{CommonConfigurationKeys, FileSystem, Path}
 import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetOutputFormat, ParquetWriter}
@@ -43,6 +43,7 @@ import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
 import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.SparkSession
 
 import collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -217,6 +218,19 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   hdfsConfig.set("spark.sql.legacy.parquet.int96RebaseModeInWrite", "CORRECTED")
   hdfsConfig.setEnum(ParquetOutputFormat.JOB_SUMMARY_LEVEL, JobSummaryLevel.NONE)
   hdfsConfig.set(CommonConfigurationKeys.FS_PERMISSIONS_UMASK_KEY, "000")
+
+/*  SparkSession.getActiveSession match {
+    case Some(session) =>
+      val hadoopConf = session.sparkContext.hadoopConfiguration
+      val rpcProtection = Option(hadoopConf.get("hadoop.rpc.protection"))
+      logger.info("HDFS Config hadoop.rpc.protection: " + rpcProtection)
+      rpcProtection match {
+        case Some(rpcProtection) if rpcProtection == "privacy" =>
+          hdfsConfig.set("hadoop.rpc.protection", "privacy")
+        case _ => Right()
+      }
+    case None => Left(NoSparkSessionFound())
+  }*/
 
   private class VerticaParquetBuilder(file: Path) extends ParquetWriter.Builder[InternalRow, VerticaParquetBuilder](file: Path) {
     override protected def self: VerticaParquetBuilder = this
@@ -427,7 +441,6 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
   // scalastyle:off
   override def getImpersonationToken(user: String) : ConnectorResult[String] = {
-
     // First, see if there is already a delegation token (this is the case when run under YARN)
     var hdfsToken: Option[String] = None
     val ugiUser = Option(UserGroupInformation.getLoginUser)
@@ -450,17 +463,24 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     }
 
     this.useFileSystem(fileStoreConfig.address, (fs, _) => {
-      val tokens = fs.addDelegationTokens(user, null)
-      val itr = tokens.iterator
-      while (itr.hasNext) {
-        val token = itr.next();
-        val tokenKind = token.getKind
-        logger.debug("Hadoop impersonation: IT kind: " + tokenKind.toString)
-        if (WEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
-          SWEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
-          HDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind)) {
-          hdfsToken = Some(token.encodeToUrlString)
+      logger.info("Now inside inside the getImpersonationToken method")
+      try {
+        val tokens = fs.addDelegationTokens(user, null)
+        logger.info("The tokens are: " + tokens)
+        val itr = tokens.iterator
+        while (itr.hasNext) {
+          val token = itr.next();
+          val tokenKind = token.getKind
+          logger.info("Hadoop impersonation: IT kind: " + tokenKind.toString)
+          if (WEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+            SWEBHDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind) ||
+            HDFS_DELEGATION_TOKEN_TEXT.equals(tokenKind)) {
+            hdfsToken = Some(token.encodeToUrlString)
+          }
         }
+      }
+      catch {
+        case e: Throwable => logger.info("The exception is: " + e)
       }
 
       Right(())

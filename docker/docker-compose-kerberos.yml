@@ -28,8 +28,8 @@ services:
     volumes:
       - "./..:/spark-connector"
       - "./client-krb:/client-krb"
-      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
       - "./keytabs:/keytabs"
+      - "./vertica-hdfs-config/hadoop-kerberized:/config"
     stdin_open: true
     env_file:
       - "krb.env"

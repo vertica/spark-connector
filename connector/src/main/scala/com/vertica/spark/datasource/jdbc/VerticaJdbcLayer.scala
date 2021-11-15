@@ -295,6 +295,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    logger.info("Now inside the configureSession method")
     for {
       _ <- this.configureKerberosToFilestore(fileStoreLayer)
       _ <- this.configureAWSParameters(fileStoreLayer)
@@ -345,6 +346,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   private def configureKerberosToFilestore(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    logger.info("Now inside the configureKerberosToFilestore method")
     SparkSession.getActiveSession match {
       case Some(session) =>
         logger.debug("Hadoop impersonation: found session")

@@ -94,8 +94,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def doPreWriteSteps(): ConnectorResult[Unit] = {
     // Log a warning if the user wants to perform a merge, but also wants to overwrite data
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
-    logger.info("Writing data to Parquet file.")
+    logger.info("Starting pre-write steps.")
     for {
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
@@ -377,9 +378,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def commitDataIntoVertica(url: String): ConnectorResult[Unit] = {
     val tableNameMaxLength = 30
     val ret = for {
-      // Set Vertica to work with kerberos and HDFS/AWS
-      _ <- jdbcLayer.configureSession(fileStoreLayer)
-
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))
 
@@ -440,17 +438,16 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       logger.warn("Custom copy column list was specified, but will be ignored when creating new external table.")
     }
 
-    val ret = for {
-      _ <- jdbcLayer.configureSession(fileStoreLayer)
+    val existingData = config.createExternalTable match {
+      case Some(value) =>
+        value match {
+          case ExistingData => true
+          case NewData => false
+        }
+      case None => false
+    }
 
-      existingData = config.createExternalTable match {
-        case Some(value) =>
-          value match {
-            case ExistingData => true
-            case NewData => false
-          }
-        case None => false
-      }
+    val ret = for {
       createExternalTableStmt <- if(existingData) inferExternalTableSchema else Right(())
 
       _ <- tableUtils.createExternalTable(
