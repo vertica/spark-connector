@@ -96,6 +96,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     logger.info("Writing data to Parquet file.")
     for {
+      _ <- jdbcLayer.configureSession(fileStoreLayer)
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
@@ -387,7 +388,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val tableNameMaxLength = 30
     val ret = for {
       // Set Vertica to work with kerberos and HDFS/AWS
-      _ <- jdbcLayer.configureSession(fileStoreLayer)
 
       // Get columnList
       columnList <- getColumnList.left.map(_.context("commit: Failed to get column list"))

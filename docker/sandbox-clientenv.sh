@@ -44,6 +44,7 @@ else
   docker compose -f docker-compose.yml up -d
   docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
   docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
+  docker exec docker_client_1 /bin/sh -c "cp /etc/hadoop/conf/* /hadoop-3.3.0/etc/hadoop/"
   docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
   docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
   docker exec docker_hdfs_1 /opt/hadoop/sbin/stop-dfs.sh

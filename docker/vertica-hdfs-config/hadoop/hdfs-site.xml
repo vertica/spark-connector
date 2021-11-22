@@ -79,8 +79,8 @@
     </property>
 
     <property>
-      <name>dfs.namenode.http-bind-host</name>
-      <value>hdfs</value>
+      <name>dfs.namenode.http-address</name>
+      <value>hdfs:50070</value>
       <description>
         The actual adress the HTTP server will bind to. If this optional address
         is set, it overrides only the hostname portion of dfs.namenode.http-address.
