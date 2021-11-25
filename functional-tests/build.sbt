@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.12.13"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := "2.0.4"
 
-val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.0.2")
+val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.1.2")
 val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("2.4.1")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"

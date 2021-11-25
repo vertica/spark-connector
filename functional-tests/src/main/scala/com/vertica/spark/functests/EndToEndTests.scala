@@ -627,18 +627,17 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
-
-    assert(!dfFiltered1
+    assert(dfFiltered1
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
-    assert(!dfFiltered2
+    assert(dfFiltered2
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
     val r = dfFiltered1.count
     val r2 = dfFiltered2.count
@@ -672,17 +671,17 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = dfFiltered1.count
     val r2 = dfFiltered2.count
 
-    assert(!dfFiltered1
+    assert(dfFiltered1
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
-    assert(!dfFiltered2
+    assert(dfFiltered2
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
     assert(r == n)
     assert(r2 == (n + 1))
@@ -868,11 +867,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val r = dfFiltered.count
 
-    assert(!dfFiltered
+    assert(dfFiltered
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
     assert(r == n)
 
@@ -1013,11 +1012,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
     val r = dr.count
 
-    assert(!dr
+    assert(dr
       .queryExecution
       .executedPlan
       .toString()
-      .contains("Filter"))
+      .contains("RuntimeFilters: []"))
 
     assert(r == n + 1)
 
@@ -3160,7 +3159,22 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     catch {
       case e: java.lang.Exception => failure = Some(e)
     }
-    assert(failure.get.isInstanceOf[AnalysisException])
+    failure match {
+      case None => fail("Expected error.")
+      case Some(exception) =>
+        val err: ConnectorError = exception match {
+          case e: SparkException =>
+            assert(e.getCause.getCause.isInstanceOf[ConnectorException])
+            exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error.getUnderlyingError
+
+          case _ => fail("Exception type was not SparkException.")
+        }
+        val bool = err match {
+          case OpenWriteError(_) => true
+          case _ => fail("Incorrect error type")
+        }
+    }
+
     TestUtils.dropTable(conn, tableName)
   }
 

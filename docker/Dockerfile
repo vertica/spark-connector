@@ -9,11 +9,11 @@ RUN yum install -y java-11-openjdk && \
     curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo && \
     mv sbt-rpm.repo /etc/yum.repos.d/ && \
     yum -y install sbt && \
-    wget https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz && \
+    wget https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-without-hadoop.tgz && \
     wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz && \
-    tar xvf spark-3.1.2-bin-without-hadoop.tgz && \
+    tar xvf spark-3.0.0-bin-without-hadoop.tgz && \
     tar xvf hadoop-3.3.0.tar.gz && \
-    mv spark-3.1.2-bin-without-hadoop/ /opt/spark && \
+    mv spark-3.0.0-bin-without-hadoop/ /opt/spark && \
     cd /opt/spark/conf && \
     mv spark-env.sh.template spark-env.sh
 
