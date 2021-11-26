@@ -627,17 +627,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dfFiltered1 = df.filter("a < cast('2001-01-01' as date)")
     val dfFiltered2 = df.filter("a > cast('2001-01-01' as DATE)")
 
-    assert(dfFiltered1
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    val executionPlan1 = dfFiltered1.queryExecution.executedPlan.toString()
+    val executionPlan2 = dfFiltered2.queryExecution.executedPlan.toString()
 
-    assert(dfFiltered2
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    assert(executionPlan1.contains("RuntimeFilters: []") || !executionPlan1.contains("Filters"))
+    assert(executionPlan2.contains("RuntimeFilters: []") || !executionPlan2.contains("Filters"))
 
     val r = dfFiltered1.count
     val r2 = dfFiltered2.count
@@ -671,17 +665,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val r = dfFiltered1.count
     val r2 = dfFiltered2.count
 
-    assert(dfFiltered1
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    val executionPlan1 = dfFiltered1.queryExecution.executedPlan.toString()
+    val executionPlan2 = dfFiltered2.queryExecution.executedPlan.toString()
 
-    assert(dfFiltered2
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    assert(executionPlan1.contains("RuntimeFilters: []") || !executionPlan1.contains("Filters"))
+    assert(executionPlan2.contains("RuntimeFilters: []") || !executionPlan2.contains("Filters"))
 
     assert(r == n)
     assert(r2 == (n + 1))
@@ -867,11 +855,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val r = dfFiltered.count
 
-    assert(dfFiltered
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    val executionPlan = dfFiltered.queryExecution.executedPlan.toString()
+
+    assert(executionPlan.contains("RuntimeFilters: []") || !executionPlan.contains("Filters"))
 
     assert(r == n)
 
@@ -1012,11 +998,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val dr = df.filter("a = cast('2010-03-25 12:55:49.123456' AS TIMESTAMP)")
     val r = dr.count
 
-    assert(dr
-      .queryExecution
-      .executedPlan
-      .toString()
-      .contains("RuntimeFilters: []"))
+    val executionPlan = dr.queryExecution.executedPlan.toString()
+
+    assert(executionPlan.contains("RuntimeFilters: []") || !executionPlan.contains("Filters"))
 
     assert(r == n + 1)
 
@@ -3167,7 +3151,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
             assert(e.getCause.getCause.isInstanceOf[ConnectorException])
             exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error.getUnderlyingError
 
-          case _ => fail("Exception type was not SparkException.")
+          case e: AnalysisException =>
+            val error: ConnectorError = OpenWriteError(e)
+            error
+
+          case _ => fail("Exception type was not SparkException or AnalysisException.")
         }
         val bool = err match {
           case OpenWriteError(_) => true
