@@ -483,6 +483,9 @@ case class InferExternalTableSchemaError(error: ConnectorError) extends Connecto
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
+case class HDFSConfigError() extends ConnectorError {
+  override def getFullContext: String = "No value specified for property: \"fs.defaultFS\" in core-site.xml"
+}
 case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
