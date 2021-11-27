@@ -13,6 +13,12 @@
 
 package com.vertica.spark.config
 
+import org.apache.spark.sql.SparkSession
+import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
+import com.vertica.spark.util.error.{NoSparkSessionFound, HDFSConfigError}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.hadoop.conf.Configuration
+
 sealed trait ArgOrigin
 case object EnvVar extends ArgOrigin
 case object SparkConf extends ArgOrigin
@@ -47,16 +53,39 @@ case class AWSOptions(
  * @param sessionId Unique id for a given connector operation
  */
 final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOptions: AWSOptions) {
+  val defaultFS =
+    if(baseAddress.startsWith("/")) {
+      SparkSession.getActiveSession match {
+        case Some(session) =>
+          val hadoopConf = session.sparkContext.hadoopConfiguration
+          val filepath = Option(hadoopConf.get("fs.defaultFS")) match {
+            case Some(path) => Right(path)
+            case None => Left(HDFSConfigError())
+          }
+          filepath
+        case None => Left(NoSparkSessionFound())
+      }
+    }
+    else {
+      None
+    }
+
+  val newBaseAddress = defaultFS match {
+    case Right(prefix) => prefix + baseAddress
+    case _ => baseAddress
+  }
+
   def address: String = {
     val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
-
     // Create unique directory for session
     baseAddress.stripSuffix(delimiter) + delimiter + sessionId
+    newBaseAddress.stripSuffix(delimiter) + delimiter + sessionId
   }
 
   def externalTableAddress: String = {
     val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
     // URL for directory without session ID
     baseAddress.stripSuffix(delimiter) + delimiter
+    newBaseAddress.stripSuffix(delimiter) + delimiter
   }
 }
