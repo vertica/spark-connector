@@ -65,7 +65,6 @@ coverageFailOnMinimum := true
 
 assembly / assemblyShadeRules := Seq(
   ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
-//  ShadeRule.rename("org.apache.spark.sql.**" -> "shadeSpark.@1").inAll
 )
 
 assembly / assemblyExcludedJars := {
