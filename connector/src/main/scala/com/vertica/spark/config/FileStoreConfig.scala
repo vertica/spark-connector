@@ -60,7 +60,7 @@ final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOpti
           val hadoopConf = session.sparkContext.hadoopConfiguration
           val filepath = Option(hadoopConf.get("fs.defaultFS")) match {
             case Some(path) => Right(path)
-            case None => Left(HDFSConfigError())
+            case None => Left(HDFSConfigError().context("No fs.defaultFS value supplied in HDFS config"))
           }
           filepath
         case None => Left(NoSparkSessionFound())
