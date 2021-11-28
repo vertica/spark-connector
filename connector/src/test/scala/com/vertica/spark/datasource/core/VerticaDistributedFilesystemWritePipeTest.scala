@@ -299,7 +299,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.openWriteParquetFile _).expects(*).returning(Left(OpenWriteError(new Exception())))
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right(()))
 
-
     val tableUtils = mock[TableUtilsInterface]
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)

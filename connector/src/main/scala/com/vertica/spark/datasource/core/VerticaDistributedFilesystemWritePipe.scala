@@ -50,6 +50,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
   private val tempTableName = TableName(config.tablename.name + "_" + config.sessionId, None)
   private val cleanupUtils = new CleanupUtils
+  private val LEGACY_PARQUET_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.datetimeRebaseModeInWrite"
+  private val LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.int96RebaseModeInWrite"
 
   /**
    * No write metadata required for configuration as of yet.
@@ -78,10 +80,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   private def setSparkCalendarConf(): Unit = {
     SparkSession.getActiveSession match {
       case Some(session) =>
-        session.sparkContext.setLocalProperty("spark.sql.legacy.parquet.datetimeRebaseModeInWrite", "CORRECTED")
-        // don't use SQLConf because that breaks things for users on Spark 3.0
-        session.sparkContext.setLocalProperty("spark.sql.legacy.parquet.int96RebaseModeInWrite"
-          , "CORRECTED")
+        session.sparkContext.setLocalProperty(LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
+        session.sparkContext.setLocalProperty(LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE, "CORRECTED")
       case None => logger.warn("No spark session found to set config")
     }
   }
