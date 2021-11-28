@@ -5,6 +5,7 @@ services:
     container_name: docker_client_1
     volumes:
       - "./..:/spark-connector"
+      - "./vertica-hdfs-config/hadoop:/etc/hadoop/conf"
     stdin_open: true
   vertica:
     image: "vertica/vertica-k8s"
