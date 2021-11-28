@@ -297,6 +297,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
     (fileStoreLayerInterface.openWriteParquetFile _).expects(*).returning(Left(OpenWriteError(new Exception())))
+    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right(()))
 
     val tableUtils = mock[TableUtilsInterface]
 

@@ -22,6 +22,7 @@ import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import com.vertica.spark.util.cleanup.CleanupUtils
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
@@ -48,6 +49,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
   private val tempTableName = TableName(config.tablename.name + "_" + config.sessionId, None)
+  private val cleanupUtils = new CleanupUtils
+  private val LEGACY_PARQUET_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.datetimeRebaseModeInWrite"
+  private val LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.int96RebaseModeInWrite"
 
   /**
    * No write metadata required for configuration as of yet.
@@ -76,10 +80,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   private def setSparkCalendarConf(): Unit = {
     SparkSession.getActiveSession match {
       case Some(session) =>
-        session.sparkContext.setLocalProperty(SQLConf.LEGACY_PARQUET_REBASE_MODE_IN_WRITE.key , "CORRECTED")
-        // don't use SQLConf because that breaks things for users on Spark 3.0
-        session.sparkContext.setLocalProperty("spark.sql.legacy.parquet.int96RebaseModeInWrite"
-          , "CORRECTED")
+        session.sparkContext.setLocalProperty(LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
+        session.sparkContext.setLocalProperty(LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE, "CORRECTED")
       case None => logger.warn("No spark session found to set config")
     }
   }
@@ -151,7 +153,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val address = config.fileStoreConfig.address
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".parquet"
-    fileStoreLayer.openWriteParquetFile(filename)
+    fileStoreLayer.openWriteParquetFile(filename) match {
+      case Left(err) =>
+        logger.info("Cleaning up all files in path: " + address)
+        fileStoreLayer.removeDir(address)
+        Left(err)
+      case Right(()) => Right()
+    }
   }
 
   def writeData(data: DataBlock): ConnectorResult[Unit] = {
