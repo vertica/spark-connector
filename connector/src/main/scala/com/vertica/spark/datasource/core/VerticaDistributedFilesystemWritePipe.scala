@@ -87,6 +87,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   /**
+   * Determine the address where the data will be written.  This varies depending on if it is a new external table or not.
+   */
+  private def getAddress(): String = {
+    if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
+  }
+
+  /**
    * Initial setup for the intermediate-based write operation.
    *
    * - Checks if the table exists
@@ -142,8 +149,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           }
         case None => false
       }
-      val location = if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
-      _ <- if(existingData) Right(()) else fileStoreLayer.createDir(location, perm.toString)
+      _ <- if(existingData) Right(()) else fileStoreLayer.createDir(getAddress(), perm.toString)
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
@@ -151,7 +157,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
-    val address = if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
+    val address = getAddress()
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".parquet"
     fileStoreLayer.openWriteParquetFile(filename) match {
@@ -448,8 +454,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     } yield ()
     logger.info("Committing data into Vertica.")
-    val location = if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
-    fileStoreLayer.removeDir(location)
+    fileStoreLayer.removeDir(getAddress())
     ret
   }
 
@@ -500,8 +505,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val globPattern: String = "*.parquet"
 
     // Create url string, escape any ' characters as those surround the url
-    val location: String = if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
-    val url: String = EscapeUtils.sqlEscape(s"${location.stripSuffix("/")}/$globPattern")
+    val url: String = EscapeUtils.sqlEscape(s"${getAddress().stripSuffix("/")}/$globPattern")
 
     val ret = if(config.createExternalTable.isDefined) {
       commitDataAsExternalTable(url)
