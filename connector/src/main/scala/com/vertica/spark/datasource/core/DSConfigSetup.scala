@@ -395,7 +395,7 @@ object DSConfigSetupUtils {
         str match {
           case "true" => true.validNec
           case "false" => false.validNec
-          case _ => InvalidParquetCleanupOption().invalidNec
+          case _ => InvalidPreventCleanupOption().invalidNec
         }
       case None => false.validNec
     }

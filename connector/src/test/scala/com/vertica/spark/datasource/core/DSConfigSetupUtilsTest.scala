@@ -332,6 +332,18 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(err.toNonEmptyList.head.isInstanceOf[InvalidFilePermissions])
   }
 
+  it should "parse custom merge_key" in {
+    val stmt = "col1"
+    val opts = Map("merge_key" -> stmt)
+
+    val res = getResultOrAssert[Option[ValidColumnList]](DSConfigSetupUtils.getMergeKey(opts))
+
+    res match {
+      case Some(list) => assert(list.toString == stmt)
+      case None => fail
+    }
+  }
+
   it should "parse first create_external_table option" in {
     val opts = Map("create_external_table" -> "new-data")
     val v = getResultOrAssert[Option[CreateExternalTableOption]](DSConfigSetupUtils.getCreateExternalTable(opts))
@@ -355,4 +367,23 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val v = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getCreateExternalTable(opts))
     assert(v.toNonEmptyList.head.isInstanceOf[InvalidCreateExternalTableOption])
   }
+
+  it should "parse prevent_cleanup option" in {
+    val opts = Map("prevent_cleanup" -> "true")
+    val v = getResultOrAssert[Boolean](DSConfigSetupUtils.getPreventCleanup(opts))
+    assert(v)
+  }
+
+  it should "default prevent_cleanup option to false" in {
+    val opts = Map[String, String]()
+    val v = getResultOrAssert[Boolean](DSConfigSetupUtils.getPreventCleanup(opts))
+    assert(!v)
+  }
+
+  it should "error if prevent_cleanup is not true/false" in {
+    val opts = Map("prevent_cleanup" -> "asdf")
+    val v = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getPreventCleanup(opts))
+    assert(v.toNonEmptyList.head.isInstanceOf[InvalidPreventCleanupOption])
+  }
+
 }
