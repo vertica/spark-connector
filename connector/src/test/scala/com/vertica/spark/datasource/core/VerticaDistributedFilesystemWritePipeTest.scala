@@ -87,7 +87,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     resultSet
   }
 
-  private def tryDoPreWriteSteps(pipe: VerticaDistributedFilesystemWritePipe) {
+  private def tryDoPreWriteSteps(pipe: VerticaDistributedFilesystemWritePipe): Unit = {
     pipe.doPreWriteSteps() match {
       case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
@@ -589,7 +589,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tname = TableName("testtable", None)
     val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
-    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+    val expectedUrl = config.fileStoreConfig.externalTableAddress + "*.parquet"
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
@@ -645,7 +645,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tname = TableName("testtable", None)
     val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
-    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+    val expectedUrl = config.fileStoreConfig.externalTableAddress + "*.parquet"
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
@@ -672,7 +672,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tname = TableName("testtable", None)
     val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
 
-    val expectedUrl = config.fileStoreConfig.address + "/*.parquet"
+    val expectedUrl = config.fileStoreConfig.externalTableAddress + "*.parquet"
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
 
