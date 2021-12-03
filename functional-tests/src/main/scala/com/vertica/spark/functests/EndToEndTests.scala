@@ -3406,6 +3406,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   it should "create an external table" in {
     val tableName = "externalWriteTest"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val filePath = fsConfig.externalTableAddress + "externaltest"
 
     val data = Seq(Row(77))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
@@ -3413,7 +3414,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
+      writeOpts + ("table" -> tableName, "staging_fs_url" -> filePath, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3423,14 +3424,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     // Extra cleanup for external table
-    fsLayer.removeDir(fsConfig.address)
+    fsLayer.removeDir(fsConfig.externalTableAddress)
     // Need to recreate the root directory for the afterEach assertion check
-    fsLayer.createDir(fsConfig.address, "777")
+    fsLayer.createDir(fsConfig.externalTableAddress, "777")
   }
 
   it should "create an external table with big string" in {
     val tableName = "externalWriteTest"
     val schema = new StructType(Array(StructField("col1", StringType)))
+    val filePath = fsConfig.externalTableAddress + "externaltest"
 
     val str = (1 to 10000).mkString(",")
 
@@ -3440,7 +3442,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data",
+      writeOpts + ("table" -> tableName, "staging_fs_url" -> filePath, "create_external_table" -> "new-data",
                    "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 
@@ -3451,9 +3453,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     // Extra cleanup for external table
-    fsLayer.removeDir(fsConfig.address)
+    fsLayer.removeDir(fsConfig.externalTableAddress)
     // Need to recreate the root directory for the afterEach assertion check
-    fsLayer.createDir(fsConfig.address, "777")
+    fsLayer.createDir(fsConfig.externalTableAddress, "777")
   }
 
   it should "create an external table with decimal data type" in {
@@ -3461,6 +3463,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = new StructType(Array(
       StructField("col1", DecimalType(32,8))
     ))
+    val filePath = fsConfig.externalTableAddress + "externaltest"
 
     val dec = new java.math.BigDecimal(1.23456)
     val data = Seq(Row(
@@ -3472,7 +3475,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "new-data")
+      writeOpts + ("table" -> tableName, "staging_fs_url" -> filePath, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
@@ -3483,9 +3486,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     // Extra cleanup for external table
-    fsLayer.removeDir(fsConfig.address)
+    fsLayer.removeDir(fsConfig.externalTableAddress)
     // Need to recreate the root directory for the afterEach assertion check
-    fsLayer.createDir(fsConfig.address, "777")
+    fsLayer.createDir(fsConfig.externalTableAddress, "777")
   }
 
   it should "create an external table with multiple data types" in {
@@ -3495,6 +3498,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("col2", DateType),
       StructField("col3", LongType)
     ))
+    val filePath = fsConfig.externalTableAddress + "externaltest"
 
     val str = (1 to 10).mkString(",")
     val date = new java.text.SimpleDateFormat("yyyy-MM-dd").parse("2016-07-05")
@@ -3510,7 +3514,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(
-      writeOpts + ("table" -> tableName, "create_external_table" -> "true",
+      writeOpts + ("table" -> tableName, "staging_fs_url" -> filePath, "create_external_table" -> "true",
         "strlen" -> (str.length + 1).toString)
     ).mode(mode).save()
 
@@ -3521,9 +3525,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
 
     // Extra cleanup for external table
-    fsLayer.removeDir(fsConfig.address)
+    fsLayer.removeDir(fsConfig.externalTableAddress)
     // Need to recreate the root directory for the afterEach assertion check
-    fsLayer.createDir(fsConfig.address, "777")
+    fsLayer.createDir(fsConfig.externalTableAddress, "777")
   }
 
   it should "create an external table with existing data in FS" in {
