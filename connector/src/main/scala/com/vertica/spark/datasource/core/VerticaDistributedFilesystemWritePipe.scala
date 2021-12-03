@@ -85,6 +85,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   /**
+   * Determine the address where the data will be written.  This varies depending on if it is a new external table or not.
+   */
+  private def getAddress(): String = {
+    if (config.createExternalTable.isDefined) config.fileStoreConfig.externalTableAddress else config.fileStoreConfig.address
+  }
+
+  /**
    * Initial setup for the intermediate-based write operation.
    *
    * - Checks if the table exists
@@ -140,7 +147,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           }
         case None => false
       }
-      _ <- if(existingData) Right(()) else fileStoreLayer.createDir(config.fileStoreConfig.address, perm.toString)
+      _ <- if(existingData) Right(()) else fileStoreLayer.createDir(getAddress(), perm.toString)
 
       // Create job status table / entry
       _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
@@ -148,7 +155,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
-    val address = config.fileStoreConfig.address
+    val address = getAddress()
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".parquet"
     fileStoreLayer.openWriteParquetFile(filename) match {
@@ -498,14 +505,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val globPattern: String = "*.parquet"
 
     // Create url string, escape any ' characters as those surround the url
-    val url: String = config.createExternalTable match {
-      case Some(value) =>
-        value match {
-          case NewData => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
-          case ExistingData => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.externalTableAddress.stripSuffix ("/")}/$globPattern")
-        }
-      case None => EscapeUtils.sqlEscape (s"${config.fileStoreConfig.address.stripSuffix ("/")}/$globPattern")
-    }
+    val url: String = EscapeUtils.sqlEscape(s"${getAddress().stripSuffix("/")}/$globPattern")
 
     val ret = if(config.createExternalTable.isDefined) {
       commitDataAsExternalTable(url)
