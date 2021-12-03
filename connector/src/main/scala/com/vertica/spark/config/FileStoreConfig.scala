@@ -52,7 +52,7 @@ case class AWSOptions(
  * @param baseAddress Address to use in the intermediate filesystem
  * @param sessionId Unique id for a given connector operation
  */
-final case class FileStoreConfig(baseAddress: String, sessionId: String, awsOptions: AWSOptions) {
+final case class FileStoreConfig(baseAddress: String, preventCleanup: Boolean, sessionId: String, awsOptions: AWSOptions) {
   val defaultFS =
     if(baseAddress.startsWith("/")) {
       SparkSession.getActiveSession match {

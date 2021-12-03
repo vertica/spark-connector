@@ -203,6 +203,10 @@ case class InvalidCreateExternalTableOption() extends ConnectorError {
   override def getFullContext: String = "The 'create_external_table' param is invalid. Please specify " +
     "'new-data' or 'existing-data'."
 }
+case class InvalidParquetCleanupOption() extends ConnectorError {
+  override def getFullContext: String = "The 'parquet_cleanup' param is invalid. Please specify " +
+    "'true' or 'false'. This option will default to false"
+}
 case class DbMissingError() extends ConnectorError {
   def getFullContext: String = "The 'db' param is missing. Please specify the name of the Vertica " +
     "database to connect to."
