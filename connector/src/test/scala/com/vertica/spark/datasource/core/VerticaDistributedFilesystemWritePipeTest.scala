@@ -274,7 +274,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val dataBlock = DataBlock(List(InternalRow(v1, v2), InternalRow(v1, v3)))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.openWriteParquetFile _).expects(fileStoreConfig.address + "/" + uniqueId + ".parquet").returning(Right(()))
+    (fileStoreLayerInterface.openWriteParquetFile _).expects(fileStoreConfig.address + "/" + uniqueId + ".snappy.parquet").returning(Right(()))
     (fileStoreLayerInterface.writeDataToParquetFile _).expects(dataBlock).returning(Right(()))
     (fileStoreLayerInterface.closeWriteParquetFile _).expects().returning(Right(()))
 

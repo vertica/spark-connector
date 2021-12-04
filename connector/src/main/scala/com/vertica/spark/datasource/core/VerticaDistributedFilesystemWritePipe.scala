@@ -159,7 +159,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
     val address = getAddress()
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
-    val filename = address + delimiter + uniqueId + ".parquet"
+    val filename = address + delimiter + uniqueId + ".snappy.parquet"
     fileStoreLayer.openWriteParquetFile(filename) match {
       case Left(err) =>
         logger.info("Cleaning up all files in path: " + address)
