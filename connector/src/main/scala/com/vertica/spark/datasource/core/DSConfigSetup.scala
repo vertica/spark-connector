@@ -439,8 +439,8 @@ object DSConfigSetupUtils {
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
     (DSConfigSetupUtils.getStagingFsUrl(config),
-      DSConfigSetupUtils.getPreventCleanup(config),
       sessionId.validNec,
+      DSConfigSetupUtils.getPreventCleanup(config),
       (DSConfigSetupUtils.getAWSAuth(config),
         DSConfigSetupUtils.getAWSRegion(config),
         DSConfigSetupUtils.getAWSSessionToken(config),

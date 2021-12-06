@@ -894,7 +894,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "Not call cleanup when prevent_cleanup set to true" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", true, "test", AWSOptions(None, None, None, None, None, None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
     val config = makeReadConfig.copy(fileStoreConfig = fsConfig)
 
     val v1: Int = 1
@@ -934,7 +934,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "prevent cleanup when preReadSteps returns an error" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", true, "test", AWSOptions(None, None, None, None, None, None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
     val config = makeReadConfig.copy(fileStoreConfig = fsConfig)
 
     val fileStoreLayer = mock[FileStoreLayerInterface]

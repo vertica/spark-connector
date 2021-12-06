@@ -185,7 +185,7 @@ object Main extends App {
     }
   }
 
-  val fileStoreConfig = FileStoreConfig(filename, false, "filestoretest", AWSOptions(awsAuth,
+  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
                                                              awsRegion,
                                                              awsSessionToken,
                                                              awsCredentialsProvider,

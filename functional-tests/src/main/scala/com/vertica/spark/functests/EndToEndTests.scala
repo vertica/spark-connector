@@ -35,7 +35,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
-  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), false, "", fileStoreConfig.awsOptions)
+  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
   val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()

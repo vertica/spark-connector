@@ -51,8 +51,10 @@ case class AWSOptions(
  * There is not currently much user configuration for the filestore beyond the address to connect to.
  * @param baseAddress Address to use in the intermediate filesystem
  * @param sessionId Unique id for a given connector operation
+ * @param preventCleanup A boolean that prevents cleanup if specified to true
+ * @param AWSOptions Options that specify AWS credentials for using S3 storage
  */
-final case class FileStoreConfig(baseAddress: String, preventCleanup: Boolean, sessionId: String, awsOptions: AWSOptions) {
+final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions) {
   val defaultFS =
     if(baseAddress.startsWith("/")) {
       SparkSession.getActiveSession match {
