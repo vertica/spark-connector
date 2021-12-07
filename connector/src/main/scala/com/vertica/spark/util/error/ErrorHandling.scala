@@ -205,7 +205,7 @@ case class InvalidCreateExternalTableOption() extends ConnectorError {
 }
 case class InvalidPreventCleanupOption() extends ConnectorError {
   override def getFullContext: String = "The 'prevent_cleanup' param is invalid. Please specify " +
-    "'true' or 'false'. This option will default to false"
+    "'true' or 'false'. This option will default to false if no value is specified."
 }
 case class DbMissingError() extends ConnectorError {
   def getFullContext: String = "The 'db' param is missing. Please specify the name of the Vertica " +
