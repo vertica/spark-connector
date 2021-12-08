@@ -30,8 +30,7 @@ object Main  {
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password"),
-      "create_external_table" -> conf.getString("functional-tests.external"),
-      "dbschema" -> conf.getString("functional-tests.dbschema")
+      "create_external_table" -> conf.getString("functional-tests.external")
     )
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
