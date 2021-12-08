@@ -430,16 +430,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = logger.info("The copy statement is: \n" + copyStatement)
 
       rowsCopied <- if (config.mergeKey.isDefined) {
-        performCopy(copyStatement, config.tablename) match{
-          case Right(numRows) => Right(numRows)
-          case Left(err) => Left(err)
-        }
+        performCopy(copyStatement, config.tablename)
       }
       else {
-        performCopy(copyStatement, config.tablename) match{
-          case Right(numRows) => Right(numRows)
-          case Left(err) => Left(err)
-        }
+        performCopy(copyStatement, config.tablename)
       }
 
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
