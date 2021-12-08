@@ -430,13 +430,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = logger.info("The copy statement is: \n" + copyStatement)
 
       rowsCopied <- if (config.mergeKey.isDefined) {
-                      Right(performCopy(copyStatement, tempTableName).left.map(_.context("commit: Failed to copy rows into temp table")))
-                    }
-                    else {
-                      Right(performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows into target table")))
-                    }
+        performCopy(copyStatement, config.tablename) match{
+          case Right(numRows) => Right(numRows)
+          case Left(err) => Left(err)
+        }
+      }
+      else {
+        performCopy(copyStatement, config.tablename) match{
+          case Right(numRows) => Right(numRows)
+          case Left(err) => Left(err)
+        }
+      }
 
-      faultToleranceResults <- testFaultTolerance(rowsCopied.right.getOrElse(0), rejectsTableName)
+      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)

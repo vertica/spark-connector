@@ -380,7 +380,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*, *).returning(Left(SyntaxError(new Exception())))
-    (jdbcLayerInterface.query _).expects(*, *).returning(Left(SyntaxError(new Exception())))
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
 
