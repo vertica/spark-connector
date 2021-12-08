@@ -22,7 +22,6 @@ import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
-import com.vertica.spark.util.cleanup.CleanupUtils
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
@@ -49,7 +48,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   private val logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemWritePipe])
   private val tempTableName = TableName(config.tablename.name + "_" + config.sessionId, None)
-  private val cleanupUtils = new CleanupUtils
   private val LEGACY_PARQUET_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.datetimeRebaseModeInWrite"
   private val LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.int96RebaseModeInWrite"
 
@@ -162,8 +160,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val filename = address + delimiter + uniqueId + ".snappy.parquet"
     fileStoreLayer.openWriteParquetFile(filename) match {
       case Left(err) =>
-        logger.info("Cleaning up all files in path: " + address)
-        fileStoreLayer.removeDir(address)
+        if(!config.fileStoreConfig.preventCleanup) {
+          logger.info("Cleaning up all files in path: " + address)
+          fileStoreLayer.removeDir(address)
+        }
         Left(err)
       case Right(()) => Right()
     }
@@ -454,7 +454,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
     } yield ()
     logger.info("Committing data into Vertica.")
-    fileStoreLayer.removeDir(getAddress())
+    if(!config.fileStoreConfig.preventCleanup) fileStoreLayer.removeDir(config.fileStoreConfig.address)
     ret
   }
 

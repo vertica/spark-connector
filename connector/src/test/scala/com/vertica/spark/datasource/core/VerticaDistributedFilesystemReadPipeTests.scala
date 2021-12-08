@@ -892,4 +892,66 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     config.setRequiredSchema(StructType(Nil))
     this.failOnError(pipe.doPreReadSteps())
   }
+
+  it should "Not call cleanup when prevent_cleanup set to true" in {
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
+    val config = makeReadConfig.copy(fileStoreConfig = fsConfig)
+
+    val v1: Int = 1
+    val v2: Float = 2.0f
+    val v3: Int = 2
+    val data1 = DataBlock(List(InternalRow(v1, v2) ))
+    val data2 = DataBlock(List(InternalRow(v3, v2) ))
+    val emptyData = DataBlock(List())
+
+    val filename1 = "test.parquet"
+    val filename2 = "test2.parquet"
+    val fileRange1 = ParquetFileRange(filename1, 0, 1, Some(0))
+    val fileRange2 = ParquetFileRange(filename2, 0, 1, Some(0))
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Some(Map(filename1 -> 1, filename2 -> 1)))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data1))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
+    (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
+    (fileStoreLayer.openReadParquetFile _).expects(fileRange2).returning(Right())
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(data2))
+    (fileStoreLayer.readDataFromParquetFile _).expects(*).returning(Right(emptyData))
+    (fileStoreLayer.closeReadParquetFile _).expects().returning(Right())
+
+    val cleanupUtils = mock[CleanupUtilsInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, dataSize = 2)
+
+    pipe.startPartitionRead(partition)
+    pipe.readData
+    pipe.readData
+    pipe.readData
+    pipe.endPartitionRead()
+  }
+
+  it should "prevent cleanup when preReadSteps returns an error" in {
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
+    val config = makeReadConfig.copy(fileStoreConfig = fsConfig)
+
+    val fileStoreLayer = mock[FileStoreLayerInterface]
+    (fileStoreLayer.createDir _).expects(*,*).returning(Right())
+    (fileStoreLayer.fileExists _).expects(*).returning(Left(ParentDirMissingError("")))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayer.close _).expects().returning(Right(()))
+
+    val cleanupUtils = mock[CleanupUtilsInterface]
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
+
+    pipe.doPreReadSteps() match {
+      case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))
+      case Right(_) => fail
+    }
+  }
 }

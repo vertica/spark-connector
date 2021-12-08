@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.core
 import java.sql.ResultSet
 
 import com.vertica.spark.common.TestObjects
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, TableName, ValidColumnList, ValidFilePermissions}
+import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, TableName, ValidColumnList, ValidFilePermissions, AWSOptions}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -796,5 +796,63 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
     checkResult(pipe.commit())
+  }
+
+  it should "prevent cleanup of parquet files when prevent_cleanup set to true" in {
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
+    val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
+
+    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
+    (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
+    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_COMMITS\"", *).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "prevent cleanup if startPartitionWrite returns an error" in {
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
+    val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
+    val uniqueId = "unique-id"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val v1: Int = 1
+    val v2: Float = 2.0f
+    val v3: Float = 3.0f
+    val dataBlock = DataBlock(List(InternalRow(v1, v2), InternalRow(v1, v3)))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.openWriteParquetFile _).expects(fileStoreConfig.address + "/" + uniqueId + ".snappy.parquet").returning((Left(OpenWriteError(new Exception()))))
+
+    val tableUtils = mock[TableUtilsInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.startPartitionWrite(uniqueId) match {
+      case Right(_) => fail
+      case Left(err) => assert(err.getUnderlyingError match {
+        case OpenWriteError(_) => true
+        case _ => false
+      })
+    }
   }
 }
