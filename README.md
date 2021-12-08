@@ -147,6 +147,12 @@ Below is a detailed list of connector options that are used in the options map:
 
 Note: If you are using the S3 properties, the connector options has priority over the Spark configuration, which has priority over the environment variables.
 
+### Status and Rejected Data Tables
+
+When data is written to Vertica there are some metadata tables that may be populated with information about the transaction.  These tables can help troubleshoot issues that occur during write operations.
+
+Both tables are added under the target schema (`dbschema` option).  The status table is updated for every write operation, and is named `S2V_JOB_STATUS_USER_<user>` (e.g. `S2V_JOB_STATUS_USER_DBADMIN`, where the `user` option was `dbadmin`).  A new rejected data table is created each time there is at least one rejected row in a transaction, and is named `<table>_<session_id>_COMMITS` (e.g. `dftest_f1804318_57cf_4d9d_99d6_044d06db5e22_COMMITS`, where the `table` option was `dftest` and the generated session id was `f1804318_57cf_4d9d_99d6_044d06db5e22`).  The `session_id` part of the rejected data table name is the same UUID that is used when writing data to HDFS and also when adding entries to job status table, so a specific operation can be traced to see if there were any issues.
+
 ## Examples
 
 If you would like to try out the connector, we have several example applications you can run [in the examples folder](https://github.com/vertica/spark-connector/tree/main/examples).
