@@ -437,6 +437,7 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String): ConnectorResult[String] = {
+    println("The schema is: " + schema)
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
     val indexOfOpeningParantheses = stmt.indexOf("(")
     val indexOfClosingParantheses = stmt.indexOf(")")
@@ -449,7 +450,13 @@ class SchemaTools extends SchemaToolsInterface {
       val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
 
       val fieldType = schema.collect {
-        case field if(addDoubleQuotes(field.name) == colName) => field.dataType.simpleString
+        case field if(addDoubleQuotes(field.name) == colName) =>
+          if (field.metadata.contains("maxlength") && field.dataType.simpleString == "string") {
+            "varchar(" + field.metadata.getLong("maxlength").toString + ")"
+          }
+          else {
+            field.dataType.simpleString
+          }
       }
       if(fieldType.nonEmpty) {
         colName + " " + fieldType.head

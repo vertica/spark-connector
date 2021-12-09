@@ -270,8 +270,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
               "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
               "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
           }
-
-          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")))  {
+          val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
+          if(isPartitioned || config.schema.nonEmpty)  {
             logger.info("Inferring partial schema from dataframe")
             schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName)
           }

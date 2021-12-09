@@ -17,7 +17,7 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType, StringType, MetadataBuilder}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
@@ -30,8 +30,7 @@ object Main  {
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password"),
-      "create_external_table" -> conf.getString("functional-tests.external"),
-      "dbschema" -> conf.getString("functional-tests.dbschema")
+      "create_external_table" -> conf.getString("functional-tests.external")
     )
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
@@ -40,16 +39,28 @@ object Main  {
       .getOrCreate()
 
     try {
-      val tableName = "dftest"
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
-      //val df = spark.emptyDataFrame
-      // Outputs dataframe schema
+      val tableName = "existingData"
+      val filePath = writeOpts("staging_fs_url") + "existingData"
+
+      val data = (1 to 20).map(x => Row("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" + x.toString))
+      val schema = new StructType(Array(StructField("col1", StringType)))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      df.write.parquet(filePath)
+
+      val columnLengthMap = Map(
+        "col1" -> 256
+      )
+      var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+
+      columnLengthMap.foreach { case (colName, length) =>
+        val metadata = new MetadataBuilder().putLong("maxlength", length).build()
+        df2 = df2.withColumn(colName, df2(colName).as(colName, metadata))
+      }
+
+
       val mode = SaveMode.Overwrite
-      // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
-      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
-      readDf.rdd.foreach(x => println("External Table Rows: " + x))
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
 
     } finally {
       spark.close()
