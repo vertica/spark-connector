@@ -21,7 +21,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType, MetadataBuilder}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
@@ -3613,6 +3613,42 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     assert(readDf.count() == 20)
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "use schema metadata to override col size when creating an external table with varchar/varbinary type" in {
+    val tableName = "existingData"
+    val filePath = fsConfig.address + "existingData"
+
+    val input1 = Array.fill[Byte](100)(0)
+    val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    val data = Seq(Row(input1, input2))
+    val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    val columnLengthMap = Map(
+      "col1" -> 256,
+      "col2" -> 256
+    )
+    var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
+
+    columnLengthMap.foreach { case (colName, length) =>
+      val metadata = new MetadataBuilder().putLong("maxlength", length).build()
+      df2 = df2.withColumn(colName, df2(colName).as(colName, metadata))
+    }
+
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    println("The dataframe is: " + readDf.rdd)
+    readDf.rdd.foreach(row => {
+      assert(row.getAs[Array[Byte]](0).length == 100 && row.getAs[String](1).length == 100)
+    })
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table

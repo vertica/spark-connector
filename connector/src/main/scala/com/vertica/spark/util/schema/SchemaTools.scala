@@ -454,6 +454,9 @@ class SchemaTools extends SchemaToolsInterface {
           if (field.metadata.contains("maxlength") && field.dataType.simpleString == "string") {
             "varchar(" + field.metadata.getLong("maxlength").toString + ")"
           }
+          else if(field.metadata.contains("maxlength") && field.dataType.simpleString == "binary"){
+            "varbinary(" + field.metadata.getLong("maxlength").toString + ")"
+          }
           else {
             field.dataType.simpleString
           }

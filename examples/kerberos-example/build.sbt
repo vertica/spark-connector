@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.2.0",
   "org.apache.spark" %% "spark-sql" % "3.2.0",
-  "com.vertica.spark" % "vertica-spark" % "3.0.0-slim"
+  "com.vertica.spark" % "vertica-spark" % "3.0.0" from ("file://" + (new java.io.File(".").getCanonicalPath) + "/../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.0.jar")
 )
 
 assembly / assemblyShadeRules := {

@@ -261,24 +261,37 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         try {
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
-
-          val containsVarchar = createExternalTableStatement.toLowerCase.contains("varchar")
-          val containsVarbinary = createExternalTableStatement.toLowerCase.contains("varbinary")
-
-          if(containsVarchar || containsVarbinary) {
-            logger.warn("The parquet data contains a column of type varchar or varbinary. " +
-              "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
-              "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
-          }
           val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
+
           if(isPartitioned || config.schema.nonEmpty)  {
             logger.info("Inferring partial schema from dataframe")
-            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName)
-          }
+            val updatedStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName) match {
+              case Right(statement) => statement
+            }
+            val splitStatement = updatedStatement.split("[ ,]")
+            splitStatement.foreach(word => {
+              if(word.toLowerCase == "varchar" || word.toLowerCase == "varbinary" )
+                logger.warn("The parquet data contains a column of type varchar or varbinary. " +
+                  "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
+                  "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
+            }
+            })
+
+            Right(updatedStatement)
+
           else {
             logger.info("Inferring schema from parquet data")
             val updatedStatement = createExternalTableStatement.replace("\"" + tableName + "\"", tableName)
             logger.debug("The create external table statement is: " + updatedStatement)
+
+            val splitStatement = updatedStatement.split("[ ,]")
+            splitStatement.foreach(word => {
+              if(word.toLowerCase == "varchar" || word.toLowerCase == "varbinary" )
+                logger.warn("The parquet data contains a column of type varchar or varbinary. " +
+                  "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
+                  "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
+            }
+            })
             Right(updatedStatement)
           }
         }

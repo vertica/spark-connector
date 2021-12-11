@@ -17,7 +17,7 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType, StringType, MetadataBuilder}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType, StringType, MetadataBuilder, BinaryType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
@@ -42,13 +42,16 @@ object Main  {
       val tableName = "existingData"
       val filePath = writeOpts("staging_fs_url") + "existingData"
 
-      val data = (1 to 20).map(x => Row("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" + x.toString))
-      val schema = new StructType(Array(StructField("col1", StringType)))
+      val input1 = Array.fill[Byte](100)(0)
+      val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8"
+      val data = Seq(Row(input1, input2))
+      val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType)))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       df.write.parquet(filePath)
 
       val columnLengthMap = Map(
-        "col1" -> 256
+        "col1" -> 256,
+        "col2" -> 256
       )
       var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
 
@@ -56,7 +59,6 @@ object Main  {
         val metadata = new MetadataBuilder().putLong("maxlength", length).build()
         df2 = df2.withColumn(colName, df2(colName).as(colName, metadata))
       }
-
 
       val mode = SaveMode.Overwrite
       df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
