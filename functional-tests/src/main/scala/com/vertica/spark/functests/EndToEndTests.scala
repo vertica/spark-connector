@@ -1545,7 +1545,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -1692,7 +1692,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -1944,7 +1944,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if Vertica host address is not reachable." in {
+  it should "throw clear error message if Vertica host address is not reachable." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest22"
@@ -1990,7 +1990,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if Vertica user name or password is invalid." in {
+  it should "throw clear error message if Vertica user name or password is invalid." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest23"
@@ -2043,7 +2043,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if data frame contains a complex data type not supported by Vertica." in {
+  it should "throw clear error message if data frame contains a complex data type not supported by Vertica." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest24"
@@ -2077,14 +2077,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should not try to save an empty dataframe." in {
+  it should "not try to save an empty dataframe." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest25"
@@ -2118,7 +2118,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should drop rejects table if it is empty." in {
+  it should "drop rejects table if it is empty." in {
     val stmt = conn.createStatement()
 
     val rand = scala.util.Random.nextInt(10000000)
@@ -2683,7 +2683,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -3311,7 +3311,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
     TestUtils.dropTable(conn, tableName)
