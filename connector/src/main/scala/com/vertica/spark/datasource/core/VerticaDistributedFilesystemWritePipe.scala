@@ -192,12 +192,12 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     }
   }
 
-  def buildCopyStatement(targetTable: String, columnList: String, url: String, rejectsTableName: String, fileFormat: String): String = {
+  def buildCopyStatement(targetTable: String, columnList: String, url: String, tempRejectsTableName: String, fileFormat: String): String = {
     if (config.mergeKey.isDefined) {
-      s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+      s"COPY $targetTable FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $tempRejectsTableName NO COMMIT"
     }
     else {
-      s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $rejectsTableName NO COMMIT"
+      s"COPY $targetTable $columnList FROM '$url' ON ANY NODE $fileFormat REJECTED DATA AS TABLE $tempRejectsTableName NO COMMIT"
     }
   }
 
@@ -316,9 +316,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   private case class FaultToleranceTestResult(success: Boolean, failedRowsPercent: Double)
 
-  private def testFaultTolerance(rowsCopied: Int, rejectsTable: String) : ConnectorResult[FaultToleranceTestResult] = {
+  private def testFaultTolerance(rowsCopied: Int, tempRejectsTable: String, rejectsTable: String) : ConnectorResult[FaultToleranceTestResult] = {
     // verify rejects to see if this falls within user tolerance.
-    val rejectsQuery = "SELECT COUNT(*) as count FROM " + rejectsTable
+    val rejectsQuery = "SELECT COUNT(*) as count FROM " + tempRejectsTable
     logger.info(s"Checking number of rejected rows via statement: " + rejectsQuery)
 
     for {
@@ -362,10 +362,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
       })
 
-      _ <- if (rejectedCount == 0) {
-        val dropRejectsTableStatement = "DROP TABLE IF EXISTS " + rejectsTable  + " CASCADE"
-        logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
-        jdbcLayer.execute(dropRejectsTableStatement)
+      _ <- if (rejectedCount > 0) {
+        val copyRejectsTableStatement = "CREATE TABLE " + rejectsTable  + " AS SELECT * FROM " + tempRejectsTable
+        logger.info(s"Copying Vertica rejects table now: " + copyRejectsTableStatement)
+        jdbcLayer.execute(copyRejectsTableStatement)
       } else {
         Right(())
       }
@@ -416,16 +416,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tempTableExists <- tableUtils.tempTableExists(tempTableName)
       _ <- if (config.mergeKey.isDefined && !tempTableExists) Left(CreateTableError(None)) else Right(())
 
+      tempRejectsTableName = "\"" +
+        EscapeUtils.sqlEscape(tableName.substring(0,Math.min(tableNameMaxLength,tableName.length))) +
+        "_" +
+        sessionId +
+        "_REJECTS_TMP" +
+        "\""
       rejectsTableName = "\"" +
         EscapeUtils.sqlEscape(tableName.substring(0,Math.min(tableNameMaxLength,tableName.length))) +
         "_" +
         sessionId +
-        "_COMMITS" +
+        "_REJECTS" +
         "\""
 
       fullTableName <- if(config.mergeKey.isDefined) Right(tempTableName.getFullTableName) else Right(config.tablename.getFullTableName)
 
-      copyStatement = buildCopyStatement(fullTableName, columnList, url, rejectsTableName, "parquet")
+      copyStatement = buildCopyStatement(fullTableName, columnList, url, tempRejectsTableName, "parquet")
 
       _ = logger.info("The copy statement is: \n" + copyStatement)
 
@@ -436,7 +442,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         performCopy(copyStatement, config.tablename).left.map(_.context("commit: Failed to copy rows into target table"))
       }
 
-      faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
+      faultToleranceResults <- testFaultTolerance(rowsCopied, tempRejectsTableName, rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
       _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)

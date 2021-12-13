@@ -317,16 +317,15 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val uniqueId = "unique-id"
 
-    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
-    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_COMMITS\"", *).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_REJECTS_TMP\"", *).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -347,7 +346,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   it should "call vertica copy upon commit with a custom copy list" in {
     val config = createWriteConfig().copy(copyColumnList = ValidColumnList("col1 INTEGER, col2 FLOAT").getOrElse(None))
 
-    val expected = "COPY \"dummy\" (col1 INTEGER,col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+    val expected = "COPY \"dummy\" (col1 INTEGER,col2 FLOAT) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
@@ -356,7 +355,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*, *).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*, *).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
@@ -412,7 +410,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -441,9 +438,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
-    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (col1,col3,col2) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT", *).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (col1,col3,col2) FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT", *).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*, *).returning(Right(getCountTableResultSet()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -468,9 +464,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
-    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (\"col1\",\"col5\") FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT",*).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy\" (\"col1\",\"col5\") FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT",*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -499,6 +494,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
+    (jdbcLayerInterface.execute _).expects(*, *).returning(Right(()))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet(6)))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
@@ -532,42 +528,10 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
+    (jdbcLayerInterface.execute _).expects(*, *).returning(Right(()))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet(4)))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
-
-    val schemaToolsInterface = mock[SchemaToolsInterface]
-    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
-
-    val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
-    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
-
-    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
-
-    checkResult(pipe.commit())
-  }
-
-  it should "Drop rejects table if there are no rejects" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val config = createWriteConfig().copy(
-      failedRowPercentTolerance =  0.05f
-    )
-
-    val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
-    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
-    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
-    (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
-    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
-    (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.commit _).expects().returning(Right(()))
-
-    // Drop statement
-    (jdbcLayerInterface.execute _).expects("DROP TABLE IF EXISTS \"dummy_id_COMMITS\" CASCADE", *).returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
@@ -708,7 +672,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -737,11 +700,10 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(1))
-    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy_id\" FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT",*).returning(Right(1))
+    (jdbcLayerInterface.executeUpdate _).expects("COPY \"dummy_id\" FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT",*).returning(Right(1))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
@@ -777,7 +739,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
@@ -801,16 +762,15 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None))
     val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
 
-    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_REJECTS_TMP\" NO COMMIT"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
     (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
     (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
     (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
-    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_COMMITS\"", *).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_REJECTS_TMP\"", *).returning(Right(getCountTableResultSet()))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 
     val schemaToolsInterface = mock[SchemaToolsInterface]
