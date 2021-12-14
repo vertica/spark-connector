@@ -367,6 +367,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
         jdbcLayer.execute(dropRejectsTableStatement)
       } else {
+        // Log the first few rejected rows
+        val rejectsDataQuery = "SELECT file_name, row_number, rejected_data, rejected_reason FROM " + rejectsTable + " LIMIT 10"
+        logger.info(s"Getting rejected rows via statement: " + rejectsDataQuery)
+        for {
+          rs <- jdbcLayer.query(rejectsDataQuery)
+          _ = Try {
+            logger.error("file_name | row_number | rejected_data | rejected_reason")
+            while (rs.next) {
+              logger.error(s"${rs.getString(1)} | ${rs.getString(2)} | ${rs.getString(3)} | ${rs.getString(4)}")
+            }
+          }
+          _ = rs.close()
+        } yield ()
+
         Right(())
       }
 
