@@ -288,8 +288,13 @@ class VerticaDistributedFilesystemReadPipe(
       _ = logger.info("Total row groups: " + totalRowGroups)
       // If table is empty, cleanup
       _ =  if(totalRowGroups == 0) {
-        logger.debug("Cleaning up empty directory in path: " + hdfsPath)
-        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        if(!config.fileStoreConfig.preventCleanup) {
+          logger.debug("Cleaning up empty directory in path: " + hdfsPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        }
+        else {
+          Right()
+        }
       }
 
       partitionCount = if (totalRowGroups < requestedPartitionCount) {
@@ -307,8 +312,10 @@ class VerticaDistributedFilesystemReadPipe(
     // If there's an error, cleanup
     ret match {
       case Left(_) =>
-        logger.info("Cleaning up all files in path: " + hdfsPath)
-        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        if(!config.fileStoreConfig.preventCleanup) {
+          logger.info("Cleaning up all files in path: " + hdfsPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+        }
         jdbcLayer.close()
       case _ => logger.info("Reading data from Parquet file.")
     }
@@ -390,15 +397,18 @@ class VerticaDistributedFilesystemReadPipe(
           Right(data)
         }
         else {
-          logger.info("Hit done reading for file segment.")
 
-          // Cleanup old file if required
-          getCleanupInfo(part, this.fileIdx) match {
-            case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
-              case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
-              case Right(_) => ()
+          logger.info("Hit done reading for file segment.")
+          if(!config.fileStoreConfig.preventCleanup) {
+            // Cleanup old file if required
+            getCleanupInfo(part, this.fileIdx) match {
+              case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+                case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
+                case Right(_) => ()
+              }
+              case None => logger.warn("No cleanup info found.")
             }
-            case None => logger.warn("No cleanup info found.")
+
           }
 
           // Next file
@@ -415,13 +425,14 @@ class VerticaDistributedFilesystemReadPipe(
 
     // If there was an underlying error, call cleanup
     (ret, getCleanupInfo(part,this.fileIdx)) match {
-      case (Left(_), Some(cleanupInfo)) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
-        case Right(()) => ()
-        case Left(err) => logger.warn("Ran into error when cleaning up: " + err.getFullContext)
-      }
+      case (Left(_), Some(cleanupInfo)) =>
+        if(!config.fileStoreConfig.preventCleanup) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+          case Right(()) => ()
+          case Left(err) => logger.warn("Ran into error when cleaning up: " + err.getFullContext)
+        }
       case (Left(_), None) => logger.warn("No cleanup info found")
       case (Right(dataBlock), Some(cleanupInfo)) =>
-        if(dataBlock.data.isEmpty) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+        if(dataBlock.data.isEmpty && !config.fileStoreConfig.preventCleanup) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
           case Right(()) => ()
           case Left(err) => logger.warn("Ran into error when cleaning up: " + err.getFullContext)
         }

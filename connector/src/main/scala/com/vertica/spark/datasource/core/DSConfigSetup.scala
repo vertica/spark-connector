@@ -389,6 +389,18 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getPreventCleanup(config: Map[String, String]) : ValidationResult[Boolean] = {
+    config.get("prevent_cleanup") match {
+      case Some(str) =>
+        str match {
+          case "true" => true.validNec
+          case "false" => false.validNec
+          case _ => InvalidPreventCleanupOption().invalidNec
+        }
+      case None => false.validNec
+    }
+  }
+
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
     val user = DSConfigSetupUtils.getUser(config)
     val password = DSConfigSetupUtils.getPassword(config)
@@ -427,14 +439,15 @@ object DSConfigSetupUtils {
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
     (DSConfigSetupUtils.getStagingFsUrl(config),
-    sessionId.validNec,
-    (DSConfigSetupUtils.getAWSAuth(config),
-    DSConfigSetupUtils.getAWSRegion(config),
-    DSConfigSetupUtils.getAWSSessionToken(config),
-    DSConfigSetupUtils.getAWSCredentialsProvider(config),
-    DSConfigSetupUtils.getAWSEndpoint(config),
-      DSConfigSetupUtils.getAWSSSLEnabled(config)
-      ).mapN(AWSOptions)
+      sessionId.validNec,
+      DSConfigSetupUtils.getPreventCleanup(config),
+      (DSConfigSetupUtils.getAWSAuth(config),
+        DSConfigSetupUtils.getAWSRegion(config),
+        DSConfigSetupUtils.getAWSSessionToken(config),
+        DSConfigSetupUtils.getAWSCredentialsProvider(config),
+        DSConfigSetupUtils.getAWSEndpoint(config),
+        DSConfigSetupUtils.getAWSSSLEnabled(config)
+        ).mapN(AWSOptions)
       ).mapN(FileStoreConfig)
   }
 

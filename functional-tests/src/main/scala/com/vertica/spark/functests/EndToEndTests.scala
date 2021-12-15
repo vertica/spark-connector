@@ -35,7 +35,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
 
   val numSparkPartitions = 4
-  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", fileStoreConfig.awsOptions)
+  val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
   val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()
@@ -47,7 +47,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   override def afterEach(): Unit ={
     val anyFiles= fsLayer.getFileList(fsConfig.address)
-    assert(anyFiles.right.get.isEmpty)
+    anyFiles match {
+      case Right(files) => assert(files.isEmpty)
+      case Left(_) => fail("Error getting file list from " + fsConfig.address)
+    }
   }
 
   override def afterAll(): Unit = {
@@ -1542,7 +1545,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -1689,7 +1692,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -1941,7 +1944,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if Vertica host address is not reachable." in {
+  it should "throw clear error message if Vertica host address is not reachable." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest22"
@@ -1987,7 +1990,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if Vertica user name or password is invalid." in {
+  it should "throw clear error message if Vertica user name or password is invalid." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest23"
@@ -2040,7 +2043,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should throw clear error message if data frame contains a complex data type not supported by Vertica." in {
+  it should "throw clear error message if data frame contains a complex data type not supported by Vertica." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest24"
@@ -2074,14 +2077,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should not try to save an empty dataframe." in {
+  it should "not try to save an empty dataframe." in {
     val stmt = conn.createStatement()
 
     val tableName = "s2vdevtest25"
@@ -2115,7 +2118,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "Should drop rejects table if it is empty." in {
+  it should "drop rejects table if it is empty." in {
     val stmt = conn.createStatement()
 
     val rand = scala.util.Random.nextInt(10000000)
@@ -2680,7 +2683,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
 
@@ -3308,7 +3311,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: java.lang.Exception => failure = Some(e)
     }
     checkErrorType(failure, {
-      case FaultToleranceTestFail() => true
+      case CommitError(_) => true
       case _ => false
     })
     TestUtils.dropTable(conn, tableName)
@@ -4022,6 +4025,68 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       df_as3, col("df1.a") === col("df3.b"), "inner")
     assert(joined_df.collect().length == n*n*n)
     TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "prevent cleanup in write when prevent_cleanup is set to true" in {
+    val tableName = "basicWriteTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "prevent_cleanup" -> "true")).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      assert (rs.getInt(1) ==  77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+    val anyFiles= fsLayer.getFileList(fsConfig.address)
+    anyFiles match {
+      case Right(files) => assert(files.nonEmpty)
+      case Left(_) => fail
+    }
+
+    TestUtils.dropTable(conn, tableName)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "prevent cleanup in a read when prevent_cleanup is set to true" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+
+    val insert = "insert into "+ tableName1 + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1, "prevent_cleanup" -> "true")).load()
+
+    assert(df.count() == 1)
+    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    val anyFiles= fsLayer.getFileList(fsConfig.address)
+    anyFiles match {
+      case Right(files) => assert(files.nonEmpty)
+      case Left(_) => fail
+    }
+
+    TestUtils.dropTable(conn, tableName1)
+    fsLayer.removeDir(fsConfig.address)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(fsConfig.address, "777")
   }
 
 }
