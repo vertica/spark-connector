@@ -472,7 +472,7 @@ class SchemaTools extends SchemaToolsInterface {
           col
         }
       }
-      else if(col.toLowerCase.contains("varchar")) colName + " varchar(1024)"
+      else if(col.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
       else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(65000)"
       else col
     }).mkString(",")

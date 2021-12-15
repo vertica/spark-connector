@@ -58,7 +58,9 @@ df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts
 
 ####Example overwriting col size using individual column metadata:
 
-__Note__: Using the method to override the column sizes in the following example is __OPTIONAL__. If you opt to not override the size of varchar and varbinary columns, the connector will default the size to 1024 and 65000 bytes for each varchar or varbinary column, respectively.
+__Note__: Using the method to override the column sizes in the following example is __OPTIONAL__. If you opt to not override the size of varchar and varbinary columns, the connector will default the size to 1024 and 65000 bytes for each varchar or varbinary column, respectively. 
+
+In addition, if you want to update all varchar columns to a size different than 1024, you may use the strlen connector option. This method does not require you to provide additional column metadata and does not override varbinary column size.
 
 ```scala
 val writeOpts = Map(

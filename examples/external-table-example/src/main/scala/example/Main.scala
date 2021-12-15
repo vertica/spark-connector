@@ -54,7 +54,8 @@ object Main  {
       var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], new StructType())
       val mode = SaveMode.Overwrite
       df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
-
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
+      readDf.rdd.foreach(x => println("External Table Rows: " + x))
 
     } finally {
       spark.close()

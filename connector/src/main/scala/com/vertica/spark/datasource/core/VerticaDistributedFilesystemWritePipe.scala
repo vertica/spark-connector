@@ -271,10 +271,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           }
           else {
             logger.info("Inferring partial schema from dataframe")
-            val updatedStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen) match {
-              case Right(statement) => statement
-            }
-            Right(updatedStatement)
+            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen)
 
           }
         }

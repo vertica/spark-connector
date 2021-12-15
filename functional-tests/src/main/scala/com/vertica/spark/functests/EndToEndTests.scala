@@ -3700,7 +3700,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case InferExternalSchemaError(_) => true
+      case UnknownColumnTypesError() => true
       case _ => false
     })
 
@@ -3722,7 +3722,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case InferExternalSchemaError(_) => true
+      case UnknownColumnTypesError() => true
       case _ => false
     })
 
