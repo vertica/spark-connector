@@ -374,6 +374,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           rs <- jdbcLayer.query(rejectsDataQuery)
           _ = Try {
             val rsmd = rs.getMetaData
+            logger.error(s"Found $rejectedCount rejected rows, displaying up to the first 10:")
             logger.error((1 to rsmd.getColumnCount).map(idx => rsmd.getColumnName(idx)).toList.mkString(" | "))
             while (rs.next) {
               logger.error((1 to rsmd.getColumnCount).map(idx => rs.getString(idx)).toList.mkString(" | "))
