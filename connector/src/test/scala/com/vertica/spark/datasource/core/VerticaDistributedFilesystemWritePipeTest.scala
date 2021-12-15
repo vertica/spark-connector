@@ -71,10 +71,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     resultSet
   }
 
-  private def getStringByIndexTableResultSet(): ResultSet = {
+  private def getClosedResultSet(): ResultSet = {
     val resultSet = mock[ResultSet]
-    (resultSet.next _).expects().returning(true)
-    (resultSet.getString(_: Int)).expects(*)
     (resultSet.close _).expects().returning(())
 
     resultSet
@@ -509,7 +507,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet(6)))
-    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getStringByIndexTableResultSet))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getClosedResultSet))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.rollback _).expects().returning(Right(()))
 
@@ -543,7 +541,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getEmptyResultSet))
     (jdbcLayerInterface.executeUpdate _).expects(*,*).returning(Right(100))
     (jdbcLayerInterface.query _).expects(*,*).returning(Right(getCountTableResultSet(4)))
-    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getStringByIndexTableResultSet))
+    (jdbcLayerInterface.query _).expects(*,*).returning(Right(getClosedResultSet))
     (jdbcLayerInterface.close _).expects().returning(Right(()))
     (jdbcLayerInterface.commit _).expects().returning(Right(()))
 

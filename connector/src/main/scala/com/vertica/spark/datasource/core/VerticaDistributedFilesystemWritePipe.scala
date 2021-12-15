@@ -373,9 +373,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         for {
           rs <- jdbcLayer.query(rejectsDataQuery)
           _ = Try {
-            logger.error("file_name | row_number | rejected_data | rejected_reason")
+            val rsmd = rs.getMetaData
+            logger.error((1 to rsmd.getColumnCount).map(idx => rsmd.getColumnName(idx)).toList.mkString(" | "))
             while (rs.next) {
-              logger.error(s"${rs.getString(1)} | ${rs.getString(2)} | ${rs.getString(3)} | ${rs.getString(4)}")
+              logger.error((1 to rsmd.getColumnCount).map(idx => rs.getString(idx)).toList.mkString(" | "))
             }
           }
           _ = rs.close()
