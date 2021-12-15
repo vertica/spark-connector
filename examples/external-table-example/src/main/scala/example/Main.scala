@@ -45,7 +45,7 @@ object Main  {
       val input1 = Array.fill[Byte](100)(0)
       val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8"
       val data = Seq(Row(input1, input2))
-      // Create "existind data" on disk
+      // Create "existing data" on disk
       val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType)))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       df.write.parquet(filePath)

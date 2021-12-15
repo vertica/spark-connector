@@ -537,8 +537,34 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  it should "Return an updated create external table statement" in {
+  it should "Return an updated column type" in {
+    val schema = new StructType(Array(StructField("name", StringType), StructField("age", IntegerType)))
+    val schemaTools= new SchemaTools
+    val col = "\"name\" varchar"
+    val colName = "\"name\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"name\" VARCHAR(1024)")
+  }
 
+  it should "Return the same column type" in {
+    val schema = new StructType(Array(StructField("name", StringType)))
+    val schemaTools= new SchemaTools
+    val col = "\"age\" integer"
+    val colName = "\"age\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"age\" integer")
+  }
+
+  it should "Return an updated column type for an unknown col type" in {
+    val schema = new StructType(Array(StructField("name", StringType), StructField("age", IntegerType)))
+    val schemaTools= new SchemaTools
+    val col = "\"age\" UNKNOWN"
+    val colName = "\"age\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"age\" INTEGER")
+  }
+
+  it should "Return an updated create external table statement" in {
     val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", IntegerType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +
@@ -555,7 +581,6 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "Return an error if partial schema doesn't match partitioned columns" in {
-
     val schema = new StructType(Array(StructField("foo", DateType, nullable = true), StructField("bar", StringType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +

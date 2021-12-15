@@ -90,7 +90,7 @@ df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts ).mod
 // Read it back from Vertica
 val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(opts).load()
 ```
-The Spark connector converts all Spark SQL Strings to Vertica VARCHAR values. The length of these VARCHAR values defaults to 1024. You can change the length of the VARCHAR that is stored in Vertica by setting the strlen option in the option Map.
+The Spark connector converts all Spark SQL Strings to Vertica VARCHAR values. The length of these VARCHAR values defaults to 1024 (octet length). You can change the octet length of the VARCHAR that is stored in Vertica by setting the strlen option in the option Map.
 
 ### Note on permissions
 

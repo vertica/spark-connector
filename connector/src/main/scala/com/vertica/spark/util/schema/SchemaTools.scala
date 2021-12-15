@@ -124,6 +124,8 @@ trait SchemaToolsInterface {
 class SchemaTools extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
   private val unknown = "UNKNOWN"
+  private val maxlength = "maxlength"
+  private val longlength = 65000
 
   private def addDoubleQuotes(str: String): String = {
     "\"" + str + "\""
@@ -253,7 +255,7 @@ class SchemaTools extends SchemaToolsInterface {
       case org.apache.spark.sql.types.StringType =>
         // here we constrain to 32M, max long type size
         // and default to VARCHAR for sizes <= 65K
-        val vtype = if (strlen > 65000) "LONG VARCHAR" else "VARCHAR"
+        val vtype = if (strlen > longlength) "LONG VARCHAR" else "VARCHAR"
         Right(vtype + "(" + strlen.toString + ")")
 
       // To be reconsidered. Store as binary for now
@@ -435,6 +437,31 @@ class SchemaTools extends SchemaToolsInterface {
     }
     columnList
   }
+  def updateFieldDataType(col: String, colName: String, schema: StructType, strlen: Long): String = {
+    val fieldType = schema.collect {
+      case field if(addDoubleQuotes(field.name) == colName) =>
+        if (field.metadata.contains(maxlength) && field.dataType.simpleString == "string") {
+          if(field.metadata.getLong(maxlength) > longlength) "long varchar(" + field.metadata.getLong(maxlength).toString + ")"
+          else "varchar(" + field.metadata.getLong(maxlength).toString + ")"
+        }
+        else if(field.metadata.contains(maxlength) && field.dataType.simpleString == "binary"){
+          "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
+        }
+        else  {
+          getVerticaTypeFromSparkType(field.dataType, strlen) match {
+            case Right(dataType) => dataType
+            case Left(err) => Left(err)
+          }
+        }
+    }
+    if(fieldType.nonEmpty) {
+      colName + " " + fieldType.head
+    }
+
+    else {
+      col
+    }
+  }
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
@@ -447,30 +474,9 @@ class SchemaTools extends SchemaToolsInterface {
       val indexOfFirstDoubleQuote = col.indexOf("\"")
       val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
       val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
-      if(schema.nonEmpty){
-        val fieldType = schema.collect {
-          case field if(addDoubleQuotes(field.name) == colName) =>
-            if (field.metadata.contains("maxlength") && field.dataType.simpleString == "string") {
-              if(field.metadata.getLong("maxlength") > 65000) "long varchar(" + field.metadata.getLong("maxlength").toString + ")"
-              else "varchar(" + field.metadata.getLong("maxlength").toString + ")"
-            }
-            else if(field.metadata.contains("maxlength") && field.dataType.simpleString == "binary"){
-              "varbinary(" + field.metadata.getLong("maxlength").toString + ")"
-            }
-            else  {
-              getVerticaTypeFromSparkType(field.dataType, strlen) match {
-                case Right(dataType) => dataType
-                case Left(err) => Left(err)
-              }
-            }
-        }
-        if(fieldType.nonEmpty) {
-          colName + " " + fieldType.head
-        }
 
-        else {
-          col
-        }
+      if(schema.nonEmpty){
+        updateFieldDataType(col, colName, schema, strlen)
       }
       else if(col.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
       else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(65000)"
@@ -482,7 +488,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
     else {
       val updatedCreateTableStmt = stmt.replace(schemaString, updatedSchema)
-      logger.info("Edited create table statement: " + updatedCreateTableStmt)
+      logger.info("Updated create external table statement: " + updatedCreateTableStmt)
       Right(updatedCreateTableStmt)
     }
   }
