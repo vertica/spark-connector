@@ -118,7 +118,7 @@ trait SchemaToolsInterface {
   * @param schema Schema passed in with empty dataframe
   * @return Updated create external table statement
   */
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String): ConnectorResult[String]
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -436,8 +436,7 @@ class SchemaTools extends SchemaToolsInterface {
     columnList
   }
 
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String): ConnectorResult[String] = {
-    println("The schema is: " + schema)
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
     val indexOfOpeningParantheses = stmt.indexOf("(")
     val indexOfClosingParantheses = stmt.indexOf(")")
@@ -448,26 +447,34 @@ class SchemaTools extends SchemaToolsInterface {
       val indexOfFirstDoubleQuote = col.indexOf("\"")
       val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
       val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
+      if(schema.nonEmpty){
+        val fieldType = schema.collect {
+          case field if(addDoubleQuotes(field.name) == colName) =>
+            if (field.metadata.contains("maxlength") && field.dataType.simpleString == "string") {
+              if(field.metadata.getLong("maxlength") > 65000) "long varchar(" + field.metadata.getLong("maxlength").toString + ")"
+              else "varchar(" + field.metadata.getLong("maxlength").toString + ")"
+            }
+            else if(field.metadata.contains("maxlength") && field.dataType.simpleString == "binary"){
+              "varbinary(" + field.metadata.getLong("maxlength").toString + ")"
+            }
+            else  {
+              getVerticaTypeFromSparkType(field.dataType, strlen) match {
+                case Right(dataType) => dataType
+                case Left(err) => Left(err)
+              }
+            }
+        }
+        if(fieldType.nonEmpty) {
+          colName + " " + fieldType.head
+        }
 
-      val fieldType = schema.collect {
-        case field if(addDoubleQuotes(field.name) == colName) =>
-          if (field.metadata.contains("maxlength") && field.dataType.simpleString == "string") {
-            "varchar(" + field.metadata.getLong("maxlength").toString + ")"
-          }
-          else if(field.metadata.contains("maxlength") && field.dataType.simpleString == "binary"){
-            "varbinary(" + field.metadata.getLong("maxlength").toString + ")"
-          }
-          else {
-            field.dataType.simpleString
-          }
+        else {
+          col
+        }
       }
-      if(fieldType.nonEmpty) {
-        colName + " " + fieldType.head
-      }
-
-      else {
-        col
-      }
+      else if(col.toLowerCase.contains("varchar")) colName + " varchar(1024)"
+      else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(65000)"
+      else col
     }).mkString(",")
 
     if(updatedSchema.contains(unknown)) {

@@ -3656,6 +3656,34 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir(fsConfig.address, "777")
   }
 
+  it should "always default col size when creating an external table with varchar/varbinary type" in {
+    val tableName = "existingData"
+    val filePath = fsConfig.address + "existingData"
+
+    val input1 = Array.fill[Byte](100)(0)
+    val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    val input3 = 77
+    val data = Seq(Row(input1, input2, input3))
+    val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType), StructField("col3", IntegerType)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    df.write.parquet(filePath)
+
+    var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], new StructType())
+
+    val mode = SaveMode.Overwrite
+    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    println("The dataframe is: " + readDf.rdd)
+    readDf.rdd.foreach(row => {
+      assert(row.getAs[Array[Byte]](0).length == 100 && row.getAs[String](1).length == 100)
+    })
+
+    TestUtils.dropTable(conn, tableName)
+    // Extra cleanup for external table
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
+  }
+
   it should "fail to create external table if partial schema does not match partition columns" in {
     // Write data to parquet
     val tableName = "existingData"
@@ -3672,7 +3700,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case UnknownColumnTypesError() => true
+      case InferExternalSchemaError(_) => true
       case _ => false
     })
 
@@ -3694,7 +3722,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     checkErrorType(failure, {
-      case UnknownColumnTypesError() => true
+      case InferExternalSchemaError(_) => true
       case _ => false
     })
 

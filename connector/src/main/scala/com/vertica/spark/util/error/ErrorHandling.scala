@@ -461,6 +461,10 @@ case class DatabaseReadError(cause: Throwable) extends SchemaError {
   def getFullContext: String = ErrorHandling.addCause("Exception while retrieving schema.", this.cause)
   override def getUserMessage: String = "Could not read from database: " + cause.getMessage
 }
+case class InferExternalSchemaError(cause: Throwable) extends SchemaError {
+  def getFullContext: String = ErrorHandling.addCause("Exception while retrieving external table schema.", this.cause)
+  override def getUserMessage: String = "Could get external table schema: " + cause.getMessage
+}
 case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
   private val message = "JDBC failure when trying to retrieve schema"
 

@@ -539,18 +539,18 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   it should "Return an updated create external table statement" in {
 
-    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", StringType, nullable = true)))
+    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", IntegerType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +
       "\"date\" UNKNOWN," +
       "\"region\" varchar" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table sales(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"tx_id\" int,\"date\" DATE,\"region\" INTEGER) as copy from \'/data/\' parquet")
     }
   }
 
@@ -563,7 +563,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
       case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
       case Right(str) => fail
     }

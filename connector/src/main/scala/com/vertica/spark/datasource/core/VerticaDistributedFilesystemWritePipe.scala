@@ -26,6 +26,7 @@ import com.vertica.spark.util.cleanup.CleanupUtils
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
+import scala.util.matching.Regex
 
 import scala.util.Try
 
@@ -263,41 +264,48 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
           val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
 
-          if(isPartitioned || config.schema.nonEmpty)  {
-            logger.info("Inferring partial schema from dataframe")
-            val updatedStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName) match {
-              case Right(statement) => statement
-            }
-            val splitStatement = updatedStatement.split("[ ,]")
-            splitStatement.foreach(word => {
-              if(word.toLowerCase == "varchar" || word.toLowerCase == "varbinary" )
-                logger.warn("The parquet data contains a column of type varchar or varbinary. " +
-                  "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
-                  "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
-            }
-            })
-
-            Right(updatedStatement)
-
-          else {
+          if(!isPartitioned && !createExternalTableStatement.contains("varchar") && !createExternalTableStatement.contains("varbinary")) {
             logger.info("Inferring schema from parquet data")
             val updatedStatement = createExternalTableStatement.replace("\"" + tableName + "\"", tableName)
             logger.debug("The create external table statement is: " + updatedStatement)
 
-            val splitStatement = updatedStatement.split("[ ,]")
-            splitStatement.foreach(word => {
-              if(word.toLowerCase == "varchar" || word.toLowerCase == "varbinary" )
-                logger.warn("The parquet data contains a column of type varchar or varbinary. " +
-                  "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
-                  "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
+            val varcharPattern: Regex = "varchar(?!\\()".r
+            val varbinaryPattern: Regex = "varbinary(?!\\()".r
+
+            val containsVarchar = varcharPattern.findFirstMatchIn(updatedStatement)
+            val containsVarbinary = varbinaryPattern.findFirstMatchIn(updatedStatement)
+
+            if(containsVarchar.isDefined || containsVarbinary.isDefined) {
+              logger.warn("The parquet data contains a column of type varchar or varbinary. " +
+                "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
+                "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
             }
-            })
             Right(updatedStatement)
+          }
+          else {
+            logger.info("Inferring partial schema from dataframe")
+            val updatedStatement = schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen) match {
+              case Right(statement) => statement
+            }
+            val varcharPattern: Regex = "varchar(?!\\()".r
+            val varbinaryPattern: Regex = "varbinary(?!\\()".r
+
+            val containsVarchar = varcharPattern.findFirstMatchIn(updatedStatement)
+            val containsVarbinary = varbinaryPattern.findFirstMatchIn(updatedStatement)
+
+            if(containsVarchar.isDefined || containsVarbinary.isDefined) {
+              logger.warn("The parquet data contains a column of type varchar or varbinary. " +
+                "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
+                "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
+            }
+
+            Right(updatedStatement)
+
           }
         }
         catch {
           case e: Throwable =>
-            Left(DatabaseReadError(e).context("Could not infer external table schema"))
+            Left(InferExternalSchemaError(e))
         }
         finally {
           resultSet.close()
