@@ -239,7 +239,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
-      case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(65000)")
+      case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(" + longlength + ")")
       case org.apache.spark.sql.types.BooleanType => Right("BOOLEAN")
       case org.apache.spark.sql.types.ByteType => Right("TINYINT")
       case org.apache.spark.sql.types.DateType => Right("DATE")
@@ -261,7 +261,7 @@ class SchemaTools extends SchemaToolsInterface {
       // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.ArrayType(_,_) |
            org.apache.spark.sql.types.MapType(_,_,_) |
-           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(65000)")
+           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
 
 
       case _ => Left(MissingSparkConversionError(sparkType))
@@ -479,7 +479,7 @@ class SchemaTools extends SchemaToolsInterface {
         updateFieldDataType(col, colName, schema, strlen)
       }
       else if(col.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
-      else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(65000)"
+      else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(" + longlength + ")"
       else col
     }).mkString(",")
 

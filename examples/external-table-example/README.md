@@ -1,9 +1,9 @@
-#External Tables
+# External Tables
 
-##New Data
+## New Data
 To create an external table by writing new data from Spark to HDFS, you need to specify the "create_external_table" connector option as "new-data" or "true". This option forces the connector to bypass the copy from HDFS to Vertica and instead creates an external table out of the newly written data. You will also need to specify the location of the data using the "staging_fs_url" connector option ("webhdfs://hdfs:50070/data/data.parquet/").
 
-####Example:
+#### Example:
 
 ```scala
 val opts = Map(
@@ -27,13 +27,13 @@ val mode = SaveMode.ErrorIfExists
 df.write.format("com.vertica.spark.datasource.VerticaSource").options(opts).mode(mode).save()
 ```
 
-##Existing Data
+## Existing Data
 The example project in this folder creates an external table from data existing on the disk. In order to accomplish this, you need to specify the "create_external_table" option as "existing-data". Also, ensure that the spark dataframe you are writing is empty. specify the location of the data using the "staging_fs_url" connector option ("webhdfs://hdfs:50070/data/data.parquet/").
 
 __Note__: 
 Partitioned columns  will require you provide a partial schema detailing those columns.
 
-####Example providing a partial schema for partitioned data:
+#### Example providing a partial schema for partitioned data:
 
 ```scala
 val writeOpts = Map(
@@ -56,7 +56,7 @@ val mode = SaveMode.Overwrite
 df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 ```
 
-####Example overwriting col size using individual column metadata:
+#### Example overwriting col size using individual column metadata:
 
 __Note__: Using the method to override the column sizes in the following example is __OPTIONAL__. If you opt to not override the size of varchar and varbinary columns, the connector will default the size to 1024 and 65000 bytes for each varchar or varbinary column, respectively. 
 
