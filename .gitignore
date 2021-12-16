@@ -2,6 +2,7 @@
 .bsp/
 target/
 
+.bloop/
 .idea/
 .metals/
 .vscode/
