@@ -17,7 +17,7 @@ import java.sql.Connection
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType, FloatType, StringType, MetadataBuilder, BinaryType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
@@ -39,14 +39,21 @@ object Main  {
       .getOrCreate()
 
     try {
-      val tableName = "dftest"
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-      val df = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
-      //val df = spark.emptyDataFrame
-      // Outputs dataframe schema
+      val tableName = "existingData"
+      val filePath = writeOpts("staging_fs_url") + "existingData"
+
+      val input1 = Array.fill[Byte](100)(0)
+      val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8"
+      val data = Seq(Row(input1, input2))
+      // Create "existing data" on disk
+      val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType)))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      df.write.parquet(filePath)
+
+      // Write an empty dataframe using our connector to create an external table out of existing data
+      var df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], new StructType())
       val mode = SaveMode.Overwrite
-      // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
       val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).load()
       readDf.rdd.foreach(x => println("External Table Rows: " + x))
 
