@@ -10,15 +10,24 @@ Change directory to the example project:
 cd spark-connector/examples/s3-example
 ```
 
-In src/main/resources/application.conf, you must update the filepath to use your S3 bucket, as follows:
-`filepath="s3a://<your S3 bucket name here>/"`
+# S3 Configuration
 
-# Configuring Authentication
+If you are using a local Minio instance in place of S3, keep the filepath and other AWS options in `src/main/resources/application.conf` as is.
+
+If you are using S3, update the options in `src/main/resources/application.conf` as described below.
+
+## S3 Server + Bucket
+
+You must update the filepath to use your S3 bucket, as follows:
+```
+filepath="s3a://<your S3 bucket name here>/"
+```
+
+Also remove the `aws_endpoint`, `aws_enable_ssl`, and `aws_enable_path_style` options entirely.  AWS uses a default endpoint (`s3.amazonaws.com`), and always uses SSL and virtual-host style access (as opposed to path style access).
 
 ## Access Key ID + Secret Access Key
 
-Set the `aws_access_key_id` and `aws_secret_access_key` options in src/main/resources/application.conf by adding these two lines:
-
+Set the `aws_access_key_id` and `aws_secret_access_key` options by adding these two lines:
 ```
 aws_access_key_id="<your access key id>"
 aws_secret_access_key="<your secret access key>"
@@ -26,21 +35,21 @@ aws_secret_access_key="<your secret access key>"
 
 ## IAM Roles
 
-If you have configured IAM roles for authentication, you need to add this line to src/main/resources/application.conf:
+If you have configured IAM roles for authentication, you need to add this line:
 ```
 aws_credentials_provider="org.apache.hadoop.fs.s3a.auth.IAMInstanceCredentialsProvider"
 ```
 
-# Configuring 2FA
+## Configuring 2FA
 
-If you have two-factor authentication enabled, you need to set your session token by adding this line to src/main/resources/application.conf:
+If you have two-factor authentication enabled, you need to set your session token by adding this line:
 ```
 aws_session_token="<your session token>"
 ```
 
-# Configuring the AWS region for your bucket
+## Configuring the AWS region for your bucket
 
-Set the `aws_region` option in src/main/resources/application.conf by adding this line:
+Set the `aws_region` option by adding this line:
 ```
 aws_region="<your region>"
 ```
