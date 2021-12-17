@@ -271,6 +271,15 @@ object DSConfigSetupUtils {
         "fs.s3a.connection.ssl.enabled", _ => None.validNec))
   }
 
+  def getAWSPathStyleEnabled(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+    val visibility = Visible
+    getAWSArgFromConnectorOption(visibility)(
+      config,
+      "aws_enable_path_style",
+      _ => getAWSArgFromSparkConfig(visibility)(
+        "fs.s3a.path.style.access", _ => None.validNec))
+  }
+
   private def getAWSArg(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
@@ -446,7 +455,8 @@ object DSConfigSetupUtils {
         DSConfigSetupUtils.getAWSSessionToken(config),
         DSConfigSetupUtils.getAWSCredentialsProvider(config),
         DSConfigSetupUtils.getAWSEndpoint(config),
-        DSConfigSetupUtils.getAWSSSLEnabled(config)
+        DSConfigSetupUtils.getAWSSSLEnabled(config),
+        DSConfigSetupUtils.getAWSPathStyleEnabled(config)
         ).mapN(AWSOptions)
       ).mapN(FileStoreConfig)
   }

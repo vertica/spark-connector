@@ -51,6 +51,9 @@ object Main extends App {
     if (Try{conf.getString("functional-tests.aws_enable_ssl")}.isSuccess) {
       readOpts = readOpts + ("aws_enable_ssl" -> conf.getString("functional-tests.aws_enable_ssl"))
     }
+    if (Try{conf.getString("functional-tests.aws_enable_path_style")}.isSuccess) {
+      readOpts = readOpts + ("aws_enable_path_style" -> conf.getString("functional-tests.aws_enable_path_style"))
+    }
 
     val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
 

@@ -341,6 +341,27 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           logger.info("Did not set AWSEndpoint")
           Right(())
       }
+      _ <- awsOptions.enableSSL match {
+        case Some(enable) =>
+          val enableInt = if (enable.arg.equalsIgnoreCase("true")) 1 else 0
+          val sql = s"ALTER SESSION SET AWSEnableHttps=${enableInt}"
+          logger.info(s"Loaded AWSEnableHttps from ${enable.origin}")
+          this.execute(sql)
+        case None =>
+          logger.info("Did not set AWSEnableHttps")
+          Right(())
+      }
+      _ <- awsOptions.enablePathStyle match {
+        case Some(enable) =>
+          // Note that we are setting the opposite here (user option is path style, but this setting is virtual-host style)
+          val enableInt = if (enable.arg.equalsIgnoreCase("true")) 0 else 1
+          val sql = s"ALTER SESSION SET S3EnableVirtualAddressing=${enableInt}"
+          logger.info(s"Loaded S3EnableVirtualAddressing from ${enable.origin}")
+          this.execute(sql)
+        case None =>
+          logger.info("Did not set S3EnableVirtualAddressing")
+          Right(())
+      }
     } yield ()
   }
 
