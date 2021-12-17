@@ -14,7 +14,7 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
-version := "3.0.0"
+version := "3.0.1"
 
 val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.2.0")
 val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("3.1.1")
