@@ -537,25 +537,50 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  it should "Return an updated create external table statement" in {
+  it should "Return an updated column type" in {
+    val schema = new StructType(Array(StructField("name", StringType), StructField("age", IntegerType)))
+    val schemaTools= new SchemaTools
+    val col = "\"name\" varchar"
+    val colName = "\"name\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"name\" VARCHAR(1024)")
+  }
 
-    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", StringType, nullable = true)))
+  it should "Return the same column type" in {
+    val schema = new StructType(Array(StructField("name", StringType)))
+    val schemaTools= new SchemaTools
+    val col = "\"age\" integer"
+    val colName = "\"age\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"age\" integer")
+  }
+
+  it should "Return an updated column type for an unknown col type" in {
+    val schema = new StructType(Array(StructField("name", StringType), StructField("age", IntegerType)))
+    val schemaTools= new SchemaTools
+    val col = "\"age\" UNKNOWN"
+    val colName = "\"age\""
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    assert(updatedField == "\"age\" INTEGER")
+  }
+
+  it should "Return an updated create external table statement" in {
+    val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", IntegerType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +
       "\"date\" UNKNOWN," +
       "\"region\" varchar" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table sales(\"tx_id\" int,\"date\" date,\"region\" string) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"tx_id\" int,\"date\" DATE,\"region\" INTEGER) as copy from \'/data/\' parquet")
     }
   }
 
   it should "Return an error if partial schema doesn't match partitioned columns" in {
-
     val schema = new StructType(Array(StructField("foo", DateType, nullable = true), StructField("bar", StringType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
       "\"tx_id\" int," +
@@ -563,7 +588,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales") match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
       case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
       case Right(str) => fail
     }

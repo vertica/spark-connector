@@ -261,30 +261,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         try {
           val iterate = resultSet.next
           val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
+          val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
 
-          val containsVarchar = createExternalTableStatement.toLowerCase.contains("varchar")
-          val containsVarbinary = createExternalTableStatement.toLowerCase.contains("varbinary")
-
-          if(containsVarchar || containsVarbinary) {
-            logger.warn("The parquet data contains a column of type varchar or varbinary. " +
-              "Lengths of these column types cannot be determined from the data and will truncate to the default length (80). " +
-              "Please provide a partial schema with StringType to replace varchar and BinaryType to replace varbinary, or manually create an external table.")
-          }
-
-          if(inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")))  {
-            logger.info("Inferring partial schema from dataframe")
-            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName)
-          }
-          else {
+          if(!isPartitioned && !createExternalTableStatement.contains("varchar") && !createExternalTableStatement.contains("varbinary")) {
             logger.info("Inferring schema from parquet data")
             val updatedStatement = createExternalTableStatement.replace("\"" + tableName + "\"", tableName)
             logger.debug("The create external table statement is: " + updatedStatement)
             Right(updatedStatement)
           }
+          else {
+            logger.info("Inferring partial schema from dataframe")
+            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen)
+          }
         }
         catch {
           case e: Throwable =>
-            Left(DatabaseReadError(e).context("Could not infer external table schema"))
+            Left(InferExternalSchemaError(e))
         }
         finally {
           resultSet.close()
@@ -367,6 +359,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         logger.info(s"Dropping Vertica rejects table now: " + dropRejectsTableStatement)
         jdbcLayer.execute(dropRejectsTableStatement)
       } else {
+        // Log the first few rejected rows
+        val rejectsDataQuery = "SELECT COUNT(*) count, MIN(rejected_data) example_data, rejected_reason FROM " + rejectsTable + " GROUP BY rejected_reason ORDER BY count DESC LIMIT 10"
+        logger.info(s"Getting summary of rejected rows via statement: " + rejectsDataQuery)
+        for {
+          rs <- jdbcLayer.query(rejectsDataQuery)
+          _ = Try {
+            val rsmd = rs.getMetaData
+            logger.error(s"Found $rejectedCount rejected rows, displaying up to 10 of the most common reasons:")
+            logger.error((1 to rsmd.getColumnCount).map(idx => rsmd.getColumnName(idx)).toList.mkString(" | "))
+            while (rs.next) {
+              logger.error((1 to rsmd.getColumnCount).map(idx => rs.getString(idx)).toList.mkString(" | "))
+            }
+          }
+          _ = rs.close()
+        } yield ()
+
         Right(())
       }
 
