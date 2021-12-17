@@ -56,6 +56,24 @@ aws_region="<your region>"
 
 # Running the example
 
+## Build Connector Assembly
+Change directory to the `connector` folder of the project:
+```
+cd /spark-connector/connector
+```
+
+Build the connector's assembly jar:
+```
+sbt assembly
+```
+
+## Add Connector Assembly as a Dependency to the Example Project
+Create a `lib` folder under the `s3-example` folder and copy the assembled connector jar to it.
+```
+mkdir /spark-connector/examples/s3-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.0.jar /spark-connector/examples/s3-example/lib
+```
+
 ## Build Assembly
 
 In the project's root directory `spark-connector/examples/s3-example` run:
