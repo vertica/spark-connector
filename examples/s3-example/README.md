@@ -56,6 +56,21 @@ aws_region="<your region>"
 
 # Running the example
 
+## Prepare test environment
+
+Change directory to `spark-connector/docker` and run:
+
+```
+./sandbox-clientenv.sh
+```
+On Windows, you can run the equivalent batch file:
+
+```
+sandbox-clientenv.bat
+```
+
+This will put you in the sandbox client (i.e. client container) environment.
+
 ## Build Connector Assembly
 Change directory to the `connector` folder of the project:
 ```
@@ -81,21 +96,6 @@ In the project's root directory `spark-connector/examples/s3-example` run:
 ```
 sbt assembly
 ```
-
-## Prepare test environment
-
-Change directory to `spark-connector/docker` and run:
-
-```
-./sandbox-clientenv.sh
-```
-On Windows, you can run the equivalent batch file:
-
-```
-sandbox-clientenv.bat
-```
-
-This will put you in the sandbox client (i.e. client container) environment.
 
 ## Run test
 
