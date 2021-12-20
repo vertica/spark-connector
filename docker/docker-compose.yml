@@ -30,6 +30,7 @@ services:
       - ./vertica-hdfs-config/hadoop:/hadoop/conf
   minio:
     image: minio/minio
+    container_name: docker_minio_1
     entrypoint: sh
     command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     ports:
