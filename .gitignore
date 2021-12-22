@@ -6,6 +6,7 @@ target/
 .idea/
 .metals/
 .vscode/
+*.iml
 
 .DS_Store
 *.class
