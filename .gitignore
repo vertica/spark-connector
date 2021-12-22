@@ -54,7 +54,7 @@ docker/keytabs/*.keytab
 docker/vertica-hdfs-config/hadoop-kerberized/*.cert
 
 
-# Scala .gitignire
+# Scala .gitignore
 /lib/*.jar
 /test/files/codelib/*.jar
 /test/files/lib/*.jar
