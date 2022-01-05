@@ -151,6 +151,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val AWS_CREDENTIALS_PROVIDER: String = "fs.s3a.aws.credentials.provider"
   private val S3_ENDPOINT: String = "fs.s3a.endpoint"
   private val S3_ENABLE_SSL: String = "fs.s3a.connection.ssl.enabled"
+  private val S3_ENABLE_PATH_STYLE: String = "fs.s3a.path.style.access"
   val logger: Logger = LogProvider.getLogger(classOf[HadoopFileStoreLayer])
 
   private val WEBHDFS_DELEGATION_TOKEN_TEXT = new Text("WEBHDFS delegation")
@@ -174,7 +175,6 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     case None => ()
   }
   private val awsOptions = fileStoreConfig.awsOptions
-  private val awsAuth = awsOptions.awsAuth
 
   awsOptions.awsCredentialsProvider match {
     case Some(provider) =>
@@ -183,8 +183,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
     case None =>
       logger.info("Did not set AWS credentials provider for Hadoop config")
   }
-
-  awsAuth match {
+  awsOptions.awsAuth match {
     case Some(auth) =>
       hdfsConfig.set(S3_ACCESS_KEY, auth.accessKeyId.arg)
       logger.info(s"Loaded $S3_ACCESS_KEY from ${auth.accessKeyId.origin}")
@@ -209,6 +208,12 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       hdfsConfig.set(S3_ENABLE_SSL, enable.arg)
       logger.info(s"Loaded $S3_ENABLE_SSL from ${enable.origin}")
     case None => logger.debug("Did not set AWS SSL enabled flag, using default of true.")
+  }
+  awsOptions.enablePathStyle match {
+    case Some(enable) =>
+      hdfsConfig.set(S3_ENABLE_PATH_STYLE, enable.arg)
+      logger.info(s"Loaded $S3_ENABLE_PATH_STYLE from ${enable.origin}")
+    case None => logger.debug("Did not set AWS path style enabled flag, using default of false.")
   }
 
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")

@@ -87,6 +87,9 @@ object Main extends App {
   if (Try{conf.getString("functional-tests.aws_endpoint")}.isSuccess) {
     readOpts = readOpts + ("aws_endpoint" -> conf.getString("functional-tests.aws_endpoint"))
   }
+  if (Try{conf.getString("functional-tests.aws_enable_path_style")}.isSuccess) {
+    readOpts = readOpts + ("aws_enable_path_style" -> conf.getString("functional-tests.aws_enable_path_style"))
+  }
 
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
     readOpts = readOpts + (
@@ -185,12 +188,23 @@ object Main extends App {
     }
   }
 
+  val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
+    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try{conf.getString("functional-tests.aws_enable_path_style")}.toOption match{
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
+      }
+    }
+  }
+
   val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
                                                              awsRegion,
                                                              awsSessionToken,
                                                              awsCredentialsProvider,
                                                              awsEndpoint,
-                                                             awsEnableSsl
+                                                             awsEnableSsl,
+                                                             awsEnablePathStyle
   ))
   runSuite(new HDFSTests(
     fileStoreConfig,

@@ -23,8 +23,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.2.0",
   "org.apache.spark" %% "spark-sql" % "3.2.0",
-  "org.apache.hadoop" % "hadoop-aws" % "3.3.0",
-  "com.vertica.spark" % "vertica-spark" % "3.0.1-slim"
+  "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
 )
 
 assembly / assemblyMergeStrategy := {

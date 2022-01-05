@@ -36,6 +36,7 @@ Set the appropriate S3-credentials in the application.conf file. Refer to the fo
 * aws_credentials_provider
 * aws_endpoint
 * aws_enable_ssl
+* aws_enable_path_style
 
 From the functional-tests directory, build the JAR file for the functional tests:
 ```
