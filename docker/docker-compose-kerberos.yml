@@ -71,6 +71,22 @@ services:
       - "krb.env"
     privileged: true
     entrypoint: /bin/bash
+  minio:
+    image: minio/minio
+    container_name: minio
+    networks:
+      - example
+    hostname: minio
+    domainname: example.com
+    entrypoint: sh
+    command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+volumes:
+  minio-data:
 networks:
   example:
     name: "EXAMPLE.COM"
