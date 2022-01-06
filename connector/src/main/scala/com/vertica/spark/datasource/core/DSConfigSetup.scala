@@ -280,6 +280,13 @@ object DSConfigSetupUtils {
         "fs.s3a.path.style.access", _ => None.validNec))
   }
 
+  def getBackupServerNode(config: Map[String, String]): ValidationResult[Option[String]] = {
+    config.get("backup_server_node") match {
+      case Some(backUpServer) => Some(backUpServer).validNec
+      case None => None.validNec
+    }
+  }
+
   private def getAWSArg(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
@@ -443,7 +450,8 @@ object DSConfigSetupUtils {
     DSConfigSetupUtils.getPort(config),
     DSConfigSetupUtils.getDb(config),
     DSConfigSetupUtils.validateAndGetJDBCAuth(config),
-    DSConfigSetupUtils.validateAndGetJDBCSSLConfig(config)).mapN(JDBCConfig)
+    DSConfigSetupUtils.validateAndGetJDBCSSLConfig(config),
+    DSConfigSetupUtils.getBackupServerNode(config)).mapN(JDBCConfig)
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
