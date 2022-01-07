@@ -386,4 +386,11 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(v.toNonEmptyList.head.isInstanceOf[InvalidPreventCleanupOption])
   }
 
+  it should "parse backup server node address" in {
+    val server = "host2"
+    val opts = Map("backup_server_node" -> server)
+    val serverName = getResultOrAssert[Option[String]](DSConfigSetupUtils.getBackupServerNode(opts))
+    assert(serverName.get == server)
+  }
+
 }

@@ -117,6 +117,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   addTLSProperties()
 
+  // Load BackupServerNode
+  if (cfg.backupServerNodes.isDefined) {
+    Utils.ignore(prop.put("BackupServerNode", cfg.backupServerNodes.get))
+  }
   // Load driver
   Class.forName("com.vertica.jdbc.Driver")
 

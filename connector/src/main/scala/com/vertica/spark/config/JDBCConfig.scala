@@ -52,12 +52,16 @@ case class KerberosAuth(username: String,
  * @param db name of the Vertica database to connect to
  * @param auth the authentication details, varies depending on method used
  * @param tlsConfig the TLS configuration settings for the JDBC connection
+ * @param backupServerNodes the comma separates list of vertica backup nodes. The host name or IP can optionally be
+ *                          followed by a colon and a port number. If not supplied, defaults to the standard Vertica
+ *                          port number (5433). To list multiple hosts, separate them by a comma.
  */
 final case class JDBCConfig(host: String,
                             port: Int,
                             db: String,
                             auth: JdbcAuth,
-                            tlsConfig: JDBCTLSConfig)
+                            tlsConfig: JDBCTLSConfig,
+                            backupServerNodes: Option[String] = None)
 
 /**
  * TLS configuration settings for a JDBC connection to Vertica.
