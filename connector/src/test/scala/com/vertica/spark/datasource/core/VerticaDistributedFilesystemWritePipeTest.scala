@@ -211,7 +211,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.viewExists _).expects(tablename).returning(Right(false))
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
-    (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", "APPEND").returning(Right(()))
 
     // Should skip
     (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right()).never()
@@ -611,7 +610,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
-    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -641,7 +639,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
-    (tableUtils.updateJobStatusTable _).expects(tname, jdbcConfig.auth.user, 0.0, "id", true).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
