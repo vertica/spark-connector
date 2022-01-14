@@ -150,7 +150,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if(existingData) Right(()) else fileStoreLayer.createDir(getAddress(), perm.toString)
 
       // Create job status table / entry
-      _ <- tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+      _ <- if(config.createExternalTable.isDefined) {
+        Right(())
+      } else {
+        tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+      }
     } yield ()
   }
 
@@ -494,8 +498,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
               )
 
       _ <- tableUtils.validateExternalTable(config.tablename)
-
-      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true)
 
     } yield ()
 
