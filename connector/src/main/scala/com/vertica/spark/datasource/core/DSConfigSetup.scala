@@ -133,6 +133,18 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getStatusTable(config: Map[String, String]): ValidationResult[Boolean] = {
+    config.get("status_table") match {
+      case Some(str) =>
+        str match {
+          case "true" => true.validNec
+          case "false" => false.validNec
+          case _ => InvalidStatusTableOption().invalidNec
+        }
+      case None => false.validNec
+    }
+  }
+
   def getStagingFsUrl(config: Map[String, String]): ValidationResult[String] = {
     config.get("staging_fs_url") match {
       case Some(address) => address.validNec
