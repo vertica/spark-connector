@@ -51,7 +51,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       sessionId = "id",
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-      None
+      None,
+      statusTable = false
     )
   }
 

@@ -40,14 +40,15 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     strlen = 1024,
     copyColumnList = None,
     sessionId = "id",
-    failedRowPercentTolerance =  0.0f,
+    failedRowPercentTolerance = 0.0f,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-    createExternalTable = None
+    createExternalTable = None,
+    statusTable = false
   )
 
   val uniqueId = "unique-id"
 
-  private def checkResult(result: ConnectorResult[Unit]): Unit= {
+  private def checkResult(result: ConnectorResult[Unit]): Unit = {
     result match {
       case Left(err) => fail(err.getFullContext)
       case Right(_) => ()
@@ -58,7 +59,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
+    val dataBlock = DataBlock(List(InternalRow(v1, v2), InternalRow(v1, v3)))
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(2))
@@ -83,7 +84,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
+    val dataBlock = DataBlock(List(InternalRow(v1, v2), InternalRow(v1, v3)))
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(3))
@@ -107,8 +108,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val v1: Int = 1
     val v2: Float = 2.0f
     val v3: Float = 3.0f
-    val dataBlock1 = DataBlock(List(InternalRow(v1,v2), InternalRow(v1,v3)))
-    val dataBlock2 = DataBlock(List(InternalRow(v1,v3), InternalRow(v1,v2)))
+    val dataBlock1 = DataBlock(List(InternalRow(v1, v2), InternalRow(v1, v3)))
+    val dataBlock2 = DataBlock(List(InternalRow(v1, v3), InternalRow(v1, v2)))
 
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Right(2))
