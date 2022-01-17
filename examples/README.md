@@ -50,6 +50,7 @@ Change your working directory to one in `spark-connector/examples/[EXAMPLE]`, su
 ```
 sbt run
 ```
+**Note**: Some examples may throw exceptions on exit. To check that the example executed correctly, the console output should contain a SUCCESS message.
 
 If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run:
 ```
