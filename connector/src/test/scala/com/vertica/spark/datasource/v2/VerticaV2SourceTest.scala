@@ -78,7 +78,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     failedRowPercentTolerance =  0.0f,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
     createExternalTable = None,
-    statusTable = false
+    saveMetadataTables = false
   )
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))

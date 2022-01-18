@@ -133,13 +133,13 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getWriteStatusTable(config: Map[String, String]): ValidationResult[Boolean] = {
-    config.get("write_status_table") match {
+  def getSaveMetadataTables(config: Map[String, String]): ValidationResult[Boolean] = {
+    config.get("save_metadata_tables") match {
       case Some(str) =>
         str match {
           case "true" => true.validNec
           case "false" => false.validNec
-          case _ => InvalidWriteStatusTableOption().invalidNec
+          case _ => InvalidSaveMetadataTablesOption().invalidNec
         }
       case None => false.validNec
     }
@@ -609,7 +609,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getFailedRowsPercentTolerance(config),
           DSConfigSetupUtils.getFilePermissions(config),
           DSConfigSetupUtils.getCreateExternalTable(config),
-          DSConfigSetupUtils.getWriteStatusTable(config),
+          DSConfigSetupUtils.getSaveMetadataTables(config),
           DSConfigSetupUtils.getMergeKey(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>

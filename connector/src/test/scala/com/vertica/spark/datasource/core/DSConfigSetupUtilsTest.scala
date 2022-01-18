@@ -393,21 +393,21 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(serverName.get == server)
   }
 
-  it should "parse write_status_table" in {
-    val opts = Map[String, String]("write_status_table" -> "true")
-    val write_status_table = getResultOrAssert[Boolean](DSConfigSetupUtils.getWriteStatusTable(opts))
-    assert(write_status_table)
+  it should "parse save_metadata_tables" in {
+    val opts = Map[String, String]("save_metadata_tables" -> "true")
+    val save_metadata_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
+    assert(save_metadata_tables)
   }
 
-  it should "defaults write_status_table to false" in {
+  it should "defaults save_metadata_tables to false" in {
     val opts = Map[String, String]()
-    val write_status_table = getResultOrAssert[Boolean](DSConfigSetupUtils.getWriteStatusTable(opts))
-    assert(!write_status_table)
+    val save_metadata_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
+    assert(!save_metadata_tables)
   }
 
-  it should "error on invalid input to write_status_table" in {
-    val opts = Map[String, String]("write_status_table" -> "asdf")
-    val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getWriteStatusTable(opts))
-    assert(error.toNonEmptyList.head.isInstanceOf[InvalidWriteStatusTableOption])
+  it should "error on invalid input to save_metadata_tables" in {
+    val opts = Map[String, String]("save_metadata_tables" -> "asdf")
+    val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getSaveMetadataTables(opts))
+    assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveMetadataTablesOption])
   }
 }
