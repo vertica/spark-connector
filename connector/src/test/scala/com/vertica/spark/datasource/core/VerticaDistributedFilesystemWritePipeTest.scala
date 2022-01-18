@@ -39,7 +39,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   val schema = new StructType(Array(StructField("col1", IntegerType)))
 
-  private def createWriteConfig() = {
+  private def createWriteConfig(save_metadata_tables:Boolean = false) = {
     DistributedFilesystemWriteConfig(
       jdbcConfig = jdbcConfig,
       fileStoreConfig = fileStoreConfig,
@@ -52,7 +52,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       None,
-      saveMetadataTables = false
+      saveMetadataTables = save_metadata_tables
     )
   }
 
@@ -118,6 +118,29 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right())
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
+    // (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", "APPEND").returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    tryDoPreWriteSteps(pipe)
+  }
+
+  it should "Create a table and initialize status table" in {
+    val config = createWriteConfig(save_metadata_tables = true)
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.createDir _).expects(*,*).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.tableExists _).expects(tablename).returning(Right(false))
+    (tableUtils.viewExists _).expects(tablename).returning(Right(false))
+    (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
+    (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right())
+    (tableUtils.tableExists _).expects(tablename).returning(Right(true))
     (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", "APPEND").returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -143,7 +166,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(*, *, *, *).returning(Right())
     (tableUtils.tableExists _).expects(*).returning(Right(true))
-    (tableUtils.createAndInitJobStatusTable _).expects(*,*,*,*).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -168,7 +190,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(tablename, Some(createTableStatement), schema, strlen).returning(Right())
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
-    (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", *).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -238,7 +259,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(*, *, *, *).returning(Right())
     (tableUtils.tableExists _).expects(*).returning(Right(true))
-    (tableUtils.createAndInitJobStatusTable _).expects(*, *, *, *).returning(Right())
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -322,7 +342,34 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   it should "call vertica copy upon commit" in {
     val config = createWriteConfig()
 
-    val uniqueId = "unique-id"
+    val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayerInterface.executeUpdate _).expects(*, *).returning(Right(1))
+    (jdbcLayerInterface.query _).expects("EXPLAIN " + expected, *).returning(Right(getEmptyResultSet))
+    (jdbcLayerInterface.executeUpdate _).expects(expected, *).returning(Right(1))
+    (jdbcLayerInterface.query _).expects("SELECT COUNT(*) as count FROM \"dummy_id_COMMITS\"", *).returning(Right(getCountTableResultSet()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.execute _).expects(*,*).returning(Right(()))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "with save_metadata_tables on, update job status table on commit to vertica" in {
+    val config = createWriteConfig(save_metadata_tables = true)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
@@ -372,7 +419,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -430,7 +476,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(fileStoreConfig.address).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -439,7 +484,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "use specified custom copy columns if specified" in {
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = createWriteConfig().copy(
       copyColumnList = ValidColumnList("col1,col3,col2").getOrElse(None)
     )
@@ -460,7 +504,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -488,7 +531,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -518,7 +560,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -552,7 +593,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -585,7 +625,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -640,6 +679,38 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "create an external table with existing data and update job status table" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
+      fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
+      tablename = TableName("testtable", None), schema = new StructType(),
+      saveMetadataTables = true
+    )
+    val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Right(Array[String]("example.parquet")))
+    val inferStmt = s"SELECT INFER_EXTERNAL_TABLE_DDL(\'$url\',\'testtable\')"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(inferStmt,*).returning(Right(getStringResultSet))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val createExternalTableStmt = "create external table testtable(\"col1\" int) " +
+      "as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet"
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.updateJobStatusTable _).expects(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true).returning(Right())
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -728,7 +799,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.createTempTable _).expects(tempTableName, schema, strlen).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
 
@@ -762,7 +832,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.createTempTable _).expects(tempTableName, schema, strlen).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
 
@@ -796,7 +865,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (fileStoreLayerInterface.removeDir _).expects(*).returning(Right())
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.createTempTable _).expects(tempTableName, config.schema, strlen).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(true))
 
@@ -824,7 +892,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (schemaToolsInterface.getCopyColumnList _).expects(jdbcLayerInterface, tablename, schema).returning(Right(""))
 
     val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.updateJobStatusTable _).expects(*, *, *, *, *).returning(Right(()))
     (tableUtils.tempTableExists _).expects(tempTableName).returning(Right(false))
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]
