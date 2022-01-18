@@ -39,7 +39,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   val schema = new StructType(Array(StructField("col1", IntegerType)))
 
-  private def createWriteConfig(save_metadata_tables:Boolean = false) = {
+  private def createWriteConfig() = {
     DistributedFilesystemWriteConfig(
       jdbcConfig = jdbcConfig,
       fileStoreConfig = fileStoreConfig,
@@ -52,7 +52,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       None,
-      saveMetadataTables = save_metadata_tables
     )
   }
 
@@ -126,7 +125,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Create a table and initialize status table" in {
-    val config = createWriteConfig(save_metadata_tables = true)
+    val config = createWriteConfig().copy(saveMetadataTables = true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -369,7 +368,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "with save_metadata_tables on, update job status table on commit to vertica" in {
-    val config = createWriteConfig(save_metadata_tables = true)
+    val config = createWriteConfig().copy(saveMetadataTables = true)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
