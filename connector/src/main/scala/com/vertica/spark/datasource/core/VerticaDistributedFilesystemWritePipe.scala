@@ -150,10 +150,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if(existingData) Right(()) else fileStoreLayer.createDir(getAddress(), perm.toString)
 
       // Create job status table / entry
-      _ <- if(config.createExternalTable.isDefined) {
-        Right(())
-      } else {
+      _ <- if(config.saveMetadataTables) {
         tableUtils.createAndInitJobStatusTable(config.tablename, config.jdbcConfig.auth.user, config.sessionId, if(config.isOverwrite) "OVERWRITE" else "APPEND")
+      } else {
+        Right(())
       }
     } yield ()
   }
@@ -451,7 +451,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       faultToleranceResults <- testFaultTolerance(rowsCopied, rejectsTableName)
         .left.map(err => CommitError(err).context("commit: JDBC Error when trying to determine fault tolerance"))
 
-      _ <- tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+      _ <- if (config.saveMetadataTables) {
+        tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, faultToleranceResults.failedRowsPercent, config.sessionId, faultToleranceResults.success)
+      } else {
+        Right(())
+      }
 
       _ <- if (faultToleranceResults.success) Right(()) else Left(FaultToleranceTestFail())
 
@@ -499,6 +503,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
       _ <- tableUtils.validateExternalTable(config.tablename)
 
+      _ <- if (config.saveMetadataTables) {
+        tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, success = true)
+      } else {
+        Right(())
+      }
     } yield ()
 
     // External table creation always commits. So, if an error was detected, drop the table
