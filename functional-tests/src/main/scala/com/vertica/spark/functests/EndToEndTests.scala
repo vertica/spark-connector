@@ -1058,15 +1058,13 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val stmt = conn.createStatement()
     try {
-      val oldRowCount = getJobStatusTableRowCount(tableName, stmt)
-
       df.write.format("com.vertica.spark.datasource.VerticaSource")
         .options(opts)
         .mode(mode)
         .save()
 
       val newRowCount = getJobStatusTableRowCount(tableName, stmt)
-      assert((newRowCount - oldRowCount) == 1)
+      assert((newRowCount) == 1)
     }
     catch {
       case err: Exception => fail(err)
