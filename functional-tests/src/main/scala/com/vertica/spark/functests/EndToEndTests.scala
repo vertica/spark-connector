@@ -13,21 +13,17 @@
 
 package com.vertica.spark.functests
 
-import java.sql.{Connection, Date, Timestamp, Statement}
-
+import java.sql.{Connection, Date, Statement, Timestamp}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType, MetadataBuilder}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalactic.TripleEquals._
-import org.scalactic.Tolerance._
 import org.apache.spark.sql.functions._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -1064,7 +1060,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         .save()
 
       val newRowCount = getJobStatusTableRowCount(tableName, stmt)
-      assert((newRowCount) == 1)
+      assert(newRowCount == 1)
     }
     catch {
       case err: Exception => fail(err)
