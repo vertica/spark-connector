@@ -52,6 +52,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       None,
+      saveJobStatusTables = false
     )
   }
 
@@ -117,7 +118,6 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.tempTableExists _).expects(tablename).returning(Right(false))
     (tableUtils.createTable _).expects(tablename, None, schema, strlen).returning(Right())
     (tableUtils.tableExists _).expects(tablename).returning(Right(true))
-    // (tableUtils.createAndInitJobStatusTable _).expects(tablename, jdbcConfig.auth.user, "id", "APPEND").returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -125,7 +125,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Create a table and initialize status table" in {
-    val config = createWriteConfig().copy(saveMetadataTables = true)
+    val config = createWriteConfig().copy(saveJobStatusTables = true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -368,7 +368,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "with save_metadata_tables on, update job status table on commit to vertica" in {
-    val config = createWriteConfig().copy(saveMetadataTables = true)
+    val config = createWriteConfig().copy(saveJobStatusTables = true)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
@@ -686,11 +686,12 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
   it should "create an external table with existing data and update job status table" in {
     val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
-      fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
-      tablename = TableName("testtable", None), schema = new StructType(),
-      saveMetadataTables = true
-    )
+    val config = createWriteConfig()
+      .copy(createExternalTable = Some(ExistingData),
+        fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
+        tablename = TableName("testtable", None), schema = new StructType(),
+        saveJobStatusTables = true
+      )
     val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
 
     val fileStoreLayerInterface = mock[FileStoreLayerInterface]

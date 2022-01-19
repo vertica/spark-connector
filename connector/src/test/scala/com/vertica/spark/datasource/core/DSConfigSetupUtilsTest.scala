@@ -408,6 +408,6 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "error on invalid input to save_metadata_tables" in {
     val opts = Map[String, String]("save_metadata_tables" -> "asdf")
     val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getSaveMetadataTables(opts))
-    assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveMetadataTablesOption])
+    assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveJobStatusTablesOption])
   }
 }

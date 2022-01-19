@@ -42,7 +42,8 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     sessionId = "id",
     failedRowPercentTolerance = 0.0f,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
-    createExternalTable = None
+    createExternalTable = None,
+    saveJobStatusTables = false
   )
 
   val uniqueId = "unique-id"
