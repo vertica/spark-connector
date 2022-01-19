@@ -367,7 +367,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     checkResult(pipe.commit())
   }
 
-  it should "with save_metadata_tables on, update job status table on commit to vertica" in {
+  it should "save job status to table on commit to vertica" in {
     val config = createWriteConfig().copy(saveJobStatusTables = true)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"

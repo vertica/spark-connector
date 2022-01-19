@@ -393,20 +393,20 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(serverName.get == server)
   }
 
-  it should "parse save_metadata_tables" in {
-    val opts = Map[String, String]("save_metadata_tables" -> "true")
-    val save_metadata_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
-    assert(save_metadata_tables)
+  it should "parse save_job_status_tables" in {
+    val opts = Map[String, String]("save_job_status_tables" -> "true")
+    val save_job_status_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
+    assert(save_job_status_tables)
   }
 
-  it should "defaults save_metadata_tables to false" in {
+  it should "defaults save_job_status_tables to false" in {
     val opts = Map[String, String]()
-    val save_metadata_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
-    assert(!save_metadata_tables)
+    val save_job_status_tables = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveMetadataTables(opts))
+    assert(!save_job_status_tables)
   }
 
-  it should "error on invalid input to save_metadata_tables" in {
-    val opts = Map[String, String]("save_metadata_tables" -> "asdf")
+  it should "error on invalid input to save_job_status_tables" in {
+    val opts = Map[String, String]("save_job_status_tables" -> "asdf")
     val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getSaveMetadataTables(opts))
     assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveJobStatusTablesOption])
   }
