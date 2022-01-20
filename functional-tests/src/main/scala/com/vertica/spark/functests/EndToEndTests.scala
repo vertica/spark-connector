@@ -1050,7 +1050,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     println(df.toString())
     val mode = SaveMode.Overwrite
-    val opts = writeOpts + ("table" -> tableName, "save_metadata_tables" -> "true")
+    val opts = writeOpts + ("table" -> tableName, "save_job_status_table" -> "true")
 
     val stmt = conn.createStatement()
     try {
@@ -2186,7 +2186,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val options = writeOpts + ("table" -> tableName,
       "dbschema" -> dbschema,
-      "save_metadata_tables" -> "true")
+      "save_job_status_table" -> "true")
 
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
