@@ -52,7 +52,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       None,
-      saveJobStatusTables = false
+      saveJobStatusTable = false
     )
   }
 
@@ -125,7 +125,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "Create a table and initialize status table" in {
-    val config = createWriteConfig().copy(saveJobStatusTables = true)
+    val config = createWriteConfig().copy(saveJobStatusTable = true)
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
 
@@ -368,7 +368,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "save job status to table on commit to vertica" in {
-    val config = createWriteConfig().copy(saveJobStatusTables = true)
+    val config = createWriteConfig().copy(saveJobStatusTable = true)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
 
@@ -690,7 +690,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       .copy(createExternalTable = Some(ExistingData),
         fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
         tablename = TableName("testtable", None), schema = new StructType(),
-        saveJobStatusTables = true
+        saveJobStatusTable = true
       )
     val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
 
