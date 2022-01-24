@@ -203,6 +203,10 @@ case class InvalidCreateExternalTableOption() extends ConnectorError {
   override def getFullContext: String = "The 'create_external_table' param is invalid. Please specify " +
     "'new-data' or 'existing-data'."
 }
+case class InvalidSaveJobStatusTableOption() extends ConnectorError {
+  override def getFullContext: String = "The 'save_job_status_table' param is invalid. Please specify " +
+    "'true' or 'false'. This option will default to false if no value is specified."
+}
 case class InvalidPreventCleanupOption() extends ConnectorError {
   override def getFullContext: String = "The 'prevent_cleanup' param is invalid. Please specify " +
     "'true' or 'false'. This option will default to false if no value is specified."

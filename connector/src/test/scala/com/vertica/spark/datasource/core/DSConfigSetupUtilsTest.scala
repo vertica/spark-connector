@@ -348,7 +348,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val opts = Map("create_external_table" -> "new-data")
     val v = getResultOrAssert[Option[CreateExternalTableOption]](DSConfigSetupUtils.getCreateExternalTable(opts))
     v match {
-      case Some(value) => assert (value.toString == "new-data")
+      case Some(value) => assert(value.toString == "new-data")
       case _ => fail
     }
   }
@@ -357,7 +357,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val opts = Map("create_external_table" -> "existing-data")
     val v = getResultOrAssert[Option[CreateExternalTableOption]](DSConfigSetupUtils.getCreateExternalTable(opts))
     v match {
-      case Some(value) => assert (value.toString == "existing-data")
+      case Some(value) => assert(value.toString == "existing-data")
       case _ => fail
     }
   }
@@ -393,4 +393,21 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(serverName.get == server)
   }
 
+  it should "parse save_job_status_table" in {
+    val opts = Map[String, String]("save_job_status_table" -> "true")
+    val save_job_status_table = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveJobStatusTable(opts))
+    assert(save_job_status_table)
+  }
+
+  it should "defaults save_job_status_table to false" in {
+    val opts = Map[String, String]()
+    val save_job_status_table = getResultOrAssert[Boolean](DSConfigSetupUtils.getSaveJobStatusTable(opts))
+    assert(!save_job_status_table)
+  }
+
+  it should "error on invalid input to save_job_status_table" in {
+    val opts = Map[String, String]("save_job_status_table" -> "asdf")
+    val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getSaveJobStatusTable(opts))
+    assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveJobStatusTableOption])
+  }
 }

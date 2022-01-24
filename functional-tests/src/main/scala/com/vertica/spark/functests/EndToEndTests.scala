@@ -13,21 +13,17 @@
 
 package com.vertica.spark.functests
 
-import java.sql.{Connection, Date, Timestamp}
-
+import java.sql.{Connection, Date, Statement, Timestamp}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, ShortType, StringType, StructField, StructType, TimestampType, MetadataBuilder}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalactic.TripleEquals._
-import org.scalactic.Tolerance._
 import org.apache.spark.sql.functions._
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -1043,6 +1039,49 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write data to Vertica and record job to status table" in {
+    val tableName = "basicWriteTestWithJobStatus"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val value = 77
+    val data = Seq(Row(value))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+    val opts = writeOpts + ("table" -> tableName, "save_job_status_table" -> "true")
+
+    val stmt = conn.createStatement()
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(opts)
+        .mode(mode)
+        .save()
+
+      val newRowCount = getJobStatusTableRowCount(tableName, stmt)
+      assert(newRowCount == 1)
+    }
+    catch {
+      case err: Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  private def getJobStatusTableRowCount(targetTableName:String, stmt:Statement): Int = {
+    val query = "SELECT COUNT (1) FROM S2V_JOB_STATUS_USER_" + writeOpts("user") +
+      " WHERE target_table_name = '" + targetTableName + "'"
+    val rs = stmt.executeQuery(query)
+    var count:Int = 0
+    if (rs.next) {
+      count = rs.getInt(1)
+    }
+    rs.close()
+    count
   }
 
   it should "write int and string rows to Vertica" in {
@@ -2145,8 +2184,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.show
     println("numDfRows=" + numDfRows)
 
-
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
+    val options = writeOpts + ("table" -> tableName,
+      "dbschema" -> dbschema,
+      "save_job_status_table" -> "true")
 
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
