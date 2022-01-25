@@ -20,7 +20,7 @@ resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "10.0.1-0"
+libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "11.0.2-0"
 libraryDependencies += "org.apache.spark" %% "spark-core" % "3.2.0"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.2.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"
