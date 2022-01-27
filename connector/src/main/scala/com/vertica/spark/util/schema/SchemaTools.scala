@@ -35,7 +35,6 @@ case class ColumnDef(
                       signed: Boolean,
                       nullable: Boolean,
                       metadata: Metadata)
-
 /**
  * Interface for functionality around retrieving and translating schema.
  */
@@ -136,10 +135,13 @@ class SchemaTools extends SchemaToolsInterface {
     precision: Int,
     scale: Int,
     signed: Boolean,
-    typename: String): Either[SchemaError, DataType] = {
+    typename: String,
+    jdbcLayer: JdbcLayerInterface,
+    tableName: String,
+    colName: String): Either[SchemaError, DataType] = {
     val answer = sqlType match {
       // scalastyle:off
-      case java.sql.Types.ARRAY => null
+      case java.sql.Types.ARRAY => getArrayType(jdbcLayer, tableName, colName)
       case java.sql.Types.BIGINT =>  if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION,0)} //spark 2.x
       case java.sql.Types.BINARY => BinaryType
       case java.sql.Types.BIT => BooleanType
@@ -185,14 +187,41 @@ class SchemaTools extends SchemaToolsInterface {
     else Right(answer)
   }
 
+  val array = "^array\\[([a-z0-9]*)].*".r
+
+  def getArrayType(jdbcLayer: JdbcLayerInterface, tableName: String, columnName: String): DataType = {
+    val query = "select column_name, data_type, data_type_id, is_nullable " +
+      "from columns" +
+      s" where table_name = '$tableName' AND column_name = '$columnName'"
+    val str = jdbcLayer.query(query) match {
+      case Left(_) => null
+      case Right(rs) =>
+        rs.next()
+        rs.getString(2)
+    }
+
+    str match {
+      case array("int8") => ArrayType(LongType)
+      case array("varchar[80]") => ArrayType(StringType)
+      case array("float8") => ArrayType(DoubleType)
+      case array("bool") => ArrayType(BooleanType)
+      case _ => null
+    }
+  }
+
   def readSchema(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[StructType] = {
+    val tableName = tableSource match {
+      case tableName: TableName => tableName.getFullTableName.replaceAll("\"","")
+      case _ => ""
+    }
+
     this.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colInfo) =>
         val errorsOrFields: List[Either[SchemaError, StructField]] = colInfo.map(info => {
-            this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName).map(columnType =>
-              StructField(info.label, columnType, info.nullable, info.metadata))
-          }).toList
+          this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName, jdbcLayer, tableName, info.label)
+            .map(columnType => StructField(info.label, columnType, info.nullable, info.metadata))
+        }).toList
         errorsOrFields
           // converts List[Either[A, B]] to Either[List[A], List[B]]
           .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
@@ -207,6 +236,7 @@ class SchemaTools extends SchemaToolsInterface {
     // and use this to retrieve the name and type information of each column
     val query = tableSource match {
       case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
+      //case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName
       case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
     }
 
