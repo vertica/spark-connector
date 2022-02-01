@@ -220,6 +220,7 @@ class VerticaDistributedFilesystemReadPipe(
 
       // Create unique directory for session
       perm = config.filePermissions
+
       _ = logger.info("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
 
       _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
@@ -286,6 +287,8 @@ class VerticaDistributedFilesystemReadPipe(
       _ = logger.info("Requested partition count: " + requestedPartitionCount)
       _ = logger.info("Parquet file list size: " + parquetFileList.size)
 
+      t0 = System.currentTimeMillis();
+
       fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
@@ -310,6 +313,9 @@ class VerticaDistributedFilesystemReadPipe(
 
       partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
 
+      t1 = System.currentTimeMillis();
+      _ = logger.info("Reading and partitioning files took " + (t1-t0) + " ms.");
+
       _ <- jdbcLayer.close()
     } yield partitionInfo
 
@@ -330,10 +336,14 @@ class VerticaDistributedFilesystemReadPipe(
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
 
+
+  var t0 = System.currentTimeMillis();
+
   /**
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): ConnectorResult[Unit] = {
+    t0 = System.currentTimeMillis();
     logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
@@ -450,6 +460,8 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
+    val t1 = System.currentTimeMillis();
+    logger.info("Node read took " + (t1-t0) + " ms.");
     fileStoreLayer.closeReadParquetFile()
   }
 
