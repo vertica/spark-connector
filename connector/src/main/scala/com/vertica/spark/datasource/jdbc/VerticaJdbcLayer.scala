@@ -377,16 +377,14 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         logger.debug("Hadoop impersonation: found session")
         val hadoopConf = session.sparkContext.hadoopConfiguration
         val authMethod = Option(hadoopConf.get("hadoop.security.authentication"))
+        logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf, session))
         logger.debug("Hadoop impersonation: auth method: " + authMethod)
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
             for {
               nameNodeAddress <- Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY))
                 .orElse(Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY)))
-                .toRight({
-                  logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf, session))
-                  MissingNameNodeAddressError()
-                })
+                .toRight(MissingNameNodeAddressError())
               _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
               jsonString = Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMESERVICES)) match {
