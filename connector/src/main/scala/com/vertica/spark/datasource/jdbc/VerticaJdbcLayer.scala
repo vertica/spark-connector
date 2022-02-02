@@ -25,9 +25,11 @@ import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
 import org.apache.spark.sql.SparkSession
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
@@ -381,7 +383,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
             for {
               nameNodeAddress <- Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY))
                 .orElse(Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY)))
-                .toRight(MissingNameNodeAddressError())
+                .toRight({
+                  logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf, session))
+                  MissingNameNodeAddressError()
+                })
               _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
               jsonString = Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMESERVICES)) match {
@@ -406,6 +411,15 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         }
       case None => Left(NoSparkSessionFound())
     }
+  }
+
+  private def logHadoopConfigs(hadoopConf: Configuration, spark: SparkSession): Unit = {
+    val configs = hadoopConf.asScala.toList
+      .sortBy(_.getKey)
+      .map(entry => s"${entry.getKey}:${entry.getValue}")
+      .mkString("\n")
+    val hostname = java.net.InetAddress.getLocalHost.getHostName
+    logger.debug(s"Hadoop configurations for $hostname: \n $configs")
   }
 
   private def useConnection[T](
