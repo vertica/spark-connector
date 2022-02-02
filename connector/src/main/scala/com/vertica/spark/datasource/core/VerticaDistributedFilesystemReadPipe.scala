@@ -23,6 +23,7 @@ import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
+import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
@@ -268,10 +269,10 @@ class VerticaDistributedFilesystemReadPipe(
       } else {
         logger.info("Exporting using statement: \n" + exportStatement)
 
-        val t0 = System.currentTimeMillis();
+        val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
+        timer.startTime()
         val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
-        val t1 = System.currentTimeMillis();
-        logger.info("Export took " + (t1-t0) + " ms.");
+        timer.endTime()
         res
       }
 
@@ -287,7 +288,8 @@ class VerticaDistributedFilesystemReadPipe(
       _ = logger.info("Requested partition count: " + requestedPartitionCount)
       _ = logger.info("Parquet file list size: " + parquetFileList.size)
 
-      t0 = System.currentTimeMillis();
+      partitionTimer = new Timer(config.timeOperations, logger, "Reading Parquet Files Metadata and creating partitions")
+      _ = partitionTimer.startTime()
 
       fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
@@ -313,8 +315,7 @@ class VerticaDistributedFilesystemReadPipe(
 
       partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
 
-      t1 = System.currentTimeMillis();
-      _ = logger.info("Reading and partitioning files took " + (t1-t0) + " ms.");
+      _ = partitionTimer.endTime()
 
       _ <- jdbcLayer.close()
     } yield partitionInfo
