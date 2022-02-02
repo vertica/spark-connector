@@ -411,7 +411,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 
-  private def logHadoopConfigs(hadoopConf: Configuration, spark: SparkSession): Unit = {
+  private def logHadoopConfigs(hadoopConf: Configuration): Unit = {
     val configs = hadoopConf.asScala.toList
       .sortBy(_.getKey)
       .map(entry => s"${entry.getKey}:${entry.getValue}")
