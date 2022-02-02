@@ -377,7 +377,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         logger.debug("Hadoop impersonation: found session")
         val hadoopConf = session.sparkContext.hadoopConfiguration
         val authMethod = Option(hadoopConf.get("hadoop.security.authentication"))
-        logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf, session))
+        logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf))
         logger.debug("Hadoop impersonation: auth method: " + authMethod)
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
