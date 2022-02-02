@@ -24,7 +24,7 @@ class Timer (val enabled: Boolean, val logger: Logger, val operationName: String
   def endTime(): Unit = {
     if(enabled) {
       val t1 = System.currentTimeMillis();
-      logger.info("Timed operation: " + operationName + " -- took" + (t1-t0) + " ms.");
+      logger.info("Timed operation: " + operationName + " -- took " + (t1-t0) + " ms.");
     }
   }
 }

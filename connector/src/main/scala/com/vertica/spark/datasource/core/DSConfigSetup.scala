@@ -622,7 +622,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getFilePermissions(config),
           DSConfigSetupUtils.getCreateExternalTable(config),
           DSConfigSetupUtils.getSaveJobStatusTable(config),
-          DSConfigSetupUtils.getMergeKey(config)
+          DSConfigSetupUtils.getMergeKey(config),
+          DSConfigSetupUtils.getTimeOperations(config),
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec
