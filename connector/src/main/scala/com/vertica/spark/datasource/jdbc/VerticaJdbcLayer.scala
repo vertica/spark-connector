@@ -19,15 +19,17 @@ import java.sql.Connection
 import java.sql.Statement
 import java.sql.ResultSet
 import java.util
-
 import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
+import org.apache.spark.{SparkEnv}
 import org.apache.spark.sql.SparkSession
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
@@ -375,6 +377,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         logger.debug("Hadoop impersonation: found session")
         val hadoopConf = session.sparkContext.hadoopConfiguration
         val authMethod = Option(hadoopConf.get("hadoop.security.authentication"))
+        logger.whenDebugEnabled(this.logHadoopConfigs(hadoopConf))
         logger.debug("Hadoop impersonation: auth method: " + authMethod)
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
@@ -406,6 +409,16 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         }
       case None => Left(NoSparkSessionFound())
     }
+  }
+
+  private def logHadoopConfigs(hadoopConf: Configuration): Unit = {
+    val configs = hadoopConf.asScala.toList
+      .sortBy(_.getKey)
+      .map(entry => s"${entry.getKey}:${entry.getValue}")
+      .mkString("\n")
+    val hostname = java.net.InetAddress.getLocalHost.getHostName
+    val executorId = SparkEnv.get.executorId
+    logger.debug(s"Hadoop configurations for host $hostname, executorId $executorId:\n$configs")
   }
 
   private def useConnection[T](
