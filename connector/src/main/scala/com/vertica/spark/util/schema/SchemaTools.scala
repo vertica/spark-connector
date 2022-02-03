@@ -15,6 +15,7 @@ package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
+
 import java.sql.ResultSetMetaData
 
 import cats.data.NonEmptyList
@@ -24,6 +25,7 @@ import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 
+import scala.annotation.tailrec
 import scala.util.control.Breaks.{break, breakable}
 
 case class ColumnDef(
@@ -275,6 +277,21 @@ class SchemaTools extends SchemaToolsInterface {
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
     }
+  }
+
+  private def sparkArrayToVerticaArray(dataType: DataType): SchemaResult[String] = {
+      @tailrec
+      def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String):SchemaResult[String] = {
+          dataType match {
+            case ArrayType(elementType, _) => recursion(elementType, s"${leftAccumulator}ARRAY[", s"]$rightAccumulator")
+            case _ =>
+              this.sparkPrimitiveToVerticaPrimitive(dataType, 0) match {
+                case Right(verticaType) => Right(s"$leftAccumulator$verticaType$rightAccumulator")
+                case Left(error) => Left(error)
+              }
+          }
+      }
+    recursion(dataType,"","")
   }
 
   private def sparkPrimitiveToVerticaPrimitive(sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
