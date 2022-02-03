@@ -5,11 +5,22 @@ Make sure you have Docker and SBT installed, and that Docker client is running. 
 First, clone the connector repository as mentioned in [examples](/examples/README.md).
 
 ## (Optional) Using a modified Spark Connector
-If you want to use a modified spark connector for this example, create a lib folder at
-`/kerberos-example` and put your spark connector jar inside.
+Assuming you have made changes to the spark connector 
+
+Change directory to the `/connector` folder of the project:
+```
+cd /spark-connector/connector
+```
+
+Build the connector's assembly jar:
+```
+sbt assembly
+```
+
+Then create a `lib` folder at `/kerberos-example` and put the spark connector that you assembled inside.
 ```
 mkdir /spark-connector/examples/kerberos-example/lib
-cp /your/modified/spark-vertica-connector-assembly.jar /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.1.jar /spark-connector/examples/kerberos-example/lib
 ```
 Then in the example's `build.sbt`, comment out the vertica-spark connector dependency.
 
