@@ -24,7 +24,6 @@ import cats.data._
 import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.datasource.core.DSConfigSetupUtils.{getAWSArgFromConnectorOption, getAWSArgFromSparkConfig}
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
@@ -543,7 +542,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getFilePermissions(config),
       DSConfigSetupUtils.getMaxRowGroupSize(config),
       DSConfigSetupUtils.getMaxFileSize(config),
-      DSConfigSetupUtils.getTimeOperations(config),
+      DSConfigSetupUtils.getTimeOperations(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -623,7 +622,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getCreateExternalTable(config),
           DSConfigSetupUtils.getSaveJobStatusTable(config),
           DSConfigSetupUtils.getMergeKey(config),
-          DSConfigSetupUtils.getTimeOperations(config),
+          DSConfigSetupUtils.getTimeOperations(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

@@ -99,7 +99,7 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = false
+                                                  timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var requiredSchema: StructType = StructType(Nil)

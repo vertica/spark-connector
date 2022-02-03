@@ -338,13 +338,13 @@ class VerticaDistributedFilesystemReadPipe(
   var fileIdx = 0
 
 
-  var t0 = System.currentTimeMillis();
+  val timer = new Timer(config.timeOperations, logger, "Partition Read")
 
   /**
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): ConnectorResult[Unit] = {
-    t0 = System.currentTimeMillis();
+    timer.startTime()
     logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
@@ -461,8 +461,7 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
-    val t1 = System.currentTimeMillis();
-    logger.info("Node read took " + (t1-t0) + " ms.");
+    timer.endTime()
     fileStoreLayer.closeReadParquetFile()
   }
 
