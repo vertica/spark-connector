@@ -6,7 +6,7 @@ if (file.exists("done")) unlink("done")
 
 # Create the Spark config and give access to our connector jar file
 config <- spark_config()
-config$sparklyr.jars.default <- "../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.1.jar"
+config$sparklyr.jars.default <- "../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.2.jar"
 
 # Submit a new Spark job that executes sparkapp.r with Spark version 3.1
 spark_submit(master = "spark://localhost:7077", version = "3.1", file = "sparkapp.r", config = config)

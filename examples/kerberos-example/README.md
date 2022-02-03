@@ -19,7 +19,7 @@ sbt assembly
 Create a `lib` folder under the `kerberos-example` folder and copy the assembled connector jar to it.
 ```
 mkdir /spark-connector/examples/kerberos-example/lib
-cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.1.jar /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.2.jar /spark-connector/examples/kerberos-example/lib
 ```
 
 ## Build Example Assembly

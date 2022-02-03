@@ -17,7 +17,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: build-jar-file
-          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.0.1.jar
+          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.0.2.jar
   run-integration-tests_s3:
     runs-on: ubuntu-latest
     needs: build
