@@ -19,7 +19,6 @@ import java.sql.Connection
 import java.sql.Statement
 import java.sql.ResultSet
 import java.util
-
 import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -27,6 +26,7 @@ import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
+import org.apache.spark.{SparkEnv}
 import org.apache.spark.sql.SparkSession
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -417,7 +417,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       .map(entry => s"${entry.getKey}:${entry.getValue}")
       .mkString("\n")
     val hostname = java.net.InetAddress.getLocalHost.getHostName
-    logger.debug(s"Hadoop configurations for $hostname: \n $configs")
+    val executorId = SparkEnv.get.executorId
+    logger.debug(s"Hadoop configurations for host $hostname, executorId $executorId:\n$configs")
   }
 
   private def useConnection[T](
