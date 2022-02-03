@@ -23,6 +23,7 @@ import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
+import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
@@ -220,6 +221,7 @@ class VerticaDistributedFilesystemReadPipe(
 
       // Create unique directory for session
       perm = config.filePermissions
+
       _ = logger.info("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
 
       _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
@@ -267,7 +269,11 @@ class VerticaDistributedFilesystemReadPipe(
       } else {
         logger.info("Exporting using statement: \n" + exportStatement)
 
-        jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+        val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
+        timer.startTime()
+        val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+        timer.endTime()
+        res
       }
 
       // Retrieve all parquet files created by Vertica
@@ -281,6 +287,9 @@ class VerticaDistributedFilesystemReadPipe(
 
       _ = logger.info("Requested partition count: " + requestedPartitionCount)
       _ = logger.info("Parquet file list size: " + parquetFileList.size)
+
+      partitionTimer = new Timer(config.timeOperations, logger, "Reading Parquet Files Metadata and creating partitions")
+      _ = partitionTimer.startTime()
 
       fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
       totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
@@ -306,6 +315,8 @@ class VerticaDistributedFilesystemReadPipe(
 
       partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
 
+      _ = partitionTimer.endTime()
+
       _ <- jdbcLayer.close()
     } yield partitionInfo
 
@@ -326,10 +337,14 @@ class VerticaDistributedFilesystemReadPipe(
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
 
+
+  val timer = new Timer(config.timeOperations, logger, "Partition Read")
+
   /**
    * Initial setup for the read of an individual partition. Called by executor.
    */
   def startPartitionRead(verticaPartition: VerticaPartition): ConnectorResult[Unit] = {
+    timer.startTime()
     logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
@@ -446,6 +461,7 @@ class VerticaDistributedFilesystemReadPipe(
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
+    timer.endTime()
     fileStoreLayer.closeReadParquetFile()
   }
 

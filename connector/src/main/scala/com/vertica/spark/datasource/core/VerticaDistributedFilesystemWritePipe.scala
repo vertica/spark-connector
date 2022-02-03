@@ -16,6 +16,7 @@ package com.vertica.spark.datasource.core
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
+import com.vertica.spark.util.Timer
 import com.vertica.spark.util.error.CreateExternalTableMergeKey
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
@@ -158,10 +159,15 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield ()
   }
 
+  val timer = new Timer(config.timeOperations, logger, "Writing Partition.")
+
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
     val address = getAddress()
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".snappy.parquet"
+
+    timer.startTime()
+
     fileStoreLayer.openWriteParquetFile(filename) match {
       case Left(err) =>
         if(!config.fileStoreConfig.preventCleanup) {
@@ -186,6 +192,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   }
 
   def endPartitionWrite(): ConnectorResult[Unit] = {
+    timer.endTime()
     config.createExternalTable match {
       case Some(value) =>
         value match {
@@ -412,6 +419,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   def commitDataIntoVertica(url: String): ConnectorResult[Unit] = {
     val tableNameMaxLength = 30
+    val timer = new Timer(config.timeOperations, logger, "Copy and commit data into Vertica")
+    timer.startTime()
     val ret = for {
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
@@ -471,10 +480,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield ()
     logger.info("Committing data into Vertica.")
     if(!config.fileStoreConfig.preventCleanup) fileStoreLayer.removeDir(config.fileStoreConfig.address)
+    timer.endTime()
     ret
   }
 
   def commitDataAsExternalTable(url: String): ConnectorResult[Unit] = {
+    val timer = new Timer(config.timeOperations, logger, "Commit data as external table")
+    timer.startTime()
     logger.info("Committing data as external table.")
     if(config.copyColumnList.isDefined) {
       logger.warn("Custom copy column list was specified, but will be ignored when creating new external table.")
@@ -509,6 +521,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         Right(())
       }
     } yield ()
+
+    timer.endTime()
 
     // External table creation always commits. So, if an error was detected, drop the table
     ret match {

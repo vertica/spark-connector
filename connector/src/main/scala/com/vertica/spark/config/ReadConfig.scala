@@ -98,7 +98,8 @@ final case class DistributedFilesystemReadConfig(
                                                   metadata: Option[VerticaReadMetadata],
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
-                                                  maxFileSize: Int
+                                                  maxFileSize: Int,
+                                                  timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var requiredSchema: StructType = StructType(Nil)
