@@ -269,6 +269,16 @@ class SchemaTools extends SchemaToolsInterface {
 
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
+      // To be reconsidered. Store as binary for now
+      case org.apache.spark.sql.types.ArrayType(_,_) |
+           org.apache.spark.sql.types.MapType(_,_,_) |
+           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
+      case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
+    }
+  }
+
+  private def sparkPrimitiveToVerticaPrimitive(sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
+    sparkType match {
       case org.apache.spark.sql.types.BinaryType => Right("VARBINARY(" + longlength + ")")
       case org.apache.spark.sql.types.BooleanType => Right("BOOLEAN")
       case org.apache.spark.sql.types.ByteType => Right("TINYINT")
@@ -287,13 +297,6 @@ class SchemaTools extends SchemaToolsInterface {
         // and default to VARCHAR for sizes <= 65K
         val vtype = if (strlen > longlength) "LONG VARCHAR" else "VARCHAR"
         Right(vtype + "(" + strlen.toString + ")")
-
-      // To be reconsidered. Store as binary for now
-      case org.apache.spark.sql.types.ArrayType(_,_) |
-           org.apache.spark.sql.types.MapType(_,_,_) |
-           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
-
-
       case _ => Left(MissingSparkConversionError(sparkType))
     }
   }
