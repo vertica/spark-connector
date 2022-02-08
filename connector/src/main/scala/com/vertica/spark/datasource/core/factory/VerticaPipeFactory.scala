@@ -35,7 +35,12 @@ trait VerticaPipeFactoryInterface {
 /**
  * Implementation of the vertica pipe factory
  */
-object VerticaPipeFactory extends VerticaPipeFactoryInterface{
+object VerticaPipeFactory extends VerticaPipeFactoryInterface {
+
+  // Maintain a single copy of the read and write JDBC layers
+  private var readLayer: Option[VerticaJdbcLayer] = None;
+  private var writeLayer: Option[VerticaJdbcLayer] = None;
+
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
@@ -47,18 +52,34 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
           }
           case _ => None
         })
+        val jdbcLayer = readLayer match {
+          case Some(readLayer) => readLayer
+          case None => {
+            readLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
+            readLayer.get
+          }
+        }
+        // TODO: Reopen the connection if it is closed
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
-          new VerticaJdbcLayer(cfg.jdbcConfig),
+          jdbcLayer,
           new SchemaTools,
           new CleanupUtils
         )
     }
   }
+
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         val schemaTools = new SchemaTools
-        val jdbcLayer = new VerticaJdbcLayer(cfg.jdbcConfig)
+        val jdbcLayer = writeLayer match {
+          case Some(writeLayer) => writeLayer
+          case None => {
+            writeLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
+            writeLayer.get
+          }
+        }
+        // TODO: Reopen the connection if it is closed
         new VerticaDistributedFilesystemWritePipe(cfg,
           new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
           jdbcLayer,
@@ -67,4 +88,5 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
         )
     }
   }
+
 }
