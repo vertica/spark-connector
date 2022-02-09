@@ -38,8 +38,8 @@ trait VerticaPipeFactoryInterface {
 object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 
   // Maintain a single copy of the read and write JDBC layers
-  private var readLayer: Option[VerticaJdbcLayer] = None;
-  private var writeLayer: Option[VerticaJdbcLayer] = None;
+  private var readLayer: Option[VerticaJdbcLayer] = None
+  private var writeLayer: Option[VerticaJdbcLayer] = None
 
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
