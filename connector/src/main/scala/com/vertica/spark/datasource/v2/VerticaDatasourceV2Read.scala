@@ -21,6 +21,7 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
+import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
@@ -29,6 +30,10 @@ trait PushdownFilter {
 
 case class PushFilter(filter: Filter, filterString: String) extends PushdownFilter {
   def getFilterString: String = this.filterString
+}
+
+case class PushdownAggregate(aggregation: Aggregation, aggregationString: String) {
+  def getAggregationString: String = this.aggregationString
 }
 
 case class NonPushFilter(filter: Filter) extends AnyVal
@@ -41,7 +46,7 @@ case class ExpectedRowDidNotExistError() extends ConnectorError {
   * Builds the scan class for use in reading of Vertica
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters with SupportsPushDownRequiredColumns {
+  SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
 
   private var requiredSchema: StructType = StructType(Nil)
@@ -55,7 +60,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
-
+    cfg.setPushdownCount(this.pushdownCount)
     new VerticaScan(cfg, readConfigSetup)
   }
 
@@ -83,6 +88,12 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   override def pruneColumns(requiredSchema: StructType): Unit = {
     this.requiredSchema = requiredSchema
   }
+
+  private var pushdownCount: Boolean = false
+  //override def pushAggregation(aggregation: Aggregation): Boolean = {
+  //  pushdownCount = true
+  //  true
+  //}
 }
 
 

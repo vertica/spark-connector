@@ -241,7 +241,7 @@ class VerticaDistributedFilesystemReadPipe(
       // File permissions.
       filePermissions = config.filePermissions
 
-      cols <- getColumnNames(this.config.getRequiredSchema)
+      cols <- if(config.getPushdownCount()) Right(s"COUNT(*)") else getColumnNames(this.config.getRequiredSchema)
       _ = logger.info("Columns requested: " + cols)
 
       pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
@@ -259,8 +259,9 @@ class VerticaDistributedFilesystemReadPipe(
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS " + "SELECT " + cols +
-        " FROM " + exportSource + pushdownSql + ";"
+        "') AS " + (if(config.getPushdownCount()) s"SELECT COUNT as a FROM (" else "") +
+        "SELECT " + cols + " FROM " + exportSource + pushdownSql +
+        (if(config.getPushdownCount()) ") as \"table\"" else "") + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {

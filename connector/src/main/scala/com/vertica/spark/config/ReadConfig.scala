@@ -47,6 +47,10 @@ trait ReadConfig {
    * Copies the read config with a new unique identifier
    */
   def copyConfig(): ReadConfig
+
+  def setPushdownCount(value:Boolean): Unit
+
+  def getPushdownCount():Boolean
 }
 
 
@@ -118,4 +122,11 @@ final case class DistributedFilesystemReadConfig(
   def copyConfig(): ReadConfig = {
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
   }
+
+  private var pushdownCount = false
+  override def setPushdownCount(value: Boolean): Unit = {
+    this.pushdownCount = value
+  }
+
+  override def getPushdownCount(): Boolean = this.pushdownCount
 }
