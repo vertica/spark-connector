@@ -307,7 +307,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def isClosed(): Boolean = {
     logger.debug("Checking if connection is closed.")
-    this.connection.fold(_ => true, conn => conn.isClosed())
+    try {
+      this.connection.fold(_ => true, conn => conn.isClosed())
+    } catch {
+      case _ : Throwable => true
+    }
   }
 
   def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
