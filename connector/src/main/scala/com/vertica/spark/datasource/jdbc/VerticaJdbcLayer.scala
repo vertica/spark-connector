@@ -307,9 +307,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
   def isClosed(): Boolean = {
     logger.debug("Checking if connection is closed.")
-    //this.connection.flatMap(conn => this.useConnection(conn, c => c.isClosed(), handleJDBCException)
-      //.left.map(_.context("rollback: JDBC Error while checking if connection is closed.")))
-      //.fold(_ => true, _ => false)
     this.connection.fold(_ => true, conn => conn.isClosed())
   }
 
