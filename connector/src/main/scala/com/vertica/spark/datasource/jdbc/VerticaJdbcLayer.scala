@@ -82,6 +82,11 @@ trait JdbcLayerInterface {
   def rollback(): ConnectorResult[Unit]
 
   /**
+    * Checks if the connection is closed
+    */
+  def isClosed(): Boolean
+
+  /**
    * Configures the database session
    *
    * @param fileStoreLayer Interface to a filestore that provides an impersonation token via getImpersonationToken
@@ -298,6 +303,14 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     logger.debug("Rolling back.")
     this.connection.flatMap(conn => this.useConnection(conn, c => c.rollback(), handleJDBCException)
       .left.map(_.context("rollback: JDBC Error while rolling back.")))
+  }
+
+  def isClosed(): Boolean = {
+    logger.debug("Checking if connection is closed.")
+    //this.connection.flatMap(conn => this.useConnection(conn, c => c.isClosed(), handleJDBCException)
+      //.left.map(_.context("rollback: JDBC Error while checking if connection is closed.")))
+      //.fold(_ => true, _ => false)
+    this.connection.fold(_ => true, conn => conn.isClosed())
   }
 
   def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {

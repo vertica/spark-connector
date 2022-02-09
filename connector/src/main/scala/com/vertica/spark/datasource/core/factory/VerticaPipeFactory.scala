@@ -53,13 +53,17 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case _ => None
         })
         val jdbcLayer = readLayer match {
-          case Some(readLayer) => readLayer
+          case Some(layer) => {
+            if (layer.isClosed()) {
+              readLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
+            }
+            readLayer.get
+          }
           case None => {
             readLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
             readLayer.get
           }
         }
-        // TODO: Reopen the connection if it is closed
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
           jdbcLayer,
           new SchemaTools,
@@ -73,13 +77,17 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
       case cfg: DistributedFilesystemWriteConfig =>
         val schemaTools = new SchemaTools
         val jdbcLayer = writeLayer match {
-          case Some(writeLayer) => writeLayer
+          case Some(layer) => {
+            if (layer.isClosed()) {
+              writeLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
+            }
+            writeLayer.get
+          }
           case None => {
             writeLayer = Some(new VerticaJdbcLayer(cfg.jdbcConfig))
             writeLayer.get
           }
         }
-        // TODO: Reopen the connection if it is closed
         new VerticaDistributedFilesystemWritePipe(cfg,
           new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
           jdbcLayer,
