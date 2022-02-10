@@ -46,7 +46,7 @@ case class ExpectedRowDidNotExistError() extends ConnectorError {
   * Builds the scan class for use in reading of Vertica
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
+  SupportsPushDownFilters with SupportsPushDownAggregates  with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
 
   private var requiredSchema: StructType = StructType(Nil)
@@ -94,6 +94,11 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   //  pushdownCount = true
   //  true
   //}
+
+  override def pushAggregation(aggregation: Aggregation): Boolean = {
+
+    false
+  }
 }
 
 
