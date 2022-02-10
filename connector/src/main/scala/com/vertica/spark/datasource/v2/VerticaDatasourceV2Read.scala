@@ -19,10 +19,15 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
-import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction
+import org.apache.spark.sql.connector.expressions.NamedReference
+import org.apache.spark.sql.connector.expressions.aggregate.{AggregateFunc, Aggregation, Count, CountStar}
 import org.apache.spark.sql.sources.Filter
+
+import scala.::
 
 trait PushdownFilter {
   def getFilterString: String
@@ -51,6 +56,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   private var requiredSchema: StructType = StructType(Nil)
 
+  private var aggregation: Aggregation = new Aggregation(Array(),Array())
+
 /**
   * Builds the class representing a scan of a Vertica table
   *
@@ -60,7 +67,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
-    cfg.setPushdownCount(this.pushdownCount)
+    cfg.setPushdownAggregation(this.aggregation)
     new VerticaScan(cfg, readConfigSetup)
   }
 
@@ -86,18 +93,51 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
-    this.requiredSchema = requiredSchema
+    // scalastyle:off
+    // These pushdown columns by Spark are optimized. Thus, we do not expect any pushdown columns
+    // if there are aggregates.
+    if(this.aggregation.aggregateExpressions().isEmpty){
+      if(this.aggregation.groupByColumns().isEmpty)
+        this.requiredSchema = requiredSchema
+    // Else
+    //    prepend groupBy columns to schema. GroupBy to be implemented later.
+    }
   }
 
-  private var pushdownCount: Boolean = false
-  //override def pushAggregation(aggregation: Aggregation): Boolean = {
-  //  pushdownCount = true
-  //  true
-  //}
-
   override def pushAggregation(aggregation: Aggregation): Boolean = {
+    // Only support Count for now.
+    val aggregatesFunctions: (List[AggregateFunc], List[AggregateFunc]) = aggregation.aggregateExpressions()
+      .foldLeft((List[AggregateFunc](), List[AggregateFunc]()))((acc, aggregateFunc) => {
+        val (supported, notSupported) = acc
+        aggregateFunc match {
+          case f: CountStar => (supported :+ f, notSupported)
+          case f: Count => (supported :+ f, notSupported)
+          case f => (supported, notSupported :+ f)
+        }
+      })
+    val (supportedAggregateFunctions, notSupportedAggregates) = aggregatesFunctions
+    if (notSupportedAggregates.nonEmpty) {
+      false
+    } else {
+      val structFields = supportedAggregateFunctions.map {
+        case _: CountStar =>
+          // Todo: On error, needs to be short circuited.
+          val colName = this.getFirstColumnName().getOrElse("")
+          StructField(colName, LongType, nullable = false, Metadata.empty)
 
-    false
+        case f: Count => StructField(f.column.fieldNames.head, LongType, nullable = false, Metadata.empty)
+      }
+      this.requiredSchema = StructType(structFields)
+      this.aggregation = new Aggregation(supportedAggregateFunctions.toArray, Array())
+      true
+    }
+  }
+
+  private def getFirstColumnName(): ConnectorResult[String] = {
+    readConfigSetup.getTableSchema(config) match {
+      case Right(schema) => Right(schema.fields.head.name)
+      case Left(error) => Left(error)
+    }
   }
 }
 

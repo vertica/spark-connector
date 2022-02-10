@@ -18,6 +18,7 @@ import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.core.SessionId
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
+import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
 import org.apache.spark.sql.types.StructType
 
 import scala.util.{Failure, Success, Try}
@@ -48,9 +49,9 @@ trait ReadConfig {
    */
   def copyConfig(): ReadConfig
 
-  def setPushdownCount(value:Boolean): Unit
+  def setPushdownAggregation(aggregation: Aggregation): Unit
 
-  def getPushdownCount():Boolean
+  def getPushdownAggregation():Aggregation
 }
 
 
@@ -106,6 +107,7 @@ final case class DistributedFilesystemReadConfig(
                                                   timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
+  private var pushdownAggregation: Aggregation = _
   private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
@@ -123,10 +125,9 @@ final case class DistributedFilesystemReadConfig(
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
   }
 
-  private var pushdownCount = false
-  override def setPushdownCount(value: Boolean): Unit = {
-    this.pushdownCount = value
+  override def setPushdownAggregation(aggregation: Aggregation): Unit = {
+    this.pushdownAggregation = aggregation
   }
 
-  override def getPushdownCount(): Boolean = this.pushdownCount
+  override def getPushdownAggregation(): Aggregation = this.pushdownAggregation
 }
