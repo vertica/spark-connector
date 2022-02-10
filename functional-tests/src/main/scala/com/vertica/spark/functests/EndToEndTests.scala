@@ -1042,6 +1042,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
   }
 
   it should "write data to Vertica and record job to status table" in {
+    TestUtils.dropTable(conn, "S2V_JOB_STATUS_USER_" + readOpts.get("user").getOrElse("").toUpperCase())
+
     val tableName = "basicWriteTestWithJobStatus"
     val schema = new StructType(Array(StructField("col1", IntegerType)))
 
@@ -4127,6 +4129,38 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.removeDir(fsConfig.address)
     // Need to recreate the root directory for the afterEach assertion check
     fsLayer.createDir(fsConfig.address, "777")
+  }
+
+  it should "close all sessions when the operation completes" in {
+    val tableName = "sessionTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77), Row(78), Row(79))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+
+    for (i <- 1 to 10) {
+      println("Performing multiple writes and reads - iteration " + i)
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+      assert(dfRead.count() == 3)
+    }
+
+    val stmt = conn.createStatement()
+    val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
+    try {
+      val rs = stmt.executeQuery(query)
+      assert(rs.next)
+      // Expect a single session for the session count query itself
+      // Note that this can fail if you are connected to vsql or performing other operations on the DB at the same time as these tests
+      assert(rs.getInt(1) == 1)
+    } catch {
+      case err : Exception => fail(err)
+    } finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
   }
 
 }
