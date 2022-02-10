@@ -30,6 +30,8 @@ trait VerticaPipeFactoryInterface {
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
 
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
+
+  def closeJdbcLayers()
 }
 
 /**
@@ -79,6 +81,17 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           schemaTools,
           new TableUtils(schemaTools, writeLayer.get)
         )
+    }
+  }
+
+  override def closeJdbcLayers(): Unit = {
+    readLayer match {
+      case Some(layer) => val _ = layer.close
+      case None =>
+    }
+    writeLayer match {
+      case Some(layer) => val _ = layer.close
+      case None =>
     }
   }
 
