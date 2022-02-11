@@ -4145,22 +4145,29 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
       assert(dfRead.count() == 3)
     }
-    // Ensure operations have time to complete and cleanup
-    Thread.sleep(5000)
 
-    val stmt = conn.createStatement()
-    val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
-    try {
-      val rs = stmt.executeQuery(query)
-      assert(rs.next)
-      // Expect a single session for the session count query itself
-      // Note that this can fail if you are connected to vsql or performing other operations on the DB at the same time as these tests
-      assert(rs.getInt(1) == 1)
-    } catch {
-      case err : Exception => fail(err)
-    } finally {
-      stmt.close()
+    // Poll sessions until they have cleaned up (or until we give up)
+    var success: Boolean = false
+    var i: Int = 0
+    while (!success || i < 10) {
+      val stmt = conn.createStatement()
+      val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
+      try {
+        val rs = stmt.executeQuery(query)
+        rs.next
+        // Expect a single session for the session count query itself
+        // Note that this can fail if you are connected to vsql or performing other operations on the DB at the same time as these tests
+        success = (rs.getInt(1) == 1)
+      } catch {
+        case err : Exception => fail(err)
+      } finally {
+        stmt.close()
+      }
+      println("Unexpected session count, trying again - iteration " + i)
+      i += 1
+      Thread.sleep(1000)
     }
+    assert(success)
 
     TestUtils.dropTable(conn, tableName)
   }
