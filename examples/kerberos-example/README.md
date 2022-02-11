@@ -66,7 +66,7 @@ Change directory to the example project directory `spark-connector/examples/kerb
 ./run-kerberos-example.sh 
 ```
 
-## Debuging.
+## Debugging.
 
 To debug, run `./run-kerberos-example.sh debug`. The execution will wait on port `5005` until a debugger connects to it before continuing with the execution. 
 

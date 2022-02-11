@@ -135,9 +135,11 @@ Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main
 
 At this point, you're ready to make your changes. Feel free to reach out over github for help navigating the code and implementing the fix or feature.
 
-## Debuging on Docker environment.
+## Debugging on Docker environment.
 
-If you are using docker as your dev enviroment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
+If you are using docker as your dev enviroment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. 
+
+The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
 
 If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, `docker_client_1` container is mapping its port `5005` to the host's `5005`. 
 
