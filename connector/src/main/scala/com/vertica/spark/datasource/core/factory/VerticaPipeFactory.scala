@@ -50,6 +50,13 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     }
   }
 
+  private def closeJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer]): Unit = {
+    jdbcLayer match {
+      case Some(layer) => val _ = layer.close
+      case None =>
+    }
+  }
+
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
@@ -85,14 +92,8 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def closeJdbcLayers(): Unit = {
-    readLayer match {
-      case Some(layer) => val _ = layer.close
-      case None =>
-    }
-    writeLayer match {
-      case Some(layer) => val _ = layer.close
-      case None =>
-    }
+    closeJdbcLayer(readLayer)
+    closeJdbcLayer(writeLayer)
   }
 
 }
