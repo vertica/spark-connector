@@ -185,13 +185,13 @@ class VerticaDistributedFilesystemReadPipe(
 
   private def getSelectClause: ConnectorResult[String] = {
       val pushdownAggregations = this.config.getPushdownAggregation.aggregateExpressions()
-      if(pushdownAggregations.isEmpty) getColumnNames(this.config.getRequiredSchema) else this.getAggregateColumns
+      if(pushdownAggregations.isEmpty) getColumnNames(this.config.getRequiredSchema) else this.getPushdownAggregateColumns
   }
 
-  private def getAggregateColumns: ConnectorResult[String] = {
+  private def getPushdownAggregateColumns: ConnectorResult[String] = {
     val pushdownAggregates = this.config.getPushdownAggregation.aggregateExpressions
     val aggregateSelectClause = pushdownAggregates.map {
-      case agg: CountStar => agg.toString + " as \"count(a)\""
+      case agg: CountStar => agg.toString + " as \"" + this.config.getRequiredSchema.fields.head + "\""
       case agg: Count => agg.toString +  " as \"" + agg.column.describe + "\""
       case _ => ""
     }.mkString(", ")

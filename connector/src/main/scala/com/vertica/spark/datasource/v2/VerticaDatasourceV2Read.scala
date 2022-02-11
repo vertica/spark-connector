@@ -100,45 +100,39 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
       if(this.aggregation.groupByColumns().isEmpty)
         this.requiredSchema = requiredSchema
     // Else
-    //    prepend groupBy columns to schema. GroupBy to be implemented later.
+    //    prepend groupBy columns to schema columns. GroupBy to be implemented later.
     }
   }
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     // Only support Count for now.
-    val aggregatesFunctions: (List[AggregateFunc], List[AggregateFunc]) = aggregation.aggregateExpressions()
-      .foldLeft((List[AggregateFunc](), List[AggregateFunc]()))((acc, aggregateFunc) => {
-        val (supported, notSupported) = acc
-        aggregateFunc match {
-          case f: CountStar => (supported :+ f, notSupported)
-          case f: Count => (supported :+ f, notSupported)
-          case f => (supported, notSupported :+ f)
-        }
-      })
-    val (supportedAggregateFunctions, notSupportedAggregates) = aggregatesFunctions
-    if (notSupportedAggregates.nonEmpty) {
-      false
-    } else {
-      val structFields = supportedAggregateFunctions.map {
-        case _: CountStar =>
-          // Todo: On error, needs to be short circuited.
-          val colName = this.getFirstColumnName().getOrElse("")
-          StructField(colName, LongType, nullable = false, Metadata.empty)
-
-        case f: Count => StructField(f.column.describe(), LongType, nullable = false, Metadata.empty)
-      }
-      this.requiredSchema = StructType(structFields)
-      this.aggregation = new Aggregation(supportedAggregateFunctions.toArray, Array())
-      true
+    val supportedAggregateFunctions = aggregation.aggregateExpressions().filter {
+      case _:CountStar => true
+      case _:Count => true
+      case _ => false
     }
+    // If true then we did filter out some aggregates not supported, so short circuit
+    if (supportedAggregateFunctions.length != aggregation.aggregateExpressions.length) {
+      return false
+    }
+    val structFields = supportedAggregateFunctions.map {
+      case _: CountStar => StructField(this.getFirstColumnName(), LongType, nullable = false, Metadata.empty)
+      case f: Count => StructField(f.column.describe(), LongType, nullable = false, Metadata.empty)
+    }
+    this.requiredSchema = StructType(structFields)
+    this.aggregation = new Aggregation(supportedAggregateFunctions, Array())
+    true
   }
 
-  private def getFirstColumnName(): ConnectorResult[String] = {
+  private def getFirstColumnName(): String = {
+    val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
     readConfigSetup.getTableSchema(config) match {
-      case Right(schema) => Right(schema.fields.head.name)
-      case Left(error) => Left(error)
+      case Right(schema) => schema.fields.head.name
+      case Left(error) => ErrorHandling.logAndThrowError(logger,error)
     }
   }
+
+
 }
 
 
