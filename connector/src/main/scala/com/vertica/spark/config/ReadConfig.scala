@@ -51,7 +51,6 @@ trait ReadConfig {
 
   def setPushdownAggregation(aggregation: Aggregation): Unit
 
-  def getPushdownAggregation():Aggregation
 }
 
 
@@ -107,7 +106,7 @@ final case class DistributedFilesystemReadConfig(
                                                   timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
-  private var pushdownAggregation: Aggregation = _
+  private var pushdownAggregation: Aggregation = new Aggregation(Array(),Array())
   private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
@@ -118,16 +117,17 @@ final case class DistributedFilesystemReadConfig(
     this.requiredSchema = requiredSchema
   }
 
+  override def setPushdownAggregation(aggregation: Aggregation): Unit = {
+    this.pushdownAggregation = aggregation
+  }
+
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
+  def getPushdownAggregation: Aggregation = this.pushdownAggregation
 
   def copyConfig(): ReadConfig = {
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
   }
 
-  override def setPushdownAggregation(aggregation: Aggregation): Unit = {
-    this.pushdownAggregation = aggregation
-  }
 
-  override def getPushdownAggregation(): Aggregation = this.pushdownAggregation
 }

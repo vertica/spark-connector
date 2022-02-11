@@ -13,8 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import java.util
-
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -26,11 +24,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.io.Text
-import org.apache.hadoop.security.UserGroupInformation
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -189,6 +183,21 @@ class VerticaDistributedFilesystemReadPipe(
     }
   }
 
+  private def getSelectClause: ConnectorResult[String] = {
+      val pushdownAggregations = this.config.getPushdownAggregation.aggregateExpressions()
+      if(pushdownAggregations.isEmpty) getColumnNames(this.config.getRequiredSchema) else this.getAggregateColumns
+  }
+
+  private def getAggregateColumns: ConnectorResult[String] = {
+    val pushdownAggregates = this.config.getPushdownAggregation.aggregateExpressions
+    val aggregateSelectClause = pushdownAggregates.map {
+      case agg: CountStar => agg.toString + " as \"count(a)\""
+      case agg: Count => agg.toString +  " as \"" + agg.column.describe + "\""
+      case _ => ""
+    }.mkString(", ")
+    Right(aggregateSelectClause)
+  }
+
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tableSource) match {
       case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
@@ -241,8 +250,8 @@ class VerticaDistributedFilesystemReadPipe(
       // File permissions.
       filePermissions = config.filePermissions
 
-      cols <- if(config.getPushdownCount()) Right(s"COUNT(*)") else getColumnNames(this.config.getRequiredSchema)
-      _ = logger.info("Columns requested: " + cols)
+      selectClause <- getSelectClause
+      _ = logger.info("Select clause requested: " + selectClause)
 
       pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
       _ = logger.info("Pushdown filters: " + pushdownSql)
@@ -253,15 +262,15 @@ class VerticaDistributedFilesystemReadPipe(
       }
       _ = logger.info("Export Source: " + exportSource)
 
+      hasAggregates = this.config.getPushdownAggregation.aggregateExpressions.nonEmpty
+
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS " + (if(config.getPushdownCount()) s"SELECT COUNT as a FROM (" else "") +
-        "SELECT " + cols + " FROM " + exportSource + pushdownSql +
-        (if(config.getPushdownCount()) ") as \"table\"" else "") + ";"
+        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownSql + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {

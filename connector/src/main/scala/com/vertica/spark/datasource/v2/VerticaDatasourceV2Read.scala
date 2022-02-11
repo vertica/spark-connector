@@ -125,7 +125,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
           val colName = this.getFirstColumnName().getOrElse("")
           StructField(colName, LongType, nullable = false, Metadata.empty)
 
-        case f: Count => StructField(f.column.fieldNames.head, LongType, nullable = false, Metadata.empty)
+        case f: Count => StructField(f.column.describe(), LongType, nullable = false, Metadata.empty)
       }
       this.requiredSchema = StructType(structFields)
       this.aggregation = new Aggregation(supportedAggregateFunctions.toArray, Array())
