@@ -4148,8 +4148,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     // Poll sessions until they have cleaned up (or until we give up)
     var success: Boolean = false
-    var i: Int = 0
-    while (!success || i < 10) {
+    var i: Int = 1
+    while (!success && i <= 10) {
+      Thread.sleep(1000)
       val stmt = conn.createStatement()
       val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
       try {
@@ -4157,7 +4158,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
         rs.next
         // Expect a single session for the session count query itself
         // Note that this can fail if you are connected to vsql or performing other operations on the DB at the same time as these tests
-        success = (rs.getInt(1) == 1)
+        success = (rs.getInt(1) <= 1)
       } catch {
         case err : Exception => fail(err)
       } finally {
@@ -4165,7 +4166,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       }
       println("Unexpected session count, trying again - iteration " + i)
       i += 1
-      Thread.sleep(1000)
     }
     assert(success)
 
