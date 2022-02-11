@@ -4152,13 +4152,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     while (!success && i <= 10) {
       Thread.sleep(1000)
       val stmt = conn.createStatement()
-      val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
+      val query = "SELECT COUNT(*) FROM v_monitor.sessions WHERE client_label LIKE 'vspark%';"
       try {
         val rs = stmt.executeQuery(query)
         rs.next
-        // Expect a single session for the session count query itself
-        // Note that this can fail if you are connected to vsql or performing other operations on the DB at the same time as these tests
-        success = (rs.getInt(1) <= 1)
+        success = (rs.getInt(1) == 0)
       } catch {
         case err : Exception => fail(err)
       } finally {
