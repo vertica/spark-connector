@@ -137,9 +137,9 @@ At this point, you're ready to make your changes. Feel free to reach out over gi
 
 ## Debuging on Docker environment.
 
-If you are using docker as your dev enviroment, you can setup a debug server as well. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. Then, connect your debugger to port `5005`. 
+If you are using docker as your dev enviroment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
 
-If you would like to change the port number, edit `docker-compose.yml` under the `docker` folder. Currently, the client container is mapping its port `5005` to the host's `5005`.
+If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, `docker_client_1` container is mapping its port `5005` to the host's `5005`. 
 
 ### Connector Architecture
 
