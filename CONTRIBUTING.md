@@ -135,6 +135,12 @@ Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main
 
 At this point, you're ready to make your changes. Feel free to reach out over github for help navigating the code and implementing the fix or feature.
 
+## Debuging on Docker environment.
+
+If you are using docker as your dev enviroment, you can setup a debug server as well. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. Then, connect your debugger to port `5005`. 
+
+If you would like to change the port number, edit `docker-compose.yml` under the `docker` folder. Currently, the client container is mapping its port `5005` to the host's `5005`.
+
 ### Connector Architecture
 
 The connector has a core architecture, which is called by an implementation of the Spark Datasource V2 API.
