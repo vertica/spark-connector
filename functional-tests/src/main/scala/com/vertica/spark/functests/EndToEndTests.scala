@@ -4146,7 +4146,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(dfRead.count() == 3)
     }
     // Ensure operations have time to complete and cleanup
-    Thread.sleep(2000)
+    Thread.sleep(5000)
 
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
