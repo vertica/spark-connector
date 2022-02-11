@@ -17,11 +17,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.connector.expressions.Transform
+import org.apache.spark.sql.connector.expressions.{NamedReference, Transform}
 import org.apache.spark.sql.connector.catalog._
 import org.scalamock.scalatest.MockFactory
-import java.util
 
+import java.util
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.common.TestObjects
@@ -29,8 +29,9 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError, JobAbortedError}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
 import org.apache.spark.sql.sources.{Filter, GreaterThan, LessThan}
@@ -192,6 +193,30 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(nonPushed.length == 0)
 
     scanBuilder.pushedFilters().sameElements(filters)
+  }
+
+  it should "push aggregates on read" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+
+    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val column: NamedReference = new NamedReference{
+      override def fieldNames(): Array[String] = Array("a")
+
+      override def describe: String = "a"
+
+      override def toString: String = describe
+    }
+    val countAggregate: Array[AggregateFunc] = Array(new Count(column,false))
+    val countAggregation: Aggregation = new Aggregation(countAggregate,Array())
+
+    val countPushed = scanBuilder.pushAggregation(countAggregation)
+    assert(countPushed)
+
+    val minAggregate: Array[AggregateFunc] = Array(new Min(column))
+    val minAggregation: Aggregation = new Aggregation(minAggregate,Array())
+
+    val minPushed = scanBuilder.pushAggregation(minAggregation)
+    assert(!minPushed)
   }
 
   it should "prune columns on read" in {

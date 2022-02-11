@@ -105,7 +105,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   }
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
-    // Only support Count for now.
+    // We do this because only count is supported.
     val supportedAggregateFunctions = aggregation.aggregateExpressions().filter {
       case _:CountStar => true
       case _:Count => true
