@@ -4145,6 +4145,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
       assert(dfRead.count() == 3)
     }
+    // Ensure operations have time to complete and cleanup
+    Thread.sleep(2000)
 
     val stmt = conn.createStatement()
     val query = "SELECT COUNT(*) FROM v_monitor.sessions;"
