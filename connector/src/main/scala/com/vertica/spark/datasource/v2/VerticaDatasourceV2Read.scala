@@ -19,7 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, logAndThrowError}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction
@@ -56,9 +56,11 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   private var requiredSchema: StructType = StructType(Nil)
 
-  private var aggregation: Aggregation = new Aggregation(Array(),Array())
+  private var groupBy: Array[StructField] = Array(Nil)
 
-/**
+  private val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
+
+  /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
@@ -67,7 +69,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
-    cfg.setPushdownAggregation(this.aggregation)
+    cfg.setGroupBy(this.groupBy)
     new VerticaScan(cfg, readConfigSetup)
   }
 
@@ -93,46 +95,37 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
-    // scalastyle:off
-    // These pushdown columns by Spark are optimized. Thus, we do not expect any pushdown columns
-    // if there are aggregates.
-    if(this.aggregation.aggregateExpressions().isEmpty){
-      if(this.aggregation.groupByColumns().isEmpty)
-        this.requiredSchema = requiredSchema
-    // Else
-    //    prepend groupBy columns to schema columns. GroupBy to be implemented later.
-    }
+    logger.info(requiredSchema.toString())
+    //Todo: could we ever have columns and aggregates in query?
+    if(this.requiredSchema.isEmpty) this.requiredSchema = requiredSchema
   }
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
-    // We do this because only count is supported.
-    val supportedAggregateFunctions = aggregation.aggregateExpressions().filter {
-      case _:CountStar => true
-      case _:Count => true
-      case _ => false
+    val aggregatesStructFields = aggregation.aggregateExpressions().map {
+      case _: CountStar => StructField("count", LongType, nullable = false, Metadata.empty)
+      case f: Count => StructField(s"count(${f.column.describe()})", LongType, nullable = false, Metadata.empty)
+      // Todo: create new exception.
+      case _ => ErrorHandling.logAndThrowError(logger, null)
     }
-    // If true then we did filter out some aggregates not supported, so short circuit
-    if (supportedAggregateFunctions.length != aggregation.aggregateExpressions.length) {
-      return false
-    }
-    val structFields = supportedAggregateFunctions.map {
-      case _: CountStar => StructField(this.getFirstColumnName(), LongType, nullable = false, Metadata.empty)
-      case f: Count => StructField(f.column.describe(), LongType, nullable = false, Metadata.empty)
-    }
-    this.requiredSchema = StructType(structFields)
-    this.aggregation = new Aggregation(supportedAggregateFunctions, Array())
+    val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
+      StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
+    })
+    this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
+    this.groupBy = groupByColumnsStructFields
     true
   }
 
-  private def getFirstColumnName(): String = {
-    val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
+  private def getColType(name: String): DataType = {
     readConfigSetup.getTableSchema(config) match {
-      case Right(schema) => schema.fields.head.name
-      case Left(error) => ErrorHandling.logAndThrowError(logger,error)
+      case Right(schema) => {
+        schema.find(_.name.equalsIgnoreCase(name)) match {
+          case Some(col) => col.dataType
+          case None => ErrorHandling.logAndThrowError(logger, null)
+        }
+      }
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
     }
   }
-
-
 }
 
 
