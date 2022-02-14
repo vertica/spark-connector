@@ -19,7 +19,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
+import com.vertica.spark.datasource.v2
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
@@ -103,28 +104,31 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
-    logger.info(requiredSchema.toString())
     //Todo: could we ever have columns and aggregates in query?
     if(!this.aggPushedDown) this.requiredSchema = requiredSchema
   }
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
-    val aggregatesStructFields = aggregation.aggregateExpressions().map {
-      case _: CountStar => StructField("COUNT(*)", LongType, nullable = false, Metadata.empty)
-      case aggregate: Count => StructField(aggregate.describe(), LongType, nullable = false, Metadata.empty)
-      case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
-      case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
-      case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
-      // Todo: create new exception.
-      case aggregate: _ => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.toString))
+    try{
+      val aggregatesStructFields: Array[StructField] = aggregation.aggregateExpressions().map {
+        case _: CountStar => StructField("COUNT(*)", LongType, nullable = false, Metadata.empty)
+        case aggregate: Count => StructField(aggregate.describe(), LongType, nullable = false, Metadata.empty)
+        case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.describe()))
+      }
+      val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
+        StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
+      })
+      this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
+      this.aggPushedDown = true
+      this.groupBy = groupByColumnsStructFields
+      true
+    }catch{
+      case _: ConnectorException => false
+      case e: Exception => throw e
     }
-    val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
-      StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
-    })
-    this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
-    this.aggPushedDown = true
-    this.groupBy = groupByColumnsStructFields
-    true
   }
 
   private def getColType(colName: String): DataType = {
