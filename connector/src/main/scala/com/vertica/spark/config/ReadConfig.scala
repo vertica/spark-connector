@@ -19,7 +19,7 @@ import com.vertica.spark.datasource.core.SessionId
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
 import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.util.{Failure, Success, Try}
 
@@ -27,8 +27,7 @@ import scala.util.{Failure, Success, Try}
  * Interface for configuration of a read (from Vertica) operation.
  */
 trait ReadConfig {
-
-  /**
+    /**
    * Set filters to push down to the Vertica read.
    *
    * @param pushdownFilters Filter strings
@@ -49,8 +48,7 @@ trait ReadConfig {
    */
   def copyConfig(): ReadConfig
 
-  def setPushdownAggregation(aggregation: Aggregation): Unit
-
+  def setGroupBy(groupBy: Array[StructField]): Unit
 }
 
 
@@ -103,10 +101,10 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = true
+                                                  timeOperations : Boolean = true,
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
-  private var pushdownAggregation: Aggregation = new Aggregation(Array(),Array())
+  private var groupBy: Array[StructField] = Array()
   private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
@@ -117,13 +115,13 @@ final case class DistributedFilesystemReadConfig(
     this.requiredSchema = requiredSchema
   }
 
-  override def setPushdownAggregation(aggregation: Aggregation): Unit = {
-    this.pushdownAggregation = aggregation
+  override def setGroupBy(groupBy: Array[StructField]): Unit = {
+    this.groupBy = groupBy
   }
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
-  def getPushdownAggregation: Aggregation = this.pushdownAggregation
+  def getGroupBy: Array[StructField] = this.groupBy
 
   def copyConfig(): ReadConfig = {
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
