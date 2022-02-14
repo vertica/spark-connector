@@ -104,7 +104,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
-    //Todo: could we ever have columns and aggregates in query?
     if(!this.aggPushedDown) this.requiredSchema = requiredSchema
   }
 
@@ -122,8 +121,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
         StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
       })
       this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
-      this.aggPushedDown = true
       this.groupBy = groupByColumnsStructFields
+      this.aggPushedDown = true
       true
     }catch{
       case _: ConnectorException => false
