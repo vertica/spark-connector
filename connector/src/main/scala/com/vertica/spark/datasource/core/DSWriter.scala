@@ -94,6 +94,9 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   }
 
   def commitRows(): ConnectorResult[Unit] = {
-    pipe.commit()
+    val ret = pipe.commit()
+    // Ensure all connections are closed, including read connections used by the write operation
+    val _ = pipeFactory.closeJdbcLayers()
+    ret
   }
 }
