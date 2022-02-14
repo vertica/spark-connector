@@ -100,7 +100,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   override def pruneColumns(requiredSchema: StructType): Unit = {
     logger.info(requiredSchema.toString())
     //Todo: could we ever have columns and aggregates in query?
-    if(this.requiredSchema.isEmpty) this.requiredSchema = requiredSchema
+    if(!this.aggPushedDown) this.requiredSchema = requiredSchema
   }
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
