@@ -27,7 +27,9 @@ import scala.util.{Failure, Success, Try}
  * Interface for configuration of a read (from Vertica) operation.
  */
 trait ReadConfig {
-    /**
+  def setPushdownAgg(pushdownAgg: Boolean) : Unit
+
+  /**
    * Set filters to push down to the Vertica read.
    *
    * @param pushdownFilters Filter strings
@@ -105,6 +107,7 @@ final case class DistributedFilesystemReadConfig(
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var groupBy: Array[StructField] = Array()
+  private var aggPushedDown: Boolean = false
   private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
@@ -119,9 +122,14 @@ final case class DistributedFilesystemReadConfig(
     this.groupBy = groupBy
   }
 
+  override def setPushdownAgg(pushdownAgg: Boolean): Unit = {
+    this.aggPushedDown = pushdownAgg
+  }
+
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
   def getGroupBy: Array[StructField] = this.groupBy
+  def isAggPushedDown: Boolean = this.aggPushedDown
 
   def copyConfig(): ReadConfig = {
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))

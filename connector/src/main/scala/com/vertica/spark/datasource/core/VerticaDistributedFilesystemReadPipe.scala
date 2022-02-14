@@ -64,6 +64,7 @@ class VerticaDistributedFilesystemReadPipe(
                                             val cleanupUtils: CleanupUtilsInterface,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
+
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
@@ -184,19 +185,18 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def getSelectClause: ConnectorResult[String] = {
-      val pushdownAggregations = this.config.getPushdownAggregation.aggregateExpressions()
-      if(pushdownAggregations.isEmpty) getColumnNames(this.config.getRequiredSchema) else this.getPushdownAggregateColumns
+    if(config.isAggPushedDown) getPushdownAggregateColumns else getColumnNames(this.config.getRequiredSchema)
   }
 
   private def getPushdownAggregateColumns: ConnectorResult[String] = {
-    val pushdownAggregates = this.config.getPushdownAggregation.aggregateExpressions
-    val aggregateSelectClause = pushdownAggregates.map {
-      case agg: CountStar => agg.toString + " as \"" + this.config.getRequiredSchema.fields.head + "\""
-      case agg: Count => agg.toString +  " as \"" + agg.column.describe + "\""
-      case _ => ""
-    }.mkString(", ")
-    Right(aggregateSelectClause)
+    val selectClause = this.config.getRequiredSchema.map(col => s"${col.name} as " + "\"" + col.name + "\"").mkString(", ")
+    Right(selectClause)
   }
+
+  private def getGroupbyClause: String = {
+    if(this.config.getGroupBy.nonEmpty) " GROUP BY " + this.config.getGroupBy.map(_.name).mkString(", ") else ""
+  }
+
 
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tableSource) match {
@@ -250,11 +250,13 @@ class VerticaDistributedFilesystemReadPipe(
       // File permissions.
       filePermissions = config.filePermissions
 
-      selectClause <- getSelectClause
+      selectClause <- this.getSelectClause
       _ = logger.info("Select clause requested: " + selectClause)
 
-      pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownSql)
+      groupbyClause = this.getGroupbyClause
+
+      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+      _ = logger.info("Pushdown filters: " + pushdownFilters)
 
       exportSource = config.tableSource match {
         case tablename: TableName => tablename.getFullTableName
@@ -262,15 +264,23 @@ class VerticaDistributedFilesystemReadPipe(
       }
       _ = logger.info("Export Source: " + exportSource)
 
-      hasAggregates = this.config.getPushdownAggregation.aggregateExpressions.nonEmpty
-
       exportStatement = "EXPORT TO PARQUET(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownSql + ";"
+        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+
+      // Use this to inject export statement directly. To be removed.
+      //exportStatement = "EXPORT TO PARQUET(" +
+      //  "directory = '" + hdfsPath +
+      //  "', fileSizeMB = " + maxFileSize +
+      //  ", rowGroupSizeMB = " + maxRowGroupSize +
+      //  ", fileMode = '" + filePermissions +
+      //  "', dirMode = '" + filePermissions +
+      //  //"') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+      //  "') AS "+ com.vertica.spark.util.Global.exportStatement
 
       // Export if not already exported
       _ <- if(exportDone) {

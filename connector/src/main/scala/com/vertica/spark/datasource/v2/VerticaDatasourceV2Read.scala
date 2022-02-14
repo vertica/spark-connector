@@ -56,7 +56,9 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   private var requiredSchema: StructType = StructType(Nil)
 
-  private var groupBy: Array[StructField] = Array(Nil)
+  private var aggPushedDown: Boolean = false
+
+  private var groupBy: Array[StructField] = Array()
 
   private val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
@@ -69,6 +71,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
+    cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
     new VerticaScan(cfg, readConfigSetup)
   }
@@ -102,7 +105,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     val aggregatesStructFields = aggregation.aggregateExpressions().map {
-      case _: CountStar => StructField("count", LongType, nullable = false, Metadata.empty)
+      case _: CountStar => StructField("count(*)", LongType, nullable = false, Metadata.empty)
       case f: Count => StructField(s"count(${f.column.describe()})", LongType, nullable = false, Metadata.empty)
       // Todo: create new exception.
       case _ => ErrorHandling.logAndThrowError(logger, null)
@@ -111,6 +114,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
       StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
     })
     this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
+    this.aggPushedDown = true
     this.groupBy = groupByColumnsStructFields
     true
   }
