@@ -195,7 +195,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     scanBuilder.pushedFilters().sameElements(filters)
   }
 
-  it should "push aggregates on read" in {
+  ignore should "push aggregates on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
     val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
