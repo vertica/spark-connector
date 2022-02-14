@@ -19,12 +19,10 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, logAndThrowError}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction
-import org.apache.spark.sql.connector.expressions.NamedReference
-import org.apache.spark.sql.connector.expressions.aggregate.{AggregateFunc, Aggregation, Count, CountStar}
+import com.vertica.spark.util.schema.SchemaTools
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
 
 import scala.::
@@ -105,8 +103,11 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     val aggregatesStructFields = aggregation.aggregateExpressions().map {
-      case _: CountStar => StructField("count(*)", LongType, nullable = false, Metadata.empty)
-      case f: Count => StructField(s"count(${f.column.describe()})", LongType, nullable = false, Metadata.empty)
+      case _: CountStar => StructField("COUNT(*)", LongType, nullable = false, Metadata.empty)
+      case aggregate: Count => StructField(aggregate.describe(), LongType, nullable = false, Metadata.empty)
+      case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+      case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+      case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
       // Todo: create new exception.
       case _ => ErrorHandling.logAndThrowError(logger, null)
     }
@@ -127,7 +128,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
           case None => ErrorHandling.logAndThrowError(logger, null)
         }
       }
-      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get column type"))
     }
   }
 }
