@@ -21,7 +21,6 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
-import com.vertica.spark.util.schema.SchemaTools
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
 
@@ -43,6 +42,14 @@ case class NonPushFilter(filter: Filter) extends AnyVal
 
 case class ExpectedRowDidNotExistError() extends ConnectorError {
   def getFullContext: String = "Fatal error: expected row did not exist"
+}
+
+case class AggregateNotSupported(aggregate: String) extends ConnectorError {
+  def getFullContext: String = s"$aggregate is not supported"
+}
+
+case class UnknownColumnName(colName: String) extends ConnectorError {
+  def getFullContext: String = s"$colName could not be found"
 }
 
 /**
@@ -109,7 +116,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
       case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
       case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
       // Todo: create new exception.
-      case _ => ErrorHandling.logAndThrowError(logger, null)
+      case aggregate: _ => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.toString))
     }
     val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
       StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
@@ -120,15 +127,15 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     true
   }
 
-  private def getColType(name: String): DataType = {
+  private def getColType(colName: String): DataType = {
     readConfigSetup.getTableSchema(config) match {
       case Right(schema) => {
-        schema.find(_.name.equalsIgnoreCase(name)) match {
+        schema.find(_.name.equalsIgnoreCase(colName)) match {
           case Some(col) => col.dataType
-          case None => ErrorHandling.logAndThrowError(logger, null)
+          case None => ErrorHandling.logAndThrowError(logger, UnknownColumnName(colName))
         }
       }
-      case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get column type"))
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
     }
   }
 }
