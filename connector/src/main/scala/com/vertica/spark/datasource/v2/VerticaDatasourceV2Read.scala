@@ -47,20 +47,21 @@ case class ExpectedRowDidNotExistError() extends ConnectorError {
   def getFullContext: String = "Fatal error: expected row did not exist"
 }
 
+
 /**
   * Builds the scan class for use in reading of Vertica
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters with SupportsPushDownAggregates  with SupportsPushDownRequiredColumns {
-  private var pushFilters: List[PushFilter] = Nil
+  SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
+  protected var pushFilters: List[PushFilter] = Nil
 
-  private var requiredSchema: StructType = StructType(Nil)
+  protected var requiredSchema: StructType = StructType(Nil)
 
-  private var aggPushedDown: Boolean = false
+  protected var aggPushedDown: Boolean = false
 
-  private var groupBy: Array[StructField] = Array()
+  protected var groupBy: Array[StructField] = Array()
 
-  private val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
+  protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   /**
   * Builds the class representing a scan of a Vertica table
@@ -103,6 +104,21 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     if(this.requiredSchema.isEmpty) this.requiredSchema = requiredSchema
   }
 
+  protected def getColType(name: String): DataType = {
+    readConfigSetup.getTableSchema(config) match {
+      case Right(schema) => {
+        schema.find(_.name.equalsIgnoreCase(name)) match {
+          case Some(col) => col.dataType
+          case None => ErrorHandling.logAndThrowError(logger, null)
+        }
+      }
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+    }
+  }
+}
+
+class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends VerticaScanBuilder(config, readConfigSetup) with SupportsPushDownAggregates {
+
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     val aggregatesStructFields = aggregation.aggregateExpressions().map {
       case _: CountStar => StructField("count(*)", LongType, nullable = false, Metadata.empty)
@@ -118,20 +134,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     this.groupBy = groupByColumnsStructFields
     true
   }
-
-  private def getColType(name: String): DataType = {
-    readConfigSetup.getTableSchema(config) match {
-      case Right(schema) => {
-        schema.find(_.name.equalsIgnoreCase(name)) match {
-          case Some(col) => col.dataType
-          case None => ErrorHandling.logAndThrowError(logger, null)
-        }
-      }
-      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
-    }
-  }
 }
-
 
 /**
   * Represents a scan of a Vertica table.

@@ -195,6 +195,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     scanBuilder.pushedFilters().sameElements(filters)
   }
 
+  /*
   it should "push aggregates on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
@@ -218,6 +219,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val minPushed = scanBuilder.pushAggregation(minAggregation)
     assert(!minPushed)
   }
+   */
 
   it should "prune columns on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]

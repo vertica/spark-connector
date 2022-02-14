@@ -20,6 +20,7 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -87,7 +88,18 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         }
         logger.debug("Config loaded")
 
-        val scanBuilder = new VerticaScanBuilder(config, readSetupInterface)
+        val sparkVersion = SparkSession.getActiveSession.get.version
+        logger.info("Spark version: " + sparkVersion)
+        val scanBuilder = if(sparkVersion == "3.2.0") {
+          classOf[VerticaScanBuilderWithPushdown]
+            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+            .newInstance(config, readSetupInterface)
+        }
+        else {
+          classOf[VerticaScanBuilder]
+            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+            .newInstance(config, readSetupInterface)
+        }
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
     }
