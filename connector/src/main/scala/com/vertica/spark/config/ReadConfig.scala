@@ -20,14 +20,10 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.error.{InvalidFilePermissions}
 import org.apache.spark.sql.types.{StructField, StructType}
 
-import scala.util.{Failure, Success, Try}
-
 /**
  * Interface for configuration of a read (from Vertica) operation.
  */
 trait ReadConfig {
-  def setPushdownAgg(pushdownAgg: Boolean) : Unit
-
   /**
    * Set filters to push down to the Vertica read.
    *
@@ -49,7 +45,12 @@ trait ReadConfig {
    */
   def copyConfig(): ReadConfig
 
+  /**
+   * Set groupby columns pushed down by Spark for a read operation.
+   * */
   def setGroupBy(groupBy: Array[StructField]): Unit
+
+  def setPushdownAgg(pushdownAgg: Boolean) : Unit
 }
 
 
@@ -102,7 +103,7 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = true,
+                                                  timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var groupBy: Array[StructField] = Array()
