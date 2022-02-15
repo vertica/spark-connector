@@ -30,12 +30,33 @@ trait VerticaPipeFactoryInterface {
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
 
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
+
+  def closeJdbcLayers()
 }
 
 /**
  * Implementation of the vertica pipe factory
  */
-object VerticaPipeFactory extends VerticaPipeFactoryInterface{
+object VerticaPipeFactory extends VerticaPipeFactoryInterface {
+
+  // Maintain a single copy of the read and write JDBC layers
+  private var readLayer: Option[VerticaJdbcLayer] = None
+  private var writeLayer: Option[VerticaJdbcLayer] = None
+
+  private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
+    jdbcLayer match {
+      case Some(layer) => if (layer.isClosed()) Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
+      case None => Some(new VerticaJdbcLayer(jdbcConfig))
+    }
+  }
+
+  private def closeJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer]): Unit = {
+    jdbcLayer match {
+      case Some(layer) => val _ = layer.close
+      case None =>
+    }
+  }
+
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
     config match {
       case cfg: DistributedFilesystemReadConfig =>
@@ -47,24 +68,32 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface{
           }
           case _ => None
         })
+        readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
-          new VerticaJdbcLayer(cfg.jdbcConfig),
+          readLayer.get,
           new SchemaTools,
           new CleanupUtils
         )
     }
   }
+
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         val schemaTools = new SchemaTools
-        val jdbcLayer = new VerticaJdbcLayer(cfg.jdbcConfig)
+        writeLayer = checkJdbcLayer(writeLayer, cfg.jdbcConfig)
         new VerticaDistributedFilesystemWritePipe(cfg,
           new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
-          jdbcLayer,
+          writeLayer.get,
           schemaTools,
-          new TableUtils(schemaTools, jdbcLayer)
+          new TableUtils(schemaTools, writeLayer.get)
         )
     }
   }
+
+  override def closeJdbcLayers(): Unit = {
+    closeJdbcLayer(readLayer)
+    closeJdbcLayer(writeLayer)
+  }
+
 }
