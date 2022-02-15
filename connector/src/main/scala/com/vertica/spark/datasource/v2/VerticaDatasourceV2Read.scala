@@ -108,6 +108,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
         case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
         case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
         case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        // short circuit
         case aggregate => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.describe()))
       }
       val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
@@ -116,15 +117,19 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
       this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
       this.groupBy = groupByColumnsStructFields
       this.aggPushedDown = true
-      true
     }catch{
       case e: ConnectorException => e.error match{
-        // By returning false, the read is continued with no push down.
-        case _: AggregateNotSupported => false
+        // This instance of builder may be reused, so we reset.
+        case _: AggregateNotSupported =>
+          this.requiredSchema = StructType(Nil)
+          this.groupBy = Array()
+          this.aggPushedDown = false
         case _ => throw e
       }
       case e: Exception => throw e
     }
+    // if false, the read is continued with no push down.
+    this.aggPushedDown
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
