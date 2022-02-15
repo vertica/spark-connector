@@ -52,10 +52,9 @@ case class UnknownColumnName(colName: String) extends ConnectorError {
 
 /**
   * Builds the scan class for use in reading of Vertica
-  * Note: A ScanBuilder will be reused each time its table is to be queried.
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters with SupportsPushDownAggregates  with SupportsPushDownRequiredColumns {
+  SupportsPushDownFilters with SupportsPushDownAggregates with SupportsPushDownRequiredColumns {
   private var pushFilters: List[PushFilter] = Nil
 
   private var requiredSchema: StructType = StructType(Nil)
@@ -103,17 +102,16 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     try{
-      val tableSchema = getTableSchema()
       val aggregatesStructFields: Array[StructField] = aggregation.aggregateExpressions().map {
         case _: CountStar => StructField("COUNT(*)", LongType, nullable = false, Metadata.empty)
         case aggregate: Count => StructField(aggregate.describe(), LongType, nullable = false, Metadata.empty)
-        case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe(), tableSchema), nullable = false, Metadata.empty)
-        case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe(), tableSchema), nullable = false, Metadata.empty)
-        case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe(), tableSchema), nullable = false, Metadata.empty)
+        case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
         case aggregate => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.describe()))
       }
       val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
-        StructField(col.describe, getColType(col.describe, tableSchema), nullable = false, Metadata.empty)
+        StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
       })
       this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
       this.groupBy = groupByColumnsStructFields
@@ -135,27 +133,16 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     this.groupBy = Array()
   }
 
-  // cache.
-  private var tableSchemaOpt: Option[StructType] = None
-
-  private def getTableSchema(): StructType = {
-    tableSchemaOpt match {
-      case Some(schema) => schema
-      case None =>
-        val schema = readConfigSetup.getTableSchema(config) match {
-          case Right(schema) => schema
-          case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
-        }
-        tableSchemaOpt = Some(schema)
-        schema
-    }
-  }
-
-  private def getColType(colName: String, tableSchema: StructType): DataType = {
+  private def getColType(colName: String): DataType = {
     tableSchema.find(_.name.equalsIgnoreCase(colName)) match {
       case Some(col) => col.dataType
       case None => ErrorHandling.logAndThrowError(logger, UnknownColumnName(colName))
     }
+  }
+
+  private def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
+    case Right(schema) => schema
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
   }
 }
 

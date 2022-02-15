@@ -272,16 +272,6 @@ class VerticaDistributedFilesystemReadPipe(
         "', dirMode = '" + filePermissions +
         "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
 
-      // Use this to inject export statement directly. To be removed.
-      //exportStatement = "EXPORT TO PARQUET(" +
-      //  "directory = '" + hdfsPath +
-      //  "', fileSizeMB = " + maxFileSize +
-      //  ", rowGroupSizeMB = " + maxRowGroupSize +
-      //  ", fileMode = '" + filePermissions +
-      //  "', dirMode = '" + filePermissions +
-      //  //"') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
-      //  "') AS "+ com.vertica.spark.util.Global.exportStatement
-
       // Export if not already exported
       _ <- if(exportDone) {
         logger.info("Export already done, skipping export step.")
