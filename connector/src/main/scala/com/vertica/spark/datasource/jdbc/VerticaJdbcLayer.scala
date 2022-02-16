@@ -82,6 +82,11 @@ trait JdbcLayerInterface {
   def rollback(): ConnectorResult[Unit]
 
   /**
+    * Checks if the connection is closed
+    */
+  def isClosed(): Boolean
+
+  /**
    * Configures the database session
    *
    * @param fileStoreLayer Interface to a filestore that provides an impersonation token via getImpersonationToken
@@ -300,6 +305,15 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       .left.map(_.context("rollback: JDBC Error while rolling back.")))
   }
 
+  def isClosed(): Boolean = {
+    logger.debug("Checking if connection is closed.")
+    try {
+      this.connection.fold(_ => true, conn => conn.isClosed())
+    } catch {
+      case _ : Throwable => true
+    }
+  }
+
   def configureSession(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     for {
       _ <- this.configureKerberosToFilestore(fileStoreLayer)
@@ -382,10 +396,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         authMethod match {
           case Some(authMethod) if authMethod == "kerberos" =>
             for {
-              nameNodeAddress <- Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY))
+              nameNodeAddressOrNameservice <- Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY))
                 .orElse(Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY)))
+                .orElse(Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMESERVICES))) // don't error out here if nameservice is set
                 .toRight(MissingNameNodeAddressError())
-              _ = logger.debug("Hadoop impersonation: name node address: " + nameNodeAddress)
+              _ = logger.debug("Hadoop impersonation: name node address or nameservice: " + nameNodeAddressOrNameservice)
               encodedDelegationToken <- fileStoreLayer.getImpersonationToken(cfg.auth.user)
               jsonString = Option(hadoopConf.get(HdfsClientConfigKeys.DFS_NAMESERVICES)) match {
                 case Some(nameservice) => s"""
@@ -396,7 +411,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
                 case None => s"""
                   {
-                     "authority": "$nameNodeAddress",
+                     "authority": "$nameNodeAddressOrNameservice",
                      "token": "$encodedDelegationToken"
                   }"""
               }

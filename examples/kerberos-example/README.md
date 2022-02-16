@@ -66,6 +66,12 @@ Change directory to the example project directory `spark-connector/examples/kerb
 ./run-kerberos-example.sh 
 ```
 
+## Debugging.
+
+To debug, run `./run-kerberos-example.sh debug`. The execution will wait on port `5005` until a debugger connects to it before continuing with the execution. 
+
+To change the port number, edit `docker-compose-kerberos.yml`, currently, `docker_krbclient_1` container is mapping its `5005` port to host's `5005`.
+
 ## Tear down containers
 
 Exit out of the interactive terminal by running `exit`. 
