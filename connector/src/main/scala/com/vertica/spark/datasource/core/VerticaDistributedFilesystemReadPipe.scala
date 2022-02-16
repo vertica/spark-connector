@@ -412,20 +412,7 @@ class VerticaDistributedFilesystemReadPipe(
           Right(data)
         }
         else {
-
           logger.info("Hit done reading for file segment.")
-          if(!config.fileStoreConfig.preventCleanup) {
-            // Cleanup old file if required
-            getCleanupInfo(part, this.fileIdx) match {
-              case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
-                case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
-                case Right(_) => ()
-              }
-              case None => logger.warn("No cleanup info found.")
-            }
-
-          }
-
           // Next file
           this.fileIdx += 1
           if (this.fileIdx >= part.fileRanges.size) return Right(data)
@@ -456,14 +443,33 @@ class VerticaDistributedFilesystemReadPipe(
     ret
   }
 
-
   /**
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
     timer.endTime()
+    cleanupFiles()
     fileStoreLayer.closeReadParquetFile()
   }
 
+  def cleanupFiles(): Unit ={
+    logger.info("Removing files before closing read pipe.")
+    val part = this.partition match {
+      case None => return Left(UninitializedReadError())
+      case Some(p) => p
+    }
+    for(fileIdx <- 0 to part.fileRanges.size ){
+      if(!config.fileStoreConfig.preventCleanup) {
+        // Cleanup old file if required
+        getCleanupInfo(part, fileIdx) match {
+          case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+            case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
+            case Right(_) => ()
+          }
+          case None => logger.warn("No cleanup info found.")
+        }
+      }
+    }
+  }
 }
 
