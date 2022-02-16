@@ -448,16 +448,19 @@ class VerticaDistributedFilesystemReadPipe(
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
     timer.endTime()
-    cleanupFiles()
-    fileStoreLayer.closeReadParquetFile()
+    for {
+      _ <- cleanupFiles()
+      _ <- fileStoreLayer.closeReadParquetFile()
+    } yield ()
   }
 
-  def cleanupFiles(): Unit ={
+  def cleanupFiles(): ConnectorResult[Unit] ={
     logger.info("Removing files before closing read pipe.")
     val part = this.partition match {
       case None => return Left(UninitializedReadError())
       case Some(p) => p
     }
+
     for(fileIdx <- 0 to part.fileRanges.size ){
       if(!config.fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
@@ -470,6 +473,7 @@ class VerticaDistributedFilesystemReadPipe(
         }
       }
     }
+    Right()
   }
 }
 
