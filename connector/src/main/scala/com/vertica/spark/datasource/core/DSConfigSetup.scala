@@ -25,7 +25,9 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SparkSession
 
 
@@ -545,7 +547,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getTimeOperations(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
-
+      // Create a cleaner hook to remove the this configuration at app ends.
+      setupCleanerHook(initialConfig)
       // Then, retrieve metadata
       val metadata = pipe.getMetadata
       metadata match {
@@ -559,6 +562,43 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 
     // Check for options left over from old connector
     DSConfigSetupUtils.logOrAppendErrorsForOldConnectorOptions(config, res, logger)
+  }
+
+  private def setupCleanerHook(config: DistributedFilesystemReadConfig): Unit = {
+    SparkSession.getActiveSession match {
+      case Some(session) =>
+        val cleaner = new ApplicationParquetCleaner(config)
+        session.sparkContext.addSparkListener(cleaner)
+      case None =>
+    }
+  }
+
+  /**
+   * This listener is called at the end of Spark app to remove the export folder.
+   * */
+  private class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends SparkListener {
+
+    private val fileStoreLayer = new HadoopFileStoreLayer(config.fileStoreConfig, config.metadata match {
+      case Some(metadata) => if (config.getRequiredSchema.nonEmpty) {
+        Some(config.getRequiredSchema)
+      } else {
+        Some(metadata.schema)
+      }
+      case _ => None
+    })
+
+    private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
+
+    override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+      val fileStoreConfig = config.fileStoreConfig
+      if (!config.fileStoreConfig.preventCleanup) {
+        val hdfsPath = fileStoreConfig.address
+        fileStoreLayer.removeDir(hdfsPath) match {
+          case Right(_) => logger.info("Removed " + hdfsPath)
+          case Left(error) => logger.info(error.toString)
+        }
+      }
+    }
   }
 
   /**
