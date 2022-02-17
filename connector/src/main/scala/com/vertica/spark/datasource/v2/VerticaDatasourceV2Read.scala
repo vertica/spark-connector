@@ -54,16 +54,16 @@ case class UnknownColumnName(colName: String) extends ConnectorError {
   * Builds the scan class for use in reading of Vertica
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters with SupportsPushDownAggregates with SupportsPushDownRequiredColumns {
-  private var pushFilters: List[PushFilter] = Nil
+  SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
+  protected var pushFilters: List[PushFilter] = Nil
 
-  private var requiredSchema: StructType = StructType(Nil)
+  protected var requiredSchema: StructType = StructType(Nil)
 
-  private var aggPushedDown: Boolean = false
+  protected var aggPushedDown: Boolean = false
 
-  private var groupBy: Array[StructField] = Array()
+  protected var groupBy: Array[StructField] = Array()
 
-  private val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
+  protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   /**
   * Builds the class representing a scan of a Vertica table
@@ -100,6 +100,29 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     this.pushFilters.map(_.filter).toArray
   }
 
+
+
+  override def pruneColumns(requiredSchema: StructType): Unit = {
+    this.requiredSchema = requiredSchema
+    this.aggPushedDown = false
+    this.groupBy = Array()
+  }
+
+  protected def getColType(colName: String): DataType = {
+    tableSchema.find(_.name.equalsIgnoreCase(colName)) match {
+      case Some(col) => col.dataType
+      case None => ErrorHandling.logAndThrowError(logger, UnknownColumnName(colName))
+    }
+  }
+
+  protected def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
+    case Right(schema) => schema
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
+  }
+}
+
+class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends VerticaScanBuilder(config, readConfigSetup) with SupportsPushDownAggregates {
+
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     try{
       val aggregatesStructFields: Array[StructField] = aggregation.aggregateExpressions().map {
@@ -117,7 +140,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
       this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
       this.groupBy = groupByColumnsStructFields
       this.aggPushedDown = true
-    }catch{
+    } catch{
       case e: ConnectorException => e.error match{
         // This instance of builder may be reused, so we reset.
         case _: AggregateNotSupported =>
@@ -131,26 +154,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     // if false, the read is continued with no push down.
     this.aggPushedDown
   }
-
-  override def pruneColumns(requiredSchema: StructType): Unit = {
-    this.requiredSchema = requiredSchema
-    this.aggPushedDown = false
-    this.groupBy = Array()
-  }
-
-  private def getColType(colName: String): DataType = {
-    tableSchema.find(_.name.equalsIgnoreCase(colName)) match {
-      case Some(col) => col.dataType
-      case None => ErrorHandling.logAndThrowError(logger, UnknownColumnName(colName))
-    }
-  }
-
-  private def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
-    case Right(schema) => schema
-    case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
-  }
 }
-
 
 /**
   * Represents a scan of a Vertica table.

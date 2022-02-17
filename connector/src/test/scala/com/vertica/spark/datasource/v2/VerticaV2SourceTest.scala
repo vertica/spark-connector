@@ -215,7 +215,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
-    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
     val columnA: NamedReference = ColumnReference("a")
     val columnB: NamedReference = ColumnReference("b")
     val columnC: NamedReference = ColumnReference("c")
@@ -247,7 +247,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val schema = StructType(cols)
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
-    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
     val aggregatesFuncs: Array[AggregateFunc] = Array(UnknownAggregateFunc())
     val aggregates: Aggregation = new Aggregation(aggregatesFuncs,Array())
     val pushed = scanBuilder.pushAggregation(aggregates)
