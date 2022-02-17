@@ -117,8 +117,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 }
 
 /**
- * This listener is called at the end of Spark app to clean the removed the exported parquets.
- * It make sure all parquet are removed on application exit.
+ * This listener is called at the end of Spark app to remove the export folder.
  * */
 private class ApplicationParquetCleaner(fslayer: HadoopFileStoreLayer, config: DistributedFilesystemReadConfig) extends SparkListener {
   private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
