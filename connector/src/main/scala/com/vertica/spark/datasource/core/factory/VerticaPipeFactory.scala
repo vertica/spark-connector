@@ -20,6 +20,8 @@ import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.SparkSession
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
@@ -31,7 +33,7 @@ trait VerticaPipeFactoryInterface {
 
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
 
-  def closeJdbcLayers()
+  def closeJdbcLayers(): Unit
 }
 
 /**
@@ -42,6 +44,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   // Maintain a single copy of the read and write JDBC layers
   private var readLayer: Option[VerticaJdbcLayer] = None
   private var writeLayer: Option[VerticaJdbcLayer] = None
+  private var fileCleaner: Option[ApplicationParquetCleaner] = None
 
   private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
     jdbcLayer match {
@@ -52,7 +55,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 
   private def closeJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer]): Unit = {
     jdbcLayer match {
-      case Some(layer) => val _ = layer.close
+      case Some(layer) => val _ = layer.close()
       case None =>
     }
   }
@@ -69,11 +72,26 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case _ => None
         })
         readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
+        setupCleanerHook(hadoopFileStoreLayer, cfg)
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
           readLayer.get,
           new SchemaTools,
           new CleanupUtils
         )
+    }
+  }
+
+  private def setupCleanerHook(layer: HadoopFileStoreLayer, config: DistributedFilesystemReadConfig): Unit = {
+    // We only create the cleaner hook once.
+    fileCleaner match {
+      case None => SparkSession.getActiveSession match {
+        case Some(session) =>
+          val cleaner = new ApplicationParquetCleaner(layer, config)
+          this.fileCleaner = Some(cleaner)
+          session.sparkContext.addSparkListener(cleaner)
+        case None =>
+      }
+      case Some(value) =>
     }
   }
 
@@ -96,4 +114,16 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     closeJdbcLayer(writeLayer)
   }
 
+}
+
+/**
+ * This listener is called at the end of Spark app to clean the removed the exported parquets.
+ * It make sure all parquet are removed on application exit.
+ * */
+private class ApplicationParquetCleaner(fslayer: HadoopFileStoreLayer, config: DistributedFilesystemReadConfig) extends SparkListener {
+  private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
+  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+    logger.info("Removing " + config.fileStoreConfig.baseAddress)
+    if(!config.fileStoreConfig.preventCleanup) fslayer.removeDir(config.fileStoreConfig.baseAddress)
+  }
 }
