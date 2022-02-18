@@ -13,8 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import java.util
-
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -26,11 +24,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.io.Text
-import org.apache.hadoop.security.UserGroupInformation
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -70,6 +64,7 @@ class VerticaDistributedFilesystemReadPipe(
                                             val cleanupUtils: CleanupUtilsInterface,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
+
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
@@ -189,6 +184,20 @@ class VerticaDistributedFilesystemReadPipe(
     }
   }
 
+  private def getSelectClause: ConnectorResult[String] = {
+    if(config.isAggPushedDown) getPushdownAggregateColumns else getColumnNames(this.config.getRequiredSchema)
+  }
+
+  private def getPushdownAggregateColumns: ConnectorResult[String] = {
+    val selectClause = this.config.getRequiredSchema.map(col => s"${col.name} as " + "\"" + col.name + "\"").mkString(", ")
+    Right(selectClause)
+  }
+
+  private def getGroupbyClause: String = {
+    if(this.config.getGroupBy.nonEmpty) " GROUP BY " + this.config.getGroupBy.map(_.name).mkString(", ") else ""
+  }
+
+
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tableSource) match {
       case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
@@ -241,11 +250,13 @@ class VerticaDistributedFilesystemReadPipe(
       // File permissions.
       filePermissions = config.filePermissions
 
-      cols <- getColumnNames(this.config.getRequiredSchema)
-      _ = logger.info("Columns requested: " + cols)
+      selectClause <- this.getSelectClause
+      _ = logger.info("Select clause requested: " + selectClause)
 
-      pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownSql)
+      groupbyClause = this.getGroupbyClause
+
+      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+      _ = logger.info("Pushdown filters: " + pushdownFilters)
 
       exportSource = config.tableSource match {
         case tablename: TableName => tablename.getFullTableName
@@ -259,8 +270,7 @@ class VerticaDistributedFilesystemReadPipe(
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS " + "SELECT " + cols +
-        " FROM " + exportSource + pushdownSql + ";"
+        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {
