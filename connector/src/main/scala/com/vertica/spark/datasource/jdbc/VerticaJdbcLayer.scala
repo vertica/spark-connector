@@ -326,8 +326,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case Right(rs) => {
         rs.next()
         val versionStr = rs.getString(1)
-        val pattern = "v([0-9]+)\\.[0-9]+\\.[0-9]+-[0-9]+".r
-        val pattern(version) = versionStr
+        // Regex pattern to extract version number.
+        val pattern = ".*v([0-9]+)\\.[0-9]+\\.[0-9]+-[0-9]+.*".r
+        // extract from the first control group.
+        val pattern(version) = versionStr.trim
         logger.info("VERTICA VERSION: " + version)
         Right(version.toInt)
       }
@@ -378,10 +380,16 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       }
       _ <- awsOptions.enableSSL match {
         case Some(enable) =>
-          val enableInt = if (enable.arg.equalsIgnoreCase("true")) 1 else 0
-          val sql = s"ALTER SESSION SET AWSEnableHttps=${enableInt}"
-          logger.info(s"Loaded AWSEnableHttps from ${enable.origin}")
-          this.execute(sql)
+          if(version < 11) {
+            logger.warn("enable_ssl is only support for Vertica version 11+")
+            logger.info("Did not set AWSEnableHttps")
+            Right()
+          }else {
+            val enableInt = if (enable.arg.equalsIgnoreCase("true")) 1 else 0
+            val sql = s"ALTER SESSION SET AWSEnableHttps=${enableInt}"
+            logger.info(s"Loaded AWSEnableHttps from ${enable.origin}")
+            this.execute(sql)
+          }
         case None =>
           logger.info("Did not set AWSEnableHttps")
           Right(())
