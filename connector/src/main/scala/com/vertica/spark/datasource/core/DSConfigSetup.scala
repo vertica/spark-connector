@@ -547,8 +547,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getTimeOperations(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
-      // Create a cleaner hook to remove the this configuration at app ends.
-      setupCleanerHook(initialConfig)
       // Then, retrieve metadata
       val metadata = pipe.getMetadata
       metadata match {
@@ -564,14 +562,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     DSConfigSetupUtils.logOrAppendErrorsForOldConnectorOptions(config, res, logger)
   }
 
-  private def setupCleanerHook(config: DistributedFilesystemReadConfig): Unit = {
-    SparkSession.getActiveSession match {
-      case Some(session) =>
-        val cleaner = new ApplicationParquetCleaner(config)
-        session.sparkContext.addSparkListener(cleaner)
-      case None =>
-    }
-  }
 
   /**
    * Calls read pipe implementation to perform initial setup for the read operation.
@@ -663,33 +653,5 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
   override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
     case Some(schema) => Right(schema)
     case None => Left(SchemaDiscoveryError())
-  }
-}
-
-/**
- * This listener is called at the end of Spark app to remove the export folder.
- * */
-private class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends SparkListener {
-
-  private val fileStoreLayer = new HadoopFileStoreLayer(config.fileStoreConfig, config.metadata match {
-    case Some(metadata) => if (config.getRequiredSchema.nonEmpty) {
-      Some(config.getRequiredSchema)
-    } else {
-      Some(metadata.schema)
-    }
-    case _ => None
-  })
-
-  private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
-
-  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-    val fileStoreConfig = config.fileStoreConfig
-    if (!config.fileStoreConfig.preventCleanup) {
-      val hdfsPath = fileStoreConfig.address
-      fileStoreLayer.removeDir(hdfsPath) match {
-        case Right(_) => logger.info("Removed " + hdfsPath)
-        case Left(error) => logger.info(error.toString)
-      }
-    }
   }
 }
