@@ -275,7 +275,7 @@ Go to https://github.com/YOURUSERNAME/spark-connector and [make a Pull Request](
 Before we can accept a pull request, we first ask people to sign a Contributor License Agreement (or CLA). We ask this so that we know that contributors have the right to donate the code. You should notice a comment from **CLAassistant** on your pull request page, follow this comment to sign the CLA electronically.
 
 
-### 
+### Review
 Pull requests are usually reviewed within a few days. If there are comments to address, apply your changes in new commits, rebase your branch and force-push to the same branch, re-run unit and integration suites to ensure tests are still passing. In order to produce a clean commit history, our maintainers would do squash merging once your PR is approved, which means combining all commits of your PR into a single commit in the master branch.
 
 That's it! Thank you for your code contribution!
