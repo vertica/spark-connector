@@ -17,9 +17,10 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
+import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.sources.Filter
 
@@ -46,7 +47,9 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   private var requiredSchema: StructType = StructType(Nil)
 
-/**
+  ApplicationParquetCleaner.setupCleanerHook(config.asInstanceOf[DistributedFilesystemReadConfig])
+
+  /**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
