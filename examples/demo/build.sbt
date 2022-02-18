@@ -14,12 +14,12 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-demo-example"
 organization := "com.vertica"
-version := "3.0.2"
+version := "3.0.3"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
-  "com.vertica.spark" % "vertica-spark" % "3.0.2-slim"
+  "com.vertica.spark" % "vertica-spark" % "3.0.3-slim"
 )

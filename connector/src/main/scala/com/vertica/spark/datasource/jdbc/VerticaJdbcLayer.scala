@@ -321,9 +321,22 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     } yield ()
   }
 
+  private def getVerticaVersion(): ConnectorResult[String] = {
+    this.query("SELECT version();") match {
+      case Right(rs) =>
+        rs.next()
+        val versionString = rs.getString(1)
+        val regex = "v([0-9]*)\\.[0-9]*\\.[0-9]*-[0-9]*".r
+        val version = versionString
+        Right("")
+      case Left(value) => Left(value)
+    }
+  }
+
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     val awsOptions = fileStoreLayer.getAWSOptions
     for {
+      verticaVersion <-
       _ <- awsOptions.awsAuth match {
         case Some(awsAuth) =>
           val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"

@@ -72,7 +72,7 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-3.0.2.jar
+Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-3.0.3.jar
 
 ## Step 4: Set up an environment
 The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.](https://github.com/vertica/spark-connector/blob/main/examples/README.md)
@@ -88,7 +88,7 @@ The next requirement is a spark application that uses the connector jar. Example
 ```shell
 cd examples/basic-read
 mkdir lib
-cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.2.jar lib
+cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.3.jar lib
 sbt run
 ```
 
@@ -231,7 +231,7 @@ The functional-tests project is meant to run against a real environment. See "Se
 
 This project contains a series of end-to-end tests. It also contains tests for components on the bottom layer of the connector, those that do some kind of IO directly, and thus don't make as much sense to unit test.
 
-If you set the sparkVersion in build.sbt to 3.0.2, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
+If you set the sparkVersion in build.sbt to 3.0.3, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
 
 Similarly, if you set the sparkVersion in build.sbt to 3.1.0, you will also need to use hadoop-hdfs version 3.3.0.
 
@@ -275,7 +275,7 @@ Go to https://github.com/YOURUSERNAME/spark-connector and [make a Pull Request](
 Before we can accept a pull request, we first ask people to sign a Contributor License Agreement (or CLA). We ask this so that we know that contributors have the right to donate the code. You should notice a comment from **CLAassistant** on your pull request page, follow this comment to sign the CLA electronically.
 
 
-### Review
+### 
 Pull requests are usually reviewed within a few days. If there are comments to address, apply your changes in new commits, rebase your branch and force-push to the same branch, re-run unit and integration suites to ensure tests are still passing. In order to produce a clean commit history, our maintainers would do squash merging once your PR is approved, which means combining all commits of your PR into a single commit in the master branch.
 
 That's it! Thank you for your code contribution!

@@ -20,8 +20,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: build-jar-file
-          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.0.2.jar
-  run-analysis:
+          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.0.3.jar  run-analysis:
     runs-on: ubuntu-latest
     needs: build
     steps:
