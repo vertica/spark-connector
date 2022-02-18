@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.core
 
 import java.util
-
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -26,11 +25,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.io.Text
-import org.apache.hadoop.security.UserGroupInformation
-import org.apache.spark.sql.SparkSession
+import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -275,6 +270,9 @@ class VerticaDistributedFilesystemReadPipe(
         timer.endTime()
         res
       }
+
+      // Make sure we only register once
+      _ <- if(!exportDone) ApplicationParquetCleaner.register(config) else Right()
 
       // Retrieve all parquet files created by Vertica
       dirExists <- fileStoreLayer.fileExists(hdfsPath)

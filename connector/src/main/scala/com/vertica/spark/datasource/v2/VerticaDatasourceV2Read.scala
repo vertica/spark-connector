@@ -47,8 +47,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   private var requiredSchema: StructType = StructType(Nil)
 
-  ApplicationParquetCleaner.setupCleanerHook(config.asInstanceOf[DistributedFilesystemReadConfig])
-
   /**
   * Builds the class representing a scan of a Vertica table
   *
@@ -58,7 +56,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
-
     new VerticaScan(cfg, readConfigSetup)
   }
 

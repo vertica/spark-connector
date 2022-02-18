@@ -15,16 +15,19 @@ package com.vertica.spark.util.listeners
 
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SparkSession
 
-object ApplicationParquetCleaner{
-  def setupCleanerHook(config: DistributedFilesystemReadConfig): Unit = {
+object ApplicationParquetCleaner {
+  def register(config: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
     SparkSession.getActiveSession match {
       case Some(session) =>
         val cleaner = new ApplicationParquetCleaner(config)
         session.sparkContext.addSparkListener(cleaner)
-      case None =>
+        Right()
+      case None => Left(CleanerRegistrationError())
     }
   }
 }
@@ -33,6 +36,8 @@ object ApplicationParquetCleaner{
  * This listener is called at the end of Spark app to remove the export folder.
  * */
 class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends SparkListener {
+  private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
+
   private val fileStoreLayer = new HadoopFileStoreLayer(config.fileStoreConfig, config.metadata match {
     case Some(metadata) => if (config.getRequiredSchema.nonEmpty) {
       Some(config.getRequiredSchema)
@@ -41,8 +46,6 @@ class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends
     }
     case _ => None
   })
-
-  private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
 
   override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
     val fileStoreConfig = config.fileStoreConfig
@@ -54,4 +57,8 @@ class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends
       }
     }
   }
+}
+
+case class CleanerRegistrationError() extends ConnectorError {
+  def getFullContext: String = "Failed to add application shutdown listener to context"
 }
