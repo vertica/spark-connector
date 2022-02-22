@@ -60,8 +60,8 @@ class VerticaDistributedFilesystemReadPipe(
                                             val jdbcLayer: JdbcLayerInterface,
                                             val schemaTools: SchemaToolsInterface,
                                             val cleanupUtils: CleanupUtilsInterface,
-                                            val dataSize: Int = 1,
-                                            val sparkContext: SparkContextWrapper
+                                            val sparkContext: SparkContextWrapper,
+                                            val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
