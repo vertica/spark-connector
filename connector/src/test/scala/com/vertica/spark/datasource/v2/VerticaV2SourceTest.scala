@@ -17,11 +17,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.connector.expressions.Transform
+import org.apache.spark.sql.connector.expressions.{NamedReference, Transform}
 import org.apache.spark.sql.connector.catalog._
 import org.scalamock.scalatest.MockFactory
-import java.util
 
+import java.util
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.common.TestObjects
@@ -29,8 +29,9 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, SchemaDiscoveryError, UserMissingError, JobAbortedError}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
 import org.apache.spark.sql.sources.{Filter, GreaterThan, LessThan}
@@ -192,6 +193,65 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(nonPushed.length == 0)
 
     scanBuilder.pushedFilters().sameElements(filters)
+  }
+
+  // FieldReference used by Spark SQL is private so we used this instead.
+  case class ColumnReference(name:String) extends NamedReference{
+
+    override def fieldNames(): Array[String] = Array(name)
+
+    override def describe(): String = name
+  }
+
+  it should "push aggregates on read" in {
+    val cols = Array(
+      StructField("a",IntegerType, false, Metadata.empty),
+      StructField("b",IntegerType, false, Metadata.empty),
+      StructField("c",IntegerType, false, Metadata.empty)
+    )
+    val schema = StructType(cols)
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+    val columnA: NamedReference = ColumnReference("a")
+    val columnB: NamedReference = ColumnReference("b")
+    val columnC: NamedReference = ColumnReference("c")
+    val aggregatesFuncs: Array[AggregateFunc] = Array(
+      new Count(columnA,false),
+      new Max(columnB)
+    )
+    val groupBy: Array[NamedReference] = Array(
+      columnC
+    )
+    val aggregates: Aggregation = new Aggregation(aggregatesFuncs,groupBy)
+    val countPushed = scanBuilder.pushAggregation(aggregates)
+    assert(countPushed)
+    val requiredSchema = scanBuilder.build().readSchema()
+    assert(requiredSchema.fields.length == 3)
+    assert(requiredSchema.fields(0).name == "c")
+    assert(requiredSchema.fields(1).name == "COUNT(a)")
+    assert(requiredSchema.fields(2).name == "MAX(b)")
+  }
+
+  case class UnknownAggregateFunc() extends AggregateFunc{
+    override def describe(): String = "UnknownAggregate"
+  }
+
+  it should "not push down unknown aggregates" in {
+    val cols = Array(
+      StructField("a",IntegerType, false, Metadata.empty),
+    )
+    val schema = StructType(cols)
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+    val aggregatesFuncs: Array[AggregateFunc] = Array(UnknownAggregateFunc())
+    val aggregates: Aggregation = new Aggregation(aggregatesFuncs,Array())
+    val pushed = scanBuilder.pushAggregation(aggregates)
+    assert(!pushed)
   }
 
   it should "prune columns on read" in {

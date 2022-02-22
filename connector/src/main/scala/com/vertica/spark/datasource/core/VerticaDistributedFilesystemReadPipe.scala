@@ -24,6 +24,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.spark.sql.connector.expressions.aggregate._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
@@ -45,6 +46,8 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Option[Map[String, Int]] = None) extends VerticaPartition
+
+
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
  *
@@ -182,6 +185,20 @@ class VerticaDistributedFilesystemReadPipe(
     }
   }
 
+  private def getSelectClause: ConnectorResult[String] = {
+    if(config.isAggPushedDown) getPushdownAggregateColumns else getColumnNames(this.config.getRequiredSchema)
+  }
+
+  private def getPushdownAggregateColumns: ConnectorResult[String] = {
+    val selectClause = this.config.getRequiredSchema.map(col => s"${col.name} as " + "\"" + col.name + "\"").mkString(", ")
+    Right(selectClause)
+  }
+
+  private def getGroupbyClause: String = {
+    if(this.config.getGroupBy.nonEmpty) " GROUP BY " + this.config.getGroupBy.map(_.name).mkString(", ") else ""
+  }
+
+
   private def getColumnNames(requiredSchema: StructType): ConnectorResult[String] = {
     schemaTools.getColumnInfo(jdbcLayer, config.tableSource) match {
       case Left(err) => Left(err.context("Failed to get table schema when checking for fields that need casts."))
@@ -234,11 +251,13 @@ class VerticaDistributedFilesystemReadPipe(
       // File permissions.
       filePermissions = config.filePermissions
 
-      cols <- getColumnNames(this.config.getRequiredSchema)
-      _ = logger.info("Columns requested: " + cols)
+      selectClause <- this.getSelectClause
+      _ = logger.info("Select clause requested: " + selectClause)
 
-      pushdownSql = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownSql)
+      groupbyClause = this.getGroupbyClause
+
+      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+      _ = logger.info("Pushdown filters: " + pushdownFilters)
 
       exportSource = config.tableSource match {
         case tablename: TableName => tablename.getFullTableName
@@ -252,8 +271,7 @@ class VerticaDistributedFilesystemReadPipe(
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS " + "SELECT " + cols +
-        " FROM " + exportSource + pushdownSql + ";"
+        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
 
       // Export if not already exported
       _ <- if(exportDone) {
@@ -406,6 +424,7 @@ class VerticaDistributedFilesystemReadPipe(
           Right(data)
         }
         else {
+
           logger.info("Hit done reading for file segment.")
           // Next file
           this.fileIdx += 1
@@ -436,6 +455,7 @@ class VerticaDistributedFilesystemReadPipe(
     }
     ret
   }
+
 
   /**
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.

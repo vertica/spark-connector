@@ -19,6 +19,7 @@ import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, R
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
+import org.apache.spark.sql.SparkSession
 import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
@@ -87,7 +88,29 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         }
         logger.debug("Config loaded")
 
-        val scanBuilder = new VerticaScanBuilder(config, readSetupInterface)
+        // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with right feature support
+        var sparkNewerThan31 = true
+        try {
+          val sparkVersion = SparkSession.getActiveSession.get.version
+          val versionList = sparkVersion.split("\\.").map(_.toInt)
+          if(versionList.length >= 2 && versionList(0) == 3 && versionList(1) < 2) {
+            sparkNewerThan31 = false
+          }
+        }
+        catch { // Couldn't recgonize version string, assume newer version
+          case _: java.lang.NumberFormatException => sparkNewerThan31 = true
+        }
+
+        val scanBuilder = if(sparkNewerThan31) {
+          classOf[VerticaScanBuilderWithPushdown]
+            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+            .newInstance(config, readSetupInterface)
+        }
+        else {
+          classOf[VerticaScanBuilder]
+            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+            .newInstance(config, readSetupInterface)
+        }
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
     }
