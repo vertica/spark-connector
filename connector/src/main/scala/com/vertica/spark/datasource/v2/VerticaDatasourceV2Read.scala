@@ -20,7 +20,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
@@ -64,7 +63,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   protected var groupBy: Array[StructField] = Array()
 
-  protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
+  protected val logger: Logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   /**
   * Builds the class representing a scan of a Vertica table
