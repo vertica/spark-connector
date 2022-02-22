@@ -16,21 +16,7 @@ package com.vertica.spark.util.listeners
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.error.ConnectorError
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.SparkSession
-
-object ApplicationParquetCleaner {
-  def register(config: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
-    SparkSession.getActiveSession match {
-      case Some(session) =>
-        val cleaner = new ApplicationParquetCleaner(config)
-        session.sparkContext.addSparkListener(cleaner)
-        Right()
-      case None => Left(CleanerRegistrationError())
-    }
-  }
-}
 
 /**
  * This listener is called at the end of Spark app to remove the export folder.
