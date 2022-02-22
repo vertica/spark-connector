@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import java.util
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -25,7 +24,7 @@ import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
+import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -46,8 +45,6 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Option[Map[String, Int]] = None) extends VerticaPartition
-
-
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
  *
@@ -63,7 +60,8 @@ class VerticaDistributedFilesystemReadPipe(
                                             val jdbcLayer: JdbcLayerInterface,
                                             val schemaTools: SchemaToolsInterface,
                                             val cleanupUtils: CleanupUtilsInterface,
-                                            val dataSize: Int = 1
+                                            val dataSize: Int = 1,
+                                            val sparkContext: SparkContextWrapper
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
@@ -267,12 +265,10 @@ class VerticaDistributedFilesystemReadPipe(
         val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
         timer.startTime()
         val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+        sparkContext.addSparkListener(new ApplicationParquetCleaner(config))
         timer.endTime()
         res
       }
-
-      // Make sure we only register once
-      _ <- if(!exportDone) ApplicationParquetCleaner.register(config) else Right()
 
       // Retrieve all parquet files created by Vertica
       dirExists <- fileStoreLayer.fileExists(hdfsPath)

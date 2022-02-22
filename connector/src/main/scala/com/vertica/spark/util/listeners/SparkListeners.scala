@@ -16,8 +16,26 @@ package com.vertica.spark.util.listeners
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.error.ConnectorError
+import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
+/**
+ * This wrapper is created solely for compatibility with unit testing.
+ * <br/>
+ * Because we could not instantiate SparkContext, a dummy class that extends from
+ * SparkContext is needed to override the functions we are using. However, SparkContext.addSparkListener's argument
+ * use a private interface thus can't be override.
+ * */
+case class SparkContextWrapper(sparkContext: Option[SparkContext]){
+
+  def addSparkListener(listener:SparkListener): Unit ={
+    sparkContext match {
+      // We may not get a context if this is executed on executor nodes.
+      case None =>
+      case Some(context) => context.addSparkListener(listener)
+    }
+  }
+}
 /**
  * This listener is called at the end of Spark app to remove the export folder.
  * */
@@ -34,12 +52,11 @@ class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends
   })
 
   override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-    val fileStoreConfig = config.fileStoreConfig
+    val hdfsPath = config.fileStoreConfig.address
     if (!config.fileStoreConfig.preventCleanup) {
-      val hdfsPath = fileStoreConfig.address
       fileStoreLayer.removeDir(hdfsPath) match {
         case Right(_) => logger.info("Removed " + hdfsPath)
-        case Left(error) => logger.info(error.toString)
+        case Left(error) => logger.error(s"Error removing $hdfsPath. ${error.toString}")
       }
     }
   }
