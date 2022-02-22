@@ -13,6 +13,8 @@
 
 package com.vertica.spark.datasource.core
 
+import java.util
+
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -25,6 +27,7 @@ import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -45,6 +48,8 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Option[Map[String, Int]] = None) extends VerticaPartition
+
+
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
  *
@@ -436,6 +441,7 @@ class VerticaDistributedFilesystemReadPipe(
     }
     ret
   }
+
 
   /**
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.

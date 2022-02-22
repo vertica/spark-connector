@@ -17,11 +17,12 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import com.vertica.spark.util.pushdown.PushdownUtils
+import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
 
 trait PushdownFilter {
@@ -32,20 +33,38 @@ case class PushFilter(filter: Filter, filterString: String) extends PushdownFilt
   def getFilterString: String = this.filterString
 }
 
+case class PushdownAggregate(aggregation: Aggregation, aggregationString: String) {
+  def getAggregationString: String = this.aggregationString
+}
+
 case class NonPushFilter(filter: Filter) extends AnyVal
 
 case class ExpectedRowDidNotExistError() extends ConnectorError {
   def getFullContext: String = "Fatal error: expected row did not exist"
 }
 
+case class AggregateNotSupported(aggregate: String) extends ConnectorError {
+  def getFullContext: String = s"$aggregate is not supported"
+}
+
+case class UnknownColumnName(colName: String) extends ConnectorError {
+  def getFullContext: String = s"$colName could not be found"
+}
+
 /**
   * Builds the scan class for use in reading of Vertica
   */
 class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
-  SupportsPushDownFilters with SupportsPushDownRequiredColumns {
-  private var pushFilters: List[PushFilter] = Nil
+  SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
+  protected var pushFilters: List[PushFilter] = Nil
 
-  private var requiredSchema: StructType = StructType(Nil)
+  protected var requiredSchema: StructType = StructType(Nil)
+
+  protected var aggPushedDown: Boolean = false
+
+  protected var groupBy: Array[StructField] = Array()
+
+  protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   /**
   * Builds the class representing a scan of a Vertica table
@@ -56,6 +75,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     val cfg = config.copyConfig()
     cfg.setPushdownFilters(this.pushFilters)
     cfg.setRequiredSchema(this.requiredSchema)
+    cfg.setPushdownAgg(this.aggPushedDown)
+    cfg.setGroupBy(this.groupBy)
     new VerticaScan(cfg, readConfigSetup)
   }
 
@@ -82,9 +103,57 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
     this.requiredSchema = requiredSchema
+    this.aggPushedDown = false
+    this.groupBy = Array()
+  }
+
+  protected def getColType(colName: String): DataType = {
+    tableSchema.find(_.name.equalsIgnoreCase(colName)) match {
+      case Some(col) => col.dataType
+      case None => ErrorHandling.logAndThrowError(logger, UnknownColumnName(colName))
+    }
+  }
+
+  protected def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
+    case Right(schema) => schema
+    case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
   }
 }
 
+class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends VerticaScanBuilder(config, readConfigSetup) with SupportsPushDownAggregates {
+
+  override def pushAggregation(aggregation: Aggregation): Boolean = {
+    try{
+      val aggregatesStructFields: Array[StructField] = aggregation.aggregateExpressions().map {
+        case _: CountStar => StructField("COUNT(*)", LongType, nullable = false, Metadata.empty)
+        case aggregate: Count => StructField(aggregate.describe(), LongType, nullable = false, Metadata.empty)
+        case aggregate: Sum => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Min => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        case aggregate: Max => StructField(aggregate.describe(), getColType(aggregate.column().describe()), nullable = false, Metadata.empty)
+        // short circuit
+        case aggregate => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.describe()))
+      }
+      val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
+        StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
+      })
+      this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
+      this.groupBy = groupByColumnsStructFields
+      this.aggPushedDown = true
+    } catch{
+      case e: ConnectorException => e.error match{
+        // This instance of builder may be reused, so we reset.
+        case _: AggregateNotSupported =>
+          this.requiredSchema = StructType(Nil)
+          this.groupBy = Array()
+          this.aggPushedDown = false
+        case _ => throw e
+      }
+      case e: Exception => throw e
+    }
+    // if false, the read is continued with no push down.
+    this.aggPushedDown
+  }
+}
 
 /**
   * Represents a scan of a Vertica table.

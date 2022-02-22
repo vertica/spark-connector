@@ -14,11 +14,13 @@
 package com.vertica.spark.datasource.v2
 
 import java.util
+
 import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
+import org.apache.spark.sql.SparkSession
 import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
