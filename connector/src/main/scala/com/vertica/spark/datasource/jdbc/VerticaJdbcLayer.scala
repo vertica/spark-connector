@@ -14,6 +14,7 @@
 package com.vertica.spark.datasource.jdbc
 
 import com.vertica.spark.util.error._
+
 import java.sql.{DriverManager, PreparedStatement}
 import java.sql.Connection
 import java.sql.Statement
@@ -26,7 +27,7 @@ import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
-import org.apache.spark.{SparkEnv}
+import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SparkSession
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -321,26 +322,32 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     } yield ()
   }
 
-  def getVersionNumber(): ConnectorResult[Int] = {
-    this.query("SELECT version();") match {
-      case Right(rs) => {
-        rs.next()
-        val versionStr = rs.getString(1)
-        // Regex pattern to extract version number.
-        val pattern = ".*v([0-9]+)\\.[0-9]+\\.[0-9]+-[0-9]+.*".r
-        // extract from the first control group.
-        val pattern(version) = versionStr.trim
-        logger.info("VERTICA VERSION: " + version)
-        Right(version.toInt)
+  // Should be the latest major release.
+  val DEFAULT_VERTICA_VERSION = new VerticaVersion(11.0,0,0)
+
+  def getVerticaVersion: ConnectorResult[VerticaVersion] = {
+    try{
+      this.query("SELECT version();") match {
+        case Right(rs) => {
+          rs.next()
+          val verticaVersion = VerticaVersion.make(rs.getString(1))
+          logger.info("VERTICA VERSION: " + verticaVersion)
+          Right(verticaVersion)
+        }
+        case Left(err) =>
+          logger.error("Failed to query for version number. Defaults to " + DEFAULT_VERTICA_VERSION)
+          Right(DEFAULT_VERTICA_VERSION)
       }
-      case Left(err) => Left(err)
+    }catch {
+      case e: Exception => Right(DEFAULT_VERTICA_VERSION)
     }
+
   }
 
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     val awsOptions = fileStoreLayer.getAWSOptions
     for {
-      version <- getVersionNumber()
+      verticaVersion <- getVerticaVersion
       _ <- awsOptions.awsAuth match {
         case Some(awsAuth) =>
           val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"
@@ -380,7 +387,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       }
       _ <- awsOptions.enableSSL match {
         case Some(enable) =>
-          if(version < 11) {
+          if(verticaVersion.majorReleaseNumber < 11) {
             logger.warn("enable_ssl is only support for Vertica version 11+")
             logger.info("Did not set AWSEnableHttps")
             Right()
@@ -474,3 +481,15 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }
   }
 }
+
+object VerticaVersion{
+  def make(str: String): VerticaVersion = {
+    val pattern = ".*v([0-9]+\\.[0-9]+)\\.([0-9])+-([0-9]+).*".r
+    val pattern(major, service, hotfix) = str
+    new VerticaVersion(major.toDouble, service.toInt, hotfix.toInt)
+  }
+}
+case class VerticaVersion(majorReleaseNumber: Double, serviceReleaseNumber: Int, hotfixNumber: Int){
+  override def toString: String = s"${majorReleaseNumber}.${serviceReleaseNumber}-$hotfixNumber"
+}
+
