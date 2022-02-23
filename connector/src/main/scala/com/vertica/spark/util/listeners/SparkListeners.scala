@@ -22,7 +22,7 @@ import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 /**
  * This wrapper is created solely for compatibility with unit testing.
  * <br/>
- * Because we could not instantiate SparkContext, a dummy class that extends from
+ * Because we could not instantiate during unit test, a dummy class that extends from
  * SparkContext is needed to override the functions we are using. However, SparkContext.addSparkListener's argument
  * use a private interface thus can't be override.
  * */
