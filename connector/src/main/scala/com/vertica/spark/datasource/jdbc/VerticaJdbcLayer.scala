@@ -323,7 +323,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   // Should be the latest major release.
-  val DEFAULT_VERTICA_VERSION = new VerticaVersion(11.0,0,0)
+  val DEFAULT_VERTICA_VERSION = new VerticaVersion(11,0,0,0)
 
   def getVerticaVersion: ConnectorResult[VerticaVersion] = {
     try{
@@ -387,7 +387,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       }
       _ <- awsOptions.enableSSL match {
         case Some(enable) =>
-          if(verticaVersion.majorReleaseNumber < 11) {
+          if(verticaVersion.major < 11) {
             logger.warn("enable_ssl is only support for Vertica version 11+")
             logger.info("Did not set AWSEnableHttps")
             Right()
@@ -484,12 +484,13 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
 
 object VerticaVersion{
   def make(str: String): VerticaVersion = {
-    val pattern = ".*v([0-9]+\\.[0-9]+)\\.([0-9])+-([0-9]+).*".r
-    val pattern(major, service, hotfix) = str
-    new VerticaVersion(major.toDouble, service.toInt, hotfix.toInt)
+    val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
+    val pattern(major, minor, service, hotfix) = str
+    new VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
   }
 }
-case class VerticaVersion(majorReleaseNumber: Double, serviceReleaseNumber: Int, hotfixNumber: Int){
-  override def toString: String = s"${majorReleaseNumber}.${serviceReleaseNumber}-$hotfixNumber"
+
+case class VerticaVersion(major: Int, minor: Int, serviceReleaseNumber: Int, hotfixNumber: Int) {
+  override def toString: String = s"${major}.${minor}.${serviceReleaseNumber}-$hotfixNumber"
 }
 
