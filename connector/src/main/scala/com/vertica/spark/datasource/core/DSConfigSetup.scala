@@ -25,9 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
-import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.SparkSession
 
 
@@ -561,7 +559,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
     // Check for options left over from old connector
     DSConfigSetupUtils.logOrAppendErrorsForOldConnectorOptions(config, res, logger)
   }
-
 
   /**
    * Calls read pipe implementation to perform initial setup for the read operation.
