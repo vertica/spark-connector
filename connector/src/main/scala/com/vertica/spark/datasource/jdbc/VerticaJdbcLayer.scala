@@ -323,7 +323,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   // Should be the latest major release.
-  val DEFAULT_VERTICA_VERSION = new VerticaVersion(11,0,0,0)
+  // scalastyle:off
+  val DEFAULT_VERTICA_VERSION: VerticaVersion = VerticaVersion(11, 0, 0, 0)
 
   def getVerticaVersion: ConnectorResult[VerticaVersion] = {
     try{
@@ -490,7 +491,7 @@ object VerticaVersion{
   }
 }
 
-case class VerticaVersion(major: Int, minor: Int, serviceReleaseNumber: Int, hotfixNumber: Int) {
-  override def toString: String = s"${major}.${minor}.${serviceReleaseNumber}-$hotfixNumber"
+case class VerticaVersion(major: Int, minor: Int, serviceRelease: Int, hotfix: Int) {
+  override def toString: String = s"${major}.${minor}.${serviceRelease}-$hotfix"
 }
 
