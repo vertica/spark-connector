@@ -491,7 +491,7 @@ object VerticaVersion{
   }
 }
 
-case class VerticaVersion(major: Int, minor: Int, serviceRelease: Int, hotfix: Int) {
-  override def toString: String = s"${major}.${minor}.${serviceRelease}-$hotfix"
+case class VerticaVersion(major: Int, minor: Int, servicePack: Int, hotfix: Int) {
+  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 }
 
