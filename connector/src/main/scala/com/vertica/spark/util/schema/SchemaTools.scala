@@ -272,26 +272,26 @@ class SchemaTools extends SchemaToolsInterface {
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
-      case org.apache.spark.sql.types.ArrayType(_,_) |
-           org.apache.spark.sql.types.MapType(_,_,_) |
+      case org.apache.spark.sql.types.MapType(_,_,_) |
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
     }
   }
 
-  private def sparkArrayToVerticaArray(dataType: DataType): SchemaResult[String] = {
+  def sparkArrayToVerticaArray(dataType: DataType, strlen: Long): SchemaResult[String] = {
       @tailrec
       def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String):SchemaResult[String] = {
           dataType match {
             case ArrayType(elementType, _) => recursion(elementType, s"${leftAccumulator}ARRAY[", s"]$rightAccumulator")
             case _ =>
-              this.sparkPrimitiveToVerticaPrimitive(dataType, 0) match {
+              this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
                 case Right(verticaType) => Right(s"$leftAccumulator$verticaType$rightAccumulator")
                 case Left(error) => Left(error)
               }
           }
       }
-    recursion(dataType,"","")
+    recursion(dataType,"ARRAY[","]")
   }
 
   private def sparkPrimitiveToVerticaPrimitive(sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
