@@ -26,6 +26,7 @@ import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
@@ -79,6 +80,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     fileStoreLayer
   }
 
+  private def mockSparkContext = {
+    val mockSparkContext = mock[SparkContextWrapper]
+    (mockSparkContext.addSparkListener _).expects(*)
+    mockSparkContext
+  }
+
   private def mockSchemaTools(
                                columnDefs: List[ColumnDef],
                                columnsString: String,
@@ -104,7 +111,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata match {
       case Left(_) => fail
@@ -119,7 +126,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val mockSchemaTools = mock[SchemaToolsInterface]
     (mockSchemaTools.readSchema _).expects(*,fullTablename).returning(Right(new StructType()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata
   }
@@ -127,7 +134,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "return cached metadata" in {
     val config = makeReadConfig
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata match {
       case Left(_) => fail
@@ -141,7 +148,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val mockSchemaTools = mock[SchemaToolsInterface]
       (mockSchemaTools.readSchema _).expects(*,tablename).returning(Left(MissingSqlConversionError("unknown", "")))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata match {
       case Left(err) => assert(err.getUnderlyingError match {
@@ -167,7 +174,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -185,7 +192,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -208,7 +215,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1", StructType(Nil), query)
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -227,7 +234,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))
@@ -254,7 +261,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils, mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.getUnderlyingError match {
@@ -291,7 +298,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -340,7 +347,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -399,7 +406,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -447,7 +454,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(_) => fail
@@ -486,7 +493,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils, mockSparkContext)
 
     (fileStoreLayer.getFileList _).expects(*).returning(Left(ParentDirMissingError("")))
 
@@ -520,7 +527,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, cleanupUtils, mockSparkContext)
 
     pipe.doPreReadSteps() match {
       case Left(err) => fail(err.getFullContext)
@@ -546,7 +553,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper], dataSize = 2)
 
     this.failOnError(pipe.startPartitionRead(partition))
 
@@ -589,7 +596,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], dataSize = 2)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper], dataSize = 2)
 
     pipe.startPartitionRead(partition) match {
       case Left(_) => fail
@@ -654,7 +661,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, FileCleanupInfo(filename1,0,1)).returning(Right(()))
     (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, FileCleanupInfo(filename2,0,1)).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, dataSize = 2)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper], dataSize = 2)
 
     pipe.startPartitionRead(partition)
     pipe.readData
@@ -671,7 +678,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fileStoreLayer = mock[FileStoreLayerInterface]
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.startPartitionRead(partition) match {
       case Left(err) => assert(err.getUnderlyingError == InvalidPartition())
@@ -690,7 +697,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.startPartitionRead(partition) match {
       case Left(err) => assert(err.getUnderlyingError == StagingFsUrlMissingError())
@@ -710,7 +717,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     this.failOnError(pipe.startPartitionRead(partition))
 
@@ -737,7 +744,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     this.failOnError(pipe.startPartitionRead(partition))
     this.failOnError(pipe.readData)
@@ -757,7 +764,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = ColumnDef("col1", java.sql.Types.TIME, "TIME", size, scale, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1::varchar AS col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
     this.failOnError(pipe.doPreReadSteps())
   }
 
@@ -769,7 +776,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = ColumnDef("col1", java.sql.Types.OTHER, "UUID", size, scale, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1::varchar AS col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -783,7 +790,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = makeIntColumnDef
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
     this.failOnError(pipe.doPreReadSteps())
   }
 
@@ -801,7 +808,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       PushFilter(EqualTo("col1", 2), "(\"col1\" = 2)")))
 
     val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     this.failOnError(pipe.doPreReadSteps())
   }
@@ -819,7 +826,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = this.makeIntColumnDef
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
     val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     config.setPushdownFilters(List(
       PushFilter(LessThan("col1", upperBound), "(\"col1\" < " + upperBound + ")"),
@@ -840,7 +847,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val requiredSchema = StructType(StructField("col1", LongType) :: Nil)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef1, columnDef2), "col1", requiredSchema)
     val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
     config.setRequiredSchema(requiredSchema)
     this.failOnError(pipe.doPreReadSteps())
@@ -865,7 +872,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       List(columnDef1, columnDef2, columnDef3), "col1,col3", requiredSchema)
 
     val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface])
+      config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface],mockSparkContext)
 
     config.setRequiredSchema(StructType(
       StructField("col1", LongType) ::
@@ -887,7 +894,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef3 = ColumnDef("col3", java.sql.Types.VARCHAR, "STRING", size, scale, signed = false, nullable = true, metadata)
     val schemaTools = this.mockSchemaTools(List(columnDef1, columnDef2, columnDef3), "col1,col2,col3")
     val pipe = new VerticaDistributedFilesystemReadPipe(
-      config, fileStoreLayer, jdbcLayer, schemaTools, mock[CleanupUtilsInterface])
+      config, fileStoreLayer, jdbcLayer, schemaTools, mock[CleanupUtilsInterface],mockSparkContext)
 
     config.setRequiredSchema(StructType(Nil))
     this.failOnError(pipe.doPreReadSteps())
@@ -924,7 +931,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val cleanupUtils = mock[CleanupUtilsInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, dataSize = 2)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper], dataSize = 2)
 
     pipe.startPartitionRead(partition)
     pipe.readData
@@ -947,7 +954,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val cleanupUtils = mock[CleanupUtilsInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils)
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
 
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))

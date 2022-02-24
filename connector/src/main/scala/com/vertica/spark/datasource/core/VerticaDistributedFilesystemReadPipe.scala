@@ -25,6 +25,7 @@ import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.connector.expressions.aggregate._
+import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -62,9 +63,9 @@ class VerticaDistributedFilesystemReadPipe(
                                             val jdbcLayer: JdbcLayerInterface,
                                             val schemaTools: SchemaToolsInterface,
                                             val cleanupUtils: CleanupUtilsInterface,
+                                            val sparkContext: SparkContextWrapper,
                                             val dataSize: Int = 1
                                           ) extends VerticaPipeInterface with VerticaPipeReadInterface {
-
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaDistributedFilesystemReadPipe])
 
   // File size params. The max size of a single file, and the max size of an individual row group inside the parquet file.
@@ -282,6 +283,7 @@ class VerticaDistributedFilesystemReadPipe(
         val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
         timer.startTime()
         val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+        sparkContext.addSparkListener(new ApplicationParquetCleaner(config))
         timer.endTime()
         res
       }
@@ -424,18 +426,6 @@ class VerticaDistributedFilesystemReadPipe(
         else {
 
           logger.info("Hit done reading for file segment.")
-          if(!config.fileStoreConfig.preventCleanup) {
-            // Cleanup old file if required
-            getCleanupInfo(part, this.fileIdx) match {
-              case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
-                case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
-                case Right(_) => ()
-              }
-              case None => logger.warn("No cleanup info found.")
-            }
-
-          }
-
           // Next file
           this.fileIdx += 1
           if (this.fileIdx >= part.fileRanges.size) return Right(data)
@@ -472,8 +462,32 @@ class VerticaDistributedFilesystemReadPipe(
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
     timer.endTime()
-    fileStoreLayer.closeReadParquetFile()
+    for {
+      _ <- cleanupFiles()
+      _ <- fileStoreLayer.closeReadParquetFile()
+    } yield ()
   }
 
+  def cleanupFiles(): ConnectorResult[Unit] ={
+    logger.info("Removing files before closing read pipe.")
+    val part = this.partition match {
+      case None => return Left(UninitializedReadError())
+      case Some(p) => p
+    }
+
+    for(fileIdx <- 0 to part.fileRanges.size ){
+      if(!config.fileStoreConfig.preventCleanup) {
+        // Cleanup old file if required
+        getCleanupInfo(part, fileIdx) match {
+          case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
+            case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
+            case Right(_) => ()
+          }
+          case None => logger.warn("No cleanup info found.")
+        }
+      }
+    }
+    Right()
+  }
 }
 

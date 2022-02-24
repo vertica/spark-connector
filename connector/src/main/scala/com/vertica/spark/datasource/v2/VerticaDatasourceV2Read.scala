@@ -17,8 +17,10 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
+import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
+import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -65,7 +67,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
-  /**
+/**
   * Builds the class representing a scan of a Vertica table
   *
   * @return [[VerticaScan]]
@@ -99,8 +101,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   override def pushedFilters(): Array[Filter] = {
     this.pushFilters.map(_.filter).toArray
   }
-
-
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
     this.requiredSchema = requiredSchema

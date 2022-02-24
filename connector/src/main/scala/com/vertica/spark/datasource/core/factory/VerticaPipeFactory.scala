@@ -18,8 +18,11 @@ import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils
+import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SparkSession
 
 /**
  * Factory for creating a data pipe to send or retrieve data from Vertica
@@ -31,7 +34,7 @@ trait VerticaPipeFactoryInterface {
 
   def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
 
-  def closeJdbcLayers()
+  def closeJdbcLayers(): Unit
 }
 
 /**
@@ -52,7 +55,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 
   private def closeJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer]): Unit = {
     jdbcLayer match {
-      case Some(layer) => val _ = layer.close
+      case Some(layer) => val _ = layer.close()
       case None =>
     }
   }
@@ -69,10 +72,15 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case _ => None
         })
         readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
+        val sparkContext: Option[SparkContext] = SparkSession.getActiveSession match {
+          case None => None
+          case Some(session) => Some(session.sparkContext)
+        }
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
           readLayer.get,
           new SchemaTools,
-          new CleanupUtils
+          new CleanupUtils,
+          sparkContext = SparkContextWrapper(sparkContext)
         )
     }
   }
@@ -97,3 +105,5 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
 }
+
+
