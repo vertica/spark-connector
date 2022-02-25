@@ -14,7 +14,7 @@ services:
     env_file:
       - "krb.env"
     ports:
-      - "5050:5050"
+      - "5005:5005"
   kdc:
     build: ./kdc
     container_name: "kdc"

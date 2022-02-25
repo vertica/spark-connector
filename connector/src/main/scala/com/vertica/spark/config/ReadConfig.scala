@@ -17,16 +17,13 @@ import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.core.SessionId
 import com.vertica.spark.datasource.v2.PushdownFilter
-import com.vertica.spark.util.error.{InvalidFilePermissions, UnquotedSemiInColumns}
-import org.apache.spark.sql.types.StructType
-
-import scala.util.{Failure, Success, Try}
+import com.vertica.spark.util.error.{InvalidFilePermissions}
+import org.apache.spark.sql.types.{StructField, StructType}
 
 /**
  * Interface for configuration of a read (from Vertica) operation.
  */
 trait ReadConfig {
-
   /**
    * Set filters to push down to the Vertica read.
    *
@@ -47,6 +44,13 @@ trait ReadConfig {
    * Copies the read config with a new unique identifier
    */
   def copyConfig(): ReadConfig
+
+  /**
+   * Set groupby columns pushed down by Spark for a read operation.
+   * */
+  def setGroupBy(groupBy: Array[StructField]): Unit
+
+  def setPushdownAgg(pushdownAgg: Boolean) : Unit
 }
 
 
@@ -98,9 +102,12 @@ final case class DistributedFilesystemReadConfig(
                                                   metadata: Option[VerticaReadMetadata],
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
-                                                  maxFileSize: Int
+                                                  maxFileSize: Int,
+                                                  timeOperations : Boolean = true
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
+  private var groupBy: Array[StructField] = Array()
+  private var aggPushedDown: Boolean = false
   private var requiredSchema: StructType = StructType(Nil)
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
@@ -111,10 +118,22 @@ final case class DistributedFilesystemReadConfig(
     this.requiredSchema = requiredSchema
   }
 
+  override def setGroupBy(groupBy: Array[StructField]): Unit = {
+    this.groupBy = groupBy
+  }
+
+  override def setPushdownAgg(pushdownAgg: Boolean): Unit = {
+    this.aggPushedDown = pushdownAgg
+  }
+
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
+  def getGroupBy: Array[StructField] = this.groupBy
+  def isAggPushedDown: Boolean = this.aggPushedDown
 
   def copyConfig(): ReadConfig = {
     this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))
   }
+
+
 }

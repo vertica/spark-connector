@@ -72,7 +72,7 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-3.0.1.jar
+Running this will run all unit tests and build the jar to target/[SCALA_VERSION]/spark-vertica-connector-assembly-3.0.3.jar
 
 ## Step 4: Set up an environment
 The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.](https://github.com/vertica/spark-connector/blob/main/examples/README.md)
@@ -88,7 +88,7 @@ The next requirement is a spark application that uses the connector jar. Example
 ```shell
 cd examples/basic-read
 mkdir lib
-cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.1.jar lib
+cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.3.jar lib
 sbt run
 ```
 
@@ -134,6 +134,14 @@ Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main
 ## Step 5: Implement your fix or feature
 
 At this point, you're ready to make your changes. Feel free to reach out over github for help navigating the code and implementing the fix or feature.
+
+## Debugging on Docker environment.
+
+If you are using docker as your dev enviroment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, loggin to the client container and navigate to `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will exception connections from any host. 
+
+The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
+
+If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, `docker_client_1` container is mapping its port `5005` to the host's `5005`. 
 
 ### Connector Architecture
 
@@ -223,7 +231,7 @@ The functional-tests project is meant to run against a real environment. See "Se
 
 This project contains a series of end-to-end tests. It also contains tests for components on the bottom layer of the connector, those that do some kind of IO directly, and thus don't make as much sense to unit test.
 
-If you set the sparkVersion in build.sbt to 3.0.1, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
+If you set the sparkVersion in build.sbt to 3.0.3, you will also need to use hadoop-hdfs version 2.7.0 when running `sbt run` to run the integration tests.
 
 Similarly, if you set the sparkVersion in build.sbt to 3.1.0, you will also need to use hadoop-hdfs version 3.3.0.
 

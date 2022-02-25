@@ -24,7 +24,6 @@ import cats.data._
 import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.datasource.core.DSConfigSetupUtils.{getAWSArgFromConnectorOption, getAWSArgFromSparkConfig}
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
@@ -429,6 +428,17 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getTimeOperations(config: Map[String, String]) : ValidationResult[Boolean] = {
+    config.get("time_operations") match {
+      case Some(str) =>
+        str match {
+          case "true" => true.validNec
+          case _ => false.validNec
+        }
+      case None => true.validNec
+    }
+  }
+
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
     val user = DSConfigSetupUtils.getUser(config)
     val password = DSConfigSetupUtils.getPassword(config)
@@ -531,7 +541,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       None.validNec,
       DSConfigSetupUtils.getFilePermissions(config),
       DSConfigSetupUtils.getMaxRowGroupSize(config),
-      DSConfigSetupUtils.getMaxFileSize(config)
+      DSConfigSetupUtils.getMaxFileSize(config),
+      DSConfigSetupUtils.getTimeOperations(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -571,7 +582,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError())
           case Some(metadata) => Right(metadata.schema)
@@ -610,7 +621,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getFilePermissions(config),
           DSConfigSetupUtils.getCreateExternalTable(config),
           DSConfigSetupUtils.getSaveJobStatusTable(config),
-          DSConfigSetupUtils.getMergeKey(config)
+          DSConfigSetupUtils.getMergeKey(config),
+          DSConfigSetupUtils.getTimeOperations(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

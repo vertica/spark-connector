@@ -6,6 +6,6 @@ start-master.sh
 start-worker.sh spark://localhost:7077
 if [ "$1" == "debug" ]
   then
-    export SPARK_SUBMIT_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5050
+    export SPARK_SUBMIT_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005
 fi
-spark-submit --master spark://localhost:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --driver-java-options '-Djava.security.auth.login.config=/spark-connector/docker/client-krb/jaas.config' ./target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-3.0.1.jar
+spark-submit --master spark://localhost:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --driver-java-options '-Djava.security.auth.login.config=/spark-connector/docker/client-krb/jaas.config' ./target/scala-2.12/spark-vertica-connector-kerberos-example-assembly-3.0.3.jar

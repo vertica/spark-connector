@@ -14,7 +14,7 @@
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-basic-write-example"
 organization := "com.vertica"
-version := "3.0.1"
+version := "3.0.3"
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.2.0",
   "org.apache.spark" %% "spark-sql" % "3.2.0",
-  "com.vertica.spark" % "vertica-spark" % "3.0.1-slim"
+  "com.vertica.spark" % "vertica-spark" % "3.0.3-slim"
 )
 
 assembly / assemblyMergeStrategy := {

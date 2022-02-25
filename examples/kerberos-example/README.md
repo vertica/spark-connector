@@ -4,8 +4,10 @@ Make sure you have Docker and SBT installed, and that Docker client is running. 
 
 First, clone the connector repository as mentioned in [examples](/examples/README.md).
 
-## Build Connector Assembly
-Change directory to the `connector` folder of the project:
+## (Optional) Using a modified Spark Connector
+Assuming you have made changes to the spark connector 
+
+Change directory to the `/connector` folder of the project:
 ```
 cd /spark-connector/connector
 ```
@@ -15,12 +17,16 @@ Build the connector's assembly jar:
 sbt assembly
 ```
 
-## Add Connector Assembly as a Dependency to the Example Project
-Create a `lib` folder under the `kerberos-example` folder and copy the assembled connector jar to it.
+Then create a `lib` folder at `/kerberos-example` and put the spark connector that you assembled inside.
 ```
 mkdir /spark-connector/examples/kerberos-example/lib
-cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.1.jar /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.0.3.jar /spark-connector/examples/kerberos-example/lib
 ```
+Then in the example's `build.sbt`, comment out the vertica-spark connector dependency.
+
+Currently, the example `build.sbt` will default to pulling the latest published spark connector and ignore
+the `/lib` folder. Commenting out the dependency and sbt will use the `/lib` folder instead.
+
 
 ## Build Example Assembly
 
@@ -59,6 +65,12 @@ Change directory to the example project directory `spark-connector/examples/kerb
 ```
 ./run-kerberos-example.sh 
 ```
+
+## Debugging.
+
+To debug, run `./run-kerberos-example.sh debug`. The execution will wait on port `5005` until a debugger connects to it before continuing with the execution. 
+
+To change the port number, edit `docker-compose-kerberos.yml`, currently, `docker_krbclient_1` container is mapping its `5005` port to host's `5005`.
 
 ## Tear down containers
 
