@@ -462,6 +462,16 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
     "\nSQL type value: " + sqlType
 }
+
+case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported SQL array element " + typeName +
+    "\nSQL type value: " + sqlType
+}
+
+case class MissingElementTypeError() extends SchemaError {
+  def getFullContext: String = "Missing array element type."
+}
+
 case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
 }
