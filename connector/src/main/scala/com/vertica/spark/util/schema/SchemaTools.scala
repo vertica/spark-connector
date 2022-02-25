@@ -17,15 +17,19 @@ import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 
 import java.sql.ResultSetMetaData
-
 import cats.data.NonEmptyList
 import cats.implicits._
+import com.vertica.dataengine.{ColumnDescription, ComplexTypeColumnDescription}
+import com.vertica.dsi.dataengine.interfaces.IColumn
+
 import scala.util.Either
 import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 
+import java.util
 import scala.annotation.tailrec
+import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.control.Breaks.{break, breakable}
 
 case class ColumnDef(
@@ -36,9 +40,12 @@ case class ColumnDef(
                       scale: Int,
                       signed: Boolean,
                       nullable: Boolean,
-                      metadata: Metadata)
+                      metadata: Metadata,
+                      arrayElementDef: ColumnDef = null,
+                      arrayDepth: Int = 0)
+
 /**
- * Interface for functionality around retrieving and translating schema.
+ * Interface for functionality around retrieving and translating SQL schema between Spark and Vertica.
  */
 trait SchemaToolsInterface {
   /**
@@ -132,19 +139,78 @@ class SchemaTools extends SchemaToolsInterface {
     "\"" + str + "\""
   }
 
+  // scalastyle:off
   private def getCatalystType(
-    sqlType: Int,
-    precision: Int,
-    scale: Int,
-    signed: Boolean,
-    typename: String,
-    jdbcLayer: JdbcLayerInterface,
-    tableName: String,
-    colName: String): Either[SchemaError, DataType] = {
+                               sqlType: Int,
+                               precision: Int,
+                               scale: Int,
+                               signed: Boolean,
+                               typename: String,
+                               arrayDepth: Int,
+                               elementDef: ColumnDef): Either[SchemaError, DataType] = {
     val answer = sqlType match {
-      // scalastyle:off
-      case java.sql.Types.ARRAY => getArrayType(jdbcLayer, tableName, colName)
-      case java.sql.Types.BIGINT =>  if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION,0)} //spark 2.x
+      case java.sql.Types.ARRAY =>
+        val elementType = getCatalystTypeFromJdbcType(elementDef.colType,elementDef.size,elementDef.scale,elementDef.signed, elementDef.colTypeName)
+        ArrayType(makeNestedArrays(arrayDepth - 1, elementType))
+      case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
+    }
+
+    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
+    else Right(answer)
+  }
+
+  @tailrec
+  private def makeNestedArrays(arrayDepth: Int, arrayElement: DataType): DataType = {
+    if(arrayDepth > 0)
+      makeNestedArrays(arrayDepth - 1, ArrayType(arrayElement))
+    else
+      arrayElement
+  }
+
+  /**
+   * We know item is array. get element type.
+   * */
+  def getArrayType(jdbcLayer: JdbcLayerInterface, tableName: String, columnName: String): DataType = {
+    val getVerticaColumnInfo = s"SELECT data_type_id, numeric_precision, numeric_scale FROM columns WHERE table_name='${tableName}' AND column_name='${columnName}';"
+    val elementType = jdbcLayer.query(getVerticaColumnInfo) match {
+      case Right(rs) =>
+        rs.next()
+        val precision = rs.getInt("numeric_precision")
+        val scale = rs.getInt("numeric_scale")
+        val verticaTypeId = rs.getInt("data_type_id")
+        val verticaElementTypeId = verticaTypeId - 1500
+        val getElementTypeInfo = s"SELECT jdbc_type, type_name FROM types WHERE type_id='${verticaElementTypeId}'"
+        jdbcLayer.query(getElementTypeInfo) match {
+          case Right(rs) =>
+            rs.next()
+            val jdbcType = rs.getInt("jdbc_type")
+            val typeName = rs.getString("type_name")
+            // Vertica numbers are always signed.
+            val signed = true
+            getCatalystTypeFromJdbcType(jdbcType, precision,scale,signed,typeName)
+          case Left(err) =>
+            logger.error(err.toString, err)
+            null
+        }
+      case Left(err) =>
+        logger.error(err.toString, err)
+        null
+    }
+
+    if(elementType != null) ArrayType(elementType) else null
+  }
+
+  def getCatalystTypeFromJdbcType(jdbcType: Int,
+                                  precision: Int,
+                                  scale: Int,
+                                  signed: Boolean,
+                                  typename: String): DataType =
+    jdbcType match {
+      case java.sql.Types.BIGINT => if (signed) {
+        LongType
+      } else {
+        DecimalType(DecimalType.MAX_PRECISION, 0)
+      } //spark 2.x
       case java.sql.Types.BINARY => BinaryType
       case java.sql.Types.BIT => BooleanType
       case java.sql.Types.BLOB => BinaryType
@@ -157,7 +223,11 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.DISTINCT => null
       case java.sql.Types.DOUBLE => DoubleType
       case java.sql.Types.FLOAT => FloatType
-      case java.sql.Types.INTEGER => if (signed) { IntegerType } else { LongType }
+      case java.sql.Types.INTEGER => if (signed) {
+        IntegerType
+      } else {
+        LongType
+      }
       case java.sql.Types.JAVA_OBJECT => null
       case java.sql.Types.LONGNVARCHAR => StringType
       case java.sql.Types.LONGVARBINARY => BinaryType
@@ -166,7 +236,7 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.NCLOB => StringType
       case java.sql.Types.NULL => null
       case java.sql.Types.NUMERIC if precision != 0 || scale != 0 => DecimalType(precision, scale)
-      case java.sql.Types.NUMERIC => DecimalType(DecimalType.USER_DEFAULT.precision,DecimalType.USER_DEFAULT.scale) //spark 2.x
+      case java.sql.Types.NUMERIC => DecimalType(DecimalType.USER_DEFAULT.precision, DecimalType.USER_DEFAULT.scale) //spark 2.x
       case java.sql.Types.NVARCHAR => StringType
       case java.sql.Types.OTHER =>
         val typenameNormalized = typename.toLowerCase()
@@ -185,32 +255,6 @@ class SchemaTools extends SchemaToolsInterface {
       case _ => null
     }
 
-    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
-    else Right(answer)
-  }
-
-  val array = "^array\\[([a-z0-9]*)].*".r
-
-  def getArrayType(jdbcLayer: JdbcLayerInterface, tableName: String, columnName: String): DataType = {
-    val query = "select column_name, data_type, data_type_id, is_nullable " +
-      "from columns" +
-      s" where table_name = '$tableName' AND column_name = '$columnName'"
-    val str = jdbcLayer.query(query) match {
-      case Left(_) => null
-      case Right(rs) =>
-        rs.next()
-        rs.getString(2)
-    }
-
-    str match {
-      case array("int8") => ArrayType(LongType)
-      case array("varchar[80]") => ArrayType(StringType)
-      case array("float8") => ArrayType(DoubleType)
-      case array("bool") => ArrayType(BooleanType)
-      case _ => null
-    }
-  }
-
   def readSchema(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[StructType] = {
     val tableName = tableSource match {
       case tableName: TableName => tableName.getFullTableName.replaceAll("\"","")
@@ -221,7 +265,7 @@ class SchemaTools extends SchemaToolsInterface {
       case Left(err) => Left(err)
       case Right(colInfo) =>
         val errorsOrFields: List[Either[SchemaError, StructField]] = colInfo.map(info => {
-          this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName, jdbcLayer, tableName, info.label)
+          this.getCatalystType(info.colType, info.size, info.scale, info.signed, info.colTypeName, info.arrayDepth, info.arrayElementDef)
             .map(columnType => StructField(info.label, columnType, info.nullable, info.metadata))
         }).toList
         errorsOrFields
@@ -249,14 +293,17 @@ class SchemaTools extends SchemaToolsInterface {
           val rsmd = rs.getMetaData
           Right((1 to rsmd.getColumnCount).map(idx => {
             val columnLabel = rsmd.getColumnLabel(idx)
-            val dataType = rsmd.getColumnType(idx)
             val typeName = rsmd.getColumnTypeName(idx)
             val fieldSize = DecimalType.MAX_PRECISION
             val fieldScale = rsmd.getScale(idx)
             val isSigned = rsmd.isSigned(idx)
             val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
             val metadata = new MetadataBuilder().putString("name", columnLabel).build()
-            ColumnDef(columnLabel, dataType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+            val colType = rsmd.getColumnType(idx)
+            if(colType == java.sql.Types.ARRAY) {
+              getColumnArrayDef(rsmd, columnLabel)
+            } else
+              ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
           }))
         }
         catch {
@@ -266,6 +313,38 @@ class SchemaTools extends SchemaToolsInterface {
         finally {
           rs.close()
         }
+    }
+  }
+
+  private def getColumnArrayDef(rsmd: ResultSetMetaData, colName: String): ColumnDef ={
+    val field = rsmd.getClass.getSuperclass.getSuperclass.getDeclaredField("m_columnMetaData")
+    field.setAccessible(true)
+    val columnMetaData = field.get(rsmd).asInstanceOf[util.ArrayList[IColumn]].asScala.toList
+    val colMetaData = columnMetaData.find(_.getName.equals(colName)) match {
+      case Some(data) => data
+      case None => throw new RuntimeException("Reflection error finding array metadata")
+    }
+    val elementDef = getElementDef(colMetaData.asInstanceOf[ColumnDescription], 0)
+    val columnLabel = colMetaData.getLabel
+    val metadata = new MetadataBuilder().putString("name", columnLabel).build()
+    ColumnDef(colMetaData.getLabel, java.sql.Types.ARRAY, "", 0, 0, elementDef.signed, elementDef.nullable, metadata, elementDef, elementDef.arrayDepth)
+  }
+
+  @tailrec
+  private final def getElementDef(colDesc: ColumnDescription, depth: Int): ColumnDef ={
+    colDesc match {
+      case desc: ComplexTypeColumnDescription => getElementDef(desc.getChildColumnIterator.next(), depth + 1)
+      case desc: ColumnDescription =>
+        val columnLabel = desc.getLabel
+        val typeName = desc.getTypeMetadata.getTypeName
+        val fieldSize = DecimalType.MAX_PRECISION
+        val fieldScale =  desc.getTypeMetadata.getScale
+        val isSigned =desc.getTypeMetadata.isSigned
+        val nullable = 1 != ResultSetMetaData.columnNoNulls
+        val metadata = new MetadataBuilder().putString("name", columnLabel).build()
+        val colType = desc.getSQLType
+        ColumnDef(columnLabel, colType,typeName,fieldSize,fieldScale,isSigned,nullable,metadata,null,arrayDepth = depth)
+      case _ => throw new RuntimeException("Reflection Error finding element type")
     }
   }
 
@@ -279,7 +358,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  def sparkArrayToVerticaArray(dataType: DataType, strlen: Long): SchemaResult[String] = {
+  private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long): SchemaResult[String] = {
       @tailrec
       def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String):SchemaResult[String] = {
           dataType match {
