@@ -342,7 +342,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     }catch {
       case e: Exception => Right(DEFAULT_VERTICA_VERSION)
     }
-
   }
 
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {

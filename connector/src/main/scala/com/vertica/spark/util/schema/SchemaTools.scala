@@ -150,14 +150,18 @@ class SchemaTools extends SchemaToolsInterface {
                                elementDef: Option[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => elementDef match {
-        case Some(element) =>
-          getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
-            case Right(elementType) => Right(ArrayType(makeNestedArrays(arrayDepth, elementType)))
-            case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
-          }
+        case Some(element) => getArrayType(arrayDepth, element)
         case None => Left(MissingElementTypeError())
       }
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
+    }
+  }
+
+  private def getArrayType(arrayDepth: Int, element: ColumnDef): Either[SchemaError, ArrayType] = {
+    val version = jdbc
+    getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
+      case Right(elementType) => Right(ArrayType(makeNestedArrays(arrayDepth, elementType)))
+      case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
     }
   }
 
@@ -176,11 +180,7 @@ class SchemaTools extends SchemaToolsInterface {
                                   typename: String): Either[MissingSqlConversionError, DataType] = {
 
     val answer = jdbcType match {
-      case java.sql.Types.BIGINT => if (signed) {
-        LongType
-      } else {
-        DecimalType(DecimalType.MAX_PRECISION, 0)
-      } //spark 2.x
+      case java.sql.Types.BIGINT => if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION, 0) } //spark 2.x
       case java.sql.Types.BINARY => BinaryType
       case java.sql.Types.BIT => BooleanType
       case java.sql.Types.BLOB => BinaryType
@@ -193,11 +193,7 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.DISTINCT => null
       case java.sql.Types.DOUBLE => DoubleType
       case java.sql.Types.FLOAT => FloatType
-      case java.sql.Types.INTEGER => if (signed) {
-        IntegerType
-      } else {
-        LongType
-      }
+      case java.sql.Types.INTEGER => if (signed) { IntegerType } else { LongType }
       case java.sql.Types.JAVA_OBJECT => null
       case java.sql.Types.LONGNVARCHAR => StringType
       case java.sql.Types.LONGVARBINARY => BinaryType
@@ -256,7 +252,6 @@ class SchemaTools extends SchemaToolsInterface {
     // and use this to retrieve the name and type information of each column
     val query = tableSource match {
       case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
-      //case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName
       case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
     }
 
@@ -291,13 +286,12 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
+  /**
+   * Currently, the data we need to reconstruct array is hidden behind Vertica JDBC API.
+   * Using reflection, we can reach the private field we want.
+   * Ideally, Vertica should provide these data to us in a future JDBC release.
+   * */
   private def getArrayColumnDef(rsmd: ResultSetMetaData, colName: String): ColumnDef ={
-    /**
-     * Currently, the data we need to reconstruct array is hidden behind Vertica JDBC API.
-     * Using reflection, we can reach the private field we want.
-     * Ideally, Vertica should provide these data to us in a future JDBC release.
-     * */
-
     //  Hardcoded. Located the correct super class and get the private field
     val field = rsmd.getClass.getSuperclass.getSuperclass.getDeclaredField("m_columnMetaData")
     field.setAccessible(true)

@@ -132,8 +132,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
       // Create table unless we're appending, or we're in external table mode (that gets created later)
-      _ <- if (!tableExistsPre && config.createExternalTable.isEmpty)
-        tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
+      _ <- if (!tableExistsPre && config.createExternalTable.isEmpty) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
