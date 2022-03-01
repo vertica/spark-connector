@@ -25,6 +25,7 @@ import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.general.Utils
 import buildinfo.BuildInfo
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys
 import org.apache.spark.SparkEnv
@@ -322,32 +323,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     } yield ()
   }
 
-  // Should be the latest major release.
-  // scalastyle:off
-  val DEFAULT_VERTICA_VERSION: VerticaVersion = VerticaVersion(11, 0, 0, 0)
-
-  def getVerticaVersion: ConnectorResult[VerticaVersion] = {
-    try{
-      this.query("SELECT version();") match {
-        case Right(rs) => {
-          rs.next()
-          val verticaVersion = VerticaVersion.make(rs.getString(1))
-          logger.info("VERTICA VERSION: " + verticaVersion)
-          Right(verticaVersion)
-        }
-        case Left(err) =>
-          logger.error("Failed to query for version number. Defaults to " + DEFAULT_VERTICA_VERSION)
-          Right(DEFAULT_VERTICA_VERSION)
-      }
-    }catch {
-      case e: Exception => Right(DEFAULT_VERTICA_VERSION)
-    }
-  }
-
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     val awsOptions = fileStoreLayer.getAWSOptions
     for {
-      verticaVersion <- getVerticaVersion
+      verticaVersion <- Right(VerticaVersionUtils.get(this))
       _ <- awsOptions.awsAuth match {
         case Some(awsAuth) =>
           val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"
@@ -482,15 +461,4 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 }
 
-object VerticaVersion{
-  def make(str: String): VerticaVersion = {
-    val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
-    val pattern(major, minor, service, hotfix) = str
-    new VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
-  }
-}
-
-case class VerticaVersion(major: Int, minor: Int, servicePack: Int, hotfix: Int) {
-  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
-}
 

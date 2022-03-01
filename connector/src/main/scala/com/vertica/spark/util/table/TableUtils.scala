@@ -117,7 +117,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     val sb = new StringBuilder()
     sb.append(tablename.getFullTableName)
 
-    schemaTools.makeTableColumnDefs(schema, strlen) match {
+    schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer) match {
       case Right(columnDefs) =>
         val sb = new StringBuilder()
         if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")

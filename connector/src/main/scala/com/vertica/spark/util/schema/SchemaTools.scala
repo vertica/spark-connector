@@ -26,6 +26,8 @@ import scala.util.Either
 import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.version.VerticaVersionUtils
+import org.apache.commons.lang.StringUtils
 
 import java.util
 import scala.annotation.tailrec
@@ -100,7 +102,7 @@ trait SchemaToolsInterface {
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
-  def makeTableColumnDefs(schema: StructType, strlen: Long): ConnectorResult[String]
+  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface ): ConnectorResult[String]
 
   /**
    * Gets a list of column values to be inserted within a merge.
@@ -158,7 +160,6 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def getArrayType(arrayDepth: Int, element: ColumnDef): Either[SchemaError, ArrayType] = {
-    val version = jdbc
     getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
       case Right(elementType) => Right(ArrayType(makeNestedArrays(arrayDepth, elementType)))
       case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
@@ -271,12 +272,16 @@ class SchemaTools extends SchemaToolsInterface {
             val colType = rsmd.getColumnType(idx)
             // Ideally, we do not want to do this check.
             if(colType == java.sql.Types.ARRAY) {
-              getArrayColumnDef(rsmd, columnLabel)
+              val arrayColDef: ColumnDef = getArrayColumnDef(rsmd, columnLabel)
+              checkArrayCompatibility(jdbcLayer, arrayColDef.arrayDepth, columnLabel)
+              arrayColDef
             } else
               ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
           }))
         }
         catch {
+          case e: ArrayNotSupported => Left(e)
+          case e: NestedArrayNotSupported => Left(e)
           case e: Throwable =>
             Left(DatabaseReadError(e).context("Could not get column info"))
         }
@@ -284,6 +289,22 @@ class SchemaTools extends SchemaToolsInterface {
           rs.close()
         }
     }
+  }
+
+  private def checkArrayCompatibility(jdbcLayer: JdbcLayerInterface, arrayDepth: Int, columnLabel: String): Unit = {
+    val verticaVersion = VerticaVersionUtils.get(jdbcLayer)
+    if (verticaVersion.major < 10)
+      throw ArrayNotSupported(columnLabel)
+    if (arrayDepth > 0 && verticaVersion.major <= 11)
+      throw NestedArrayNotSupported(columnLabel)
+  }
+
+  case class ArrayNotSupported(colName: String) extends RuntimeException with SchemaError {
+    override def getFullContext: String = s"Column $colName is of array type. Array requires in Vertica version 10 more higher."
+  }
+
+  case class NestedArrayNotSupported(colName: String) extends RuntimeException with SchemaError {
+    override def getFullContext: String = s"Column $colName is has type nested array. Nested array is currently not supported by Vertica."
   }
 
   /**
@@ -337,9 +358,10 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long): SchemaResult[String] = {
       @tailrec
-      def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String):SchemaResult[String] = {
+      def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String, depth: Int):SchemaResult[String] = {
           dataType match {
-            case ArrayType(elementType, _) => recursion(elementType, s"${leftAccumulator}ARRAY[", s"]$rightAccumulator")
+            case ArrayType(elementType, _) =>
+              recursion(elementType, s"${leftAccumulator}ARRAY[", s"]$rightAccumulator", depth+1)
             case _ =>
               this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
                 case Right(verticaType) => Right(s"$leftAccumulator$verticaType$rightAccumulator")
@@ -347,7 +369,7 @@ class SchemaTools extends SchemaToolsInterface {
               }
           }
       }
-    recursion(dataType,"ARRAY[","]")
+    recursion(dataType,"ARRAY[","]",0)
   }
 
   private def sparkPrimitiveToVerticaPrimitive(sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
@@ -464,7 +486,7 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def makeTableColumnDefs(schema: StructType, strlen: Long): ConnectorResult[String] = {
+  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[String] = {
     val sb = new StringBuilder()
 
     sb.append(" (")
@@ -500,7 +522,10 @@ class SchemaTools extends SchemaToolsInterface {
         col <- getVerticaTypeFromSparkType(s.dataType, strlen) match {
           case Left(err) =>
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
-          case Right(datatype) => Right(datatype + decimal_qualifier)
+          case Right(datatype) =>
+            val depth = StringUtils.countMatches(datatype, "ARRAY")
+            checkArrayCompatibility(jdbcLayer, depth, s.name)
+            Right(datatype + decimal_qualifier)
         }
         _ = sb.append(col)
         _ = if (!s.nullable) {
