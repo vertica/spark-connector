@@ -267,6 +267,10 @@ case class InvalidStrlenError() extends ConnectorError {
   def getFullContext: String = "The 'strlen' param specified is invalid. " +
     "Please specify a valid integer between 1 and 32000000."
 }
+case class InvalidArrlenError() extends ConnectorError {
+  def getFullContext: String = "The 'arrlen' param specified is invalid. " +
+    "Please specify a positive integer value."
+}
 case class InvalidPartitionCountError() extends ConnectorError {
   def getFullContext: String = "The 'num_partitions' param specified is invalid. " +
     "Please specify a valid integer above 0."
@@ -464,12 +468,12 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
 }
 
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported SQL array element " + typeName +
+  def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
 
 case class MissingElementTypeError() extends SchemaError {
-  def getFullContext: String = "Missing array element type."
+  def getFullContext: String = s"Missing array element type."
 }
 
 case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {

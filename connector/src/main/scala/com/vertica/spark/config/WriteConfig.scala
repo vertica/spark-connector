@@ -88,7 +88,8 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   createExternalTable: Option[CreateExternalTableOption],
                                                   saveJobStatusTable: Boolean,
                                                   mergeKey: Option[ValidColumnList] = None,
-                                                  timeOperations : Boolean = true
+                                                  timeOperations : Boolean = true,
+                                                  arrlen: Long
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false
 
