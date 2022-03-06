@@ -14,15 +14,15 @@
 package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc._
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{MetadataBuilder, _}
 
-import java.sql.ResultSetMetaData
+import java.sql.{ResultSet, ResultSetMetaData}
 import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.dataengine.{ColumnDescription, ComplexTypeColumnDescription}
 import com.vertica.dsi.dataengine.interfaces.IColumn
 
-import scala.util.Either
+import scala.util.{Either, Failure, Success, Try}
 import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
@@ -251,9 +251,12 @@ class SchemaTools extends SchemaToolsInterface {
     // Query for an empty result set from Vertica.
     // This is simply so we can load the metadata of the result set
     // and use this to retrieve the name and type information of each column
+    var tableName = ""
     val query = tableSource match {
-      case tablename: TableName => "SELECT * FROM " + tablename.getFullTableName + " LIMIT 1"
-      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x LIMIT 1"
+      case tablename: TableName =>
+        tableName =  tablename.getFullTableName
+        "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
+      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
     }
 
     jdbcLayer.query(query) match {
@@ -273,8 +276,11 @@ class SchemaTools extends SchemaToolsInterface {
             // Ideally, we do not want to do this check.
             if(colType == java.sql.Types.ARRAY) {
               val arrayColDef: ColumnDef = getArrayColumnDef(rsmd, columnLabel)
-              checkArrayCompatibility(jdbcLayer, arrayColDef.metadata.getLong("depth"), columnLabel)
-              arrayColDef
+              //checkArrayCompatibility(jdbcLayer, arrayColDef.metadata.getLong("depth"), columnLabel)
+              val arrayDef = ColumnDef(columnLabel, colType,typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+              val res = getArrayColumnDef(arrayDef, tableName, jdbcLayer)
+              print(res)
+              res.getOrElse(null)
             } else
               ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
           }))
@@ -288,6 +294,106 @@ class SchemaTools extends SchemaToolsInterface {
         finally {
           rs.close()
         }
+    }
+  }
+
+  private def getArrayColumnDef(arrayDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val colName = arrayDef.label
+    val query = s"SELECT data_type_id FROM columns WHERE table_name=${tableName.replace("\"", "'")} AND column_name='$colName'"
+    for {
+      rs <- queryAndNext(query, jdbcLayer)
+      verticaType = rs.getLong(1)
+      arrayDef <- getArrayDef(arrayDef, jdbcLayer, verticaType)
+    } yield arrayDef
+  }
+
+  private def getArrayDef(arrayDef: ColumnDef, jdbcLayer: JdbcLayerInterface, verticaType: Long): ConnectorResult[ColumnDef] = {
+    val verticaTypeId = verticaType - 1500;
+    val query = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaTypeId"
+    jdbcLayer.query(query) match {
+      case Right(rs) =>
+        if(rs.next){
+          rs.next
+         getElementDef(jdbcLayer, 0, verticaTypeId) match {
+            case Right(elementDef) =>
+              val metaData = new MetadataBuilder()
+                .putString("name", arrayDef.label)
+                .putLong("depth", elementDef.metadata.getLong("depth"))
+                .build
+              Right(arrayDef.copy(childDefinitions = List(elementDef), metadata = metaData))
+            case Left(err) => Left(err)
+          }
+        } else {
+          getNestedElementDef(verticaType, jdbcLayer) match{
+            case Right(elementDef) =>
+              val metaData = new MetadataBuilder()
+                .putString("name", arrayDef.label)
+                .putLong("depth", elementDef.metadata.getLong("depth"))
+                .build
+             Right(arrayDef.copy(childDefinitions = List(elementDef), metadata = metaData))
+            case Left(err) => Left(err)
+          }
+        }
+      case Left(error) => Left(error)
+    }
+  }
+
+  private def queryAndNext(query: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ResultSet] ={
+    jdbcLayer.query(query) match {
+      case Right(rs) => rs
+        if(rs.next)
+          Right(rs)
+        else
+          Left(EmptyQueryError(query))
+      case Left(rs) => Left(rs)
+    }
+  }
+
+  case class EmptyQueryError(query: String) extends ConnectorError{
+    def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
+  }
+
+  private def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef]  = {
+   @tailrec
+   def recursion(verticaType: Long, jdbcLayer: JdbcLayerInterface, depth: Int): ConnectorResult[ColumnDef] = {
+     val query = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
+     jdbcLayer.query(query) match {
+       case Right(rs) =>
+         rs.next
+         val fieldTypeName = rs.getString(1)
+         val verticaType = rs.getLong("field_id")
+         if(fieldTypeName.startsWith("_ct_")){
+           recursion(verticaType, jdbcLayer, depth + 1)
+         }else{
+           getElementDef(jdbcLayer, depth, verticaType)
+         }
+       case Left(e) => Left(e)
+     }
+   }
+    Try{recursion(verticaType,jdbcLayer, 0)}
+    match {
+      case Success(res) => res
+      case Failure(exception) => throw exception
+    }
+  }
+
+  private def getElementDef(jdbcLayer: JdbcLayerInterface, depth: Int, verticaType: Long): ConnectorResult[ColumnDef] = {
+    val fieldSize = DecimalType.MAX_PRECISION
+    val fieldScale = 0
+    val isSigned = true
+    val nullable = 1 != ResultSetMetaData.columnNoNulls
+    val metadata = new MetadataBuilder()
+      .putString("name", "element")
+      .putLong("depth", depth)
+      .build()
+    val query = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaType"
+    jdbcLayer.query(query) match {
+      case Right(rs) =>
+        rs.next
+        val sqlType = rs.getLong("jdbc_type").toInt
+        val typeName = rs.getString("type_name")
+        Right(ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata))
+      case Left(error) => Left(error)
     }
   }
 
