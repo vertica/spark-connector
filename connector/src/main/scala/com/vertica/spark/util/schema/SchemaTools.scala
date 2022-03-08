@@ -273,17 +273,17 @@ class SchemaTools extends SchemaToolsInterface {
             val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
             val metadata = new MetadataBuilder().putString("name", columnLabel).build()
             val colType = rsmd.getColumnType(idx)
-            // Ideally, we do not want to do this check.
-            if(colType == java.sql.Types.ARRAY) {
-              val arrayColDef: ColumnDef = getArrayColumnDef(rsmd, columnLabel)
-              //checkArrayCompatibility(jdbcLayer, arrayColDef.metadata.getLong("depth"), columnLabel)
-              val arrayDef = ColumnDef(columnLabel, colType,typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-              val res = getArrayColumnDef(arrayDef, tableName, jdbcLayer)
-              print(res)
-              res.getOrElse(null)
-            } else
-              ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-          }))
+            val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+            if (colType == java.sql.Types.ARRAY) {
+              val arrayDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+              getArrayColumnDef(arrayDef, tableName, jdbcLayer) match {
+                case Right(childDef) => colDef.copy(childDefinitions = List(childDef))
+                case Left(err) => throw new RuntimeException
+              }
+            }else
+              colDef
+          }
+          ))
         }
         catch {
           case e: ArrayNotSupported => Left(e)
@@ -411,51 +411,6 @@ class SchemaTools extends SchemaToolsInterface {
 
   case class NestedArrayNotSupported(colName: String) extends RuntimeException with SchemaError {
     override def getFullContext: String = s"Column $colName is has type nested array. Nested array is currently not supported by Vertica."
-  }
-
-  /**
-   * Currently, the data we need to reconstruct array is hidden behind Vertica JDBC API.
-   * Using reflection, we can reach the private field we want.
-   * Ideally, Vertica should provide these data to us in a future JDBC release.
-   * */
-  private def getArrayColumnDef(rsmd: ResultSetMetaData, colName: String): ColumnDef ={
-    //  Hardcoded. Located the correct super class and get the private field
-    val field = rsmd.getClass.getSuperclass.getSuperclass.getDeclaredField("m_columnMetaData")
-    field.setAccessible(true)
-    val columnMetaDataField = field.get(rsmd).asInstanceOf[util.ArrayList[IColumn]].asScala.toList
-    val colMetaData = columnMetaDataField.find(_.getName.equals(colName)) match {
-      case Some(data) => data.asInstanceOf[ColumnDescription]
-      case None => throw new RuntimeException("Reflection error: finding array metadata")
-    }
-    // Vertica's nested structure are stored as child columns.
-    val elementDef = getElementDef(colMetaData.getChildColumnIterator.next(), 0)
-    val columnLabel = colMetaData.getLabel
-    val metadata = new MetadataBuilder()
-      .putString("name", columnLabel)
-      .putLong("depth", elementDef.metadata.getLong("depth"))
-      .build()
-    ColumnDef(colMetaData.getLabel, java.sql.Types.ARRAY, "", 0, 0, elementDef.signed, elementDef.nullable, metadata, List(elementDef))
-  }
-
-  @tailrec
-  private final def getElementDef(colDesc: ColumnDescription, depth: Int): ColumnDef ={
-    colDesc match {
-      case desc: ComplexTypeColumnDescription => getElementDef(desc.getChildColumnIterator.next(), depth + 1)
-      case desc: ColumnDescription =>
-        val columnLabel = desc.getLabel
-        val typeName = desc.getTypeMetadata.getTypeName
-        val fieldSize = DecimalType.MAX_PRECISION
-        val fieldScale =  desc.getTypeMetadata.getScale
-        val isSigned =desc.getTypeMetadata.isSigned
-        val nullable = 1 != ResultSetMetaData.columnNoNulls
-        val metadata = new MetadataBuilder()
-          .putString("name", columnLabel)
-          .putLong("depth", depth.toLong)
-          .build()
-        val colType = desc.getSQLType
-        ColumnDef(columnLabel, colType,typeName,fieldSize,fieldScale,isSigned,nullable,metadata)
-      case _ => throw new RuntimeException("Reflection error finding array element type info")
-    }
   }
 
   override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
