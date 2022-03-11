@@ -103,6 +103,46 @@ object JdbcUtils {
       case Failure(e) => Left(jdbcLayer.handleJDBCException(e))
     }
   }
+
+  /** Execute the input query, iterate result set by one, then execute onNext
+   *  if query return at least one row of data.
+   *  <br/><br/>
+   *  Intended for when you are only interested in querying and checking
+   *  for a single row of data. On some data, the passed in result set will be
+   *  closed after the onNext() execution in a finally block. On no data,
+   *  the result set is closed before
+   *  executing onNone().
+   *
+   * @param query the query string
+   * @param jdbcLayer a jdbcLayer
+   * @param onNext the callback to execute if query has some data
+   * @param onNone the callback to execute if query has no data. If not
+   *               specified, return EmptyQueryError() instead.
+   * @return a connector result from the callbacks.
+   */
+  def queryAndNext[T](query: String,
+                      jdbcLayer: JdbcLayerInterface,
+                      onNext: ResultSet => ConnectorResult[T],
+                      onNone: String => ConnectorResult[T] =
+                      (query: String) => {
+                        Left(NoResultError(query))
+                      }
+                     ): ConnectorResult[T] = {
+    jdbcLayer.query(query) match {
+      case Right(rs) =>
+        try {
+          if (rs.next) {
+            onNext(rs)
+          } else {
+            rs.close()
+            onNone(query)
+          }
+        } finally {
+          rs.close()
+        }
+      case Left(err) => Left(err)
+    }
+  }
 }
 
 /**

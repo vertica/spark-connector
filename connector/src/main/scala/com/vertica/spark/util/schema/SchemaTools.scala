@@ -151,11 +151,20 @@ class SchemaTools extends SchemaToolsInterface {
                                childDefs: List[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => getArrayType(childDefs)
+      case java.sql.Types.STRUCT => Left(MissingSqlConversionError(sqlType.toString, typename))
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
     }
   }
 
   private def getArrayType(elementDef: List[ColumnDef]): Either[SchemaError, ArrayType] = {
+    @tailrec
+    def makeNestedArrays(arrayDepth: Long, arrayElement: DataType): DataType = {
+      if(arrayDepth > 0)
+        makeNestedArrays(arrayDepth - 1, ArrayType(arrayElement))
+      else
+        arrayElement
+    }
+
     elementDef.headOption match {
       case Some(element) =>
         getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
@@ -166,21 +175,13 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  @tailrec
-  private def makeNestedArrays(arrayDepth: Long, arrayElement: DataType): DataType = {
-    if(arrayDepth > 0)
-      makeNestedArrays(arrayDepth - 1, ArrayType(arrayElement))
-    else
-      arrayElement
-  }
+  private def getCatalystTypeFromJdbcType(sqlType: Int,
+                                          precision: Int,
+                                          scale: Int,
+                                          signed: Boolean,
+                                          typename: String): Either[MissingSqlConversionError, DataType] = {
 
-  def getCatalystTypeFromJdbcType(jdbcType: Int,
-                                  precision: Int,
-                                  scale: Int,
-                                  signed: Boolean,
-                                  typename: String): Either[MissingSqlConversionError, DataType] = {
-
-    val answer = jdbcType match {
+    val answer = sqlType match {
       case java.sql.Types.BIGINT => if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION, 0) } //spark 2.x
       case java.sql.Types.BINARY => BinaryType
       case java.sql.Types.BIT => BooleanType
@@ -222,7 +223,7 @@ class SchemaTools extends SchemaToolsInterface {
       case _ => null
     }
 
-    if (answer == null) Left(MissingSqlConversionError(jdbcType.toString, typename))
+    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
     else Right(answer)
   }
 
@@ -264,7 +265,7 @@ class SchemaTools extends SchemaToolsInterface {
       case Right(rs) =>
         try {
           val rsmd = rs.getMetaData
-          Right((1 to rsmd.getColumnCount).map(idx => {
+          val colDefSeq: Seq[ColumnDef] = (1 to rsmd.getColumnCount).map(idx => {
             val columnLabel = rsmd.getColumnLabel(idx)
             val typeName = rsmd.getColumnTypeName(idx)
             val fieldSize = DecimalType.MAX_PRECISION
@@ -274,22 +275,16 @@ class SchemaTools extends SchemaToolsInterface {
             val metadata = new MetadataBuilder().putString("name", columnLabel).build()
             val colType = rsmd.getColumnType(idx)
             val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-            if (colType == java.sql.Types.ARRAY) {
-              val arrayDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-              getArrayColumnDef(arrayDef, tableName, jdbcLayer) match {
-                case Right(childDef) => colDef.copy(childDefinitions = List(childDef))
-                case Left(err) => throw new RuntimeException
-              }
-            }else
-              colDef
-          }
-          ))
+            handleComplexType(colDef, tableName, jdbcLayer) match {
+              case Right(columnDef) => columnDef
+              case Left(err) => throw new RuntimeException(err.getFullContext)
+            }
+          })
+          Right(colDefSeq)
         }
         catch {
-          case e: ArrayNotSupported => Left(e)
-          case e: NestedArrayNotSupported => Left(e)
           case e: Throwable =>
-            Left(DatabaseReadError(e).context("Could not get column info"))
+            Left(DatabaseReadError(e).context("Could not get column info from Vertica"))
         }
         finally {
           rs.close()
@@ -297,87 +292,87 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  private def getArrayColumnDef(arrayDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    val colName = arrayDef.label
-    val query = s"SELECT data_type_id FROM columns WHERE table_name=${tableName.replace("\"", "'")} AND column_name='$colName'"
-    for {
-      rs <- queryAndNext(query, jdbcLayer)
-      verticaType = rs.getLong(1)
-      arrayDef <- getArrayDef(arrayDef, jdbcLayer, verticaType)
-    } yield arrayDef
+  private def handleComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    colDef.colType match {
+      case java.sql.Types.ARRAY =>
+        val elementDef = getArrayElementDef(colDef.label, tableName, jdbcLayer)
+        makeArrayDef(colDef, elementDef)
+      case _ => Right(colDef)
+    }
   }
 
-  private def getArrayDef(arrayDef: ColumnDef, jdbcLayer: JdbcLayerInterface, verticaType: Long): ConnectorResult[ColumnDef] = {
+  private def makeArrayDef(arrayDef: ColumnDef, elementDef: ConnectorResult[ColumnDef]): ConnectorResult[ColumnDef] =
+    elementDef match {
+      case Right(value) =>
+        val metaData = new MetadataBuilder()
+          .putString("name", arrayDef.label)
+          .putLong("depth", value.metadata.getLong("depth"))
+          .build
+        Right(arrayDef.copy(childDefinitions = List(value), metadata = metaData))
+      case Left(err) => Left(err)
+    }
+
+  private def getArrayElementDef(colName:String, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val table = tableName.replace("\"", "")
+    val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$table' AND column_name='$colName'"
+
+    JdbcUtils.queryAndNext(queryColType, jdbcLayer, (rs) => {
+      val verticaType = rs.getLong("data_type_id")
+      queryVerticaType(verticaType, jdbcLayer)
+    })
+  }
+
+  private def queryVerticaType(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val verticaTypeId = verticaType - 1500;
-    val query = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaTypeId"
-    jdbcLayer.query(query) match {
-      case Right(rs) =>
-        if(rs.next){
-          rs.next
-         getElementDef(jdbcLayer, 0, verticaTypeId) match {
-            case Right(elementDef) =>
-              val metaData = new MetadataBuilder()
-                .putString("name", arrayDef.label)
-                .putLong("depth", elementDef.metadata.getLong("depth"))
-                .build
-              Right(arrayDef.copy(childDefinitions = List(elementDef), metadata = metaData))
-            case Left(err) => Left(err)
+    // Todo: can we refactor this duplicated query ?
+    val queryType = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaTypeId"
+    JdbcUtils.queryAndNext(queryType, jdbcLayer,
+      (rs) => Right(makeArrayElementDef(rs, 0)),
+      (_) => getNestedElementDef(verticaType, jdbcLayer))
+  }
+
+  private def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+
+    // Because this is a tailrec, we can't use finally block
+    @tailrec
+    def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface, depth: Int): ConnectorResult[ColumnDef] = {
+      val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
+      jdbcLayer.query(queryComplexType) match {
+        case Right(rs) =>
+          if (rs.next()) {
+            val fieldTypeName = rs.getString("field_type_name")
+            val verticaType = rs.getLong("field_id")
+            rs.close()
+            if (fieldTypeName.startsWith("_ct_")) {
+              getNestedElementDef(verticaType, jdbcLayer, depth + 1)
+            } else {
+              queryElementDef(verticaType, depth , jdbcLayer)
+            }
+          } else {
+            rs.close()
+            Left(NoResultError(queryComplexType))
           }
-        } else {
-          getNestedElementDef(verticaType, jdbcLayer) match{
-            case Right(elementDef) =>
-              val metaData = new MetadataBuilder()
-                .putString("name", arrayDef.label)
-                .putLong("depth", elementDef.metadata.getLong("depth"))
-                .build
-             Right(arrayDef.copy(childDefinitions = List(elementDef), metadata = metaData))
-            case Left(err) => Left(err)
-          }
-        }
-      case Left(error) => Left(error)
+        case Left(error) => Left(error)
+      }
     }
+
+    getNestedElementDef(verticaType, jdbcLayer, 0)
   }
 
-  private def queryAndNext(query: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ResultSet] ={
-    jdbcLayer.query(query) match {
-      case Right(rs) => rs
-        if(rs.next)
-          Right(rs)
-        else
-          Left(EmptyQueryError(query))
-      case Left(rs) => Left(rs)
-    }
+  private def queryElementDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val queryNativeTypes = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaType"
+    JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
+      (rs) => Right(makeArrayElementDef(rs, depth)),
+      (_) => Left(VerticaInvalidType(verticaType.toString)))
   }
 
-  case class EmptyQueryError(query: String) extends ConnectorError{
-    def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
+  case class VerticaInvalidType(typeId: String) extends ConnectorError {
+    override def getFullContext: String = s"Type $typeId was not found in Vertica's types table"
   }
 
-  private def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef]  = {
-   @tailrec
-   def recursion(verticaType: Long, jdbcLayer: JdbcLayerInterface, depth: Int): ConnectorResult[ColumnDef] = {
-     val query = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
-     jdbcLayer.query(query) match {
-       case Right(rs) =>
-         rs.next
-         val fieldTypeName = rs.getString(1)
-         val verticaType = rs.getLong("field_id")
-         if(fieldTypeName.startsWith("_ct_")){
-           recursion(verticaType, jdbcLayer, depth + 1)
-         }else{
-           getElementDef(jdbcLayer, depth, verticaType)
-         }
-       case Left(e) => Left(e)
-     }
-   }
-    Try{recursion(verticaType,jdbcLayer, 0)}
-    match {
-      case Success(res) => res
-      case Failure(exception) => throw exception
-    }
-  }
-
-  private def getElementDef(jdbcLayer: JdbcLayerInterface, depth: Int, verticaType: Long): ConnectorResult[ColumnDef] = {
+  private def makeArrayElementDef(rs: ResultSet, depth: Int) = {
+    val sqlType  = rs.getLong("jdbc_type").toInt
+    val typeName = rs.getString("type_name")
     val fieldSize = DecimalType.MAX_PRECISION
     val fieldScale = 0
     val isSigned = true
@@ -386,34 +381,10 @@ class SchemaTools extends SchemaToolsInterface {
       .putString("name", "element")
       .putLong("depth", depth)
       .build()
-    val query = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaType"
-    jdbcLayer.query(query) match {
-      case Right(rs) =>
-        rs.next
-        val sqlType = rs.getLong("jdbc_type").toInt
-        val typeName = rs.getString("type_name")
-        Right(ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata))
-      case Left(error) => Left(error)
-    }
+   ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
   }
 
-  private def checkArrayCompatibility(jdbcLayer: JdbcLayerInterface, arrayDepth: Long, columnLabel: String): Unit = {
-    val verticaVersion = VerticaVersionUtils.get(jdbcLayer)
-    if (verticaVersion.major < 10)
-      throw ArrayNotSupported(columnLabel)
-    if (arrayDepth > 0 && verticaVersion.major <= 11)
-      throw NestedArrayNotSupported(columnLabel)
-  }
-
-  case class ArrayNotSupported(colName: String) extends RuntimeException with SchemaError {
-    override def getFullContext: String = s"Column $colName is of array type. Array requires in Vertica version 10 more higher."
-  }
-
-  case class NestedArrayNotSupported(colName: String) extends RuntimeException with SchemaError {
-    override def getFullContext: String = s"Column $colName is has type nested array. Nested array is currently not supported by Vertica."
-  }
-
-  override def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
+  override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.MapType(_,_,_) |
@@ -424,7 +395,7 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
-    val length = if(arrlen <=0) "" else s", $arrlen"
+    val length = if(arrlen <=0) "" else s",$arrlen"
     @tailrec
       def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String, depth: Int):SchemaResult[String] = {
           dataType match {
@@ -593,7 +564,6 @@ class SchemaTools extends SchemaToolsInterface {
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
           case Right(datatype) =>
             val depth = StringUtils.countMatches(datatype, "ARRAY")
-            checkArrayCompatibility(jdbcLayer, depth - 1, s.name)
             Right(datatype + decimal_qualifier)
         }
         _ = sb.append(col)

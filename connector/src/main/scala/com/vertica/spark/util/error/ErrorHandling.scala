@@ -85,6 +85,9 @@ case class SchemaDiscoveryError() extends ConnectorError {
     "There may be an issue with connectivity to the database."
 
 }
+case class NoResultError(query: String) extends ConnectorError{
+  def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
+}
 case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to create a valid column list for the write operation " +
     "due to mismatch with the existing table."
