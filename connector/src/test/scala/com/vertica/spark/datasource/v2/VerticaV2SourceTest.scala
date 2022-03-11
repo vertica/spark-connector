@@ -30,6 +30,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
@@ -216,6 +217,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
     val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+
     val columnA: NamedReference = ColumnReference("a")
     val columnB: NamedReference = ColumnReference("b")
     val columnC: NamedReference = ColumnReference("c")

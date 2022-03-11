@@ -196,6 +196,45 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(pass.isEmpty)
   }
 
+  it should "parse time_operations" in {
+    val opts3 = Map[String, String]()
+    val pass3 = DSConfigSetupUtils.getTimeOperations(opts3)
+    assert(pass3.toList.nonEmpty)
+    assert(pass3.toList.head)
+
+    val opts = Map[String, String]("time_operations" -> "true")
+    val pass = DSConfigSetupUtils.getTimeOperations(opts)
+    assert(pass.toList.nonEmpty)
+    assert(pass.toList.head)
+
+    val opts2 = Map[String, String]("time_operations" -> "false")
+    val pass2 = DSConfigSetupUtils.getTimeOperations(opts2)
+    assert(pass2.toList.nonEmpty)
+    assert(!pass2.toList.head)
+  }
+
+  it should "parse arrlen" in {
+    val opts = Map[String, String]()
+    val pass = DSConfigSetupUtils.getArrlen(opts)
+    assert(pass.toList.nonEmpty)
+    assert(pass.toList.head.isInstanceOf[Long])
+    assert(pass.toList.head == 0)
+
+    val opts2 = Map[String, String]("arrlen" -> "100")
+    val pass2 = DSConfigSetupUtils.getArrlen(opts2)
+    assert(pass2.toList.nonEmpty)
+    assert(pass2.toList.head.isInstanceOf[Long])
+    assert(pass2.toList.head.isInstanceOf[Long])
+    assert(pass2.toList.head == 100)
+
+    val opts3 = Map[String, String]("arrlen" -> "sdfsdf")
+    val pass3 = DSConfigSetupUtils.getArrlen(opts3)
+    pass3 match {
+      case Invalid(_) => succeed
+      case _ => fail
+    }
+  }
+
   it should "parse kerberos options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
