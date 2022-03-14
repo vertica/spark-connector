@@ -1610,6 +1610,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val rs = stmt.executeQuery(query)
       assert (rs.next)
       println(rs.getMetaData.getColumnTypeName(1))
+      println(rs.getString(1))
       // assert(array(0) == 88L)
       // assert(array(1) == 99L)
       // assert(array(2) == 111L)
