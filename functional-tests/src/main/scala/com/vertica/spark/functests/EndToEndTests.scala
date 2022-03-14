@@ -1607,15 +1607,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val stmt = conn.createStatement()
     val query = "SELECT * FROM " + tableName
     try {
-      val rs = stmt.executeQuery(query)
-      assert (rs.next)
+      // val rs = stmt.executeQuery(query)
+      // assert (rs.next)
       // val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
       // assert(array(0) == 88L)
       // assert(array(1) == 99L)
       // assert(array(2) == 111L)
       val columnRs = stmt.executeQuery(s"select data_type, data_type_length from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
-      println(rs.getString("data_type"))
+      println(columnRs.getString("data_type"))
       assert(columnRs.getLong("data_type_length") == 65000L)
     } catch{
       case err : Exception =>
