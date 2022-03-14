@@ -1583,17 +1583,15 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(dataType.elementType.isInstanceOf[LongType])
       df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
     }catch {
-      case e: Exception =>
-        e.printStackTrace()
-        fail(e)
+      case e: Exception => fail(e)
     }finally {
       stmt.close()
     }
     TestUtils.dropTable(conn, tableName1)
   }
 
-  it should "write dataframe with 1D unbounded array" in {
-    val tableName = "nativeArrayWriteTest"
+  it should "write 1D array" in {
+    val tableName = "native_array_write_test"
     val colName = "col1"
     val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType))))
 
@@ -1605,7 +1603,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
 
     val stmt = conn.createStatement()
-    val query = "SELECT * FROM " + tableName
+    val query = s"SELECT $colName FROM " + tableName
     try {
       val rs = stmt.executeQuery(query)
       assert (rs.next)
@@ -1618,9 +1616,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(columnRs.getLong("data_type_length") == 65000L)
     }
     catch{
-      case err : Exception =>
-        err.printStackTrace()
-        fail(err)
+      case err : Exception => fail(err)
     }
     finally {
       stmt.close()
@@ -1629,25 +1625,31 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "write array with 10 elements" in {
-    val tableName = "nativeArrayWriteTest"
+  it should "write 1D bounded array" in {
+    val tableName = "native_array_write_test"
     val colName = "col1"
     val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType))))
 
-    val data = Seq(Row(Array(77)))
+    val data = Seq(Row(Array(88,99,111)))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     println(df.toString())
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource")
-      .options( writeOpts + ("table" -> tableName, "arrlen" -> "10"))
+      .options(writeOpts + ("table" -> tableName, "arrlen" -> "10"))
       .mode(mode).save()
 
     val stmt = conn.createStatement()
-    val query = s"select data_type_length from columns where table_name='$tableName' and column_name='$colName'"
+    val query = s"SELECT $colName FROM " + tableName
     try {
       val rs = stmt.executeQuery(query)
-      assert(rs.next)
-      assert(rs.getLong("data_type_length") == 8*10)
+      assert (rs.next)
+      val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
+      assert(array(0) == 88L)
+      assert(array(1) == 99L)
+      assert(array(2) == 111L)
+      val columnRs = stmt.executeQuery(s"select data_type_length from columns where table_name='$tableName' and column_name='$colName'")
+      assert(columnRs.next)
+      assert(columnRs.getLong("data_type_length") == 8 * 10)
     }
     catch{
       case err : Exception => fail(err)
@@ -1659,6 +1661,40 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
+  it should "write nested arrays array" in {
+    val tableName = "nested_array_write_test"
+    val colName = "col1"
+    val schema = new StructType(Array(
+      StructField("x", IntegerType),
+      StructField(colName, ArrayType(ArrayType(IntegerType)))))
+
+    val data = Seq(Row(1,Array(Array(88,99,111))))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"SELECT $colName FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
+      val nestedArray = array(0).asInstanceOf[Array[AnyRef]]
+      assert(nestedArray(0) == 88L)
+      assert(nestedArray(1) == 99L)
+      assert(nestedArray(2) == 111L)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
 
   it should "save date types over Vertica partitioned table." in {
     val log = Logger.getLogger(getClass.getName)
