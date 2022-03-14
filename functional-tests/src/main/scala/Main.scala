@@ -11,23 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Main.conf
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
-import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests}
 import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
-import org.scalatest.{Args, DispatchReporter, TestSuite}
+import org.scalatest.{Args, TestSuite}
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
-import org.scalatest.tools.StandardOutReporter
-
 import scala.util.Try
 
 class VReporter extends org.scalatest.Reporter {
   var testCount = 0
   var succeededCount = 0
   var errCount = 0
+  var testsFailed: Seq[TestFailed] = List()
 
   def apply(event: Event): Unit = {
     event match {
@@ -36,10 +33,11 @@ class VReporter extends org.scalatest.Reporter {
       case TestSucceeded(ordinal, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
         println("TEST SUCCEEDED: " + testName)
         succeededCount += 1
-      case TestFailed(ordinal, message, suiteName, suiteId, suiteClassName, testName, testText, recordedEvents, analysis, throwable, duration, formatter, location, rerunner, payload, threadName, timeStamp) =>
+      case testFailed: TestFailed =>
         errCount += 1
-        println("TEST FAILED: " + testName + "\n" + message + "\n" )
-        throwable.get.printStackTrace()
+        println("TEST FAILED: " + testFailed.testName + "\n" + testFailed.message + "\n" )
+        testFailed.throwable.get.printStackTrace()
+        testsFailed = testsFailed :+ testFailed
       case _ =>
         println("UNEXPECTED TEST EVENT: " + event.toString)
     }
@@ -47,10 +45,12 @@ class VReporter extends org.scalatest.Reporter {
 }
 
 object Main extends App {
+  var testsFailed: Seq[TestFailed] = List()
   def runSuite(suite: TestSuite): Unit = {
     val reporter = new VReporter()
     val result = suite.run(None, Args(reporter))
     if(!result.succeeds()) {
+      testsFailed = testsFailed ++ reporter.testsFailed
       throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
     println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
@@ -122,103 +122,127 @@ object Main extends App {
     auth = auth,
     tlsConfig = tlsConfig)
 
-  runSuite(new JDBCTests(jdbcConfig))
+  try {
+    runSuite(new JDBCTests(jdbcConfig))
 
-  val filename = conf.getString("functional-tests.filepath")
-  val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
-    case (Some(accessKeyId), Some(secretAccessKey)) => {
-      Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
+    val filename = conf.getString("functional-tests.filepath")
+    val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => {
+        Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
+      }
+      case (None, None) =>
+        for {
+          accessKeyId <- Try {
+            conf.getString("functional-tests.aws_access_key_id")
+          }.toOption
+          secretAccessKey <- Try {
+            conf.getString("functional-tests.aws_secret_access_key")
+          }.toOption
+        } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
+      case _ => None
     }
-    case (None, None) =>
-      for {
-        accessKeyId <- Try{conf.getString("functional-tests.aws_access_key_id")}.toOption
-        secretAccessKey <- Try{conf.getString("functional-tests.aws_secret_access_key")}.toOption
-      } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
-    case _ => None
-  }
 
 
-  val awsRegion= sys.env.get("AWS_DEFAULT_REGION") match {
-    case Some(region) => Some(AWSArg(Visible, EnvVar, region))
-    case None => {
-        Try{conf.getString("functional-tests.aws_region")}.toOption match {
+    val awsRegion = sys.env.get("AWS_DEFAULT_REGION") match {
+      case Some(region) => Some(AWSArg(Visible, EnvVar, region))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_region")
+        }.toOption match {
           case Some(region) => Some(AWSArg(Visible, ConnectorOption, region))
           case None => None
+        }
       }
     }
-  }
 
-  val awsSessionToken= sys.env.get("AWS_SESSION_TOKEN") match {
-    case Some(token)=> Some(AWSArg(Visible, EnvVar, token))
-    case None => {
-      Try{conf.getString("functional-tests.aws_session_token")}.toOption match{
-        case Some(token) =>Some(AWSArg(Visible, ConnectorOption, token))
-        case None => None
+    val awsSessionToken = sys.env.get("AWS_SESSION_TOKEN") match {
+      case Some(token) => Some(AWSArg(Visible, EnvVar, token))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_session_token")
+        }.toOption match {
+          case Some(token) => Some(AWSArg(Visible, ConnectorOption, token))
+          case None => None
+        }
       }
     }
-  }
 
-  val awsCredentialsProvider= sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
-    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
-    case None => {
-      Try{conf.getString("functional-tests.aws_credentials_provider")}.toOption match{
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-        case None => None
+    val awsCredentialsProvider = sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
+      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_credentials_provider")
+        }.toOption match {
+          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+          case None => None
+        }
       }
     }
-  }
 
-  val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
-    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
-    case None => {
-      Try{conf.getString("functional-tests.aws_enable_ssl")}.toOption match{
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-        case None => None
+    val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
+      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_enable_ssl")
+        }.toOption match {
+          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+          case None => None
+        }
       }
     }
-  }
 
-  val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
-    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
-    case None => {
-      Try{conf.getString("functional-tests.aws_endpoint")}.toOption match{
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-        case None => None
+    val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
+      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_endpoint")
+        }.toOption match {
+          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+          case None => None
+        }
       }
     }
-  }
 
-  val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
-    case Some(provider)=> Some(AWSArg(Visible, EnvVar, provider))
-    case None => {
-      Try{conf.getString("functional-tests.aws_enable_path_style")}.toOption match{
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-        case None => None
+    val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
+      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+      case None => {
+        Try {
+          conf.getString("functional-tests.aws_enable_path_style")
+        }.toOption match {
+          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+          case None => None
+        }
       }
     }
-  }
 
-  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
-                                                             awsRegion,
-                                                             awsSessionToken,
-                                                             awsCredentialsProvider,
-                                                             awsEndpoint,
-                                                             awsEnableSsl,
-                                                             awsEnablePathStyle
-  ))
-  runSuite(new HDFSTests(
-    fileStoreConfig,
-    jdbcConfig
-  ))
+    val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
+      awsRegion,
+      awsSessionToken,
+      awsCredentialsProvider,
+      awsEndpoint,
+      awsEnableSsl,
+      awsEnablePathStyle
+    ))
+    runSuite(new HDFSTests(
+      fileStoreConfig,
+      jdbcConfig
+    ))
 
-  runSuite(new CleanupUtilTests(
-    fileStoreConfig
-  ))
+    runSuite(new CleanupUtilTests(
+      fileStoreConfig
+    ))
 
-  val writeOpts = readOpts
-  runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    val writeOpts = readOpts
+    runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
 
-  if (args.length == 1 && args(0) == "Large") {
-    runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+    if (args.length == 1 && args(0) == "Large") {
+      runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+    }
+  } finally {
+    if (testsFailed.nonEmpty)
+      println(s"SUMMARY: total ${testsFailed.length} tests failed")
+    testsFailed.foreach(test => {
+      println("- TEST FAILED: " + test.testName + "\n" + test.message + "\n")
+    })
   }
 }

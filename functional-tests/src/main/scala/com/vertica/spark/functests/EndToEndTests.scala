@@ -26,6 +26,8 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.apache.spark.sql.functions._
 
+import scala.collection.mutable
+
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
@@ -1564,34 +1566,90 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
   }
 
-  it should "Fail DataFrame with Complex type array" in {
-    val tableName = "s2vdevtest08"
-    val dbschema = "public"
+  it should "read dataframe with 1D array" in {
+    val tableName1 = "dftest_array"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a array[int])")
 
-    val json_string = """{"tags": ["home", "green"], "name":"Yin","address":{"city":"Columbus","state":"Ohio"}}"""
-    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (address_array VARBINARY(65000), name_string LONG VARCHAR(65000), tags_array VARBINARY(65000))")
+    val insert = "insert into "+ tableName1 + " values(array[2])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
-    val mode = SaveMode.Append
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    val peopleRDD = spark.sparkContext.parallelize(json_string :: Nil)
-    val df = spark.read.json(peopleRDD)
+    assert(df.count() == 1)
+    assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
+    val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
+    assert(dataType.elementType.isInstanceOf[LongType])
+    df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
+    TestUtils.dropTable(conn, tableName1)
+  }
 
-    var failure: Option[Exception] = None
+  it should "write dataframe with 1D unbounded array" in {
+    val tableName = "nativeArrayWriteTest"
+    val colName = "col1"
+    val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType))))
+
+    val data = Seq(Row(Array(88,99,111)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = "SELECT * FROM " + tableName
     try {
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      val array = rs.getArray(1).getArray.asInstanceOf[Array[AnyRef]]
+      assert(array(0) == 88L)
+      assert(array(1) == 99L)
+      assert(array(2) == 111L)
+      val columnRs = stmt.executeQuery(s"select data_type_length from columns where table_name='$tableName' and column_name='$colName'")
+      assert(columnRs.next)
+      assert(columnRs.getLong("data_type_length") == 65000L)
     }
-    catch {
-      case e: java.lang.Exception => failure = Some(e)
+    catch{
+      case err : Exception => fail(err)
     }
-
-    checkErrorType(failure, {
-      case CommitError(_) => true
-      case _ => false
-    })
+    finally {
+      stmt.close()
+    }
 
     TestUtils.dropTable(conn, tableName)
   }
+
+  it should "write array with 10 elements" in {
+    val tableName = "nativeArrayWriteTest"
+    val colName = "col1"
+    val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType))))
+
+    val data = Seq(Row(Array(77)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource")
+      .options( writeOpts + ("table" -> tableName, "arrlen" -> "10"))
+      .mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"select data_type_length from columns where table_name='$tableName' and column_name='$colName'"
+    try {
+      val rs = stmt.executeQuery(query)
+      assert(rs.next)
+      assert(rs.getLong("data_type_length") == 8*10)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
 
   it should "save date types over Vertica partitioned table." in {
     val log = Logger.getLogger(getClass.getName)
@@ -2081,47 +2139,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.execute("DROP USER IF EXISTS test_user")
       stmt.close()
     }
-    TestUtils.dropTable(conn, tableName)
-  }
-
-  it should "throw clear error message if data frame contains a complex data type not supported by Vertica." in {
-    val stmt = conn.createStatement()
-
-    val tableName = "s2vdevtest24"
-    val dbschema = "public"
-
-    stmt.execute("DROP TABLE  IF EXISTS "+ tableName)
-    TestUtils.createTableBySQL(conn, tableName, "CREATE TABLE " + tableName + " (a int, b float)")
-
-    val schema = StructType(StructField("c", ArrayType(StringType), nullable=true)::Nil)
-    val inputData = Seq(
-      Seq("123","456"),
-      null
-    )
-
-    val data = spark.sparkContext.parallelize(inputData).map(p => Row(p))
-    val df = spark.createDataFrame(data, schema)
-    df.show
-
-    val numDfRows = df.count
-    println("numDfRows=" + numDfRows)
-
-
-    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
-
-    val mode = SaveMode.Overwrite
-    var failure: Option[Exception] = None
-    try {
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
-    }
-    catch {
-      case e: java.lang.Exception => failure = Some(e)
-    }
-    checkErrorType(failure, {
-      case CommitError(_) => true
-      case _ => false
-    })
-
     TestUtils.dropTable(conn, tableName)
   }
 
