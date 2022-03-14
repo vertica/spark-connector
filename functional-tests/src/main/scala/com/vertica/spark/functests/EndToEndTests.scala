@@ -1602,7 +1602,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     try {
       val rs = stmt.executeQuery(query)
       assert (rs.next)
-      val array = rs.getArray(1).getArray.asInstanceOf[Array[AnyRef]]
+      val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
       assert(array(0) == 88L)
       assert(array(1) == 99L)
       assert(array(2) == 111L)
