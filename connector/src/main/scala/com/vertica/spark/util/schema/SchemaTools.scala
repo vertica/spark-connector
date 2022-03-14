@@ -277,7 +277,10 @@ class SchemaTools extends SchemaToolsInterface {
             val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
             handleComplexType(colDef, tableName, jdbcLayer) match {
               case Right(columnDef) => columnDef
-              case Left(err) => throw new RuntimeException(err.getFullContext)
+              case Left(err) => err match {
+                case e: ArrayElementTypeNotFound => throw e
+                case _ => throw new RuntimeException(err.getFullContext)
+              }
             }
           })
           Right(colDefSeq)
@@ -324,7 +327,6 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def queryVerticaType(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val verticaTypeId = verticaType - 1500;
-    // Todo: can we refactor this duplicated query ?
     val queryType = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaTypeId"
     JdbcUtils.queryAndNext(queryType, jdbcLayer,
       (rs) => Right(makeArrayElementDef(rs, 0)),
@@ -350,7 +352,7 @@ class SchemaTools extends SchemaToolsInterface {
             }
           } else {
             rs.close()
-            Left(NoResultError(queryComplexType))
+            Left(ArrayElementTypeNotFound(verticaType))
           }
         case Left(error) => Left(error)
       }
@@ -363,11 +365,7 @@ class SchemaTools extends SchemaToolsInterface {
     val queryNativeTypes = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaType"
     JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
       (rs) => Right(makeArrayElementDef(rs, depth)),
-      (_) => Left(VerticaInvalidType(verticaType.toString)))
-  }
-
-  case class VerticaInvalidType(typeId: String) extends ConnectorError {
-    override def getFullContext: String = s"Type $typeId was not found in Vertica's types table"
+      (_) => Left(ArrayElementTypeNotFound(verticaType)))
   }
 
   private def makeArrayElementDef(rs: ResultSet, depth: Int) = {

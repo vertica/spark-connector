@@ -432,6 +432,25 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  it should "error on type not found" in {
+    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+
+    val verticaArrayType = 1506
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
+    mockColumnCount(rsmd, 1)
+    val verticaElementType = verticaArrayType - 1500;
+    mockQueryTypes(verticaElementType, hasData = false,jdbcLayer)
+    mockQueryComplexType(verticaArrayType, false, isFieldNative = false, jdbcLayer)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) => succeed
+      case Right(_) => fail
+    }
+  }
+
   private def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
     val mockRs = mock[ResultSet]
     val queryColumnDef = s"SELECT data_type_id FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
@@ -468,13 +487,13 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockQueryTypes(verticaElementType, hasData = false, jdbcLayer)
 
     val fieldId1 = 1L
-    val mockRs1 = mockQueryComplexType(verticaArrayType, fieldId1, isFieldNative = false, jdbcLayer)
+    val mockRs1 = mockQueryComplexType(verticaArrayType, true, isFieldNative = false, jdbcLayer)
     var field1TypeName = "_ct_" + fieldId1.toString
     (mockRs1.getString: String => String).expects("field_type_name").returns(field1TypeName)
     (mockRs1.getLong: String => Long).expects("field_id").returns(fieldId1)
 
     val fieldId2 = 2L
-    val mockRs2 = mockQueryComplexType(fieldId1, fieldId2, isFieldNative = true, jdbcLayer)
+    val mockRs2 = mockQueryComplexType(fieldId1, true, isFieldNative = true, jdbcLayer)
     val field2TypeName = fieldId2.toString
     (mockRs2.getString: String => String).expects("field_type_name").returns(field2TypeName)
     (mockRs2.getLong: String => Long).expects("field_id").returns(fieldId2)
@@ -503,11 +522,11 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  private def mockQueryComplexType(complexTypeId: Long, fieldId: Long, isFieldNative: Boolean, jdbcLayer: JdbcLayerInterface) = {
+  private def mockQueryComplexType(complexTypeId: Long, hasData: Boolean, isFieldNative: Boolean, jdbcLayer: JdbcLayerInterface) = {
     val mockRs = mock[ResultSet]
     val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$complexTypeId'"
     (jdbcLayer.query _).expects(queryComplexType, *).returns(Right(mockRs))
-    (mockRs.next _).expects().returns(true)
+    (mockRs.next _).expects().returns(hasData)
     (mockRs.close _).expects()
     mockRs
   }

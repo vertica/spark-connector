@@ -168,6 +168,13 @@ case class CommitError(error: ConnectorError) extends ConnectorError {
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
+
+case class ArrayElementTypeNotFound(typeId: Long)
+  extends RuntimeException(s"Element type $typeId not found in vertica.")
+    with ConnectorError {
+  override def getFullContext: String = this.getMessage
+}
+
 case class ViewExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to an existing view in Vertica."
 }
