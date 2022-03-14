@@ -1568,20 +1568,27 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "read dataframe with 1D array" in {
     val tableName1 = "dftest_array"
-    val stmt = conn.createStatement
     val n = 1
+    val stmt = conn.createStatement
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a array[int])")
 
     val insert = "insert into "+ tableName1 + " values(array[2])"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
-
-    assert(df.count() == 1)
-    assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
-    val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
-    assert(dataType.elementType.isInstanceOf[LongType])
-    df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
+    try{
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
+      val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
+      assert(dataType.elementType.isInstanceOf[LongType])
+      df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
+    }catch {
+      case e: Exception =>
+        e.printStackTrace()
+        fail(e)
+    }finally {
+      stmt.close()
+    }
     TestUtils.dropTable(conn, tableName1)
   }
 
@@ -1611,7 +1618,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(columnRs.getLong("data_type_length") == 65000L)
     }
     catch{
-      case err : Exception => fail(err)
+      case err : Exception =>
+        err.printStackTrace()
+        fail(err)
     }
     finally {
       stmt.close()
