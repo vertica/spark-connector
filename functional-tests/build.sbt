@@ -26,7 +26,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2"
 libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "10.0.1-0"
+libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "11.0.2-0"
 libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
 libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
