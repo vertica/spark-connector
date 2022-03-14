@@ -1613,7 +1613,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       // assert(array(0) == 88L)
       // assert(array(1) == 99L)
       // assert(array(2) == 111L)
-      val columnRs = stmt.executeQuery(s"select data_type_name, data_type_length from columns where table_name='$tableName' and column_name='$colName'")
+      val columnRs = stmt.executeQuery(s"select data_type, data_type_length from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
       println(rs.getString("data_type_name"))
       assert(columnRs.getLong("data_type_length") == 65000L)
