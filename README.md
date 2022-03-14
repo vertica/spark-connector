@@ -1,5 +1,7 @@
 # Vertica Spark Connector
 
+[![tests-ci-badge]](https://github.com/vertica/spark-connector/actions/workflows/main.yml)
+
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
 Why is this connector desired instead of using a more generic JDBC connector? A few reasons:
@@ -190,3 +192,5 @@ This is simply an issue with hadoop closing file handles on files that have been
 [![Overview of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/MSScaz3Q2Pg/0.jpg)](https://www.youtube.com/watch?v=MSScaz3Q2Pg "Overview of the new Vertica Spark open source connector (v2)")
 
 [![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)")
+
+[tests-ci-badge]: https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg
