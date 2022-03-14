@@ -1615,7 +1615,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       // assert(array(2) == 111L)
       val columnRs = stmt.executeQuery(s"select data_type, data_type_length from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
-      println(rs.getString("data_type_name"))
+      println(rs.getString("data_type"))
       assert(columnRs.getLong("data_type_length") == 65000L)
     } catch{
       case err : Exception =>
