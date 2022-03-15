@@ -19,19 +19,11 @@ import org.apache.spark.sql.types.{MetadataBuilder, _}
 import java.sql.{ResultSet, ResultSetMetaData}
 import cats.data.NonEmptyList
 import cats.implicits._
-import com.vertica.dataengine.{ColumnDescription, ComplexTypeColumnDescription}
-import com.vertica.dsi.dataengine.interfaces.IColumn
-
-import scala.util.{Either, Failure, Success, Try}
+import scala.util.Either
 import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.version.VerticaVersionUtils
-import org.apache.commons.lang.StringUtils
-
-import java.util
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.control.Breaks.{break, breakable}
 
 case class ColumnDef(
@@ -561,7 +553,6 @@ class SchemaTools extends SchemaToolsInterface {
           case Left(err) =>
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
           case Right(datatype) =>
-            val depth = StringUtils.countMatches(datatype, "ARRAY")
             Right(datatype + decimal_qualifier)
         }
         _ = sb.append(col)
