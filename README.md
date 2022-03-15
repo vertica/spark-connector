@@ -1,6 +1,11 @@
 # Vertica Spark Connector
 
 [![tests-ci-badge]](https://github.com/vertica/spark-connector/actions/workflows/main.yml)
+[![codecov]](https://codecov.io/gh/vertica/spark-connector)
+[![license-badge]](https://opensource.org/licenses/Apache-2.0)
+
+[![release-badge]](https://github.com/vertica/spark-connector/releases/tag/v3.0.3)
+[![contributing-badge]](contributing.md)
 
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
@@ -194,3 +199,7 @@ This is simply an issue with hadoop closing file handles on files that have been
 [![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)")
 
 [tests-ci-badge]: https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg
+[license-badge]: https://img.shields.io/badge/License-Apache%202.0-orange.svg
+[codecov]: https://codecov.io/gh/vertica/spark-connector/branch/main/graph/badge.svg?token=<TOKEN>
+[release-badge]: https://img.shields.io/badge/Release-3.0.3-blue
+[contributing-badge]: https://img.shields.io/badge/Contributing-read-blue
