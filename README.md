@@ -154,20 +154,33 @@ Below is a detailed list of connector options that are used in the options map:
 Note: If you are using the S3 properties, the connector options has priority over the Spark configuration, which has priority over the environment variables.
 
 ## Complex Data Types
-*Complex types is currently under development, with more to be added.*
+*Complex types is currently under development and is subject to change.*
 
-Complex Data types requires the use of Vertica JDBC connector version 11. The table below details 
-minimum version requirements for Vertica DB.
+### Requirements
+Complex data types requires Vertica 11 and Vertica's JDBC connector 11. Complex data types support is backward
+compatible only with Vertica 10.x under some restrictions.
 
-| Complex Type | Dataframe Operation | Vertica version |
-|--------------|---------------------|-----------------|
-| Array        | Load()              | 11.0.x          |
-| Array        | Save()              | 10.0.x          |
+### Complex Type Conversion
+
+| Spark Dataframe          | Vertica Tables                 |
+|--------------------------|--------------------------------|
+| Array                    | Array                          |
+| Array                    | Set                            |
+| Struct                   | Row                            |
+| Map                      | Map (only for external tables) |
+| Array(Struct(key,value)) | Array\[Row(key, value)]        |
 
 ### Array
 - Nested array is supported when saving data to Vertica.
-- Only 1D array is currently supported for reading from Vertica, with nested arrays support to be added. 
+- Only 1D array is currently supported for reading from Vertica. Nested arrays support to be added.
 
+### Backwards compatibility:
+
+Complex data types is only backward compatible only with Vertica 10 with the following restrictions.
+
+| Complex Type | Dataframe Operation | Restrictions                                                                                                                      |
+|--------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| Array        | save() & load()     | 1D primitive arrays are supported only for internal table. `arrlen` option not supported and element count will not be specified. |
 
 ## Examples
 
