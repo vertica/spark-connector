@@ -118,7 +118,7 @@ object JdbcUtils {
    * @param onNext the callback to execute if query has some data
    * @param onNone the callback to execute if query has no data. If not
    *               specified, return EmptyQueryError() instead.
-   * @return a connector result from the callbacks.
+   * @return ConnectorResult[T] from the callbacks, or from caught .
    */
   def queryAndNext[T](query: String,
                       jdbcLayer: JdbcLayerInterface,
@@ -137,7 +137,10 @@ object JdbcUtils {
             rs.close()
             onNone(query)
           }
-        } finally {
+        } catch {
+          case e: Exception => Left(GenericError(e))
+        }
+        finally {
           rs.close()
         }
       case Left(err) => Left(err)

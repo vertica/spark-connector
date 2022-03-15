@@ -13,8 +13,9 @@
 package com.vertica.spark.util.version
 
 import com.vertica.spark.config.LogProvider
-import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils, VerticaJdbcLayer}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error.NoResultError
 
 object VerticaVersionUtils {
   private val logger = LogProvider.getLogger(this.getClass)
@@ -26,17 +27,16 @@ object VerticaVersionUtils {
   /**
    * Query and cache Vertica version. Return the default version on any error.
    * */
-  def get(jdbcLayer: JdbcLayerInterface): VerticaVersion = version.getOrElse(
-    jdbcLayer.query("SELECT version();") match {
-      case Right(rs) =>
-        rs.next()
-        val verticaVersion = extractVersion(rs.getString(1))
-        logger.info("VERTICA VERSION: " + verticaVersion)
-        verticaVersion
-      case Left(err) =>
-        logger.error("Failed to query for version number. Defaults to " + DEFAULT_VERTICA_VERSION, err)
-        DEFAULT_VERTICA_VERSION
-    })
+  def get(jdbcLayer: JdbcLayerInterface): VerticaVersion =
+    JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, (rs) => {
+      val verticaVersion = extractVersion(rs.getString(1))
+      logger.info("VERTICA VERSION: " + verticaVersion)
+      Right(verticaVersion)
+    }, (query) => {
+      logger.error("Failed to query for version number. Defaults to " + DEFAULT_VERTICA_VERSION)
+      Left(NoResultError(query))
+    }).getOrElse(DEFAULT_VERTICA_VERSION)
+
 
   private def extractVersion(str: String): VerticaVersion = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
