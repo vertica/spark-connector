@@ -37,6 +37,7 @@ jobs:
         run: cd connector && sbt coverage test coverageReport
       - name: Prepare code coverage report
         run: |
+          sudo apt-get update
           sudo apt-get install -y libxml2-utils
           cd ./connector/target/scala-2.12/scoverage-report
           coverage=$(xmllint --xpath "scoverage/@statement-rate" scoverage.xml |sed 's/statement-rate="//'| sed 's/"//')
