@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/datasource/v2/VerticaDatasourceV2Write.scala.html
+          com\vertica\spark\datasource\v2\VerticaDatasourceV2Write.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -228,6 +228,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -246,6 +247,9 @@
         </td>
         <td>
           com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.v2.VerticaTable])
@@ -268,6 +272,9 @@
         <td>
           scala.collection.TraversableOnce.toMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaWriteBuilder.this.info.options()).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)])
         </td>
@@ -288,6 +295,9 @@
         </td>
         <td>
           scala.Predef.$conforms
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[(String, String)]
@@ -310,6 +320,9 @@
         <td>
           org.apache.spark.sql.connector.write.LogicalWriteInfo.options
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaWriteBuilder.this.info.options()
         </td>
@@ -330,6 +343,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSConfigSetupInterface.validateAndGetConfig
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaWriteBuilder.this.writeSetupInterface.validateAndGetConfig(scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaWriteBuilder.this.info.options()).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)]))
@@ -352,6 +368,9 @@
         <td>
           cats.data.NonEmptyChainOps.toNonEmptyList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList
         </td>
@@ -372,6 +391,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaWriteBuilder.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaWriteBuilder.this.logger
@@ -394,6 +416,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaWriteBuilder.this.logger, com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList))
         </td>
@@ -414,6 +439,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorList.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList)
@@ -436,6 +464,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.&lt;init&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           new VerticaBatchWrite(VerticaWriteBuilder.this.config, VerticaWriteBuilder.this.writeSetupInterface)
         </td>
@@ -456,6 +487,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaWriteBuilder.writeSetupInterface
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaWriteBuilder.this.writeSetupInterface
@@ -478,6 +512,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaWriteBuilder.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaWriteBuilder.this.config
         </td>
@@ -498,6 +535,9 @@
         </td>
         <td>
           com.vertica.spark.config.WriteConfig.setOverwrite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaWriteBuilder.this.config.setOverwrite(true)
@@ -520,6 +560,9 @@
         <td>
           com.vertica.spark.config.LogProvider.getLogger
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.v2.VerticaBatchReader])
         </td>
@@ -540,6 +583,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSConfigSetupInterface.performInitialSetup
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWrite.this.writeSetupInterface.performInitialSetup(VerticaBatchWrite.this.config)
@@ -562,6 +608,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaBatchWrite.this.config
         </td>
@@ -582,6 +631,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWrite.this.logger, err)
@@ -604,6 +656,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.logger
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaBatchWrite.this.logger
         </td>
@@ -624,6 +679,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -646,6 +704,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaWriterFactory.&lt;init&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           new VerticaWriterFactory(VerticaBatchWrite.this.config)
         </td>
@@ -666,6 +727,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.config
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWrite.this.config
@@ -688,6 +752,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaBatchWrite.this.config
         </td>
@@ -708,6 +775,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.&lt;init&gt;$default$3
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           core.this.DSWriter.&lt;init&gt;$default$3
@@ -730,6 +800,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;&quot;
         </td>
@@ -750,6 +823,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           new com.vertica.spark.datasource.core.DSWriter(VerticaBatchWrite.this.config, &quot;&quot;, core.this.DSWriter.&lt;init&gt;$default$3)
@@ -772,6 +848,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.commitRows
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           writer.commitRows()
         </td>
@@ -792,6 +871,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaBatchWrite.this.logger
@@ -814,6 +896,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWrite.this.logger, err)
         </td>
@@ -834,6 +919,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           ()
@@ -856,6 +944,9 @@
         <td>
           com.vertica.spark.util.error.JobAbortedError.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.JobAbortedError.apply()
         </td>
@@ -876,6 +967,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWrite.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWrite.this.logger
@@ -898,6 +992,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWrite.this.logger, com.vertica.spark.util.error.JobAbortedError.apply())
         </td>
@@ -918,6 +1015,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           partitionId.+(&quot;-&quot;).+(taskId)
@@ -940,6 +1040,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.&lt;init&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           new com.vertica.spark.datasource.core.DSWriter(VerticaWriterFactory.this.config, uniqueId, core.this.DSWriter.&lt;init&gt;$default$3)
         </td>
@@ -960,6 +1063,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.&lt;init&gt;$default$3
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           core.this.DSWriter.&lt;init&gt;$default$3
@@ -982,6 +1088,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaWriterFactory.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaWriterFactory.this.config
         </td>
@@ -1002,6 +1111,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           new VerticaBatchWriter(VerticaWriterFactory.this.config, writer)
@@ -1024,6 +1136,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaWriterFactory.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaWriterFactory.this.config
         </td>
@@ -1044,6 +1159,9 @@
         </td>
         <td>
           com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.v2.VerticaBatchReader])
@@ -1066,6 +1184,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.config
         </td>
@@ -1086,6 +1207,9 @@
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemWriteConfig.createExternalTable
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           cfg.createExternalTable
@@ -1108,6 +1232,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1128,6 +1255,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriterInterface.openWrite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaBatchWriter.this.writer.openWrite()
@@ -1150,6 +1280,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ()
         </td>
@@ -1170,6 +1303,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaBatchWriter.this.logger
@@ -1192,6 +1328,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWriter.this.logger, err)
         </td>
@@ -1212,6 +1351,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriterInterface.openWrite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.writer.openWrite()
@@ -1234,6 +1376,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1254,6 +1399,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.logger
@@ -1276,6 +1424,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWriter.this.logger, err)
         </td>
@@ -1296,6 +1447,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriterInterface.writeRow
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.writer.writeRow(record)
@@ -1318,6 +1472,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1338,6 +1495,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWriter.this.logger, err)
@@ -1360,6 +1520,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.logger
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.logger
         </td>
@@ -1380,6 +1543,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriterInterface.closeWrite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.writer.closeWrite()
@@ -1402,6 +1568,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(VerticaBatchWriter.this.logger, err)
         </td>
@@ -1422,6 +1591,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaBatchWriter.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.logger
@@ -1444,6 +1616,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriterInterface.closeWrite
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaBatchWriter.this.writer.closeWrite()
         </td>
@@ -1465,6 +1640,9 @@
         <td>
           com.vertica.spark.util.general.Utils.ignore
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.general.Utils.ignore[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]](VerticaBatchWriter.this.writer.closeWrite())
         </td>
@@ -1485,6 +1663,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()

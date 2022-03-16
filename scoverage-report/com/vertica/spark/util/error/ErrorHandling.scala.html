@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/util/error/ErrorHandling.scala.html
+          com\vertica\spark\util\error\ErrorHandling.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -535,6 +535,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -553,6 +554,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ContextError.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ContextError.apply(text, this)
@@ -575,6 +579,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -595,6 +602,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\n&quot;
@@ -617,6 +627,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.ctxt.+(&quot;\n&quot;).+(ContextError.this.error.getFullContext)
         </td>
@@ -637,6 +650,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ContextError.this.error.getFullContext
@@ -659,6 +675,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getUnderlyingError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getUnderlyingError
         </td>
@@ -679,6 +698,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
@@ -701,6 +723,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
         </td>
@@ -721,6 +746,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\n\nCaused by:\n&quot;
@@ -743,6 +771,9 @@
         <td>
           java.lang.Throwable.toString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           throwable.toString()
         </td>
@@ -763,6 +794,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\nStack trace:\n&quot;
@@ -785,6 +819,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           errorText.+(&quot;\n\nCaused by:\n&quot;).+(throwable.toString()).+(&quot;\nStack trace:\n&quot;).+(scala.Predef.refArrayOps[StackTraceElement](throwable.getStackTrace()).mkString(&quot;\n&quot;))
         </td>
@@ -805,6 +842,9 @@
         </td>
         <td>
           scala.collection.TraversableOnce.mkString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.refArrayOps[StackTraceElement](throwable.getStackTrace()).mkString(&quot;\n&quot;)
@@ -827,6 +867,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           throwable.getMessage()
         </td>
@@ -847,6 +890,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\nCaused by: &quot;
@@ -869,6 +915,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           errorText.+(&quot;\nCaused by: &quot;).+(throwable.getMessage())
         </td>
@@ -889,6 +938,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           errorText1.+(&quot;\n&quot;).+(errorText2)
@@ -911,6 +963,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           throw new ConnectorException(error)
         </td>
@@ -931,6 +986,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;This is likely a bug and should be reported to the developers here:\nhttps://github.com/vertica/spark-connector/issues&quot;
@@ -953,6 +1011,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failed to discover the schema of the table. There may be an issue with connectivity to the database.&quot;
         </td>
@@ -973,6 +1034,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Failed to create a valid column list for the write operation due to mismatch with the existing table.&quot;
@@ -995,6 +1059,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
         </td>
@@ -1015,6 +1082,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
@@ -1037,6 +1107,9 @@
         <td>
           com.vertica.spark.util.error.SchemaColumnListError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -1057,6 +1130,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
@@ -1079,6 +1155,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
         </td>
@@ -1099,6 +1178,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.SchemaColumnListError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -1121,6 +1203,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failed to convert the schema of the table.&quot;
         </td>
@@ -1141,6 +1226,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
@@ -1163,6 +1251,9 @@
         <td>
           com.vertica.spark.util.error.SchemaConversionError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -1183,6 +1274,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
@@ -1205,6 +1299,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
         </td>
@@ -1225,6 +1322,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.SchemaConversionError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -1247,6 +1347,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
         </td>
@@ -1267,6 +1370,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error when attempting to export from Vertica: connection error with JDBC.&quot;
@@ -1289,6 +1395,9 @@
         <td>
           com.vertica.spark.util.error.ExportFromVerticaError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -1309,6 +1418,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
@@ -1331,6 +1443,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
         </td>
@@ -1351,6 +1466,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ExportFromVerticaError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -1373,6 +1491,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
         </td>
@@ -1393,6 +1514,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
@@ -1415,6 +1539,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failure when retrieving partitioning information for operation.\n&quot;
         </td>
@@ -1435,6 +1562,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Failure when retrieving partitioning information for operation.\n&quot;.+(com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -1457,6 +1587,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
@@ -1477,6 +1610,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.InitialSetupPartitioningError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.getFullContext
@@ -1499,6 +1635,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
         </td>
@@ -1519,6 +1658,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -1541,6 +1683,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Input Partition was not valid for the given operation.&quot;
         </td>
@@ -1561,6 +1706,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -1583,6 +1731,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
@@ -1603,6 +1754,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.InvalidPartition.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.getFullContext
@@ -1625,6 +1779,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;No more data to read from source.&quot;
         </td>
@@ -1645,6 +1802,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Error while reading: The reader was not initialized.&quot;
@@ -1667,6 +1827,9 @@
         <td>
           com.vertica.spark.util.error.UninitializedReadError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -1687,6 +1850,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -1709,6 +1875,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
@@ -1729,6 +1898,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Metadata was missing from config.&quot;
@@ -1751,6 +1923,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
         </td>
@@ -1771,6 +1946,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -1793,6 +1971,9 @@
         <td>
           com.vertica.spark.util.error.MissingMetadata.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -1813,6 +1994,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Unexpected error when attempting to clean up files. Parent directory missing for path: &quot;
@@ -1835,6 +2019,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Unexpected error when attempting to clean up files. Parent directory missing for path: &quot;.+(CleanupError.this.path)
         </td>
@@ -1855,6 +2042,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CleanupError.path
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           CleanupError.this.path
@@ -1877,6 +2067,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Expected to be passed in schema for this configuration. No schema found.&quot;
         </td>
@@ -1897,6 +2090,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -1919,6 +2115,9 @@
         <td>
           com.vertica.spark.util.error.MissingSchemaError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -1939,6 +2138,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -1961,6 +2163,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Error checking if table exists: connection error with JDBC.&quot;
         </td>
@@ -1981,6 +2186,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.TableCheckError.error
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error
@@ -2003,6 +2211,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, err.getFullContext)
         </td>
@@ -2023,6 +2234,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           err.getFullContext
@@ -2045,6 +2259,9 @@
         <td>
           com.vertica.spark.util.error.TableCheckError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2065,6 +2282,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.TableCheckError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2087,6 +2307,9 @@
         <td>
           com.vertica.spark.util.error.TableCheckError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2107,6 +2330,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Error when trying to create table. Check \'target_table_sql\' option for issues.&quot;
@@ -2129,6 +2355,9 @@
         <td>
           com.vertica.spark.util.error.CreateTableError.error
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error
         </td>
@@ -2149,6 +2378,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           err.getFullContext
@@ -2171,6 +2403,9 @@
         <td>
           com.vertica.spark.util.error.CreateTableError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2191,6 +2426,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, err.getFullContext)
@@ -2213,6 +2451,9 @@
         <td>
           com.vertica.spark.util.error.CreateTableError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2233,6 +2474,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CreateTableError.error
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error
@@ -2255,6 +2499,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, err.getUserMessage)
         </td>
@@ -2275,6 +2522,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           err.getUserMessage
@@ -2297,6 +2547,9 @@
         <td>
           com.vertica.spark.util.error.CreateTableError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2317,6 +2570,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CreateTableError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2339,6 +2595,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was a failure trying to drop the table before overwriting.&quot;
         </td>
@@ -2359,6 +2618,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Error in commit step of write to Vertica. There was a failure copying data from the intermediary into Vertica.&quot;
@@ -2381,6 +2643,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
         </td>
@@ -2401,6 +2666,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
@@ -2423,6 +2691,9 @@
         <td>
           com.vertica.spark.util.error.CommitError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2443,6 +2714,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
@@ -2465,6 +2739,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
         </td>
@@ -2485,6 +2762,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CommitError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2507,6 +2787,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Table name provided cannot refer to an existing view in Vertica.&quot;
         </td>
@@ -2527,6 +2810,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Table name provided cannot refer to a temporary table.&quot;
@@ -2549,6 +2835,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failed row count is above error tolerance threshold. Operation aborted.&quot;
         </td>
@@ -2569,6 +2858,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Failed to create job status table.&quot;
@@ -2591,6 +2883,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
         </td>
@@ -2611,6 +2906,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.JobStatusCreateError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2633,6 +2931,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
         </td>
@@ -2653,6 +2954,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
@@ -2675,6 +2979,9 @@
         <td>
           com.vertica.spark.util.error.JobStatusCreateError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2695,6 +3002,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
@@ -2717,6 +3027,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failed to update job status table.&quot;
         </td>
@@ -2737,6 +3050,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.error
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error
@@ -2759,6 +3075,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, err.getFullContext)
         </td>
@@ -2779,6 +3098,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           err.getFullContext
@@ -2801,6 +3123,9 @@
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2821,6 +3146,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2843,6 +3171,9 @@
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.error
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error
         </td>
@@ -2863,6 +3194,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -2885,6 +3219,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, err.getUserMessage)
         </td>
@@ -2905,6 +3242,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           err.getUserMessage
@@ -2927,6 +3267,9 @@
         <td>
           com.vertica.spark.util.error.JobStatusUpdateError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -2947,6 +3290,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Schema contains duplicate columns, can\'t write this data.&quot;
@@ -2969,6 +3315,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'host\' param is missing. Please specify the IP address or hostname of the Vertica server to connect to.&quot;
         </td>
@@ -2989,6 +3338,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;The \'create_external_table\' param is invalid. Please specify \'new-data\' or \'existing-data\'.&quot;
@@ -3011,6 +3363,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;The \'save_job_status_table\' param is invalid. Please specify \'true\' or \'false\'. This option will default to false if no value is specified.&quot;
         </td>
@@ -3031,6 +3386,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;The \'prevent_cleanup\' param is invalid. Please specify \'true\' or \'false\'. This option will default to false if no value is specified.&quot;
@@ -3053,6 +3411,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'db\' param is missing. Please specify the name of the Vertica database to connect to.&quot;
         </td>
@@ -3073,6 +3434,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;The \'user\' param is missing. Please specify the username to use for authenticating with Vertica, as well as authentication details..&quot;
@@ -3095,6 +3459,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'password\' param is missing. Please specify the password to use for authenticating with Vertica.&quot;
         </td>
@@ -3115,6 +3482,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Some Kerberos authentication details are missing. Please specify the following parameters: \'kerberos_service_name\', \'kerberos_host_name\', \'jaas_config_name\'&quot;
@@ -3137,6 +3507,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'table\' param is missing. Please specify the name of the table to use.&quot;
         </td>
@@ -3157,6 +3530,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;The \'table\' and \'query\' params are both missing. Please specify the table name or query to use.&quot;
@@ -3179,6 +3555,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;The \'query\' option was specified for a write operation. This option is only valid for reads.&quot;
         </td>
@@ -3199,6 +3578,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;The \'port\' param specified is invalid. Please specify a valid integer between 1 and 65535.&quot;
@@ -3221,6 +3603,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Field \'&quot;.+(InvalidIntegerField.this.field).+(&quot;\' is not a valid integer. Should be between &quot;).+(-2147483648).+(&quot; and &quot;).+(2147483647).+(&quot;.&quot;)
         </td>
@@ -3241,6 +3626,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;The \'tls_mode\' param specified is invalid. Please specify either \'disable\', \'require\', \'verify-ca\' or \'verify-full\'.&quot;
@@ -3263,6 +3651,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'aws_access_key_id\' param was specified, but param \'aws_secret_access_key\' is not specified.&quot;
         </td>
@@ -3283,6 +3674,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;The \'aws_secret_access_key\' param was specified, but \'aws_access_key_id\' is not specified.&quot;
@@ -3305,6 +3699,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Column list contains unquoted semicolon. Not accepted due to potential SQL injection vulnerability.&quot;
         </td>
@@ -3325,6 +3722,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;File permissions are not in the correct format. Please specify a three digit number representing the file perms, ie 777 or 750.&quot;
@@ -3347,6 +3747,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'failed_rows_percent_tolerance\' param specified is invalid. Please specify ad valid float between 0 and 1, representing a percent between 0 and 100.&quot;
         </td>
@@ -3367,6 +3770,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;The \'strlen\' param specified is invalid. Please specify a valid integer between 1 and 32000000.&quot;
@@ -3389,6 +3795,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The \'num_partitions\' param specified is invalid. Please specify a valid integer above 0.&quot;
         </td>
@@ -3409,6 +3818,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;The \'staging_fs_url\' option is missing. Please specify the url of the filesystem to use as an intermediary storage location between spark and Vertica.&quot;
@@ -3431,6 +3843,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not retrieve parent path of file: &quot;
         </td>
@@ -3451,6 +3866,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Could not retrieve parent path of file: &quot;.+(this.path)
@@ -3473,6 +3891,9 @@
         <td>
           com.vertica.spark.util.error.ParentDirMissingError.path
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.path
         </td>
@@ -3493,6 +3914,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error listing files in the intermediary filesystem&quot;
@@ -3515,6 +3939,9 @@
         <td>
           com.vertica.spark.util.error.FileListError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -3535,6 +3962,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.FileListError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -3557,6 +3987,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -3577,6 +4010,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, FileListError.this.cause)
@@ -3599,6 +4035,9 @@
         <td>
           com.vertica.spark.util.error.FileListError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           FileListError.this.cause
         </td>
@@ -3619,6 +4058,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.FileListError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -3641,6 +4083,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was an error creating file &quot;.+(this.path.toString()).+(&quot; in the intermediary filesystem&quot;)
         </td>
@@ -3661,6 +4106,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CreateFileError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -3683,6 +4131,9 @@
         <td>
           com.vertica.spark.util.error.CreateFileError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -3703,6 +4154,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -3725,6 +4179,9 @@
         <td>
           com.vertica.spark.util.error.CreateFileError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -3745,6 +4202,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, CreateFileError.this.cause)
@@ -3767,6 +4227,9 @@
         <td>
           com.vertica.spark.util.error.CreateFileError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CreateFileError.this.cause
         </td>
@@ -3787,6 +4250,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error creating directory &quot;.+(this.path.toString()).+(&quot; in the intermediary filesystem.&quot;)
@@ -3809,6 +4275,9 @@
         <td>
           com.vertica.spark.util.error.CreateDirectoryError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -3829,6 +4298,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -3851,6 +4323,9 @@
         <td>
           com.vertica.spark.util.error.CreateDirectoryError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -3871,6 +4346,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CreateDirectoryError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -3893,6 +4371,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, CreateDirectoryError.this.cause)
         </td>
@@ -3913,6 +4394,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CreateDirectoryError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           CreateDirectoryError.this.cause
@@ -3935,6 +4419,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was an error removing file &quot;.+(this.path.toString()).+(&quot; in the intermediary filesystem.&quot;)
         </td>
@@ -3955,6 +4442,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -3977,6 +4467,9 @@
         <td>
           com.vertica.spark.util.error.RemoveFileError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -3997,6 +4490,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.RemoveFileError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -4019,6 +4515,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, RemoveFileError.this.cause)
         </td>
@@ -4039,6 +4538,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.RemoveFileError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           RemoveFileError.this.cause
@@ -4061,6 +4563,9 @@
         <td>
           com.vertica.spark.util.error.RemoveFileError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4081,6 +4586,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error removing the directory &quot;.+(this.path.toString()).+(&quot; in the intermediary filesystem.&quot;)
@@ -4103,6 +4611,9 @@
         <td>
           com.vertica.spark.util.error.RemoveDirectoryError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4123,6 +4634,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -4145,6 +4659,9 @@
         <td>
           com.vertica.spark.util.error.RemoveDirectoryError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -4165,6 +4682,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.RemoveDirectoryError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           RemoveDirectoryError.this.cause
@@ -4187,6 +4707,9 @@
         <td>
           com.vertica.spark.util.error.RemoveDirectoryError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4207,6 +4730,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, RemoveDirectoryError.this.cause)
@@ -4229,6 +4755,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Error creating file &quot;.+(this.filename).+(&quot;. The file already exists in the intermediary filesystem.&quot;)
         </td>
@@ -4249,6 +4778,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Error creating directory &quot;.+(this.filename).+(&quot;. The directory already exists in the intermediary filesystem.&quot;)
@@ -4271,6 +4803,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was an error opening a write to the intermediary filesystem.&quot;
         </td>
@@ -4291,6 +4826,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.OpenWriteError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           this.message
@@ -4313,6 +4851,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -4333,6 +4874,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.OpenWriteError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           this.cause
@@ -4355,6 +4899,9 @@
         <td>
           com.vertica.spark.util.error.OpenWriteError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           this.cause
         </td>
@@ -4375,6 +4922,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.OpenWriteError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           this.message
@@ -4397,6 +4947,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ErrorHandling.addUserFriendlyCause(this.message, this.cause)
         </td>
@@ -4417,6 +4970,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Intermediary filesystem write error: The writer was not initialized.&quot;
@@ -4439,6 +4995,9 @@
         <td>
           com.vertica.spark.util.error.IntermediaryStoreWriterNotInitializedError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -4459,6 +5018,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -4481,6 +5043,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
@@ -4501,6 +5066,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error writing to the intermediary filesystem.&quot;
@@ -4523,6 +5091,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -4543,6 +5114,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.IntermediaryStoreWriteError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -4565,6 +5139,9 @@
         <td>
           com.vertica.spark.util.error.IntermediaryStoreWriteError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4585,6 +5162,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.IntermediaryStoreWriteError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -4607,6 +5187,9 @@
         <td>
           com.vertica.spark.util.error.IntermediaryStoreWriteError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4627,6 +5210,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addUserFriendlyCause(this.message, this.cause)
@@ -4649,6 +5235,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was an error closing the write to the intermediary filesystem.&quot;
         </td>
@@ -4669,6 +5258,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CloseWriteError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -4691,6 +5283,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -4711,6 +5306,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CloseWriteError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -4733,6 +5331,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CloseWriteError.this.cause.getMessage()
         </td>
@@ -4753,6 +5354,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
@@ -4775,6 +5379,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(CloseWriteError.this.cause.getMessage())
         </td>
@@ -4795,6 +5402,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error opening a read from the intermediary filesystem.&quot;
@@ -4817,6 +5427,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -4837,6 +5450,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.OpenReadError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -4859,6 +5475,9 @@
         <td>
           com.vertica.spark.util.error.OpenReadError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -4879,6 +5498,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(OpenReadError.this.cause.getMessage())
@@ -4901,6 +5523,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           OpenReadError.this.cause.getMessage()
         </td>
@@ -4921,6 +5546,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
@@ -4943,6 +5571,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Intermediary filesystem read error: The reader was not initialized.&quot;
         </td>
@@ -4963,6 +5594,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -4985,6 +5619,9 @@
         <td>
           com.vertica.spark.util.error.IntermediaryStoreReaderNotInitializedError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getFullContext
         </td>
@@ -5005,6 +5642,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.getFullContext, com.vertica.spark.util.error.ErrorHandling.invariantViolation)
@@ -5027,6 +5667,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;There was an error reading from the intermediary filesystem.&quot;
         </td>
@@ -5047,6 +5690,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.IntermediaryStoreReadError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -5069,6 +5715,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -5089,6 +5738,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.IntermediaryStoreReadError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -5111,6 +5763,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           IntermediaryStoreReadError.this.cause.getMessage()
         </td>
@@ -5131,6 +5786,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
@@ -5153,6 +5811,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(IntermediaryStoreReadError.this.cause.getMessage())
         </td>
@@ -5173,6 +5834,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;There was an error closing the read from the intermediary filesystem.&quot;
@@ -5195,6 +5859,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -5215,6 +5882,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.CloseReadError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -5237,6 +5907,9 @@
         <td>
           com.vertica.spark.util.error.CloseReadError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -5257,6 +5930,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(CloseReadError.this.cause.getMessage())
@@ -5279,6 +5955,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CloseReadError.this.cause.getMessage()
         </td>
@@ -5299,6 +5978,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
@@ -5321,6 +6003,9 @@
         <td>
           scala.collection.TraversableOnce.mkString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.errors.toList.map[String, List[String]](((errs: com.vertica.spark.util.error.ConnectorError) =&gt; errs.getFullContext))(immutable.this.List.canBuildFrom[String]).mkString(&quot;\n&quot;)
         </td>
@@ -5341,6 +6026,9 @@
         </td>
         <td>
           scala.collection.TraversableOnce.mkString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           this.errors.toList.map[String, List[String]](((errs: com.vertica.spark.util.error.ConnectorError) =&gt; errs.getUserMessage))(immutable.this.List.canBuildFrom[String]).mkString(&quot;\n&quot;)
@@ -5363,6 +6051,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Could not retrieve an impersonation token for the designated user &quot;
         </td>
@@ -5383,6 +6074,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.MissingHDFSImpersonationTokenError.address
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           MissingHDFSImpersonationTokenError.this.address
@@ -5405,6 +6099,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot; on address: &quot;
         </td>
@@ -5425,6 +6122,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.MissingHDFSImpersonationTokenError.username
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           MissingHDFSImpersonationTokenError.this.username
@@ -5447,6 +6147,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Could not retrieve an impersonation token for the designated user &quot;.+(MissingHDFSImpersonationTokenError.this.username).+(&quot; on address: &quot;).+(MissingHDFSImpersonationTokenError.this.address)
         </td>
@@ -5467,6 +6170,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Trying to use Kerberos, but did not detect hadoop configuration with Kerberos enabled.&quot;
@@ -5489,6 +6195,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.ErrorHandling.invariantViolation
         </td>
@@ -5509,6 +6218,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Could not get spark session. &quot;
@@ -5531,6 +6243,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Could not get spark session. &quot;.+(com.vertica.spark.util.error.ErrorHandling.invariantViolation)
         </td>
@@ -5551,6 +6266,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.FileStoreThrownError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           FileStoreThrownError.this.cause
@@ -5573,6 +6291,9 @@
         <td>
           java.lang.String.contains
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           e.getMessage().contains(&quot;StreamCapabilities&quot;)
         </td>
@@ -5593,6 +6314,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Error communicating with S3. Please ensure that you are using Spark pre-built for Hadoop 3.2 and later.&quot;
@@ -5615,6 +6339,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Error in communication with filestore. Check the \'staging_fs_url\' parameter.&quot;
         </td>
@@ -5635,6 +6362,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           ErrorHandling.addCause(this.message, this.cause)
@@ -5657,6 +6387,9 @@
         <td>
           com.vertica.spark.util.error.FileStoreThrownError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           this.cause
         </td>
@@ -5677,6 +6410,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.FileStoreThrownError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           this.message
@@ -5699,6 +6435,9 @@
         <td>
           com.vertica.spark.util.error.FileStoreThrownError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           this.message
         </td>
@@ -5719,6 +6458,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addUserFriendlyCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           ErrorHandling.addUserFriendlyCause(this.message, FileStoreThrownError.this.cause)
@@ -5741,6 +6483,9 @@
         <td>
           com.vertica.spark.util.error.FileStoreThrownError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           FileStoreThrownError.this.cause
         </td>
@@ -5761,6 +6506,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Fatal error: spark context did not exist&quot;
@@ -5783,6 +6531,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Fatal error while loading configuration: spark context did not exist&quot;
         </td>
@@ -5803,6 +6554,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Option \'&quot;.+(V1ReplacementOption.this.oldParam).+(&quot;\' is not longer supported, please use \'&quot;).+(V1ReplacementOption.this.newParam).+(&quot;\' instead.&quot;)
@@ -5825,6 +6579,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Options \'merge_key\' and \'create_external_table\' both specified, but are not compatible. Please specify one or the other.&quot;
         </td>
@@ -5845,6 +6602,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;External table specified, but table already exists. Please specify overwrite mode to replace the existing table.&quot;
@@ -5867,6 +6627,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Failed to get column info of table for merge.&quot;
         </td>
@@ -5887,6 +6650,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
@@ -5909,6 +6675,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
         </td>
@@ -5929,6 +6698,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.MergeColumnListError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -5951,6 +6723,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
         </td>
@@ -5971,6 +6746,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
@@ -5993,6 +6771,9 @@
         <td>
           com.vertica.spark.util.error.MergeColumnListError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -6013,6 +6794,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml&quot;
@@ -6035,6 +6819,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;A JDBC SQL exception occurred while trying to connect to Vertica. Check the JDBC properties to see if they are correct.&quot;
         </td>
@@ -6055,6 +6842,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectionSqlError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -6077,6 +6867,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -6097,6 +6890,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectionSqlError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -6119,6 +6915,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;\nCause: &quot;
         </td>
@@ -6139,6 +6938,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;\nCause: &quot;).+(this.cause.getMessage())
@@ -6161,6 +6963,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause.getMessage()
         </td>
@@ -6181,6 +6986,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;An unknown JDBC exception occurred while trying to connect to Vertica. Check the JDBC URI and properties to see if they are correct.&quot;
@@ -6203,6 +7011,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -6223,6 +7034,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectionError.cause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause
@@ -6245,6 +7059,9 @@
         <td>
           com.vertica.spark.util.error.ConnectionError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -6265,6 +7082,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;\nCause: &quot;).+(this.cause.getMessage())
@@ -6287,6 +7107,9 @@
         <td>
           java.lang.Throwable.getMessage
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause.getMessage()
         </td>
@@ -6307,6 +7130,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\nCause: &quot;
@@ -6329,6 +7155,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Connection to the JDBC source is down or invalid. Please ensure that the JDBC source is running properly.&quot;
         </td>
@@ -6349,6 +7178,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;JDBC Data Error: Problem with statement execution.&quot;
@@ -6371,6 +7203,9 @@
         <td>
           com.vertica.spark.util.error.DataError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -6391,6 +7226,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -6413,6 +7251,9 @@
         <td>
           com.vertica.spark.util.error.DataError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -6433,6 +7274,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
@@ -6455,6 +7299,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(this.cause.toString())
         </td>
@@ -6475,6 +7322,9 @@
         </td>
         <td>
           java.lang.Throwable.toString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause.toString()
@@ -6497,6 +7347,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;JDBC Error: A syntax error occurred&quot;
         </td>
@@ -6517,6 +7370,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
@@ -6539,6 +7395,9 @@
         <td>
           com.vertica.spark.util.error.SyntaxError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -6559,6 +7418,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.SyntaxError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -6581,6 +7443,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(this.cause.toString())
         </td>
@@ -6601,6 +7466,9 @@
         </td>
         <td>
           java.lang.Throwable.toString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause.toString()
@@ -6623,6 +7491,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
         </td>
@@ -6643,6 +7514,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;A generic JDBC error occurred&quot;
@@ -6665,6 +7539,9 @@
         <td>
           com.vertica.spark.util.error.GenericError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -6685,6 +7562,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.GenericError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -6707,6 +7587,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(this.message, this.cause)
         </td>
@@ -6727,6 +7610,9 @@
         </td>
         <td>
           java.lang.Throwable.toString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cause.toString()
@@ -6749,6 +7635,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;: &quot;
         </td>
@@ -6769,6 +7658,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message.+(&quot;: &quot;).+(this.cause.toString())
@@ -6791,6 +7683,9 @@
         <td>
           com.vertica.spark.util.error.ParamsNotSupported.operation
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ParamsNotSupported.this.operation
         </td>
@@ -6811,6 +7706,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Params not supported for operation: &quot;
@@ -6833,6 +7731,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Params not supported for operation: &quot;.+(ParamsNotSupported.this.operation)
         </td>
@@ -6853,6 +7754,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.MissingSqlConversionError.typename
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           MissingSqlConversionError.this.typename
@@ -6875,6 +7779,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not find conversion for unsupported SQL type: &quot;
         </td>
@@ -6895,6 +7802,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Could not find conversion for unsupported SQL type: &quot;.+(MissingSqlConversionError.this.typename).+(&quot;\nSQL type value: &quot;).+(MissingSqlConversionError.this.sqlType)
@@ -6917,6 +7827,9 @@
         <td>
           com.vertica.spark.util.error.MissingSqlConversionError.sqlType
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           MissingSqlConversionError.this.sqlType
         </td>
@@ -6937,6 +7850,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;\nSQL type value: &quot;
@@ -6959,6 +7875,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not find conversion for unsupported Spark type: &quot;.+(MissingSparkConversionError.this.sparkType.typeName)
         </td>
@@ -6979,6 +7898,9 @@
         </td>
         <td>
           org.apache.spark.sql.types.DataType.typeName
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           MissingSparkConversionError.this.sparkType.typeName
@@ -7001,6 +7923,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not find conversion for unsupported Spark type: &quot;
         </td>
@@ -7021,6 +7946,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.addCause(&quot;Exception while retrieving schema.&quot;, this.cause)
@@ -7043,6 +7971,9 @@
         <td>
           com.vertica.spark.util.error.DatabaseReadError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.cause
         </td>
@@ -7063,6 +7994,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Exception while retrieving schema.&quot;
@@ -7085,6 +8019,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not read from database: &quot;.+(DatabaseReadError.this.cause.getMessage())
         </td>
@@ -7105,6 +8042,9 @@
         </td>
         <td>
           java.lang.Throwable.getMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DatabaseReadError.this.cause.getMessage()
@@ -7127,6 +8067,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Could not read from database: &quot;
         </td>
@@ -7147,6 +8090,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.addCause
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           ErrorHandling.addCause(&quot;Exception while retrieving external table schema.&quot;, this.cause)
@@ -7169,6 +8115,9 @@
         <td>
           com.vertica.spark.util.error.InferExternalSchemaError.cause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           this.cause
         </td>
@@ -7189,6 +8138,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Exception while retrieving external table schema.&quot;
@@ -7211,6 +8163,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Could not get external table schema: &quot;.+(InferExternalSchemaError.this.cause.getMessage())
         </td>
@@ -7231,6 +8186,9 @@
         </td>
         <td>
           java.lang.Throwable.getMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           InferExternalSchemaError.this.cause.getMessage()
@@ -7253,6 +8211,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Could not get external table schema: &quot;
         </td>
@@ -7273,6 +8234,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;JDBC failure when trying to retrieve schema&quot;
@@ -7295,6 +8259,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           JdbcSchemaError.this.error.getFullContext
         </td>
@@ -7315,6 +8282,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.JdbcSchemaError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -7337,6 +8307,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, JdbcSchemaError.this.error.getFullContext)
         </td>
@@ -7357,6 +8330,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           JdbcSchemaError.this.error.getUserMessage
@@ -7379,6 +8355,9 @@
         <td>
           com.vertica.spark.util.error.JdbcSchemaError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -7399,6 +8378,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, JdbcSchemaError.this.error.getUserMessage)
@@ -7421,6 +8403,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Attempting to write to a table with less columns than the spark schema.&quot;
         </td>
@@ -7441,6 +8426,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\&quot;new-data\&quot; instead.&quot;
@@ -7463,6 +8451,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;The parquet data uses partition columns. Types of partition column cannot be determined from the data. Please provide a partial schema with the dataframe detailing the relevant partition columns.&quot;
         </td>
@@ -7483,6 +8474,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Failed to get schema for external table using INFER_EXTERNAL_TABLE_DDL.&quot;
@@ -7505,6 +8499,9 @@
         <td>
           com.vertica.spark.util.error.InferExternalTableSchemaError.message
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.message
         </td>
@@ -7525,6 +8522,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getFullContext)
@@ -7547,6 +8547,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.getFullContext
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.error.getFullContext
         </td>
@@ -7567,6 +8570,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.InferExternalTableSchemaError.message
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.message
@@ -7589,6 +8595,9 @@
         <td>
           com.vertica.spark.util.error.ErrorHandling.appendErrors
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
         </td>
@@ -7609,6 +8618,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ConnectorError.getUserMessage
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.error.getUserMessage
@@ -7631,6 +8643,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;No value specified for property: \&quot;fs.defaultFS\&quot; in core-site.xml&quot;
         </td>
@@ -7651,6 +8666,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Writing job aborted. Check spark worker log for specific error.&quot;

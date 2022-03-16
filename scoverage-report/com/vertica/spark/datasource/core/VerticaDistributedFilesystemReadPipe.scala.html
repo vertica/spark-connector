@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/datasource/core/VerticaDistributedFilesystemReadPipe.scala.html
+          com\vertica\spark\datasource\core\VerticaDistributedFilesystemReadPipe.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -524,6 +524,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -542,6 +543,9 @@
         </td>
         <td>
           com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe])
@@ -564,6 +568,9 @@
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.maxFileSize
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.maxFileSize
         </td>
@@ -584,6 +591,9 @@
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.maxRowGroupSize
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.maxRowGroupSize
@@ -606,6 +616,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.jdbcLayer
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.jdbcLayer
         </td>
@@ -626,6 +639,9 @@
         </td>
         <td>
           com.vertica.spark.util.schema.SchemaToolsInterface.readSchema
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.schemaTools.readSchema(this.jdbcLayer, this.config.tableSource)
@@ -648,6 +664,9 @@
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.tableSource
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.config.tableSource
         </td>
@@ -668,6 +687,9 @@
         </td>
         <td>
           com.vertica.spark.config.VerticaReadMetadata.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.VerticaReadMetadata.apply(schema)
@@ -690,6 +712,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.config.VerticaReadMetadata](com.vertica.spark.config.VerticaReadMetadata.apply(schema))
         </td>
@@ -710,6 +735,9 @@
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
@@ -732,6 +760,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;&quot;
         </td>
@@ -752,6 +783,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot; WHERE &quot;.+(pushdownFilters.map[String, List[String]](((x$1: com.vertica.spark.datasource.v2.PushdownFilter) =&gt; x$1.getFilterString))(immutable.this.List.canBuildFrom[String]).mkString(&quot; AND &quot;))
@@ -774,6 +808,9 @@
         <td>
           scala.collection.TraversableOnce.mkString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           pushdownFilters.map[String, List[String]](((x$1: com.vertica.spark.datasource.v2.PushdownFilter) =&gt; x$1.getFilterString))(immutable.this.List.canBuildFrom[String]).mkString(&quot; AND &quot;)
         </td>
@@ -794,6 +831,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot; WHERE &quot;
@@ -816,6 +856,9 @@
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.metadata
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.config.metadata
         </td>
@@ -836,6 +879,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.config.VerticaReadMetadata](data)
@@ -858,6 +904,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.retrieveMetadata
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.retrieveMetadata()
         </td>
@@ -878,6 +927,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Long](VerticaDistributedFilesystemReadPipe.this.dataSize.toLong)
@@ -900,6 +952,9 @@
         <td>
           scala.Int.toLong
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.dataSize.toLong
         </td>
@@ -920,6 +975,9 @@
         </td>
         <td>
           scala.Boolean.unary_!
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           map.contains(filename).unary_!
@@ -942,6 +1000,9 @@
         <td>
           scala.collection.mutable.MapLike.update
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           map.update(filename, 1)
         </td>
@@ -962,6 +1023,9 @@
         </td>
         <td>
           scala.collection.mutable.MapLike.update
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           map.update(filename, 1)
@@ -984,6 +1048,9 @@
         <td>
           scala.Int.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           map.apply(filename).+(1)
         </td>
@@ -1004,6 +1071,9 @@
         </td>
         <td>
           scala.collection.mutable.MapLike.update
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           map.update(filename, map.apply(filename).+(1))
@@ -1026,6 +1096,9 @@
         <td>
           scala.collection.mutable.MapLike.update
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           map.update(filename, map.apply(filename).+(1))
         </td>
@@ -1046,6 +1119,9 @@
         </td>
         <td>
           scala.Int.-
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           map.apply(filename).-(1)
@@ -1068,6 +1144,9 @@
         <td>
           scala.math.Numeric.IntIsIntegral
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           math.this.Numeric.IntIsIntegral
         </td>
@@ -1088,6 +1167,9 @@
         </td>
         <td>
           scala.collection.Seq.canBuildFrom
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           collection.this.Seq.canBuildFrom[Int]
@@ -1110,6 +1192,9 @@
         <td>
           scala.collection.TraversableOnce.sum
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileMetadata.map[Int, Seq[Int]](((x$2: com.vertica.spark.datasource.fs.ParquetFileMetadata) =&gt; x$2.rowGroupCount))(collection.this.Seq.canBuildFrom[Int]).sum[Int](math.this.Numeric.IntIsIntegral)
         </td>
@@ -1131,6 +1216,9 @@
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.rowGroupCount
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           x$2.rowGroupCount
         </td>
@@ -1151,6 +1239,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -1179,6 +1270,9 @@
         <td>
           scala.Int.==
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           totalRowGroups.==(0)
         </td>
@@ -1199,6 +1293,9 @@
         </td>
         <td>
           scala.Array.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Array.apply[org.apache.spark.sql.connector.read.InputPartition]()((ClassTag.apply[org.apache.spark.sql.connector.read.InputPartition](classOf[org.apache.spark.sql.connector.read.InputPartition]): scala.reflect.ClassTag[org.apache.spark.sql.connector.read.InputPartition]))
@@ -1221,6 +1318,9 @@
         <td>
           com.vertica.spark.datasource.core.PartitionInfo.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           PartitionInfo.apply(scala.Array.apply[org.apache.spark.sql.connector.read.InputPartition]()((ClassTag.apply[org.apache.spark.sql.connector.read.InputPartition](classOf[org.apache.spark.sql.connector.read.InputPartition]): scala.reflect.ClassTag[org.apache.spark.sql.connector.read.InputPartition])))
         </td>
@@ -1241,6 +1341,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -1339,6 +1442,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           1
         </td>
@@ -1359,6 +1465,9 @@
         </td>
         <td>
           scala.Int.==
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           totalRowGroups.%(partitionCount).==(0)
@@ -1381,6 +1490,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -1401,6 +1513,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           1
@@ -1423,6 +1538,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -1443,6 +1561,9 @@
         </td>
         <td>
           scala.Int.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           totalRowGroups./(partitionCount).+(extraSpace)
@@ -1465,6 +1586,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -1485,6 +1609,9 @@
         </td>
         <td>
           scala.collection.immutable.Nil
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.collection.immutable.Nil
@@ -1507,6 +1634,9 @@
         <td>
           scala.collection.immutable.Nil
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.immutable.Nil
         </td>
@@ -1528,6 +1658,9 @@
         <td>
           scala.collection.generic.GenMapFactory.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.mutable.Map.apply[String, Int]()
         </td>
@@ -1548,6 +1681,9 @@
         </td>
         <td>
           scala.collection.IterableLike.foreach
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileMetadata.foreach[Unit](((m: com.vertica.spark.datasource.fs.ParquetFileMetadata) =&gt; {
@@ -1618,6 +1754,9 @@
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.rowGroupCount
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           m.rowGroupCount
         </td>
@@ -1638,6 +1777,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           0
@@ -1660,6 +1802,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -1681,6 +1826,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1701,6 +1849,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -1757,6 +1908,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.while$1
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           while$1()
         </td>
@@ -1777,6 +1931,9 @@
         </td>
         <td>
           scala.Int.&lt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           j.&lt;(size)
@@ -1799,6 +1956,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1819,6 +1979,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -1854,6 +2017,9 @@
         <td>
           scala.Int.==
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           i.==(rowGroupRoom.-(1))
         </td>
@@ -1874,6 +2040,9 @@
         </td>
         <td>
           scala.Int.-
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           rowGroupRoom.-(1)
@@ -1896,6 +2065,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.incrementRangeMapGetIndex
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.incrementRangeMapGetIndex(rangeCountMap, m.filename)
         </td>
@@ -1916,6 +2088,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.filename
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           m.filename
@@ -1938,6 +2113,9 @@
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.filename
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           m.filename
         </td>
@@ -1958,6 +2136,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ParquetFileRange.apply(m.filename, low, j, scala.Some.apply[Int](rangeIdx))
@@ -1980,6 +2161,9 @@
         <td>
           scala.Some.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[Int](rangeIdx)
         </td>
@@ -2000,6 +2184,9 @@
         </td>
         <td>
           scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.ParquetFileRange]
@@ -2022,6 +2209,9 @@
         <td>
           scala.collection.SeqLike.:+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           curFileRanges.:+[com.vertica.spark.datasource.core.ParquetFileRange, List[com.vertica.spark.datasource.core.ParquetFileRange]](frange)(immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.ParquetFileRange])
         </td>
@@ -2042,6 +2232,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemPartition.apply(curFileRanges, VerticaDistributedFilesystemPartition.apply$default$2)
@@ -2064,6 +2257,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.apply$default$2
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemPartition.apply$default$2
         </td>
@@ -2084,6 +2280,9 @@
         </td>
         <td>
           scala.collection.SeqLike.:+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           partitions.:+[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition, List[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]](partition)(immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition])
@@ -2106,6 +2305,9 @@
         <td>
           scala.collection.immutable.List.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]
         </td>
@@ -2126,6 +2328,9 @@
         </td>
         <td>
           scala.collection.immutable.Nil
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.collection.immutable.Nil
@@ -2148,6 +2353,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -2169,6 +2377,9 @@
         <td>
           scala.Int.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           j.+(1)
         </td>
@@ -2189,6 +2400,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -2220,6 +2434,9 @@
         <td>
           scala.Int.==
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           j.==(size.-(1))
         </td>
@@ -2240,6 +2457,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (j.==(size.-(1)))
@@ -2274,6 +2494,9 @@ else
         <td>
           scala.Int.-
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           size.-(1)
         </td>
@@ -2294,6 +2517,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.filename
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           m.filename
@@ -2316,6 +2542,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.incrementRangeMapGetIndex
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.incrementRangeMapGetIndex(rangeCountMap, m.filename)
         </td>
@@ -2336,6 +2565,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[Int](rangeIdx)
@@ -2358,6 +2590,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.filename
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           m.filename
         </td>
@@ -2378,6 +2613,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ParquetFileRange.apply(m.filename, low, j, scala.Some.apply[Int](rangeIdx))
@@ -2400,6 +2638,9 @@ else
         <td>
           scala.collection.SeqLike.:+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           curFileRanges.:+[com.vertica.spark.datasource.core.ParquetFileRange, List[com.vertica.spark.datasource.core.ParquetFileRange]](frange)(immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.ParquetFileRange])
         </td>
@@ -2420,6 +2661,9 @@ else
         </td>
         <td>
           scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.ParquetFileRange]
@@ -2442,6 +2686,9 @@ else
         <td>
           scala.Int.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           i.+(1)
         </td>
@@ -2462,6 +2709,9 @@ else
         </td>
         <td>
           scala.Int.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           i.+(1)
@@ -2484,6 +2734,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           i = i.+(1)
         </td>
@@ -2504,6 +2757,9 @@ else
         </td>
         <td>
           scala.Int.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           j.+(1)
@@ -2526,6 +2782,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -2547,6 +2806,9 @@ else
         <td>
           scala.collection.TraversableOnce.nonEmpty
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           curFileRanges.nonEmpty
         </td>
@@ -2567,6 +2829,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -2592,6 +2857,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -2612,6 +2880,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemPartition.apply(curFileRanges, VerticaDistributedFilesystemPartition.apply$default$2)
@@ -2634,6 +2905,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.apply$default$2
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemPartition.apply$default$2
         </td>
@@ -2654,6 +2928,9 @@ else
         </td>
         <td>
           scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]
@@ -2676,6 +2953,9 @@ else
         <td>
           scala.collection.SeqLike.:+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           partitions.:+[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition, List[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]](partition)(immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition])
         </td>
@@ -2696,6 +2976,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.copy
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           part.copy(x$2, x$1)
@@ -2718,6 +3001,9 @@ else
         <td>
           scala.collection.TraversableOnce.toMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           rangeCountMap.toMap[String, Int](scala.Predef.$conforms[(String, Int)])
         </td>
@@ -2738,6 +3024,9 @@ else
         </td>
         <td>
           scala.Predef.$conforms
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[(String, Int)]
@@ -2760,6 +3049,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.copy$default$1
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.copy$default$1
         </td>
@@ -2780,6 +3072,9 @@ else
         </td>
         <td>
           scala.collection.immutable.List.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           partitions.map[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition, List[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]](((part: com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition) =&gt; {
@@ -2806,6 +3101,9 @@ else
         <td>
           scala.collection.immutable.List.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition]
         </td>
@@ -2826,6 +3124,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[scala.collection.immutable.Map[String,Int]](rangeCountMap.toMap[String, Int](scala.Predef.$conforms[(String, Int)]))
@@ -2848,6 +3149,9 @@ else
         <td>
           scala.collection.TraversableOnce.toArray
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           partitions.toArray[org.apache.spark.sql.connector.read.InputPartition]((ClassTag.apply[org.apache.spark.sql.connector.read.InputPartition](classOf[org.apache.spark.sql.connector.read.InputPartition]): scala.reflect.ClassTag[org.apache.spark.sql.connector.read.InputPartition]))
         </td>
@@ -2868,6 +3172,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.PartitionInfo.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           PartitionInfo.apply(partitions.toArray[org.apache.spark.sql.connector.read.InputPartition]((ClassTag.apply[org.apache.spark.sql.connector.read.InputPartition](classOf[org.apache.spark.sql.connector.read.InputPartition]): scala.reflect.ClassTag[org.apache.spark.sql.connector.read.InputPartition])))
@@ -2890,6 +3197,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.getRequiredSchema
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.config.getRequiredSchema
         </td>
@@ -2910,6 +3220,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getPushdownAggregateColumns
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.getPushdownAggregateColumns
@@ -2932,6 +3245,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getColumnNames
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getColumnNames(this.config.getRequiredSchema)
         </td>
@@ -2952,6 +3268,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getColumnNames
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getColumnNames(this.config.getRequiredSchema)
@@ -2974,6 +3293,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getPushdownAggregateColumns
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.getPushdownAggregateColumns
         </td>
@@ -2994,6 +3316,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.isAggPushedDown
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.isAggPushedDown
@@ -3016,6 +3341,9 @@ else
         <td>
           scala.collection.TraversableOnce.mkString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           this.config.getRequiredSchema.map[String, Seq[String]](((col: org.apache.spark.sql.types.StructField) =&gt; scala.StringContext.apply(&quot;&quot;, &quot; as &quot;).s(col.name).+(&quot;\&quot;&quot;).+(col.name).+(&quot;\&quot;&quot;)))(collection.this.Seq.canBuildFrom[String]).mkString(&quot;, &quot;)
         </td>
@@ -3036,6 +3364,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, String](selectClause)
@@ -3058,6 +3389,9 @@ else
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot; GROUP BY &quot;.+(scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](this.config.getGroupBy).map[String, Array[String]](((x$3: org.apache.spark.sql.types.StructField) =&gt; x$3.name))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;))
         </td>
@@ -3078,6 +3412,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;&quot;
@@ -3100,6 +3437,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.getGroupBy
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.config.getGroupBy
         </td>
@@ -3120,6 +3460,9 @@ else
         </td>
         <td>
           scala.collection.TraversableOnce.mkString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](this.config.getGroupBy).map[String, Array[String]](((x$3: org.apache.spark.sql.types.StructField) =&gt; x$3.name))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)
@@ -3142,6 +3485,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;&quot;
         </td>
@@ -3162,6 +3508,9 @@ else
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot; GROUP BY &quot;.+(scala.Predef.refArrayOps[String](scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](this.config.getGroupBy).map[String, Array[String]](((x$3: org.apache.spark.sql.types.StructField) =&gt; x$3.name))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;))
@@ -3184,6 +3533,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot; GROUP BY &quot;
         </td>
@@ -3204,6 +3556,9 @@ else
         </td>
         <td>
           scala.collection.TraversableOnce.nonEmpty
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.refArrayOps[org.apache.spark.sql.types.StructField](this.config.getGroupBy).nonEmpty
@@ -3226,6 +3581,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.tableSource
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.tableSource
         </td>
@@ -3246,6 +3604,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.jdbcLayer
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer
@@ -3268,6 +3629,9 @@ else
         <td>
           com.vertica.spark.util.schema.SchemaToolsInterface.getColumnInfo
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.schemaTools.getColumnInfo(VerticaDistributedFilesystemReadPipe.this.jdbcLayer, VerticaDistributedFilesystemReadPipe.this.config.tableSource)
         </td>
@@ -3288,6 +3652,9 @@ else
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err.context(&quot;Failed to get table schema when checking for fields that need casts.&quot;))
@@ -3310,6 +3677,9 @@ else
         <td>
           com.vertica.spark.util.error.ConnectorError.context
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           err.context(&quot;Failed to get table schema when checking for fields that need casts.&quot;)
         </td>
@@ -3330,6 +3700,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.schema.SchemaToolsInterface.makeColumnsString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.schemaTools.makeColumnsString(columnDefs, requiredSchema)
@@ -3352,6 +3725,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, String](VerticaDistributedFilesystemReadPipe.this.schemaTools.makeColumnsString(columnDefs, requiredSchema))
         </td>
@@ -3372,6 +3748,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.fileStoreConfig
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig
@@ -3394,6 +3773,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;&quot;
         </td>
@@ -3414,6 +3796,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.FileStoreConfig.address
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileStoreConfig.address
@@ -3436,6 +3821,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;/&quot;
         </td>
@@ -3456,6 +3844,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;/&quot;
@@ -3478,6 +3869,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;&quot;
         </td>
@@ -3498,6 +3892,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;/&quot;
@@ -3520,6 +3917,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           1
         </td>
@@ -3540,6 +3940,9 @@ else
         </td>
         <td>
           scala.Boolean.||
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.augmentString(fileStoreConfig.address).takeRight(1).==(&quot;/&quot;).||(scala.Predef.augmentString(fileStoreConfig.address).takeRight(1).==(&quot;\\&quot;))
@@ -3562,6 +3965,9 @@ else
         <td>
           java.lang.Object.==
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Predef.augmentString(fileStoreConfig.address).takeRight(1).==(&quot;\\&quot;)
         </td>
@@ -3582,6 +3988,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.TableSource.identifier
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.tableSource.identifier
@@ -3604,6 +4013,9 @@ else
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreConfig.address.+(delimiter).+(VerticaDistributedFilesystemReadPipe.this.config.tableSource.identifier)
         </td>
@@ -3624,6 +4036,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getMetadata.flatMap[com.vertica.spark.util.error.ConnectorError, com.vertica.spark.datasource.core.PartitionInfo](((_: com.vertica.spark.config.VerticaMetadata) =&gt; VerticaDistributedFilesystemReadPipe.this.jdbcLayer.configureSession(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer).map[(Unit, com.vertica.spark.config.ValidFilePermissions, Unit)](((x$5: Unit) =&gt; {
@@ -3771,6 +4186,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
         </td>
@@ -3792,6 +4210,9 @@ else
         <td>
           scala.Tuple3.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple3.apply[Unit, com.vertica.spark.config.ValidFilePermissions, Unit](x$5, perm, x$6)
         </td>
@@ -3812,6 +4233,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer.configureSession(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer).map[(Unit, com.vertica.spark.config.ValidFilePermissions, Unit)](((x$5: Unit) =&gt; {
@@ -3959,6 +4383,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.filePermissions
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.filePermissions
         </td>
@@ -3980,6 +4407,9 @@ else
         <td>
           com.vertica.spark.config.ValidFilePermissions.toString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           perm.toString()
         </td>
@@ -4000,6 +4430,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.createDir(fileStoreConfig.address, perm.toString()) match {
@@ -4138,6 +4571,9 @@ else
         <td>
           com.vertica.spark.config.FileStoreConfig.address
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreConfig.address
         </td>
@@ -4158,6 +4594,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.createDir
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.createDir(fileStoreConfig.address, perm.toString())
@@ -4180,6 +4619,9 @@ else
         <td>
           com.vertica.spark.util.error.ConnectorError.getUnderlyingError
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           err.getUnderlyingError
         </td>
@@ -4200,6 +4642,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -4222,6 +4667,9 @@ else
         <td>
           com.vertica.spark.config.FileStoreConfig.address
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           fileStoreConfig.address
         </td>
@@ -4242,6 +4690,9 @@ else
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err.context(&quot;Failed to create directory: &quot;.+(fileStoreConfig.address)))
@@ -4264,6 +4715,9 @@ else
         <td>
           com.vertica.spark.util.error.ConnectorError.context
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           err.context(&quot;Failed to create directory: &quot;.+(fileStoreConfig.address))
         </td>
@@ -4284,6 +4738,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;Failed to create directory: &quot;
@@ -4306,6 +4763,9 @@ else
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;Failed to create directory: &quot;.+(fileStoreConfig.address)
         </td>
@@ -4326,6 +4786,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -4348,6 +4811,9 @@ else
         <td>
           scala.Tuple2.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple2.apply[Boolean, com.vertica.spark.config.ValidFilePermissions](exportDone, filePermissions)
         </td>
@@ -4368,6 +4834,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.fileExists(hdfsPath).map[(Boolean, com.vertica.spark.config.ValidFilePermissions)](((exportDone: Boolean) =&gt; {
@@ -4494,6 +4963,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.filePermissions
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.filePermissions
         </td>
@@ -4515,6 +4987,9 @@ else
         <td>
           scala.Tuple8.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple8.apply[String, Unit, String, String, Unit, String, Unit, String](selectClause, x$7, groupbyClause, pushdownFilters, x$8, exportSource, x$9, exportStatement)
         </td>
@@ -4535,6 +5010,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.getSelectClause.map[(String, Unit, String, String, Unit, String, Unit, String)](((selectClause: String) =&gt; {
@@ -4656,6 +5134,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getGroupbyClause
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.getGroupbyClause
         </td>
@@ -4676,6 +5157,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.addPushdownFilters
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.addPushdownFilters(this.config.getPushdownFilters)
@@ -4698,6 +5182,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.getPushdownFilters
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.config.getPushdownFilters
         </td>
@@ -4718,6 +5205,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.tableSource
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.tableSource
@@ -4740,6 +5230,9 @@ else
         <td>
           com.vertica.spark.config.TableName.getFullTableName
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           tablename.getFullTableName
         </td>
@@ -4760,6 +5253,9 @@ else
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(&quot;.+(query).+(&quot;) AS x&quot;)
@@ -4782,6 +5278,9 @@ else
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;EXPORT TO PARQUET(directory = \'&quot;.+(hdfsPath).+(&quot;\', fileSizeMB = &quot;).+(VerticaDistributedFilesystemReadPipe.this.maxFileSize).+(&quot;, rowGroupSizeMB = &quot;).+(VerticaDistributedFilesystemReadPipe.this.maxRowGroupSize).+(&quot;, fileMode = \'&quot;).+(filePermissions).+(&quot;\', dirMode = \'&quot;).+(filePermissions).+(&quot;\') AS SELECT &quot;).+(selectClause).+(&quot; FROM &quot;).+(exportSource).+(pushdownFilters).+(groupbyClause).+(&quot;;&quot;)
         </td>
@@ -4802,6 +5301,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (exportDone)
@@ -4900,6 +5402,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           {
   (if (VerticaDistributedFilesystemReadPipe.this.logger.underlying.isInfoEnabled())
@@ -4927,6 +5432,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -4947,6 +5455,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -4980,6 +5491,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.logger
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.logger
         </td>
@@ -5000,6 +5514,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.Timer.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           new com.vertica.spark.util.Timer(VerticaDistributedFilesystemReadPipe.this.config.timeOperations, VerticaDistributedFilesystemReadPipe.this.logger, &quot;Export To Parquet From Vertica&quot;)
@@ -5022,6 +5539,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.timeOperations
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.timeOperations
         </td>
@@ -5042,6 +5562,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;Export To Parquet From Vertica&quot;
@@ -5064,6 +5587,9 @@ else
         <td>
           com.vertica.spark.util.Timer.startTime
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           timer.startTime()
         </td>
@@ -5084,6 +5610,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.jdbc.JdbcLayerInterface.execute$default$2
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer.execute$default$2
@@ -5106,6 +5635,9 @@ else
         <td>
           com.vertica.spark.util.error.ExportFromVerticaError.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ExportFromVerticaError.apply(err)
         </td>
@@ -5126,6 +5658,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.jdbc.JdbcLayerInterface.execute
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer.execute(exportStatement, VerticaDistributedFilesystemReadPipe.this.jdbcLayer.execute$default$2)
@@ -5148,6 +5683,9 @@ else
         <td>
           cats.syntax.EitherOps.leftMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsSyntaxEither[com.vertica.spark.util.error.ConnectorError, Unit](VerticaDistributedFilesystemReadPipe.this.jdbcLayer.execute(exportStatement, VerticaDistributedFilesystemReadPipe.this.jdbcLayer.execute$default$2)).leftMap[com.vertica.spark.util.error.ExportFromVerticaError](((err: com.vertica.spark.util.error.ConnectorError) =&gt; com.vertica.spark.util.error.ExportFromVerticaError.apply(err)))
         </td>
@@ -5168,6 +5706,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.listeners.ApplicationParquetCleaner.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           new com.vertica.spark.util.listeners.ApplicationParquetCleaner(VerticaDistributedFilesystemReadPipe.this.config)
@@ -5190,6 +5731,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config
         </td>
@@ -5210,6 +5754,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.listeners.SparkContextWrapper.addSparkListener
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.sparkContext.addSparkListener(new com.vertica.spark.util.listeners.ApplicationParquetCleaner(VerticaDistributedFilesystemReadPipe.this.config))
@@ -5232,6 +5779,9 @@ else
         <td>
           com.vertica.spark.util.Timer.endTime
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           timer.endTime()
         </td>
@@ -5252,6 +5802,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.fileExists(hdfsPath).flatMap[com.vertica.spark.util.error.ConnectorError, com.vertica.spark.datasource.core.PartitionInfo](((dirExists: Boolean) =&gt; if (dirExists.unary_!)
@@ -5330,6 +5883,9 @@ else
         <td>
           scala.Boolean.unary_!
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           dirExists.unary_!
         </td>
@@ -5350,6 +5906,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, List[Nothing]](scala.collection.immutable.Nil)
@@ -5372,6 +5931,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.getFileList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.getFileList(hdfsPath)
         </td>
@@ -5392,6 +5954,9 @@ else
         </td>
         <td>
           scala.collection.immutable.Nil
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.collection.immutable.Nil
@@ -5414,6 +5979,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.getFileList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.getFileList(hdfsPath)
         </td>
@@ -5435,6 +6003,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, List[Nothing]](scala.collection.immutable.Nil)
         </td>
@@ -5455,6 +6026,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (dirExists.unary_!)
@@ -5533,6 +6107,9 @@ else
         <td>
           scala.Tuple7.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple7.apply[Seq[String], Seq[String], Int, Unit, Unit, com.vertica.spark.util.Timer, Unit](fullFileList, parquetFileList, requestedPartitionCount, x$10, x$11, partitionTimer, x$12)
         </td>
@@ -5553,6 +6130,9 @@ else
         </td>
         <td>
           scala.collection.TraversableLike.filter
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fullFileList.filter(((x: String) =&gt; x.endsWith(&quot;.parquet&quot;)))
@@ -5575,6 +6155,9 @@ else
         <td>
           java.lang.String.endsWith
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           x.endsWith(&quot;.parquet&quot;)
         </td>
@@ -5595,6 +6178,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.partitionCount
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.partitionCount
@@ -5617,6 +6203,9 @@ else
         <td>
           scala.collection.SeqLike.size
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           parquetFileList.size
         </td>
@@ -5637,6 +6226,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.logger
@@ -5659,6 +6251,9 @@ else
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.timeOperations
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.timeOperations
         </td>
@@ -5679,6 +6274,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.Timer.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           new com.vertica.spark.util.Timer(VerticaDistributedFilesystemReadPipe.this.config.timeOperations, VerticaDistributedFilesystemReadPipe.this.logger, &quot;Reading Parquet Files Metadata and creating partitions&quot;)
@@ -5701,6 +6299,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Reading Parquet Files Metadata and creating partitions&quot;
         </td>
@@ -5721,6 +6322,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.Timer.startTime
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           partitionTimer.startTime()
@@ -5743,6 +6347,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.getParquetFileMetadata
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.getParquetFileMetadata(filename)
         </td>
@@ -5764,6 +6371,9 @@ else
         <td>
           cats.instances.ListInstances.catsStdInstancesForList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForList
         </td>
@@ -5784,6 +6394,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           cats.implicits.toTraverseOps[List, String](parquetFileList.toList)(cats.implicits.catsStdInstancesForList).traverse[com.vertica.spark.util.error.ErrorHandling.ConnectorResult, com.vertica.spark.datasource.fs.ParquetFileMetadata](((filename: String) =&gt; VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.getParquetFileMetadata(filename)))(cats.implicits.catsStdInstancesForEither[com.vertica.spark.util.error.ConnectorError]).map[(List[com.vertica.spark.datasource.fs.ParquetFileMetadata], Int, Unit, Any, Int, com.vertica.spark.datasource.core.PartitionInfo, Unit)](((fileMetadata: List[com.vertica.spark.datasource.fs.ParquetFileMetadata]) =&gt; {
@@ -5840,6 +6453,9 @@ else
         <td>
           scala.collection.TraversableOnce.toList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           parquetFileList.toList
         </td>
@@ -5860,6 +6476,9 @@ else
         </td>
         <td>
           cats.instances.EitherInstances.catsStdInstancesForEither
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForEither[com.vertica.spark.util.error.ConnectorError]
@@ -5882,6 +6501,9 @@ else
         <td>
           scala.Tuple7.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple7.apply[List[com.vertica.spark.datasource.fs.ParquetFileMetadata], Int, Unit, Any, Int, com.vertica.spark.datasource.core.PartitionInfo, Unit](fileMetadata, totalRowGroups, x$13, x$14, partitionCount, partitionInfo, x$15)
         </td>
@@ -5902,6 +6524,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.ParquetFileMetadata.rowGroupCount
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           x$4.rowGroupCount
@@ -5924,6 +6549,9 @@ else
         <td>
           scala.collection.TraversableOnce.sum
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileMetadata.map[Int, List[Int]](((x$4: com.vertica.spark.datasource.fs.ParquetFileMetadata) =&gt; x$4.rowGroupCount))(immutable.this.List.canBuildFrom[Int]).sum[Int](math.this.Numeric.IntIsIntegral)
         </td>
@@ -5944,6 +6572,9 @@ else
         </td>
         <td>
           scala.math.Numeric.IntIsIntegral
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           math.this.Numeric.IntIsIntegral
@@ -5966,6 +6597,9 @@ else
         <td>
           scala.collection.immutable.List.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[Int]
         </td>
@@ -5986,6 +6620,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -6008,6 +6645,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -6029,6 +6669,9 @@ else
         <td>
           scala.Int.==
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           totalRowGroups.==(0)
         </td>
@@ -6049,6 +6692,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!)
@@ -6080,6 +6726,9 @@ else
         <td>
           scala.Boolean.unary_!
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!
         </td>
@@ -6100,6 +6749,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -6128,6 +6780,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtilsInterface.cleanupAll
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.cleanupAll(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, hdfsPath)
         </td>
@@ -6148,6 +6803,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
@@ -6170,6 +6828,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -6191,6 +6852,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -6211,6 +6875,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           {
@@ -6239,6 +6906,9 @@ else
         <td>
           scala.Int.&lt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           totalRowGroups.&lt;(requestedPartitionCount)
         </td>
@@ -6259,6 +6929,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.requestedPartitionCount
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           requestedPartitionCount
@@ -6281,6 +6954,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getPartitionInfo
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getPartitionInfo(fileMetadata, partitionCount)
         </td>
@@ -6301,6 +6977,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.Timer.endTime
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           partitionTimer.endTime()
@@ -6323,6 +7002,9 @@ else
         <td>
           scala.util.Either.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer.close().map[com.vertica.spark.datasource.core.PartitionInfo](((_: Unit) =&gt; partitionInfo))
         </td>
@@ -6343,6 +7025,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -6371,6 +7056,9 @@ else
         <td>
           scala.Boolean.unary_!
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!
         </td>
@@ -6391,6 +7079,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -6413,6 +7104,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -6433,6 +7127,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.cleanup.CleanupUtilsInterface.cleanupAll
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.cleanupAll(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, hdfsPath)
@@ -6455,6 +7152,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
         </td>
@@ -6475,6 +7175,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.jdbc.JdbcLayerInterface.close
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.jdbcLayer.close()
@@ -6497,6 +7200,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.None
         </td>
@@ -6517,6 +7223,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           0
@@ -6539,6 +7248,9 @@ else
         <td>
           com.vertica.spark.util.Timer.&lt;init&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           new com.vertica.spark.util.Timer(VerticaDistributedFilesystemReadPipe.this.config.timeOperations, VerticaDistributedFilesystemReadPipe.this.logger, &quot;Partition Read&quot;)
         </td>
@@ -6559,6 +7271,9 @@ else
         </td>
         <td>
           com.vertica.spark.config.DistributedFilesystemReadConfig.timeOperations
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.timeOperations
@@ -6581,6 +7296,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;Partition Read&quot;
         </td>
@@ -6601,6 +7319,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.logger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.logger
@@ -6623,6 +7344,9 @@ else
         <td>
           com.vertica.spark.util.Timer.startTime
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.timer.startTime()
         </td>
@@ -6643,6 +7367,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           verticaPartition match {
@@ -6683,6 +7410,9 @@ else
         <td>
           scala.Tuple3.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple3.apply[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition, Unit, Unit](part, x$21, x$22)
         </td>
@@ -6703,6 +7433,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition](p)
@@ -6725,6 +7458,9 @@ else
         <td>
           com.vertica.spark.util.error.InvalidPartition.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.InvalidPartition.apply()
         </td>
@@ -6745,6 +7481,9 @@ else
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.InvalidPartition, Nothing](com.vertica.spark.util.error.InvalidPartition.apply())
@@ -6767,6 +7506,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.partition_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.partition_=(scala.Some.apply[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition](part))
         </td>
@@ -6787,6 +7529,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition](part)
@@ -6809,6 +7554,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileIdx_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.fileIdx_=(0)
         </td>
@@ -6830,6 +7578,9 @@ else
         <td>
           scala.collection.TraversableLike.headOption
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.fileRanges.headOption
         </td>
@@ -6850,6 +7601,9 @@ else
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           part.fileRanges.headOption match {
@@ -6881,6 +7635,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
         </td>
@@ -6901,6 +7658,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.error.DoneReading.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.DoneReading.apply()
@@ -6923,6 +7683,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.openReadParquetFile
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.openReadParquetFile(head)
         </td>
@@ -6944,6 +7707,9 @@ else
         <td>
           scala.collection.SeqLike.size
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.fileRanges.size
         </td>
@@ -6964,6 +7730,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -6991,6 +7760,9 @@ else
         </td>
         <td>
           scala.Option.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (curIdx.&gt;=(part.fileRanges.size))
@@ -7052,6 +7824,9 @@ else
         <td>
           scala.Tuple2.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple2.apply[Unit, com.vertica.spark.datasource.core.ParquetFileRange](x$24, curRange)
         </td>
@@ -7072,6 +7847,9 @@ else
         </td>
         <td>
           scala.Int.&gt;=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           curIdx.&gt;=(part.fileRanges.size)
@@ -7094,6 +7872,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.None
         </td>
@@ -7114,6 +7895,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[Unit](())
@@ -7136,6 +7920,9 @@ else
         <td>
           scala.Some.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[Unit](())
         </td>
@@ -7156,6 +7943,9 @@ else
         </td>
         <td>
           scala.collection.SeqLike.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           part.fileRanges.apply(curIdx)
@@ -7178,6 +7968,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition.rangeCountMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.rangeCountMap
         </td>
@@ -7198,6 +7991,9 @@ else
         </td>
         <td>
           scala.Option.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           part.rangeCountMap match {
@@ -7245,6 +8041,9 @@ else
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.filename
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           curRange.filename
         </td>
@@ -7265,6 +8064,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.rangeIdx
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           curRange.rangeIdx
@@ -7287,6 +8089,9 @@ else
         <td>
           scala.collection.MapLike.contains
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           rangeCountMap.contains(curRange.filename)
         </td>
@@ -7307,6 +8112,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.filename
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           curRange.filename
@@ -7329,6 +8137,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.cleanup.FileCleanupInfo.apply(curRange.filename, rangeIdx, rangeCountMap.apply(curRange.filename))
         </td>
@@ -7349,6 +8160,9 @@ else
         </td>
         <td>
           scala.collection.MapLike.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           rangeCountMap.apply(curRange.filename)
@@ -7371,6 +8185,9 @@ else
         <td>
           com.vertica.spark.datasource.core.ParquetFileRange.filename
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           curRange.filename
         </td>
@@ -7391,6 +8208,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[com.vertica.spark.util.cleanup.FileCleanupInfo](com.vertica.spark.util.cleanup.FileCleanupInfo.apply(curRange.filename, rangeIdx, rangeCountMap.apply(curRange.filename)))
@@ -7413,6 +8233,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.None
         </td>
@@ -7433,6 +8256,9 @@ else
         </td>
         <td>
           scala.None
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.None
@@ -7455,6 +8281,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.None
         </td>
@@ -7475,6 +8304,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.partition
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.partition
@@ -7497,6 +8329,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.UninitializedReadError, Nothing](com.vertica.spark.util.error.UninitializedReadError.apply())
         </td>
@@ -7517,6 +8352,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.error.UninitializedReadError.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.UninitializedReadError.apply()
@@ -7539,6 +8377,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.readDataFromParquetFile
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.readDataFromParquetFile(VerticaDistributedFilesystemReadPipe.this.dataSize)
         </td>
@@ -7559,6 +8400,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.dataSize
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.dataSize
@@ -7581,6 +8425,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
         </td>
@@ -7601,6 +8448,9 @@ else
         </td>
         <td>
           scala.collection.TraversableOnce.nonEmpty
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           data.data.nonEmpty
@@ -7623,6 +8473,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
         </td>
@@ -7644,6 +8497,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
         </td>
@@ -7664,6 +8520,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -7697,6 +8556,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileIdx_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.fileIdx_=(this.fileIdx.+(1))
         </td>
@@ -7717,6 +8579,9 @@ else
         </td>
         <td>
           scala.Int.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.fileIdx.+(1)
@@ -7739,6 +8604,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.readData
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           return scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
         </td>
@@ -7759,6 +8627,9 @@ else
         </td>
         <td>
           scala.collection.SeqLike.size
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           part.fileRanges.size
@@ -7781,6 +8652,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
         </td>
@@ -7801,6 +8675,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -7823,6 +8700,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -7843,6 +8723,9 @@ else
         </td>
         <td>
           scala.Int.&gt;=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.fileIdx.&gt;=(part.fileRanges.size)
@@ -7865,6 +8748,9 @@ else
         <td>
           scala.util.Either.flatMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.closeReadParquetFile().flatMap[com.vertica.spark.util.error.ConnectorError, com.vertica.spark.datasource.core.DataBlock](((_: Unit) =&gt; VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.openReadParquetFile(part.fileRanges.apply(this.fileIdx)).flatMap[com.vertica.spark.util.error.ConnectorError, com.vertica.spark.datasource.core.DataBlock](((_: Unit) =&gt; VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.readDataFromParquetFile(VerticaDistributedFilesystemReadPipe.this.dataSize).map[com.vertica.spark.datasource.core.DataBlock](((data: com.vertica.spark.datasource.core.DataBlock) =&gt; data))))))
         </td>
@@ -7885,6 +8771,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileIdx
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.fileIdx
@@ -7907,6 +8796,9 @@ else
         <td>
           scala.collection.SeqLike.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.fileRanges.apply(this.fileIdx)
         </td>
@@ -7927,6 +8819,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.openReadParquetFile(part.fileRanges.apply(this.fileIdx)).flatMap[com.vertica.spark.util.error.ConnectorError, com.vertica.spark.datasource.core.DataBlock](((_: Unit) =&gt; VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.readDataFromParquetFile(VerticaDistributedFilesystemReadPipe.this.dataSize).map[com.vertica.spark.datasource.core.DataBlock](((data: com.vertica.spark.datasource.core.DataBlock) =&gt; data))))
@@ -7949,6 +8844,9 @@ else
         <td>
           scala.util.Either.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.readDataFromParquetFile(VerticaDistributedFilesystemReadPipe.this.dataSize).map[com.vertica.spark.datasource.core.DataBlock](((data: com.vertica.spark.datasource.core.DataBlock) =&gt; data))
         </td>
@@ -7969,6 +8867,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.dataSize
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.dataSize
@@ -7991,6 +8892,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ()
         </td>
@@ -8012,6 +8916,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtilsInterface.checkAndCleanup
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.checkAndCleanup(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, cleanupInfo)
         </td>
@@ -8032,6 +8939,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.checkAndCleanup(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, cleanupInfo) match {
@@ -8060,6 +8970,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
         </td>
@@ -8080,6 +8993,9 @@ else
         </td>
         <td>
           scala.Boolean.unary_!
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!
@@ -8102,6 +9018,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ()
         </td>
@@ -8122,6 +9041,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           ()
@@ -8144,6 +9066,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -8164,6 +9089,9 @@ else
         </td>
         <td>
           scala.Boolean.&amp;&amp;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           dataBlock.data.isEmpty.&amp;&amp;(VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!)
@@ -8186,6 +9114,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -8206,6 +9137,9 @@ else
         </td>
         <td>
           scala.Boolean.unary_!
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!
@@ -8228,6 +9162,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtilsInterface.checkAndCleanup
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.checkAndCleanup(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, cleanupInfo)
         </td>
@@ -8249,6 +9186,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
         </td>
@@ -8269,6 +9209,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.checkAndCleanup(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, cleanupInfo) match {
@@ -8297,6 +9240,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           ()
         </td>
@@ -8317,6 +9263,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -8339,6 +9288,9 @@ else
         <td>
           com.vertica.spark.util.Timer.endTime
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.timer.endTime()
         </td>
@@ -8359,6 +9311,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.cleanupFiles().flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((_: Unit) =&gt; VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.closeReadParquetFile().map[Unit](((_: Unit) =&gt; ()))))
@@ -8381,6 +9336,9 @@ else
         <td>
           scala.util.Either.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer.closeReadParquetFile().map[Unit](((_: Unit) =&gt; ()))
         </td>
@@ -8401,6 +9359,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -8423,6 +9384,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.partition
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.partition
         </td>
@@ -8443,6 +9407,9 @@ else
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.UninitializedReadError, Nothing](com.vertica.spark.util.error.UninitializedReadError.apply())
@@ -8465,6 +9432,9 @@ else
         <td>
           com.vertica.spark.util.error.UninitializedReadError.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.UninitializedReadError.apply()
         </td>
@@ -8486,6 +9456,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -8506,6 +9479,9 @@ else
         </td>
         <td>
           scala.collection.immutable.Range.foreach
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.intWrapper(0).to(part.fileRanges.size).foreach[Unit](((fileIdx: Int) =&gt; if (VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!)
@@ -8543,6 +9519,9 @@ else
         <td>
           scala.collection.SeqLike.size
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           part.fileRanges.size
         </td>
@@ -8563,6 +9542,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -8585,6 +9567,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -8605,6 +9590,9 @@ else
         </td>
         <td>
           scala.Boolean.unary_!
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.config.fileStoreConfig.preventCleanup.unary_!
@@ -8627,6 +9615,9 @@ else
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.getCleanupInfo
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getCleanupInfo(part, fileIdx)
         </td>
@@ -8647,6 +9638,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.getCleanupInfo(part, fileIdx) match {
@@ -8681,6 +9675,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtilsInterface.checkAndCleanup
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.cleanupUtils.checkAndCleanup(VerticaDistributedFilesystemReadPipe.this.fileStoreLayer, cleanupInfo)
         </td>
@@ -8701,6 +9698,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaDistributedFilesystemReadPipe.fileStoreLayer
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaDistributedFilesystemReadPipe.this.fileStoreLayer
@@ -8723,6 +9723,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -8743,6 +9746,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())

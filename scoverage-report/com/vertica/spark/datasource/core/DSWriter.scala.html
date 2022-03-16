@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/datasource/core/DSWriter.scala.html
+          com\vertica\spark\datasource\core\DSWriter.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -134,6 +134,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -152,6 +153,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.config
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.config
@@ -174,6 +178,9 @@
         <td>
           com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface.getWritePipe
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipeFactory.getWritePipe(DSWriter.this.config)
         </td>
@@ -194,6 +201,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           0L
@@ -216,6 +226,9 @@
         <td>
           scala.collection.immutable.Nil
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.immutable.Nil
         </td>
@@ -236,6 +249,9 @@
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.getDataBlockSize.flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((size: Long) =&gt; DSWriter.this.pipe.startPartitionWrite(DSWriter.this.uniqueId).map[(Unit, Unit)](((x$1: Unit) =&gt; {
@@ -263,6 +279,9 @@
         <td>
           scala.Tuple2.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple2.apply[Unit, Unit](x$1, x$2)
         </td>
@@ -283,6 +302,9 @@
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.startPartitionWrite(DSWriter.this.uniqueId).map[(Unit, Unit)](((x$1: Unit) =&gt; {
@@ -310,6 +332,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.uniqueId
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.uniqueId
         </td>
@@ -330,6 +355,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.blockSize_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.blockSize_=(size)
@@ -352,6 +380,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -372,6 +403,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.data_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data_=(DSWriter.this.data.:+[org.apache.spark.sql.catalyst.InternalRow, List[org.apache.spark.sql.catalyst.InternalRow]](row)(immutable.this.List.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow]))
@@ -394,6 +428,9 @@
         <td>
           scala.collection.SeqLike.:+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data.:+[org.apache.spark.sql.catalyst.InternalRow, List[org.apache.spark.sql.catalyst.InternalRow]](row)(immutable.this.List.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow])
         </td>
@@ -414,6 +451,9 @@
         </td>
         <td>
           scala.collection.immutable.List.canBuildFrom
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           immutable.this.List.canBuildFrom[org.apache.spark.sql.catalyst.InternalRow]
@@ -436,6 +476,9 @@
         <td>
           scala.Int.&gt;=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data.length.&gt;=(DSWriter.this.blockSize)
         </td>
@@ -456,6 +499,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriter.blockSize
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.blockSize
@@ -478,6 +524,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.data
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data
         </td>
@@ -499,6 +548,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.writeData
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.writeData(DataBlock.apply(DSWriter.this.data))
         </td>
@@ -519,6 +571,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.writeData(DataBlock.apply(DSWriter.this.data)) match {
@@ -547,6 +602,9 @@
         <td>
           com.vertica.spark.datasource.core.DataBlock.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DataBlock.apply(DSWriter.this.data)
         </td>
@@ -567,6 +625,9 @@
         </td>
         <td>
           scala.collection.immutable.Nil
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.collection.immutable.Nil
@@ -589,6 +650,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.data_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data_=(scala.collection.immutable.Nil)
         </td>
@@ -609,6 +673,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -631,6 +698,9 @@
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](errors)
         </td>
@@ -651,6 +721,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -673,6 +746,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -693,6 +769,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -719,6 +798,9 @@
         <td>
           scala.collection.TraversableOnce.nonEmpty
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data.nonEmpty
         </td>
@@ -739,6 +821,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DataBlock.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DataBlock.apply(DSWriter.this.data)
@@ -761,6 +846,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriter.data
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.data
         </td>
@@ -781,6 +869,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.writeData
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.writeData(DataBlock.apply(DSWriter.this.data))
@@ -803,6 +894,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.endPartitionWrite
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.endPartitionWrite()
         </td>
@@ -823,6 +917,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.endPartitionWrite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.endPartitionWrite()
@@ -845,6 +942,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.endPartitionWrite
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.endPartitionWrite()
         </td>
@@ -866,6 +966,9 @@
         <td>
           com.vertica.spark.datasource.core.VerticaPipeWriteInterface.commit
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipe.commit()
         </td>
@@ -886,6 +989,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface.closeJdbcLayers
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSWriter.this.pipeFactory.closeJdbcLayers()

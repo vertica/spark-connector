@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/datasource/v2/VerticaDatasourceV2Table.scala.html
+          com\vertica\spark\datasource\v2\VerticaDatasourceV2Table.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -160,6 +160,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -178,6 +179,9 @@
         </td>
         <td>
           scala.None
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.None
@@ -200,6 +204,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;VerticaTable&quot;
         </td>
@@ -220,6 +227,9 @@
         </td>
         <td>
           scala.Predef.$conforms
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[(String, String)]
@@ -242,6 +252,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaTable.caseInsensitiveStringMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaTable.this.caseInsensitiveStringMap
         </td>
@@ -262,6 +275,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSConfigSetupInterface.validateAndGetConfig
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaTable.this.readSetupInterface.validateAndGetConfig(scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaTable.this.caseInsensitiveStringMap).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)]))
@@ -284,6 +300,9 @@
         <td>
           scala.collection.TraversableOnce.toMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaTable.this.caseInsensitiveStringMap).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)])
         </td>
@@ -304,6 +323,9 @@
         </td>
         <td>
           org.apache.spark.sql.types.StructType.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           new org.apache.spark.sql.types.StructType()
@@ -326,6 +348,9 @@
         <td>
           org.apache.spark.sql.connector.read.Scan.readSchema
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.newScanBuilder(VerticaTable.this.caseInsensitiveStringMap).build().readSchema()
         </td>
@@ -346,6 +371,9 @@
         </td>
         <td>
           scala.collection.generic.GenericCompanion.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.Set.apply[org.apache.spark.sql.connector.catalog.TableCapability](BATCH_READ, BATCH_WRITE, OVERWRITE_BY_FILTER, TRUNCATE, ACCEPT_ANY_SCHEMA)
@@ -368,6 +396,9 @@
         <td>
           scala.collection.convert.Decorators.AsJava.asJava
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.collection.JavaConverters.setAsJavaSetConverter[org.apache.spark.sql.connector.catalog.TableCapability](scala.Predef.Set.apply[org.apache.spark.sql.connector.catalog.TableCapability](BATCH_READ, BATCH_WRITE, OVERWRITE_BY_FILTER, TRUNCATE, ACCEPT_ANY_SCHEMA)).asJava
         </td>
@@ -388,6 +419,9 @@
         </td>
         <td>
           com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.v2.VerticaTable])
@@ -410,6 +444,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaTable.scanBuilder
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.scanBuilder
         </td>
@@ -430,6 +467,9 @@
         </td>
         <td>
           scala.Predef.$conforms
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[(String, String)]
@@ -452,6 +492,9 @@
         <td>
           com.vertica.spark.datasource.core.DSConfigSetupInterface.validateAndGetConfig
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           VerticaTable.this.readSetupInterface.validateAndGetConfig(scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](options).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)]))
         </td>
@@ -472,6 +515,9 @@
         </td>
         <td>
           scala.collection.TraversableOnce.toMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](options).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)])
@@ -494,6 +540,9 @@
         <td>
           cats.data.NonEmptyChainOps.toNonEmptyList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList
         </td>
@@ -514,6 +563,9 @@
         </td>
         <td>
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorHandling.logAndThrowError(logger, com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList))
@@ -536,6 +588,9 @@
         <td>
           com.vertica.spark.util.error.ErrorList.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList)
         </td>
@@ -557,6 +612,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           true
         </td>
@@ -577,6 +635,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -606,6 +667,9 @@
         <td>
           org.apache.spark.sql.SparkSession.version
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           org.apache.spark.sql.SparkSession.getActiveSession.get.version
         </td>
@@ -626,6 +690,9 @@
         </td>
         <td>
           scala.collection.immutable.StringLike.toInt
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.augmentString(x$1).toInt
@@ -648,6 +715,9 @@
         <td>
           java.lang.String.split
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           sparkVersion.split(&quot;\\.&quot;)
         </td>
@@ -668,6 +738,9 @@
         </td>
         <td>
           scala.collection.TraversableLike.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.refArrayOps[String](sparkVersion.split(&quot;\\.&quot;)).map[Int, Array[Int]](((x$1: String) =&gt; scala.Predef.augmentString(x$1).toInt))(scala.this.Array.canBuildFrom[Int]((ClassTag.Int: scala.reflect.ClassTag[Int])))
@@ -690,6 +763,9 @@
         <td>
           scala.Array.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.this.Array.canBuildFrom[Int]((ClassTag.Int: scala.reflect.ClassTag[Int]))
         </td>
@@ -710,6 +786,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -732,6 +811,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           2
         </td>
@@ -752,6 +834,9 @@
         </td>
         <td>
           scala.Int.&lt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           versionList.apply(1).&lt;(2)
@@ -774,6 +859,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -794,6 +882,9 @@
         </td>
         <td>
           scala.Int.==
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           versionList.apply(0).==(3)
@@ -816,6 +907,9 @@
         <td>
           scala.Boolean.&amp;&amp;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           versionList.length.&gt;=(2).&amp;&amp;(versionList.apply(0).==(3)).&amp;&amp;(versionList.apply(1).&lt;(2))
         </td>
@@ -836,6 +930,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           sparkNewerThan31 = false
@@ -858,6 +955,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           false
         </td>
@@ -878,6 +978,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           true
@@ -900,6 +1003,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown]
         </td>
@@ -920,6 +1026,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           classOf[com.vertica.spark.config.ReadConfig]
@@ -942,6 +1051,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]
         </td>
@@ -962,6 +1074,9 @@
         </td>
         <td>
           java.lang.reflect.Constructor.newInstance
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
@@ -984,6 +1099,9 @@
         <td>
           java.lang.reflect.Constructor.newInstance
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
         </td>
@@ -1004,6 +1122,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaTable.readSetupInterface
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           VerticaTable.this.readSetupInterface
@@ -1026,6 +1147,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder]
         </td>
@@ -1046,6 +1170,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]
@@ -1068,6 +1195,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           classOf[com.vertica.spark.config.ReadConfig]
         </td>
@@ -1088,6 +1218,9 @@
         </td>
         <td>
           java.lang.reflect.Constructor.newInstance
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
@@ -1110,6 +1243,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaTable.readSetupInterface
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           VerticaTable.this.readSetupInterface
         </td>
@@ -1130,6 +1266,9 @@
         </td>
         <td>
           java.lang.reflect.Constructor.newInstance
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
@@ -1152,6 +1291,9 @@
         <td>
           com.vertica.spark.datasource.v2.VerticaTable.scanBuilder_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           this.scanBuilder_=(scala.Some.apply[com.vertica.spark.datasource.v2.VerticaScanBuilder](scanBuilder))
         </td>
@@ -1172,6 +1314,9 @@
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[com.vertica.spark.datasource.v2.VerticaScanBuilder](scanBuilder)
@@ -1194,6 +1339,9 @@
         <td>
           org.apache.spark.sql.connector.write.LogicalWriteInfo.schema
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           info.schema()
         </td>
@@ -1214,6 +1362,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;$default$3
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           core.this.DSWriteConfigSetup.&lt;init&gt;$default$3
@@ -1236,6 +1387,9 @@
         <td>
           com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;$default$2
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           core.this.DSWriteConfigSetup.&lt;init&gt;$default$2
         </td>
@@ -1256,6 +1410,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.VerticaWriteBuilder.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           new VerticaWriteBuilder(info, new com.vertica.spark.datasource.core.DSWriteConfigSetup(scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema()), core.this.DSWriteConfigSetup.&lt;init&gt;$default$2, core.this.DSWriteConfigSetup.&lt;init&gt;$default$3))
@@ -1278,6 +1435,9 @@
         <td>
           scala.Some.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema())
         </td>
@@ -1298,6 +1458,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           new com.vertica.spark.datasource.core.DSWriteConfigSetup(scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema()), core.this.DSWriteConfigSetup.&lt;init&gt;$default$2, core.this.DSWriteConfigSetup.&lt;init&gt;$default$3)

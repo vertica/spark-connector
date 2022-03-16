@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/util/pushdown/PushdownUtils.scala.html
+          com\vertica\spark\util\pushdown\PushdownUtils.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -112,6 +112,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -130,6 +131,9 @@
         </td>
         <td>
           java.lang.Double.isInfinite
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.double2Double(d.doubleValue()).isInfinite()
@@ -152,6 +156,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
         </td>
@@ -172,6 +179,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
@@ -194,6 +204,9 @@
         <td>
           scala.Any.toString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           value.toString()
         </td>
@@ -214,6 +227,9 @@
         </td>
         <td>
           scala.Any.toString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           value.toString()
@@ -236,6 +252,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
         </td>
@@ -256,6 +275,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
@@ -278,6 +300,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
         </td>
@@ -298,6 +323,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
@@ -320,6 +348,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
         </td>
@@ -340,6 +371,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
@@ -362,6 +396,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
         </td>
@@ -382,6 +419,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
@@ -404,6 +444,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
         </td>
@@ -424,6 +467,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
@@ -446,6 +492,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
         </td>
@@ -466,6 +515,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
@@ -488,6 +540,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
         </td>
@@ -508,6 +563,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
@@ -530,6 +588,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
         </td>
@@ -550,6 +611,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
@@ -572,6 +636,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;)))
         </td>
@@ -592,6 +659,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;))
@@ -614,6 +684,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;)
         </td>
@@ -634,6 +707,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;)))
@@ -656,6 +732,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;))
         </td>
@@ -676,6 +755,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;)
@@ -698,6 +780,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;)))
         </td>
@@ -718,6 +803,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;))
@@ -740,6 +828,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;)
         </td>
@@ -760,6 +851,9 @@
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))))
@@ -782,6 +876,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))
         </td>
@@ -802,6 +899,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)
@@ -824,6 +924,9 @@
         <td>
           scala.util.Either.LeftProjection.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           PushdownUtils.this.genFilter(left).flatMap[com.vertica.spark.datasource.v2.NonPushFilter, com.vertica.spark.datasource.v2.PushFilter](((pushFilterLeft: com.vertica.spark.datasource.v2.PushFilter) =&gt; PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)))))).left.map[com.vertica.spark.datasource.v2.NonPushFilter](((x$1: com.vertica.spark.datasource.v2.NonPushFilter) =&gt; com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)))
         </td>
@@ -844,6 +947,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
@@ -866,6 +972,9 @@
         <td>
           scala.util.Either.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))))
         </td>
@@ -886,6 +995,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)
@@ -908,6 +1020,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))
         </td>
@@ -928,6 +1043,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
@@ -950,6 +1068,9 @@
         <td>
           scala.util.Either.LeftProjection.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           PushdownUtils.this.genFilter(left).flatMap[com.vertica.spark.datasource.v2.NonPushFilter, com.vertica.spark.datasource.v2.PushFilter](((pushFilterLeft: com.vertica.spark.datasource.v2.PushFilter) =&gt; PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)))))).left.map[com.vertica.spark.datasource.v2.NonPushFilter](((x$2: com.vertica.spark.datasource.v2.NonPushFilter) =&gt; com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)))
         </td>
@@ -970,6 +1091,9 @@
         </td>
         <td>
           com.vertica.spark.util.pushdown.PushdownUtils.genFilter
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           PushdownUtils.this.genFilter(child)
@@ -992,6 +1116,9 @@
         <td>
           com.vertica.spark.datasource.v2.NonPushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
         </td>
@@ -1012,6 +1139,9 @@
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.datasource.v2.NonPushFilter, Nothing](com.vertica.spark.datasource.v2.NonPushFilter.apply(filter))
@@ -1034,6 +1164,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;))
         </td>
@@ -1054,6 +1187,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;)
@@ -1076,6 +1212,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;)))
         </td>
@@ -1096,6 +1235,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;))
@@ -1118,6 +1260,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;)))
         </td>
@@ -1138,6 +1283,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;)
@@ -1160,6 +1308,9 @@
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;))
         </td>
@@ -1180,6 +1331,9 @@
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;)))
@@ -1202,6 +1356,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;)
         </td>
@@ -1222,6 +1379,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;))
@@ -1244,6 +1404,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;)))
         </td>
@@ -1264,6 +1427,9 @@
         </td>
         <td>
           java.lang.String.+
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;)
@@ -1286,6 +1452,9 @@
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.datasource.v2.NonPushFilter, Nothing](com.vertica.spark.datasource.v2.NonPushFilter.apply(filter))
         </td>
@@ -1306,6 +1475,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)

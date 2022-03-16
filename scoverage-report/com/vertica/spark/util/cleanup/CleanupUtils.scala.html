@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/util/cleanup/CleanupUtils.scala.html
+          com\vertica\spark\util\cleanup\CleanupUtils.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -172,6 +172,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -190,6 +191,9 @@
         </td>
         <td>
           com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.util.cleanup.CleanupUtils])
@@ -212,6 +216,9 @@
         <td>
           java.lang.String.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           filename.+(&quot;.cleanup&quot;).+(idx)
         </td>
@@ -232,6 +239,9 @@
         </td>
         <td>
           org.apache.hadoop.fs.Path.&lt;init&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           new org.apache.hadoop.fs.Path(scala.StringContext.apply(&quot;&quot;, &quot;&quot;).s(path))
@@ -254,6 +264,9 @@
         <td>
           scala.StringContext.s
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.StringContext.apply(&quot;&quot;, &quot;&quot;).s(path)
         </td>
@@ -274,6 +287,9 @@
         </td>
         <td>
           org.apache.hadoop.fs.Path.getParent
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           p.getParent()
@@ -296,6 +312,9 @@
         <td>
           java.lang.Object.!=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           parent.!=(null)
         </td>
@@ -316,6 +335,9 @@
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -341,6 +363,9 @@
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.removeDir
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.removeDir(parent.toString())
         </td>
@@ -361,6 +386,9 @@
         </td>
         <td>
           org.apache.hadoop.fs.Path.toString
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           parent.toString()
@@ -383,6 +411,9 @@
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -403,6 +434,9 @@
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.CleanupError, Nothing](com.vertica.spark.util.error.CleanupError.apply(path))
@@ -425,6 +459,9 @@
         <td>
           com.vertica.spark.util.error.CleanupError.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.CleanupError.apply(path)
         </td>
@@ -446,6 +483,9 @@
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.CleanupError, Nothing](com.vertica.spark.util.error.CleanupError.apply(path))
         </td>
@@ -466,6 +506,9 @@
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.getParentHadoopPath(path).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((parentPath: String) =&gt; fileStoreLayer.getFileList(parentPath).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((allFiles: Seq[String]) =&gt; CleanupUtils.this.getParentHadoopPath(parentPath).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((parentPath2: String) =&gt; if (allFiles.isEmpty)
@@ -491,6 +534,9 @@ else
         <td>
           scala.util.Either.flatMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.getFileList(parentPath).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((allFiles: Seq[String]) =&gt; CleanupUtils.this.getParentHadoopPath(parentPath).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((parentPath2: String) =&gt; if (allFiles.isEmpty)
   fileStoreLayer.removeDir(parentPath2)
@@ -514,6 +560,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.getParentHadoopPath(parentPath).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((parentPath2: String) =&gt; if (allFiles.isEmpty)
@@ -539,6 +588,9 @@ else
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.removeDir
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.removeDir(parentPath2)
         </td>
@@ -559,6 +611,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -581,6 +636,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -601,6 +659,9 @@ else
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (allFiles.isEmpty)
@@ -626,6 +687,9 @@ else
         <td>
           scala.collection.SeqLike.isEmpty
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           allFiles.isEmpty
         </td>
@@ -646,6 +710,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.removeDir
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.removeDir(parentPath2)
@@ -668,6 +735,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -688,6 +758,9 @@ else
         </td>
         <td>
           scala.StringContext.s
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.StringContext.apply(&quot;&quot;, &quot;&quot;).s(path)
@@ -710,6 +783,9 @@ else
         <td>
           org.apache.hadoop.fs.Path.&lt;init&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           new org.apache.hadoop.fs.Path(scala.StringContext.apply(&quot;&quot;, &quot;&quot;).s(path))
         </td>
@@ -730,6 +806,9 @@ else
         </td>
         <td>
           org.apache.hadoop.fs.Path.getParent
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           p.getParent()
@@ -752,6 +831,9 @@ else
         <td>
           java.lang.Object.!=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           parent.!=(null)
         </td>
@@ -772,6 +854,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, String](parent.toString())
@@ -794,6 +879,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ParentDirMissingError, Nothing](com.vertica.spark.util.error.ParentDirMissingError.apply(path))
         </td>
@@ -814,6 +902,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, String](parent.toString())
@@ -836,6 +927,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ParentDirMissingError, Nothing](com.vertica.spark.util.error.ParentDirMissingError.apply(path))
         </td>
@@ -856,6 +950,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.error.ParentDirMissingError.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.ParentDirMissingError.apply(path)
@@ -878,6 +975,9 @@ else
         <td>
           org.apache.hadoop.fs.Path.toString
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           parent.toString()
         </td>
@@ -898,6 +998,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.filename
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileCleanupInfo.filename
@@ -920,6 +1023,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.fileRangeCount
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileCleanupInfo.fileRangeCount
         </td>
@@ -941,6 +1047,9 @@ else
         <td>
           scala.collection.immutable.IndexedSeq.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           immutable.this.IndexedSeq.canBuildFrom[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]]
         </td>
@@ -961,6 +1070,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           cats.implicits.toTraverseOps[List, com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]](scala.Predef.intWrapper(0).until(fileCleanupInfo.fileRangeCount).map[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit], scala.collection.immutable.IndexedSeq[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]]](((idx: Int) =&gt; {
@@ -997,6 +1109,9 @@ else
         <td>
           scala.Tuple2.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple2.apply[List[Unit], Unit](x$1, x$2)
         </td>
@@ -1017,6 +1132,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           0
@@ -1039,6 +1157,9 @@ else
         <td>
           scala.Predef.$conforms
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]]
         </td>
@@ -1059,6 +1180,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.removeFile
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.removeFile(CleanupUtils.this.recordFileName(filename, idx))
@@ -1081,6 +1205,9 @@ else
         <td>
           cats.instances.ListInstances.catsStdInstancesForList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForList
         </td>
@@ -1101,6 +1228,9 @@ else
         </td>
         <td>
           scala.collection.TraversableOnce.toList
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.intWrapper(0).until(fileCleanupInfo.fileRangeCount).map[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit], scala.collection.immutable.IndexedSeq[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Unit]]](((idx: Int) =&gt; {
@@ -1129,6 +1259,9 @@ else
         <td>
           cats.instances.EitherInstances.catsStdInstancesForEither
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForEither[com.vertica.spark.util.error.ConnectorError]
         </td>
@@ -1149,6 +1282,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.cleanup.CleanupUtils.recordFileName
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.recordFileName(filename, idx)
@@ -1171,6 +1307,9 @@ else
         <td>
           scala.util.Either.flatMap
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.removeFile(filename).flatMap[com.vertica.spark.util.error.ConnectorError, Unit](((_: Unit) =&gt; this.cleanupParentDirIfEmpty(fileStoreLayer, filename).map[Unit](((_: Unit) =&gt; ()))))
         </td>
@@ -1191,6 +1330,9 @@ else
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           this.cleanupParentDirIfEmpty(fileStoreLayer, filename).map[Unit](((_: Unit) =&gt; ()))
@@ -1213,6 +1355,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -1234,6 +1379,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.filename
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           fileCleanupInfo.filename
         </td>
@@ -1254,6 +1402,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.createFile(CleanupUtils.this.recordFileName(filename, fileCleanupInfo.fileIdx)).map[(Unit, Unit, Unit, Unit)](((x$4: Unit) =&gt; {
@@ -1319,6 +1470,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtils.recordFileName
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.recordFileName(filename, fileCleanupInfo.fileIdx)
         </td>
@@ -1339,6 +1493,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.fileIdx
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileCleanupInfo.fileIdx
@@ -1361,6 +1518,9 @@ else
         <td>
           scala.Tuple4.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple4.apply[Unit, Unit, Unit, Unit](x$4, x$5, x$6, x$7)
         </td>
@@ -1381,6 +1541,9 @@ else
         </td>
         <td>
           com.vertica.spark.util.cleanup.FileCleanupInfo.fileRangeCount
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileCleanupInfo.fileRangeCount
@@ -1403,6 +1566,9 @@ else
         <td>
           scala.collection.immutable.IndexedSeq.canBuildFrom
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           immutable.this.IndexedSeq.canBuildFrom[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean]]
         </td>
@@ -1423,6 +1589,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           cats.implicits.toTraverseOps[List, com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean]](scala.Predef.intWrapper(0).until(fileCleanupInfo.fileRangeCount).map[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean], scala.collection.immutable.IndexedSeq[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean]]](((idx: Int) =&gt; {
@@ -1472,6 +1641,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -1492,6 +1664,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.fs.FileStoreLayerInterface.fileExists
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           fileStoreLayer.fileExists(CleanupUtils.this.recordFileName(filename, idx))
@@ -1514,6 +1689,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtils.recordFileName
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.recordFileName(filename, idx)
         </td>
@@ -1534,6 +1712,9 @@ else
         </td>
         <td>
           scala.Predef.$conforms
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.$conforms[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean]]
@@ -1556,6 +1737,9 @@ else
         <td>
           cats.instances.ListInstances.catsStdInstancesForList
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForList
         </td>
@@ -1576,6 +1760,9 @@ else
         </td>
         <td>
           scala.collection.TraversableOnce.toList
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Predef.intWrapper(0).until(fileCleanupInfo.fileRangeCount).map[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean], scala.collection.immutable.IndexedSeq[com.vertica.spark.util.error.ErrorHandling.ConnectorResult[Boolean]]](((idx: Int) =&gt; {
@@ -1604,6 +1791,9 @@ else
         <td>
           cats.instances.EitherInstances.catsStdInstancesForEither
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           cats.implicits.catsStdInstancesForEither[com.vertica.spark.util.error.ConnectorError]
         </td>
@@ -1624,6 +1814,9 @@ else
         </td>
         <td>
           scala.Tuple3.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Tuple3.apply[Boolean, Unit, Unit](allExist, x$8, x$9)
@@ -1646,6 +1839,9 @@ else
         <td>
           scala.collection.LinearSeqOptimized.forall
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           filesExist.forall(((x: Boolean) =&gt; x))
         </td>
@@ -1666,6 +1862,9 @@ else
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Boolean](filesExist.forall(((x: Boolean) =&gt; x))).map[(Boolean, Unit, Unit)](((allExist: Boolean) =&gt; {
@@ -1709,6 +1908,9 @@ else
         <td>
           scala.util.Either.map
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           if (allExist)
   {
@@ -1739,6 +1941,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           {
   (if (CleanupUtils.this.logger.underlying.isDebugEnabled())
@@ -1766,6 +1971,9 @@ else
         <td>
           com.vertica.spark.util.cleanup.CleanupUtils.performCleanup
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           CleanupUtils.this.performCleanup(fileStoreLayer, fileCleanupInfo)
         </td>
@@ -1786,6 +1994,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -1808,6 +2019,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -1828,6 +2042,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()

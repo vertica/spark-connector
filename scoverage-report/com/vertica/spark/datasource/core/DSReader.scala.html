@@ -2,7 +2,7 @@
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title id="title">
-          com/vertica/spark/datasource/core/DSReader.scala.html
+          com\vertica\spark\datasource\core\DSReader.scala.html
         </title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
         $(document).ready(function() {$(".tablesorter").tablesorter();});
@@ -146,6 +146,7 @@
         <th>Pos</th>
         <th>Tree</th>
         <th>Symbol</th>
+        <th>Tests</th>
         <th>Code</th>
       </tr><tr>
         <td>
@@ -164,6 +165,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface.getReadPipe
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.pipeFactory.getReadPipe(DSReader.this.config)
@@ -186,6 +190,9 @@
         <td>
           com.vertica.spark.datasource.core.DSReader.config
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.config
         </td>
@@ -206,6 +213,9 @@
         </td>
         <td>
           scala.None
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.None
@@ -228,6 +238,9 @@
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           0
         </td>
@@ -248,6 +261,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.DSReader.i_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.i_=(0)
@@ -270,6 +286,9 @@
         <td>
           com.vertica.spark.datasource.core.DSReader.partition
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.partition
         </td>
@@ -290,6 +309,9 @@
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaPipeReadInterface.startPartitionRead
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.pipe.startPartitionRead(verticaPartition)
@@ -312,6 +334,9 @@
         <td>
           com.vertica.spark.util.error.ConnectorError.context
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           com.vertica.spark.util.error.InvalidPartition.apply().context(&quot;Unexpected state: partition of type \'VerticaPartition\' was expected but not received&quot;)
         </td>
@@ -333,6 +358,9 @@
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](com.vertica.spark.util.error.InvalidPartition.apply().context(&quot;Unexpected state: partition of type \'VerticaPartition\' was expected but not received&quot;))
         </td>
@@ -353,6 +381,9 @@
         </td>
         <td>
           scala.util.Either.flatMap
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.block match {
@@ -400,6 +431,9 @@ else
         <td>
           com.vertica.spark.datasource.core.DSReader.block
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.block
         </td>
@@ -420,6 +454,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaPipeReadInterface.readData
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.pipe.readData
@@ -442,6 +479,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
         </td>
@@ -462,6 +502,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.DSReader.block_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.block_=(scala.Some.apply[com.vertica.spark.datasource.core.DataBlock](data))
@@ -484,6 +527,9 @@ else
         <td>
           scala.Some.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[com.vertica.spark.datasource.core.DataBlock](data)
         </td>
@@ -504,6 +550,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
@@ -526,6 +575,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](block)
         </td>
@@ -546,6 +598,9 @@ else
         </td>
         <td>
           scala.collection.SeqLike.isEmpty
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           dataBlock.data.isEmpty
@@ -568,6 +623,9 @@ else
         <td>
           scala.Tuple4.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.Tuple4.apply[Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit](x$1, row, x$2, x$3)
         </td>
@@ -588,6 +646,9 @@ else
         </td>
         <td>
           scala.util.Either.map
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           if (dataBlock.data.isEmpty)
@@ -626,6 +687,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
         </td>
@@ -646,6 +710,9 @@ else
         </td>
         <td>
           scala.util.Left.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
@@ -668,6 +735,9 @@ else
         <td>
           com.vertica.spark.util.error.DoneReading.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           com.vertica.spark.util.error.DoneReading.apply()
         </td>
@@ -688,6 +758,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
@@ -710,6 +783,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Unit](())
         </td>
@@ -730,6 +806,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.DSReader.i
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.i
@@ -752,6 +831,9 @@ else
         <td>
           scala.collection.LinearSeqOptimized.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           dataBlock.data.apply(DSReader.this.i)
         </td>
@@ -772,6 +854,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.DSReader.i_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.i_=(DSReader.this.i.+(1))
@@ -794,6 +879,9 @@ else
         <td>
           scala.Int.+
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.i.+(1)
         </td>
@@ -814,6 +902,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           {
@@ -839,6 +930,9 @@ else
         <td>
           scala.Int.&gt;=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.i.&gt;=(dataBlock.data.size)
         </td>
@@ -859,6 +953,9 @@ else
         </td>
         <td>
           scala.collection.SeqLike.size
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           dataBlock.data.size
@@ -881,6 +978,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.None
         </td>
@@ -901,6 +1001,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.DSReader.block_=
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.block_=(scala.None)
@@ -923,6 +1026,9 @@ else
         <td>
           com.vertica.spark.datasource.core.DSReader.i_=
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           DSReader.this.i_=(0)
         </td>
@@ -943,6 +1049,9 @@ else
         </td>
         <td>
           &lt;nosymbol&gt;
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           ()
@@ -965,6 +1074,9 @@ else
         <td>
           &lt;nosymbol&gt;
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           ()
         </td>
@@ -985,6 +1097,9 @@ else
         </td>
         <td>
           scala.Some.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.Some.apply[org.apache.spark.sql.catalyst.InternalRow](row)
@@ -1007,6 +1122,9 @@ else
         <td>
           scala.util.Right.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, Some[org.apache.spark.sql.catalyst.InternalRow]](optRow)
         </td>
@@ -1027,6 +1145,9 @@ else
         </td>
         <td>
           scala.util.Right.apply
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           scala.`package`.Right.apply[Nothing, None.type](scala.None)
@@ -1049,6 +1170,9 @@ else
         <td>
           scala.None
         </td>
+        <td>
+          
+        </td>
         <td style="background: #AEF1AE">
           scala.None
         </td>
@@ -1070,6 +1194,9 @@ else
         <td>
           scala.util.Left.apply
         </td>
+        <td>
+          
+        </td>
         <td style="background: #F0ADAD">
           scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
         </td>
@@ -1090,6 +1217,9 @@ else
         </td>
         <td>
           com.vertica.spark.datasource.core.VerticaPipeReadInterface.endPartitionRead
+        </td>
+        <td>
+          
         </td>
         <td style="background: #AEF1AE">
           DSReader.this.pipe.endPartitionRead()
