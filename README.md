@@ -201,7 +201,7 @@ This is simply an issue with hadoop closing file handles on files that have been
 
 [tests-ci-badge]: https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg
 [license-badge]: https://img.shields.io/badge/License-Apache%202.0-orange.svg
-[coverage-badge]: ./img/badge.svg
+[coverage-badge]: ./img/coverage-badge.svg
 [release-badge]: https://img.shields.io/badge/Release-3.0.3-blue
 [maven-badge]: https://maven-badges.herokuapp.com/maven-central/com.vertica.spark/vertica-spark/badge.svg
 [contributing-badge]: https://img.shields.io/badge/Contributing-read-blue
