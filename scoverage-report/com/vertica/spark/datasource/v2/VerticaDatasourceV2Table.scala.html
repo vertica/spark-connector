@@ -1,0 +1,1310 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/datasource/v2/VerticaDatasourceV2Table.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.datasource.v2
+</span>15 <span style=''>
+</span>16 <span style=''>import java.util
+</span>17 <span style=''>import cats.data.Validated.{Invalid, Valid}
+</span>18 <span style=''>import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+</span>19 <span style=''>import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
+</span>20 <span style=''>import com.vertica.spark.datasource.v2
+</span>21 <span style=''>import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
+</span>22 <span style=''>import org.apache.spark.sql.SparkSession
+</span>23 <span style=''>import com.vertica.spark.util.listeners.ApplicationParquetCleaner
+</span>24 <span style=''>import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
+</span>25 <span style=''>import org.apache.spark.sql.connector.read.ScanBuilder
+</span>26 <span style=''>import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
+</span>27 <span style=''>import org.apache.spark.sql.types.StructType
+</span>28 <span style=''>import org.apache.spark.sql.util.CaseInsensitiveStringMap
+</span>29 <span style=''>
+</span>30 <span style=''>import collection.JavaConverters._
+</span>31 <span style=''>
+</span>32 <span style=''>/**
+</span>33 <span style=''> * Represents a Vertica table to Spark.
+</span>34 <span style=''> *
+</span>35 <span style=''> * Supports Read and Write functionality.
+</span>36 <span style=''> */
+</span>37 <span style=''>class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetupInterface: DSConfigSetupInterface[ReadConfig] = new DSReadConfigSetup) extends Table with SupportsRead with SupportsWrite {
+</span>38 <span style=''>
+</span>39 <span style=''>  // Cache the scan builder so we don't build it twice
+</span>40 <span style=''>  var scanBuilder : Option[VerticaScanBuilder] = </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>41 <span style=''>
+</span>42 <span style=''>  /**
+</span>43 <span style=''>   * A name to differentiate this table from other tables
+</span>44 <span style=''>   *
+</span>45 <span style=''>   * @return A string representing a unique name for the table.
+</span>46 <span style=''>   */
+</span>47 <span style=''>  override def name(): String = </span><span style='background: #F0ADAD'>&quot;VerticaTable&quot;</span><span style=''> // TODO: change this to db.tablename
+</span>48 <span style=''>
+</span>49 <span style=''>
+</span>50 <span style=''>  /**
+</span>51 <span style=''>   * Should reach out to SQL layer and return schema of the table.
+</span>52 <span style=''>   *
+</span>53 <span style=''>   * @return Spark struct type representing a table schema.
+</span>54 <span style=''>   */
+</span>55 <span style=''>  override def schema(): StructType = {
+</span>56 <span style=''>    // Check if there's a valid read config with schema for the table, if not return empty schema
+</span>57 <span style=''>    </span><span style='background: #AEF1AE'>readSetupInterface.validateAndGetConfig(caseInsensitiveStringMap.asScala.toMap)</span><span style=''> match {
+</span>58 <span style=''>      case Invalid(_) =&gt; </span><span style='background: #AEF1AE'>new StructType()</span><span style=''>
+</span>59 <span style=''>      case Valid(_) =&gt; </span><span style='background: #AEF1AE'>this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()</span><span style=''>
+</span>60 <span style=''>    }
+</span>61 <span style=''>
+</span>62 <span style=''>  }
+</span>63 <span style=''>
+</span>64 <span style=''>  /**
+</span>65 <span style=''>   * Returns a list of capabilities that the table supports.
+</span>66 <span style=''>   *
+</span>67 <span style=''>   * @return Set of [[TableCapability]] representing the functions this source supports.
+</span>68 <span style=''>   */
+</span>69 <span style=''>  override def capabilities(): util.Set[TableCapability] =
+</span>70 <span style=''>    </span><span style='background: #AEF1AE'>Set(TableCapability.BATCH_READ, TableCapability.BATCH_WRITE, TableCapability.OVERWRITE_BY_FILTER,
+</span>71 <span style=''></span><span style='background: #AEF1AE'>      TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava</span><span style=''>
+</span>72 <span style=''>
+</span>73 <span style=''>  /**
+</span>74 <span style=''>   * Returns a scan builder for reading from Vertica
+</span>75 <span style=''>   *
+</span>76 <span style=''>   * @return [[v2.VerticaScanBuilder]]
+</span>77 <span style=''>   */
+</span>78 <span style=''>  override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
+</span>79 <span style=''>  {
+</span>80 <span style=''>    val logger = </span><span style='background: #AEF1AE'>LogProvider.getLogger(classOf[VerticaTable])</span><span style=''>
+</span>81 <span style=''>    </span><span style='background: #AEF1AE'>this.scanBuilder</span><span style=''> match {
+</span>82 <span style=''>      case Some(builder) =&gt; builder
+</span>83 <span style=''>      case None =&gt;
+</span>84 <span style=''>        val config = </span><span style='background: #AEF1AE'>readSetupInterface.validateAndGetConfig(options.asScala.toMap)</span><span style=''> match {
+</span>85 <span style=''>          case Invalid(errList) =&gt;
+</span>86 <span style=''>            </span><span style='background: #AEF1AE'>ErrorHandling.logAndThrowError(logger, ErrorList(errList.toNonEmptyList))</span><span style=''>
+</span>87 <span style=''>          case Valid(cfg) =&gt; cfg
+</span>88 <span style=''>        }
+</span>89 <span style=''>        logger.debug(&quot;Config loaded&quot;)
+</span>90 <span style=''>
+</span>91 <span style=''>        // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with right feature support
+</span>92 <span style=''>        var sparkNewerThan31 = </span><span style='background: #AEF1AE'>true</span><span style=''>
+</span>93 <span style=''>        try {
+</span>94 <span style=''>          </span><span style='background: #AEF1AE'>val sparkVersion = SparkSession.getActiveSession.get.version
+</span>95 <span style=''></span><span style='background: #AEF1AE'>          val versionList = sparkVersion.split(&quot;\\.&quot;).map(_.toInt)
+</span>96 <span style=''></span><span style='background: #AEF1AE'>          if(versionList.length &gt;= 2 &amp;&amp; versionList(0) == 3 &amp;&amp; versionList(1) &lt; 2) {
+</span>97 <span style=''></span><span style='background: #AEF1AE'>            </span><span style='background: #F0ADAD'>sparkNewerThan31 = false</span><span style='background: #AEF1AE'>
+</span>98 <span style=''></span><span style='background: #AEF1AE'>          }</span><span style=''>
+</span>99 <span style=''>        }
+</span>100 <span style=''>        catch { // Couldn't recgonize version string, assume newer version
+</span>101 <span style=''>          case _: java.lang.NumberFormatException =&gt; sparkNewerThan31 = </span><span style='background: #F0ADAD'>true</span><span style=''>
+</span>102 <span style=''>        }
+</span>103 <span style=''>
+</span>104 <span style=''>        val scanBuilder = if(sparkNewerThan31) {
+</span>105 <span style=''>          </span><span style='background: #AEF1AE'>classOf[VerticaScanBuilderWithPushdown]
+</span>106 <span style=''></span><span style='background: #AEF1AE'>            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+</span>107 <span style=''></span><span style='background: #AEF1AE'>            .newInstance(config, readSetupInterface)</span><span style=''>
+</span>108 <span style=''>        }
+</span>109 <span style=''>        else {
+</span>110 <span style=''>          </span><span style='background: #F0ADAD'>classOf[VerticaScanBuilder]
+</span>111 <span style=''></span><span style='background: #F0ADAD'>            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
+</span>112 <span style=''></span><span style='background: #F0ADAD'>            .newInstance(config, readSetupInterface)</span><span style=''>
+</span>113 <span style=''>        }
+</span>114 <span style=''>        </span><span style='background: #AEF1AE'>this.scanBuilder = Some(scanBuilder)</span><span style=''>
+</span>115 <span style=''>        scanBuilder
+</span>116 <span style=''>    }
+</span>117 <span style=''>  }
+</span>118 <span style=''>
+</span>119 <span style=''>  /**
+</span>120 <span style=''>   * Returns a write builder for writing to Vertica
+</span>121 <span style=''>   *
+</span>122 <span style=''>   * @return [[v2.VerticaWriteBuilder]]
+</span>123 <span style=''>   */
+</span>124 <span style=''>  def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder =
+</span>125 <span style=''>  {
+</span>126 <span style=''>    </span><span style='background: #F0ADAD'>new VerticaWriteBuilder(info, new DSWriteConfigSetup(schema = Some(info.schema)))</span><span style=''>
+</span>127 <span style=''>  }
+</span>128 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          40
+        </td>
+        <td>
+          1722
+        </td>
+        <td>
+          1900
+          -
+          1904
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          1723
+        </td>
+        <td>
+          2077
+          -
+          2091
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;VerticaTable&quot;
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1725
+        </td>
+        <td>
+          2490
+          -
+          2490
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.$conforms[(String, String)]
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1724
+        </td>
+        <td>
+          2457
+          -
+          2481
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaTable.caseInsensitiveStringMap
+        </td>
+        <td style="background: #AEF1AE">
+          VerticaTable.this.caseInsensitiveStringMap
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1727
+        </td>
+        <td>
+          2417
+          -
+          2496
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSConfigSetupInterface.validateAndGetConfig
+        </td>
+        <td style="background: #AEF1AE">
+          VerticaTable.this.readSetupInterface.validateAndGetConfig(scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaTable.this.caseInsensitiveStringMap).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)]))
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          1726
+        </td>
+        <td>
+          2457
+          -
+          2495
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toMap
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](VerticaTable.this.caseInsensitiveStringMap).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)])
+        </td>
+      </tr><tr>
+        <td>
+          58
+        </td>
+        <td>
+          1728
+        </td>
+        <td>
+          2530
+          -
+          2546
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructType.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new org.apache.spark.sql.types.StructType()
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          1729
+        </td>
+        <td>
+          2570
+          -
+          2636
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.connector.read.Scan.readSchema
+        </td>
+        <td style="background: #AEF1AE">
+          this.newScanBuilder(VerticaTable.this.caseInsensitiveStringMap).build().readSchema()
+        </td>
+      </tr><tr>
+        <td>
+          70
+        </td>
+        <td>
+          1730
+        </td>
+        <td>
+          2879
+          -
+          3043
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.generic.GenericCompanion.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.Set.apply[org.apache.spark.sql.connector.catalog.TableCapability](BATCH_READ, BATCH_WRITE, OVERWRITE_BY_FILTER, TRUNCATE, ACCEPT_ANY_SCHEMA)
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          1731
+        </td>
+        <td>
+          2879
+          -
+          3050
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.convert.Decorators.AsJava.asJava
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.setAsJavaSetConverter[org.apache.spark.sql.connector.catalog.TableCapability](scala.Predef.Set.apply[org.apache.spark.sql.connector.catalog.TableCapability](BATCH_READ, BATCH_WRITE, OVERWRITE_BY_FILTER, TRUNCATE, ACCEPT_ANY_SCHEMA)).asJava
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          1732
+        </td>
+        <td>
+          3262
+          -
+          3306
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.datasource.v2.VerticaTable])
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          1733
+        </td>
+        <td>
+          3311
+          -
+          3327
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaTable.scanBuilder
+        </td>
+        <td style="background: #AEF1AE">
+          this.scanBuilder
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1734
+        </td>
+        <td>
+          3468
+          -
+          3468
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          scala.Predef.$conforms
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.$conforms[(String, String)]
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1736
+        </td>
+        <td>
+          3412
+          -
+          3474
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSConfigSetupInterface.validateAndGetConfig
+        </td>
+        <td style="background: #AEF1AE">
+          VerticaTable.this.readSetupInterface.validateAndGetConfig(scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](options).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)]))
+        </td>
+      </tr><tr>
+        <td>
+          84
+        </td>
+        <td>
+          1735
+        </td>
+        <td>
+          3452
+          -
+          3473
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableOnce.toMap
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.JavaConverters.mapAsScalaMapConverter[String, String](options).asScala.toMap[String, String](scala.Predef.$conforms[(String, String)])
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1737
+        </td>
+        <td>
+          3579
+          -
+          3601
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          cats.data.NonEmptyChainOps.toNonEmptyList
+        </td>
+        <td style="background: #AEF1AE">
+          data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1739
+        </td>
+        <td>
+          3530
+          -
+          3603
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.error.ErrorHandling.logAndThrowError
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.util.error.ErrorHandling.logAndThrowError(logger, com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList))
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          1738
+        </td>
+        <td>
+          3569
+          -
+          3602
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.error.ErrorList.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.util.error.ErrorList.apply(data.this.NonEmptyChainImpl.catsNonEmptyChainOps[com.vertica.spark.util.error.ConnectorError](errList).toNonEmptyList)
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          1740
+        </td>
+        <td>
+          3838
+          -
+          3842
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          1754
+        </td>
+        <td>
+          3867
+          -
+          4128
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val sparkVersion: String = org.apache.spark.sql.SparkSession.getActiveSession.get.version;
+  val versionList: Array[Int] = scala.Predef.refArrayOps[String](sparkVersion.split(&quot;\\.&quot;)).map[Int, Array[Int]](((x$1: String) =&gt; scala.Predef.augmentString(x$1).toInt))(scala.this.Array.canBuildFrom[Int]((ClassTag.Int: scala.reflect.ClassTag[Int])));
+  if (versionList.length.&gt;=(2).&amp;&amp;(versionList.apply(0).==(3)).&amp;&amp;(versionList.apply(1).&lt;(2)))
+    sparkNewerThan31 = false
+  else
+    ()
+}
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          1741
+        </td>
+        <td>
+          3886
+          -
+          3927
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          org.apache.spark.sql.SparkSession.version
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.SparkSession.getActiveSession.get.version
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1743
+        </td>
+        <td>
+          3986
+          -
+          3993
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.StringLike.toInt
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(x$1).toInt
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1742
+        </td>
+        <td>
+          3956
+          -
+          3981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.split
+        </td>
+        <td style="background: #AEF1AE">
+          sparkVersion.split(&quot;\\.&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1745
+        </td>
+        <td>
+          3956
+          -
+          3994
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.collection.TraversableLike.map
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.refArrayOps[String](sparkVersion.split(&quot;\\.&quot;)).map[Int, Array[Int]](((x$1: String) =&gt; scala.Predef.augmentString(x$1).toInt))(scala.this.Array.canBuildFrom[Int]((ClassTag.Int: scala.reflect.ClassTag[Int])))
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          1744
+        </td>
+        <td>
+          3985
+          -
+          3985
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.canBuildFrom
+        </td>
+        <td style="background: #AEF1AE">
+          scala.this.Array.canBuildFrom[Int]((ClassTag.Int: scala.reflect.ClassTag[Int]))
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1752
+        </td>
+        <td>
+          4005
+          -
+          4005
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1746
+        </td>
+        <td>
+          4030
+          -
+          4031
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          2
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1748
+        </td>
+        <td>
+          4058
+          -
+          4076
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&lt;
+        </td>
+        <td style="background: #AEF1AE">
+          versionList.apply(1).&lt;(2)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1753
+        </td>
+        <td>
+          4005
+          -
+          4005
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1747
+        </td>
+        <td>
+          4035
+          -
+          4054
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.==
+        </td>
+        <td style="background: #AEF1AE">
+          versionList.apply(0).==(3)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          1749
+        </td>
+        <td>
+          4008
+          -
+          4076
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #AEF1AE">
+          versionList.length.&gt;=(2).&amp;&amp;(versionList.apply(0).==(3)).&amp;&amp;(versionList.apply(1).&lt;(2))
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          1751
+        </td>
+        <td>
+          4092
+          -
+          4116
+        </td>
+        <td>
+          Assign
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          sparkNewerThan31 = false
+        </td>
+      </tr><tr>
+        <td>
+          97
+        </td>
+        <td>
+          1750
+        </td>
+        <td>
+          4111
+          -
+          4116
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          101
+        </td>
+        <td>
+          1755
+        </td>
+        <td>
+          4286
+          -
+          4290
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          true
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          1756
+        </td>
+        <td>
+          4361
+          -
+          4400
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown]
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1757
+        </td>
+        <td>
+          4437
+          -
+          4456
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[com.vertica.spark.config.ReadConfig]
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          1758
+        </td>
+        <td>
+          4458
+          -
+          4501
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1761
+        </td>
+        <td>
+          4361
+          -
+          4555
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.reflect.Constructor.newInstance
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1760
+        </td>
+        <td>
+          4361
+          -
+          4555
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.reflect.Constructor.newInstance
+        </td>
+        <td style="background: #AEF1AE">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilderWithPushdown].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
+        </td>
+      </tr><tr>
+        <td>
+          107
+        </td>
+        <td>
+          1759
+        </td>
+        <td>
+          4536
+          -
+          4554
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaTable.readSetupInterface
+        </td>
+        <td style="background: #AEF1AE">
+          VerticaTable.this.readSetupInterface
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          1762
+        </td>
+        <td>
+          4591
+          -
+          4618
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder]
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1764
+        </td>
+        <td>
+          4676
+          -
+          4719
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          1763
+        </td>
+        <td>
+          4655
+          -
+          4674
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[com.vertica.spark.config.ReadConfig]
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          1766
+        </td>
+        <td>
+          4591
+          -
+          4773
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.reflect.Constructor.newInstance
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          1765
+        </td>
+        <td>
+          4754
+          -
+          4772
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaTable.readSetupInterface
+        </td>
+        <td style="background: #F0ADAD">
+          VerticaTable.this.readSetupInterface
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          1767
+        </td>
+        <td>
+          4591
+          -
+          4773
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.reflect.Constructor.newInstance
+        </td>
+        <td style="background: #F0ADAD">
+          classOf[com.vertica.spark.datasource.v2.VerticaScanBuilder].getDeclaredConstructor(classOf[com.vertica.spark.config.ReadConfig], classOf[com.vertica.spark.datasource.core.DSConfigSetupInterface]).newInstance(config, VerticaTable.this.readSetupInterface)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          1769
+        </td>
+        <td>
+          4792
+          -
+          4828
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaTable.scanBuilder_=
+        </td>
+        <td style="background: #AEF1AE">
+          this.scanBuilder_=(scala.Some.apply[com.vertica.spark.datasource.v2.VerticaScanBuilder](scanBuilder))
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          1768
+        </td>
+        <td>
+          4811
+          -
+          4828
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[com.vertica.spark.datasource.v2.VerticaScanBuilder](scanBuilder)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1770
+        </td>
+        <td>
+          5106
+          -
+          5117
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.connector.write.LogicalWriteInfo.schema
+        </td>
+        <td style="background: #F0ADAD">
+          info.schema()
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1773
+        </td>
+        <td>
+          5069
+          -
+          5069
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;$default$3
+        </td>
+        <td style="background: #F0ADAD">
+          core.this.DSWriteConfigSetup.&lt;init&gt;$default$3
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1772
+        </td>
+        <td>
+          5069
+          -
+          5069
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;$default$2
+        </td>
+        <td style="background: #F0ADAD">
+          core.this.DSWriteConfigSetup.&lt;init&gt;$default$2
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1775
+        </td>
+        <td>
+          5039
+          -
+          5120
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.VerticaWriteBuilder.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new VerticaWriteBuilder(info, new com.vertica.spark.datasource.core.DSWriteConfigSetup(scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema()), core.this.DSWriteConfigSetup.&lt;init&gt;$default$2, core.this.DSWriteConfigSetup.&lt;init&gt;$default$3))
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1771
+        </td>
+        <td>
+          5101
+          -
+          5118
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema())
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          1774
+        </td>
+        <td>
+          5069
+          -
+          5119
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSWriteConfigSetup.&lt;init&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          new com.vertica.spark.datasource.core.DSWriteConfigSetup(scala.Some.apply[org.apache.spark.sql.types.StructType](info.schema()), core.this.DSWriteConfigSetup.&lt;init&gt;$default$2, core.this.DSWriteConfigSetup.&lt;init&gt;$default$3)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

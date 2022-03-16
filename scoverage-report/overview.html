@@ -1,0 +1,6804 @@
+<html>
+      <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+      <title id="title">Scoverage Code Coverage</title>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+      <style>
+        .meter {
+        height: 14px;
+        position: relative;
+        background: #BB2020;
+}
+
+.meter span {
+	display: block;
+	height: 100%;
+	background-color: rgb(43,194,83);
+	background-image: -webkit-gradient(
+	  linear,
+	  left bottom,
+	  left top,
+	  color-stop(0, rgb(43,194,83)),
+	  color-stop(1, rgb(84,240,84))
+	 );
+	background-image: -webkit-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -moz-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -ms-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	background-image: -o-linear-gradient(
+	  center bottom,
+	  rgb(43,194,83) 37%,
+	  rgb(84,240,84) 69%
+	 );
+	-webkit-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	-moz-box-shadow:
+	  inset 0 2px 9px  rgba(255,255,255,0.3),
+	  inset 0 -2px 6px rgba(0,0,0,0.4);
+	position: relative;
+	overflow: hidden;
+}
+      </style>
+    </head><body style="font-family: monospace;">
+      <div class="alert alert-info">
+        <b>
+          SCoverage
+        </b>
+        generated at
+        Wed Mar 16 18:07:38 UTC 2022
+      </div>
+      <div class="overview">
+        <div class="stats">
+          <table class="table">
+      <tr>
+        <td>
+          Lines of code:
+        </td>
+        <td>
+          4859
+        </td>
+        <td>
+          Files:
+        </td>
+        <td>
+          26
+        </td>
+        <td>
+          Classes:
+        </td>
+        <td>
+          146
+        </td>
+        <td>
+          Methods:
+        </td>
+        <td>
+          412
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Lines per file:
+        </td>
+        <td>
+          186.88
+        </td>
+        <td>
+          Packages:
+        </td>
+        <td>
+          13
+        </td>
+        <td>
+          Classes per package:
+        </td>
+        <td>
+          11.23
+        </td>
+        <td>
+          Methods per class:
+        </td>
+        <td>
+          2.82
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Total statements:
+        </td>
+        <td>
+          2857
+        </td>
+        <td>
+          Invoked statements:
+        </td>
+        <td>
+          2322
+        </td>
+        <td>
+          Total branches:
+        </td>
+        <td>
+          244
+        </td>
+        <td>
+          Invoked branches:
+        </td>
+        <td>
+          174
+        </td>
+      </tr>
+      <tr>
+        <td>
+          Ignored statements:
+        </td>
+        <td>
+          0
+        </td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>
+          Statement coverage:
+        </td>
+        <td>
+          81.27
+          %
+        </td>
+        <td colspan="2">
+          <div class="meter">
+            <span style="width: 81%"></span>
+          </div>
+        </td>
+        <td>
+          Branch coverage:
+        </td>
+        <td>
+          71.31
+          %
+        </td>
+        <td colspan="2">
+          <div class="meter">
+            <span style="width: 71%"></span>
+          </div>
+        </td>
+      </tr>
+    </table>
+        </div>
+        <div>
+          <table class="tablesorter table table-striped" style="font-size:13px">
+      <thead>
+        <tr>
+          <th>
+            Class
+          </th>
+          <th>
+            Source file
+          </th>
+          <th>
+            Lines
+          </th>
+          <th>
+            Methods
+          </th>
+          <th>
+            Statements
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+          <th>
+            Branches
+          </th>
+          <th>
+            Invoked
+          </th>
+          <th>
+            Coverage
+          </th>
+          <th>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+      <td>
+        <a href="sbt-buildinfo/BuildInfo.scala.html">
+          BuildInfo
+        </a>
+      </td>
+      <td>
+        BuildInfo.scala
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/FileStoreConfig.scala.html">
+          AWSArg
+        </a>
+      </td>
+      <td>
+        FileStoreConfig.scala
+      </td>
+      <td>
+        34
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/JDBCConfig.scala.html">
+          BasicJdbcAuth
+        </a>
+      </td>
+      <td>
+        JDBCConfig.scala
+      </td>
+      <td>
+        31
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/ReadConfig.scala.html">
+          DistributedFilesystemReadConfig
+        </a>
+      </td>
+      <td>
+        ReadConfig.scala
+      </td>
+      <td>
+        135
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        27
+      </td>
+      <td>
+        27
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/WriteConfig.scala.html">
+          DistributedFilesystemWriteConfig
+        </a>
+      </td>
+      <td>
+        WriteConfig.scala
+      </td>
+      <td>
+        96
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/TableName.scala.html">
+          EscapeUtils
+        </a>
+      </td>
+      <td>
+        TableName.scala
+      </td>
+      <td>
+        25
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/FileStoreConfig.scala.html">
+          FileStoreConfig
+        </a>
+      </td>
+      <td>
+        FileStoreConfig.scala
+      </td>
+      <td>
+        92
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        43
+      </td>
+      <td>
+        28
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 65%"></span>
+        </div>
+      </td>
+      <td>
+        65.12
+        %
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 67%"></span>
+        </div>
+      </td>
+      <td>
+        66.67
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/JDBCConfig.scala.html">
+          KerberosAuth
+        </a>
+      </td>
+      <td>
+        JDBCConfig.scala
+      </td>
+      <td>
+        44
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/LogProvider.scala.html">
+          LogProvider
+        </a>
+      </td>
+      <td>
+        LogProvider.scala
+      </td>
+      <td>
+        22
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/TableName.scala.html">
+          TableName
+        </a>
+      </td>
+      <td>
+        TableName.scala
+      </td>
+      <td>
+        63
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/TableName.scala.html">
+          TableQuery
+        </a>
+      </td>
+      <td>
+        TableName.scala
+      </td>
+      <td>
+        67
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/WriteConfig.scala.html">
+          ValidColumnList
+        </a>
+      </td>
+      <td>
+        WriteConfig.scala
+      </td>
+      <td>
+        59
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        26
+      </td>
+      <td>
+        26
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/config/ReadConfig.scala.html">
+          ValidFilePermissions
+        </a>
+      </td>
+      <td>
+        ReadConfig.scala
+      </td>
+      <td>
+        83
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        16
+      </td>
+      <td>
+        16
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/VerticaDatasourceV2.scala.html">
+          VerticaSource
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2.scala
+      </td>
+      <td>
+        79
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        21
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 48%"></span>
+        </div>
+      </td>
+      <td>
+        47.62
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          DSConfigSetupUtils
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        514
+      </td>
+      <td>
+        50
+      </td>
+      <td>
+        347
+      </td>
+      <td>
+        307
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 88%"></span>
+        </div>
+      </td>
+      <td>
+        88.47
+        %
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 63%"></span>
+        </div>
+      </td>
+      <td>
+        62.50
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          DSReadConfigSetup
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        588
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        45
+      </td>
+      <td>
+        35
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 78%"></span>
+        </div>
+      </td>
+      <td>
+        77.78
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSReader.scala.html">
+          DSReader
+        </a>
+      </td>
+      <td>
+        DSReader.scala
+      </td>
+      <td>
+        112
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        43
+      </td>
+      <td>
+        39
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 91%"></span>
+        </div>
+      </td>
+      <td>
+        90.70
+        %
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 75%"></span>
+        </div>
+      </td>
+      <td>
+        75.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          DSWriteConfigSetup
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        653
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        37
+      </td>
+      <td>
+        26
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 70%"></span>
+        </div>
+      </td>
+      <td>
+        70.27
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSWriter.scala.html">
+          DSWriter
+        </a>
+      </td>
+      <td>
+        DSWriter.scala
+      </td>
+      <td>
+        99
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        35
+      </td>
+      <td>
+        34
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 97%"></span>
+        </div>
+      </td>
+      <td>
+        97.14
+        %
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          Disable
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        58
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          ExistingData
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        72
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          NewData
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        75
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          Require
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        61
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/SessionId.scala.html">
+          SessionId
+        </a>
+      </td>
+      <td>
+        SessionId.scala
+      </td>
+      <td>
+        27
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          VerifyCA
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        64
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/DSConfigSetup.scala.html">
+          VerifyFull
+        </a>
+      </td>
+      <td>
+        DSConfigSetup.scala
+      </td>
+      <td>
+        67
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/VerticaDistributedFilesystemReadPipe.scala.html">
+          VerticaDistributedFilesystemReadPipe
+        </a>
+      </td>
+      <td>
+        VerticaDistributedFilesystemReadPipe.scala
+      </td>
+      <td>
+        490
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        335
+      </td>
+      <td>
+        286
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 85%"></span>
+        </div>
+      </td>
+      <td>
+        85.37
+        %
+      </td>
+      <td>
+        44
+      </td>
+      <td>
+        34
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 77%"></span>
+        </div>
+      </td>
+      <td>
+        77.27
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/core/VerticaDistributedFilesystemWritePipe.scala.html">
+          VerticaDistributedFilesystemWritePipe
+        </a>
+      </td>
+      <td>
+        VerticaDistributedFilesystemWritePipe.scala
+      </td>
+      <td>
+        560
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        516
+      </td>
+      <td>
+        431
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 84%"></span>
+        </div>
+      </td>
+      <td>
+        83.53
+        %
+      </td>
+      <td>
+        78
+      </td>
+      <td>
+        60
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 77%"></span>
+        </div>
+      </td>
+      <td>
+        76.92
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          AggregateNotSupported
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        48
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          ExpectedRowDidNotExistError
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        44
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          PushFilter
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        34
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          PushdownAggregate
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        38
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          UnknownColumnName
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        52
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          VerticaBatchReader
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        275
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        21
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 86%"></span>
+        </div>
+      </td>
+      <td>
+        85.71
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Write.scala.html">
+          VerticaBatchWrite
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Write.scala
+      </td>
+      <td>
+        104
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        19
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 58%"></span>
+        </div>
+      </td>
+      <td>
+        57.89
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Write.scala.html">
+          VerticaBatchWriter
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Write.scala
+      </td>
+      <td>
+        195
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        22
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 82%"></span>
+        </div>
+      </td>
+      <td>
+        81.82
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Catalog.scala.html">
+          VerticaDatasourceV2Catalog
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Catalog.scala
+      </td>
+      <td>
+        102
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        33
+      </td>
+      <td>
+        28
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 85%"></span>
+        </div>
+      </td>
+      <td>
+        84.85
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          VerticaReaderFactory
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        224
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          VerticaScan
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        207
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        17
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          VerticaScanBuilder
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        120
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        44
+      </td>
+      <td>
+        37
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 84%"></span>
+        </div>
+      </td>
+      <td>
+        84.09
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Read.scala.html">
+          VerticaScanBuilderWithPushdown
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Read.scala
+      </td>
+      <td>
+        155
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        62
+      </td>
+      <td>
+        43
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 69%"></span>
+        </div>
+      </td>
+      <td>
+        69.35
+        %
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Table.scala.html">
+          VerticaTable
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Table.scala
+      </td>
+      <td>
+        126
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        54
+      </td>
+      <td>
+        38
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 70%"></span>
+        </div>
+      </td>
+      <td>
+        70.37
+        %
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 60%"></span>
+        </div>
+      </td>
+      <td>
+        60.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Write.scala.html">
+          VerticaWriteBuilder
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Write.scala
+      </td>
+      <td>
+        54
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        13
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 92%"></span>
+        </div>
+      </td>
+      <td>
+        92.31
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/datasource/v2/VerticaDatasourceV2Write.scala.html">
+          VerticaWriterFactory
+        </a>
+      </td>
+      <td>
+        VerticaDatasourceV2Write.scala
+      </td>
+      <td>
+        125
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/Timer.scala.html">
+          Timer
+        </a>
+      </td>
+      <td>
+        Timer.scala
+      </td>
+      <td>
+        37
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 67%"></span>
+        </div>
+      </td>
+      <td>
+        66.67
+        %
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/cleanup/CleanupUtils.scala.html">
+          CleanupUtils
+        </a>
+      </td>
+      <td>
+        CleanupUtils.scala
+      </td>
+      <td>
+        138
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        72
+      </td>
+      <td>
+        67
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 93%"></span>
+        </div>
+      </td>
+      <td>
+        93.06
+        %
+      </td>
+      <td>
+        8
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 75%"></span>
+        </div>
+      </td>
+      <td>
+        75.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CleanupError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        131
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CloseReadError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        361
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CloseWriteError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        339
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CommitError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        166
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ConnectionDownError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        431
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ConnectionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        428
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ConnectionSqlError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        421
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ConnectorError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        37
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ConnectorException
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        48
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ContextError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        43
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateDirectoryAlreadyExistsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        316
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateDirectoryError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        297
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateExternalTableAlreadyExistsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        399
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateExternalTableMergeKey
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        396
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateFileAlreadyExistsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        312
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateFileError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        291
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          CreateTableError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        155
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DataError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        438
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DatabaseReadError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        470
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DbMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        215
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DoneReading
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        118
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DropTableError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        159
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          DuplicateColumnsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        196
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ErrorHandling
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        79
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ErrorList
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        365
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ExportFromVerticaError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        106
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          FaultToleranceTestFail
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        175
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          FileListError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        285
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          FileStoreThrownError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        384
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        10
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          GenericError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        450
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          HDFSConfigError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        499
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          HostMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        199
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InferExternalSchemaError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        474
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InferExternalTableSchemaError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        496
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InitialSetupPartitioningError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        110
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        6
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          IntermediaryStoreReadError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        355
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          IntermediaryStoreReaderNotInitializedError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        349
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          IntermediaryStoreWriteError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        333
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          IntermediaryStoreWriterNotInitializedError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        327
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidCreateExternalTableOption
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        203
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidFailedRowsTolerance
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        263
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidFilePermissions
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        260
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidIntegerField
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        244
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidPartition
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        114
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidPartitionCountError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        271
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidPortError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        240
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidPreventCleanupOption
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        211
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidSaveJobStatusTableOption
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        207
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          InvalidStrlenError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        267
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          JdbcSchemaError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        480
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          JobAbortedError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        502
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          JobStatusCreateError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        181
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          JobStatusUpdateError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        192
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          KerberosAuthMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        227
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          KerberosNotEnabledInHadoopConf
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        371
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          LoadConfigMissingSparkSessionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        390
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MergeColumnListError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        405
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingAWSAccessKeyId
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        254
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingAWSSecretAccessKey
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        251
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingHDFSImpersonationTokenError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        368
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingMetadata
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        127
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingNameNodeAddressError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        408
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingSchemaError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        135
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingSparkConversionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        466
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingSparkSessionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        387
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          MissingSqlConversionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        463
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        5
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          NoSparkSessionFound
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        374
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          NonEmptyDataFrameError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        486
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          OpenReadError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        345
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          OpenWriteError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        323
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 14%"></span>
+        </div>
+      </td>
+      <td>
+        14.29
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ParamsNotSupported
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        453
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ParentDirMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        279
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          PasswordMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        223
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          QuerySpecifiedOnWriteError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        237
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          RemoveDirectoryError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        309
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          RemoveFileError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        303
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          SchemaColumnListError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        93
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          SchemaConversionError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        99
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          SchemaDiscoveryError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        84
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          StagingFsUrlMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        275
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          SyntaxError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        444
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TLSModeParseError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        247
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TableAndQueryMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        234
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TableCheckError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        144
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        7
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TableNotEnoughRowsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        483
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TablenameMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        231
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          TempTableExistsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        172
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          UninitializedReadError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        123
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          UnknownColumnTypesError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        490
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          UnquotedSemiInColumns
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        257
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          UserMissingError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        219
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          V1ReplacementOption
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        393
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/error/ErrorHandling.scala.html">
+          ViewExistsError
+        </a>
+      </td>
+      <td>
+        ErrorHandling.scala
+      </td>
+      <td>
+        169
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/general/Utils.scala.html">
+          Utils
+        </a>
+      </td>
+      <td>
+        Utils.scala
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 100%"></span>
+        </div>
+      </td>
+      <td>
+        100.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/listeners/SparkListeners.scala.html">
+          ApplicationParquetCleaner
+        </a>
+      </td>
+      <td>
+        SparkListeners.scala
+      </td>
+      <td>
+        57
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        18
+      </td>
+      <td>
+        11
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 61%"></span>
+        </div>
+      </td>
+      <td>
+        61.11
+        %
+      </td>
+      <td>
+        4
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/listeners/SparkListeners.scala.html">
+          CleanerRegistrationError
+        </a>
+      </td>
+      <td>
+        SparkListeners.scala
+      </td>
+      <td>
+        66
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/listeners/SparkListeners.scala.html">
+          SparkContextWrapper
+        </a>
+      </td>
+      <td>
+        SparkListeners.scala
+      </td>
+      <td>
+        35
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        3
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        0
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 0%"></span>
+        </div>
+      </td>
+      <td>
+        0.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/pushdown/PushdownUtils.scala.html">
+          PushdownUtils
+        </a>
+      </td>
+      <td>
+        PushdownUtils.scala
+      </td>
+      <td>
+        77
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        57
+      </td>
+      <td>
+        49
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 86%"></span>
+        </div>
+      </td>
+      <td>
+        85.96
+        %
+      </td>
+      <td>
+        2
+      </td>
+      <td>
+        1
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 50%"></span>
+        </div>
+      </td>
+      <td>
+        50.00
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/schema/SchemaTools.scala.html">
+          SchemaTools
+        </a>
+      </td>
+      <td>
+        SchemaTools.scala
+      </td>
+      <td>
+        492
+      </td>
+      <td>
+        14
+      </td>
+      <td>
+        329
+      </td>
+      <td>
+        235
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 71%"></span>
+        </div>
+      </td>
+      <td>
+        71.43
+        %
+      </td>
+      <td>
+        46
+      </td>
+      <td>
+        27
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 59%"></span>
+        </div>
+      </td>
+      <td>
+        58.70
+        %
+      </td>
+    </tr><tr>
+      <td>
+        <a href="com/vertica/spark/util/table/TableUtils.scala.html">
+          TableUtils
+        </a>
+      </td>
+      <td>
+        TableUtils.scala
+      </td>
+      <td>
+        338
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        180
+      </td>
+      <td>
+        130
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 72%"></span>
+        </div>
+      </td>
+      <td>
+        72.22
+        %
+      </td>
+      <td>
+        20
+      </td>
+      <td>
+        12
+      </td>
+      <td>
+        <div class="meter">
+          <span style="width: 60%"></span>
+        </div>
+      </td>
+      <td>
+        60.00
+        %
+      </td>
+    </tr>
+      </tbody>
+    </table>
+        </div>
+      </div>
+    </body>
+    </html>
