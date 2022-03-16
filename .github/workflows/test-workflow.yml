@@ -50,8 +50,7 @@ jobs:
 
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O badge.svg
 
-          cd ..
-          cp -R scoverage-report ../../../
+          cp badge.svg ../../../../img
       - name: Publish code coverage report
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
