@@ -4,6 +4,8 @@ name: test-workflow
 on:
   push:
     branches: [ adding_badeges ]
+  pull_request:
+    branches: [ adding_badeges ]
   workflow_dispatch:
 
 jobs:
