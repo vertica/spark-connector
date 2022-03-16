@@ -3,7 +3,7 @@ name: test-workflow
 
 on:
   pull_request:
-    branches: [ adding_badeges ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
