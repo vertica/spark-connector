@@ -48,9 +48,8 @@ jobs:
              COLOR=red
           fi
 
-          wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O coverage-badge.svg
+          wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
 
-          cp coverage-badge.svg ../../../../img
       - name: Publish code coverage report
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
