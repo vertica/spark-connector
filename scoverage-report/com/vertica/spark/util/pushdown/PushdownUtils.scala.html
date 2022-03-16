@@ -1,0 +1,1318 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/util/pushdown/PushdownUtils.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.util.pushdown
+</span>15 <span style=''>
+</span>16 <span style=''>import com.vertica.spark.datasource.v2.{NonPushFilter, PushFilter}
+</span>17 <span style=''>import org.apache.spark.sql.sources._
+</span>18 <span style=''>
+</span>19 <span style=''>/**
+</span>20 <span style=''> * Utils class for translating Spark pushdown filters into Vertica-compatible SQL where clauses.
+</span>21 <span style=''> */
+</span>22 <span style=''>object PushdownUtils {
+</span>23 <span style=''>  private def wrapText(value: Any): String = {
+</span>24 <span style=''>    value match {
+</span>25 <span style=''>      case d: java.lang.Number =&gt;
+</span>26 <span style=''>        if (</span><span style='background: #AEF1AE'>d.doubleValue.isInfinite</span><span style=''>) {
+</span>27 <span style=''>          </span><span style='background: #F0ADAD'>&quot;'&quot; + value.toString + &quot;'&quot;</span><span style=''>
+</span>28 <span style=''>        } else {
+</span>29 <span style=''>          </span><span style='background: #AEF1AE'>value.toString</span><span style=''>
+</span>30 <span style=''>        }
+</span>31 <span style=''>      case _ =&gt; </span><span style='background: #AEF1AE'>&quot;'&quot; + value.toString + &quot;'&quot;</span><span style=''>
+</span>32 <span style=''>    }
+</span>33 <span style=''>  }
+</span>34 <span style=''>
+</span>35 <span style=''>  /**
+</span>36 <span style=''>   * Takes a filter, and if we support it, turns it into a format we can add to our queries, therefore pushing down said filter.
+</span>37 <span style=''>   *
+</span>38 <span style=''>   * @param filter Spark-defined filter class.
+</span>39 <span style=''>   * @return A PushFilter containing a string to add to a select from Vertica, or a NonPushFilter if we don't support that filter.
+</span>40 <span style=''>   */
+</span>41 <span style=''>  def genFilter(filter: Filter): Either[NonPushFilter, PushFilter] = {
+</span>42 <span style=''>    filter match {
+</span>43 <span style=''>      case EqualTo(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter,
+</span>44 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; = &quot; + wrapText(value) + &quot;)&quot;))</span><span style=''>
+</span>45 <span style=''>      case GreaterThan(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter,
+</span>46 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; &gt; &quot; + wrapText(value) + &quot;)&quot;))</span><span style=''>
+</span>47 <span style=''>      case GreaterThanOrEqual(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter,
+</span>48 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; &gt;= &quot; + wrapText(value) + &quot;)&quot;))</span><span style=''>
+</span>49 <span style=''>      case LessThan(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter,
+</span>50 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; &lt; &quot; + wrapText(value) + &quot;)&quot;))</span><span style=''>
+</span>51 <span style=''>      case LessThanOrEqual(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter,
+</span>52 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; &lt;= &quot; + wrapText(value) + &quot;)&quot;))</span><span style=''>
+</span>53 <span style=''>      case In(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; in &quot; +
+</span>54 <span style=''></span><span style='background: #AEF1AE'>        &quot;(&quot; + value.map(x =&gt; wrapText(x)).mkString(&quot;, &quot;) + &quot;)&quot; + &quot;)&quot;))</span><span style=''>
+</span>55 <span style=''>      case IsNull(attribute) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; is NULL&quot; + &quot;)&quot;))</span><span style=''>
+</span>56 <span style=''>      case IsNotNull(attribute) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; + &quot; is NOT NULL&quot; + &quot;)&quot;))</span><span style=''>
+</span>57 <span style=''>      case And(left, right) =&gt; (</span><span style='background: #AEF1AE'>for {
+</span>58 <span style=''></span><span style='background: #AEF1AE'>        pushFilterLeft &lt;- genFilter(left)
+</span>59 <span style=''></span><span style='background: #AEF1AE'>        pushFilterRight &lt;- genFilter(right)
+</span>60 <span style=''></span><span style='background: #AEF1AE'>      } yield PushFilter(filter, &quot;(&quot; + pushFilterLeft.filterString + &quot; AND &quot; + pushFilterRight.filterString + &quot;)&quot;))
+</span>61 <span style=''></span><span style='background: #AEF1AE'>        .left.map(_ =&gt; </span><span style='background: #F0ADAD'>NonPushFilter(filter)</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>62 <span style=''>      case Or(left, right) =&gt; (</span><span style='background: #AEF1AE'>for {
+</span>63 <span style=''></span><span style='background: #AEF1AE'>        pushFilterLeft &lt;- genFilter(left)
+</span>64 <span style=''></span><span style='background: #AEF1AE'>        pushFilterRight &lt;- genFilter(right)
+</span>65 <span style=''></span><span style='background: #AEF1AE'>      } yield PushFilter(filter, &quot;(&quot; + pushFilterLeft.filterString + &quot; OR &quot; + pushFilterRight.filterString + &quot;)&quot;))
+</span>66 <span style=''></span><span style='background: #AEF1AE'>        .left.map(_ =&gt; </span><span style='background: #F0ADAD'>NonPushFilter(filter)</span><span style='background: #AEF1AE'>)</span><span style=''>
+</span>67 <span style=''>      case Not(child) =&gt; </span><span style='background: #AEF1AE'>genFilter(child)</span><span style=''> match {
+</span>68 <span style=''>        case Left(_) =&gt; </span><span style='background: #F0ADAD'>Left(NonPushFilter(filter))</span><span style=''>
+</span>69 <span style=''>        case Right(pushFilter) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot; NOT &quot; + pushFilter.filterString + &quot;)&quot;))</span><span style=''>
+</span>70 <span style=''>      }
+</span>71 <span style=''>      case StringStartsWith(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; +
+</span>72 <span style=''></span><span style='background: #AEF1AE'>        &quot; like &quot; + wrapText(value + &quot;%&quot;) + &quot;)&quot;))</span><span style=''>
+</span>73 <span style=''>      case StringEndsWith(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; +
+</span>74 <span style=''></span><span style='background: #AEF1AE'>        &quot; like &quot; + wrapText(&quot;%&quot; + value) + &quot;)&quot;))</span><span style=''>
+</span>75 <span style=''>      case StringContains(attribute, value) =&gt; </span><span style='background: #AEF1AE'>Right(PushFilter(filter, &quot;(&quot; + &quot;\&quot;&quot; + attribute + &quot;\&quot;&quot; +
+</span>76 <span style=''></span><span style='background: #AEF1AE'>        &quot; like &quot; + wrapText(&quot;%&quot; + value + &quot;%&quot;) + &quot;)&quot;))</span><span style=''>
+</span>77 <span style=''>      case _ =&gt; </span><span style='background: #F0ADAD'>Left(NonPushFilter(filter))</span><span style=''>
+</span>78 <span style=''>    }
+</span>79 <span style=''>  }
+</span>80 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          26
+        </td>
+        <td>
+          2282
+        </td>
+        <td>
+          1005
+          -
+          1029
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.Double.isInfinite
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.double2Double(d.doubleValue()).isInfinite()
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          2284
+        </td>
+        <td>
+          1043
+          -
+          1069
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          2283
+        </td>
+        <td>
+          1043
+          -
+          1069
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2286
+        </td>
+        <td>
+          1097
+          -
+          1111
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Any.toString
+        </td>
+        <td style="background: #AEF1AE">
+          value.toString()
+        </td>
+      </tr><tr>
+        <td>
+          29
+        </td>
+        <td>
+          2285
+        </td>
+        <td>
+          1097
+          -
+          1111
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Any.toString
+        </td>
+        <td style="background: #AEF1AE">
+          value.toString()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          2287
+        </td>
+        <td>
+          1138
+          -
+          1164
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;\'&quot;.+(value.toString()).+(&quot;\'&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2290
+        </td>
+        <td>
+          1630
+          -
+          1726
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2289
+        </td>
+        <td>
+          1636
+          -
+          1725
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          44
+        </td>
+        <td>
+          2288
+        </td>
+        <td>
+          1663
+          -
+          1724
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; = &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2293
+        </td>
+        <td>
+          1771
+          -
+          1867
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2292
+        </td>
+        <td>
+          1777
+          -
+          1866
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          2291
+        </td>
+        <td>
+          1804
+          -
+          1865
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2296
+        </td>
+        <td>
+          1919
+          -
+          2016
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2295
+        </td>
+        <td>
+          1925
+          -
+          2015
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          48
+        </td>
+        <td>
+          2294
+        </td>
+        <td>
+          1952
+          -
+          2014
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &gt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2299
+        </td>
+        <td>
+          2058
+          -
+          2154
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2298
+        </td>
+        <td>
+          2064
+          -
+          2153
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          50
+        </td>
+        <td>
+          2297
+        </td>
+        <td>
+          2091
+          -
+          2152
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt; &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2302
+        </td>
+        <td>
+          2203
+          -
+          2300
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2301
+        </td>
+        <td>
+          2209
+          -
+          2299
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          52
+        </td>
+        <td>
+          2300
+        </td>
+        <td>
+          2236
+          -
+          2298
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; &lt;= &quot;).+(PushdownUtils.this.wrapText(value)).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          2305
+        </td>
+        <td>
+          2336
+          -
+          2472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          53
+        </td>
+        <td>
+          2304
+        </td>
+        <td>
+          2342
+          -
+          2471
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          54
+        </td>
+        <td>
+          2303
+        </td>
+        <td>
+          2361
+          -
+          2470
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; in &quot;).+(&quot;(&quot;).+(scala.Predef.refArrayOps[String](scala.Predef.genericArrayOps[Any](value).map[String, Array[String]](((x: Any) =&gt; PushdownUtils.this.wrapText(x)))(scala.this.Array.canBuildFrom[String]((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])))).mkString(&quot;, &quot;)).+(&quot;)&quot;).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2308
+        </td>
+        <td>
+          2505
+          -
+          2580
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2307
+        </td>
+        <td>
+          2511
+          -
+          2579
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2306
+        </td>
+        <td>
+          2530
+          -
+          2578
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NULL&quot;).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2311
+        </td>
+        <td>
+          2616
+          -
+          2695
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2310
+        </td>
+        <td>
+          2622
+          -
+          2694
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2309
+        </td>
+        <td>
+          2641
+          -
+          2693
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; is NOT NULL&quot;).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          2314
+        </td>
+        <td>
+          2784
+          -
+          2934
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.map
+        </td>
+        <td style="background: #AEF1AE">
+          PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2313
+        </td>
+        <td>
+          2834
+          -
+          2934
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          2312
+        </td>
+        <td>
+          2853
+          -
+          2933
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          2316
+        </td>
+        <td>
+          2728
+          -
+          2981
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.LeftProjection.map
+        </td>
+        <td style="background: #AEF1AE">
+          PushdownUtils.this.genFilter(left).flatMap[com.vertica.spark.datasource.v2.NonPushFilter, com.vertica.spark.datasource.v2.PushFilter](((pushFilterLeft: com.vertica.spark.datasource.v2.PushFilter) =&gt; PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; AND &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)))))).left.map[com.vertica.spark.datasource.v2.NonPushFilter](((x$1: com.vertica.spark.datasource.v2.NonPushFilter) =&gt; com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)))
+        </td>
+      </tr><tr>
+        <td>
+          61
+        </td>
+        <td>
+          2315
+        </td>
+        <td>
+          2959
+          -
+          2980
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td style="background: #F0ADAD">
+          com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          2319
+        </td>
+        <td>
+          3069
+          -
+          3218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.map
+        </td>
+        <td style="background: #AEF1AE">
+          PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))))
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          2317
+        </td>
+        <td>
+          3138
+          -
+          3217
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          2318
+        </td>
+        <td>
+          3119
+          -
+          3218
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          2320
+        </td>
+        <td>
+          3243
+          -
+          3264
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td style="background: #F0ADAD">
+          com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          2321
+        </td>
+        <td>
+          3013
+          -
+          3265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.LeftProjection.map
+        </td>
+        <td style="background: #AEF1AE">
+          PushdownUtils.this.genFilter(left).flatMap[com.vertica.spark.datasource.v2.NonPushFilter, com.vertica.spark.datasource.v2.PushFilter](((pushFilterLeft: com.vertica.spark.datasource.v2.PushFilter) =&gt; PushdownUtils.this.genFilter(right).map[com.vertica.spark.datasource.v2.PushFilter](((pushFilterRight: com.vertica.spark.datasource.v2.PushFilter) =&gt; com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(&quot;.+(pushFilterLeft.filterString).+(&quot; OR &quot;).+(pushFilterRight.filterString).+(&quot;)&quot;)))))).left.map[com.vertica.spark.datasource.v2.NonPushFilter](((x$2: com.vertica.spark.datasource.v2.NonPushFilter) =&gt; com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)))
+        </td>
+      </tr><tr>
+        <td>
+          67
+        </td>
+        <td>
+          2322
+        </td>
+        <td>
+          3291
+          -
+          3307
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.pushdown.PushdownUtils.genFilter
+        </td>
+        <td style="background: #AEF1AE">
+          PushdownUtils.this.genFilter(child)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          2323
+        </td>
+        <td>
+          3345
+          -
+          3366
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td style="background: #F0ADAD">
+          com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
+        </td>
+      </tr><tr>
+        <td>
+          68
+        </td>
+        <td>
+          2324
+        </td>
+        <td>
+          3340
+          -
+          3367
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Left.apply[com.vertica.spark.datasource.v2.NonPushFilter, Nothing](com.vertica.spark.datasource.v2.NonPushFilter.apply(filter))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2326
+        </td>
+        <td>
+          3408
+          -
+          3473
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2325
+        </td>
+        <td>
+          3427
+          -
+          3472
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          2327
+        </td>
+        <td>
+          3402
+          -
+          3474
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;( NOT &quot;.+(pushFilter.filterString).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          2329
+        </td>
+        <td>
+          3538
+          -
+          3636
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          71
+        </td>
+        <td>
+          2330
+        </td>
+        <td>
+          3532
+          -
+          3637
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          72
+        </td>
+        <td>
+          2328
+        </td>
+        <td>
+          3557
+          -
+          3635
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(value.+(&quot;%&quot;))).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2332
+        </td>
+        <td>
+          3691
+          -
+          3789
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          73
+        </td>
+        <td>
+          2333
+        </td>
+        <td>
+          3685
+          -
+          3790
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          2331
+        </td>
+        <td>
+          3710
+          -
+          3788
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value))).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          2335
+        </td>
+        <td>
+          3844
+          -
+          3948
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.PushFilter.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          75
+        </td>
+        <td>
+          2336
+        </td>
+        <td>
+          3838
+          -
+          3949
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.v2.PushFilter](com.vertica.spark.datasource.v2.PushFilter.apply(filter, &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;)))
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          2334
+        </td>
+        <td>
+          3863
+          -
+          3947
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.String.+
+        </td>
+        <td style="background: #AEF1AE">
+          &quot;(\&quot;&quot;.+(attribute).+(&quot;\&quot;&quot;).+(&quot; like &quot;).+(PushdownUtils.this.wrapText(&quot;%&quot;.+(value).+(&quot;%&quot;))).+(&quot;)&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          2338
+        </td>
+        <td>
+          3966
+          -
+          3993
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Left.apply[com.vertica.spark.datasource.v2.NonPushFilter, Nothing](com.vertica.spark.datasource.v2.NonPushFilter.apply(filter))
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          2337
+        </td>
+        <td>
+          3971
+          -
+          3992
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.v2.NonPushFilter.apply
+        </td>
+        <td style="background: #F0ADAD">
+          com.vertica.spark.datasource.v2.NonPushFilter.apply(filter)
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

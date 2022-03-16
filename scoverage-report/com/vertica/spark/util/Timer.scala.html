@@ -1,0 +1,340 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/util/Timer.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.util
+</span>15 <span style=''>
+</span>16 <span style=''>import com.typesafe.scalalogging.Logger
+</span>17 <span style=''>
+</span>18 <span style=''>/**
+</span>19 <span style=''> * Class for reporting how long operations take
+</span>20 <span style=''> *
+</span>21 <span style=''> * @param enabled Timer is enabled. If false, timing will not happen and nothing is logged
+</span>22 <span style=''> * @param logger Logger for logging how long operation took
+</span>23 <span style=''> * @param operationName Name of operation being timed
+</span>24 <span style=''> */
+</span>25 <span style=''>class Timer (val enabled: Boolean, val logger: Logger, val operationName: String ) {
+</span>26 <span style=''>
+</span>27 <span style=''>  var t0 = </span><span style='background: #AEF1AE'>0L</span><span style=''>
+</span>28 <span style=''>
+</span>29 <span style=''>  def startTime(): Unit = {
+</span>30 <span style=''>    if(</span><span style='background: #AEF1AE'>enabled</span><span style=''>) {
+</span>31 <span style=''>      </span><span style='background: #AEF1AE'>t0 = System.currentTimeMillis()</span><span style=''>;
+</span>32 <span style=''>    }
+</span>33 <span style=''>  }
+</span>34 <span style=''>
+</span>35 <span style=''>  def endTime(): Unit = {
+</span>36 <span style=''>    if(</span><span style='background: #AEF1AE'>enabled</span><span style=''>) </span><span style='background: #AEF1AE'>{
+</span>37 <span style=''></span><span style='background: #AEF1AE'>      val t1 = System.currentTimeMillis();
+</span>38 <span style=''></span><span style='background: #AEF1AE'>      logger.info(&quot;Timed operation: &quot; + operationName + &quot; -- took &quot; + (t1-t0) + &quot; ms.&quot;);
+</span>39 <span style=''></span><span style='background: #AEF1AE'>    }</span><span style=''>
+</span>40 <span style=''>  }
+</span>41 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          27
+        </td>
+        <td>
+          1836
+        </td>
+        <td>
+          1053
+          -
+          1055
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0L
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1842
+        </td>
+        <td>
+          1089
+          -
+          1089
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1841
+        </td>
+        <td>
+          1089
+          -
+          1089
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          30
+        </td>
+        <td>
+          1837
+        </td>
+        <td>
+          1092
+          -
+          1099
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.util.Timer.enabled
+        </td>
+        <td style="background: #AEF1AE">
+          Timer.this.enabled
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1838
+        </td>
+        <td>
+          1114
+          -
+          1140
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.System.currentTimeMillis
+        </td>
+        <td style="background: #AEF1AE">
+          java.lang.System.currentTimeMillis()
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1840
+        </td>
+        <td>
+          1109
+          -
+          1140
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          com.vertica.spark.util.Timer.t0_=
+        </td>
+        <td style="background: #AEF1AE">
+          Timer.this.t0_=(java.lang.System.currentTimeMillis())
+        </td>
+      </tr><tr>
+        <td>
+          31
+        </td>
+        <td>
+          1839
+        </td>
+        <td>
+          1109
+          -
+          1140
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.Timer.t0_=
+        </td>
+        <td style="background: #AEF1AE">
+          Timer.this.t0_=(java.lang.System.currentTimeMillis())
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1847
+        </td>
+        <td>
+          1183
+          -
+          1183
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1846
+        </td>
+        <td>
+          1183
+          -
+          1183
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1843
+        </td>
+        <td>
+          1186
+          -
+          1193
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.util.Timer.enabled
+        </td>
+        <td style="background: #AEF1AE">
+          Timer.this.enabled
+        </td>
+      </tr><tr>
+        <td>
+          36
+        </td>
+        <td>
+          1845
+        </td>
+        <td>
+          1195
+          -
+          1334
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  val t1: Long = java.lang.System.currentTimeMillis();
+  (if (Timer.this.logger.underlying.isInfoEnabled())
+    Timer.this.logger.underlying.info(&quot;Timed operation: &quot;.+(Timer.this.operationName).+(&quot; -- took &quot;).+(t1.-(Timer.this.t0)).+(&quot; ms.&quot;))
+  else
+    (): Unit)
+}
+        </td>
+      </tr><tr>
+        <td>
+          37
+        </td>
+        <td>
+          1844
+        </td>
+        <td>
+          1212
+          -
+          1238
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          java.lang.System.currentTimeMillis
+        </td>
+        <td style="background: #AEF1AE">
+          java.lang.System.currentTimeMillis()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1083 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/config/ReadConfig.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.config
+</span>15 <span style=''>
+</span>16 <span style=''>import cats.implicits.catsSyntaxValidatedIdBinCompat0
+</span>17 <span style=''>import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
+</span>18 <span style=''>import com.vertica.spark.datasource.core.SessionId
+</span>19 <span style=''>import com.vertica.spark.datasource.v2.PushdownFilter
+</span>20 <span style=''>import com.vertica.spark.util.error.{InvalidFilePermissions}
+</span>21 <span style=''>import org.apache.spark.sql.types.{StructField, StructType}
+</span>22 <span style=''>
+</span>23 <span style=''>/**
+</span>24 <span style=''> * Interface for configuration of a read (from Vertica) operation.
+</span>25 <span style=''> */
+</span>26 <span style=''>trait ReadConfig {
+</span>27 <span style=''>  /**
+</span>28 <span style=''>   * Set filters to push down to the Vertica read.
+</span>29 <span style=''>   *
+</span>30 <span style=''>   * @param pushdownFilters Filter strings
+</span>31 <span style=''>   */
+</span>32 <span style=''>  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit
+</span>33 <span style=''>
+</span>34 <span style=''>  /**
+</span>35 <span style=''>   * Sets the required schema of the read operation. Used to push down column selection
+</span>36 <span style=''>   *
+</span>37 <span style=''>   * @param requiredSchema Schema of subset of data to be read from Vertica table
+</span>38 <span style=''>   */
+</span>39 <span style=''>  def setRequiredSchema(requiredSchema: StructType): Unit
+</span>40 <span style=''>
+</span>41 <span style=''>  def getRequiredSchema: StructType
+</span>42 <span style=''>
+</span>43 <span style=''>  /**
+</span>44 <span style=''>   * Copies the read config with a new unique identifier
+</span>45 <span style=''>   */
+</span>46 <span style=''>  def copyConfig(): ReadConfig
+</span>47 <span style=''>
+</span>48 <span style=''>  /**
+</span>49 <span style=''>   * Set groupby columns pushed down by Spark for a read operation.
+</span>50 <span style=''>   * */
+</span>51 <span style=''>  def setGroupBy(groupBy: Array[StructField]): Unit
+</span>52 <span style=''>
+</span>53 <span style=''>  def setPushdownAgg(pushdownAgg: Boolean) : Unit
+</span>54 <span style=''>}
+</span>55 <span style=''>
+</span>56 <span style=''>
+</span>57 <span style=''>/**
+</span>58 <span style=''> * File permissions class validating it's either in octal format (ie 777) or user-group-other format,
+</span>59 <span style=''> * ie rwxrwxrwx
+</span>60 <span style=''> */
+</span>61 <span style=''>class ValidFilePermissions private (value: String) extends Serializable {
+</span>62 <span style=''>  override def toString: String = </span><span style='background: #AEF1AE'>value</span><span style=''>
+</span>63 <span style=''>}
+</span>64 <span style=''>
+</span>65 <span style=''>object ValidFilePermissions {
+</span>66 <span style=''>
+</span>67 <span style=''>  // octal format, ie 777 or 0750
+</span>68 <span style=''>  private def isValidOctal(str: String): Boolean = {
+</span>69 <span style=''>    </span><span style='background: #AEF1AE'>str.length &lt;= 4 &amp;&amp; str.forall(_.isDigit)</span><span style=''>
+</span>70 <span style=''>  }
+</span>71 <span style=''>
+</span>72 <span style=''>  // user-group-other format
+</span>73 <span style=''>  private def isValidLetterPerms(str: String): Boolean = {
+</span>74 <span style=''>    </span><span style='background: #AEF1AE'>str.forall(c =&gt; &quot;crwxdt-&quot;.contains(c))</span><span style=''>
+</span>75 <span style=''>  }
+</span>76 <span style=''>
+</span>77 <span style=''>  final def apply(value: String): ValidationResult[ValidFilePermissions] = {
+</span>78 <span style=''>    val validOctal = </span><span style='background: #AEF1AE'>isValidOctal(value)</span><span style=''>
+</span>79 <span style=''>    val validLetterParams = </span><span style='background: #AEF1AE'>isValidLetterPerms(value)</span><span style=''>
+</span>80 <span style=''>    if (</span><span style='background: #AEF1AE'>validOctal || validLetterParams</span><span style=''>) {
+</span>81 <span style=''>      </span><span style='background: #AEF1AE'>new ValidFilePermissions(value).validNec</span><span style=''>
+</span>82 <span style=''>    } else {
+</span>83 <span style=''>      </span><span style='background: #AEF1AE'>InvalidFilePermissions().invalidNec</span><span style=''>
+</span>84 <span style=''>    }
+</span>85 <span style=''>  }
+</span>86 <span style=''>}
+</span>87 <span style=''>
+</span>88 <span style=''>/**
+</span>89 <span style=''> * Configuration for a read operation using a distributed filesystem as an intermediary.
+</span>90 <span style=''> *
+</span>91 <span style=''> * @param jdbcConfig Configuration for the JDBC connection used to communicate with Vertica.
+</span>92 <span style=''> * @param fileStoreConfig Configuration for the intermediary filestore used to stage data between Spark and Vertica.
+</span>93 <span style=''> * @param tableSource Table or query to read from.
+</span>94 <span style=''> * @param partitionCount Number of Spark partitions to divide the read into.
+</span>95 <span style=''> * @param metadata Contains any metadata from the Vertica table that needs to be retrieved before the read. Includes table schema.
+</span>96 <span style=''> */
+</span>97 <span style=''>final case class DistributedFilesystemReadConfig(
+</span>98 <span style=''>                                                  jdbcConfig: JDBCConfig,
+</span>99 <span style=''>                                                  fileStoreConfig: FileStoreConfig,
+</span>100 <span style=''>                                                  tableSource: TableSource,
+</span>101 <span style=''>                                                  partitionCount: Option[Int],
+</span>102 <span style=''>                                                  metadata: Option[VerticaReadMetadata],
+</span>103 <span style=''>                                                  filePermissions: ValidFilePermissions,
+</span>104 <span style=''>                                                  maxRowGroupSize: Int,
+</span>105 <span style=''>                                                  maxFileSize: Int,
+</span>106 <span style=''>                                                  timeOperations : Boolean = true
+</span>107 <span style=''>                                                ) extends ReadConfig {
+</span>108 <span style=''>  private var pushdownFilters: List[PushdownFilter] = </span><span style='background: #AEF1AE'>Nil</span><span style=''>
+</span>109 <span style=''>  private var groupBy: Array[StructField] = </span><span style='background: #AEF1AE'>Array()</span><span style=''>
+</span>110 <span style=''>  private var aggPushedDown: Boolean = </span><span style='background: #AEF1AE'>false</span><span style=''>
+</span>111 <span style=''>  private var requiredSchema: StructType = </span><span style='background: #AEF1AE'>StructType(Nil)</span><span style=''>
+</span>112 <span style=''>
+</span>113 <span style=''>  def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
+</span>114 <span style=''>    </span><span style='background: #AEF1AE'>this.pushdownFilters = pushdownFilters</span><span style=''>
+</span>115 <span style=''>  }
+</span>116 <span style=''>
+</span>117 <span style=''>  def setRequiredSchema(requiredSchema: StructType): Unit = {
+</span>118 <span style=''>    </span><span style='background: #AEF1AE'>this.requiredSchema = requiredSchema</span><span style=''>
+</span>119 <span style=''>  }
+</span>120 <span style=''>
+</span>121 <span style=''>  override def setGroupBy(groupBy: Array[StructField]): Unit = {
+</span>122 <span style=''>    </span><span style='background: #AEF1AE'>this.groupBy = groupBy</span><span style=''>
+</span>123 <span style=''>  }
+</span>124 <span style=''>
+</span>125 <span style=''>  override def setPushdownAgg(pushdownAgg: Boolean): Unit = {
+</span>126 <span style=''>    </span><span style='background: #AEF1AE'>this.aggPushedDown = pushdownAgg</span><span style=''>
+</span>127 <span style=''>  }
+</span>128 <span style=''>
+</span>129 <span style=''>  def getPushdownFilters: List[PushdownFilter] = </span><span style='background: #AEF1AE'>this.pushdownFilters</span><span style=''>
+</span>130 <span style=''>  def getRequiredSchema: StructType = </span><span style='background: #AEF1AE'>this.requiredSchema</span><span style=''>
+</span>131 <span style=''>  def getGroupBy: Array[StructField] = </span><span style='background: #AEF1AE'>this.groupBy</span><span style=''>
+</span>132 <span style=''>  def isAggPushedDown: Boolean = </span><span style='background: #AEF1AE'>this.aggPushedDown</span><span style=''>
+</span>133 <span style=''>
+</span>134 <span style=''>  def copyConfig(): ReadConfig = {
+</span>135 <span style=''>    </span><span style='background: #AEF1AE'>this.copy(fileStoreConfig = this.fileStoreConfig.copy(sessionId = SessionId.getId))</span><span style=''>
+</span>136 <span style=''>  }
+</span>137 <span style=''>
+</span>138 <span style=''>
+</span>139 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          62
+        </td>
+        <td>
+          58
+        </td>
+        <td>
+          2094
+          -
+          2099
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.ValidFilePermissions.value
+        </td>
+        <td style="background: #AEF1AE">
+          ValidFilePermissions.this.value
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          59
+        </td>
+        <td>
+          2239
+          -
+          2240
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          4
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          62
+        </td>
+        <td>
+          2225
+          -
+          2265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.&amp;&amp;
+        </td>
+        <td style="background: #AEF1AE">
+          str.length().&lt;=(4).&amp;&amp;(scala.Predef.augmentString(str).forall(((x$1: Char) =&gt; scala.Predef.charWrapper(x$1).isDigit)))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          61
+        </td>
+        <td>
+          2244
+          -
+          2265
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.forall
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(str).forall(((x$1: Char) =&gt; scala.Predef.charWrapper(x$1).isDigit))
+        </td>
+      </tr><tr>
+        <td>
+          69
+        </td>
+        <td>
+          60
+        </td>
+        <td>
+          2255
+          -
+          2264
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.runtime.RichChar.isDigit
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.charWrapper(x$1).isDigit
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          64
+        </td>
+        <td>
+          2363
+          -
+          2401
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.IndexedSeqOptimized.forall
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(str).forall(((c: Char) =&gt; scala.Predef.augmentString(&quot;crwxdt-&quot;).contains[Char](c)))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          63
+        </td>
+        <td>
+          2379
+          -
+          2400
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.SeqLike.contains
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Predef.augmentString(&quot;crwxdt-&quot;).contains[Char](c)
+        </td>
+      </tr><tr>
+        <td>
+          78
+        </td>
+        <td>
+          65
+        </td>
+        <td>
+          2505
+          -
+          2524
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.ValidFilePermissions.isValidOctal
+        </td>
+        <td style="background: #AEF1AE">
+          ValidFilePermissions.this.isValidOctal(value)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          66
+        </td>
+        <td>
+          2553
+          -
+          2578
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.ValidFilePermissions.isValidLetterPerms
+        </td>
+        <td style="background: #AEF1AE">
+          ValidFilePermissions.this.isValidLetterPerms(value)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          67
+        </td>
+        <td>
+          2587
+          -
+          2618
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Boolean.||
+        </td>
+        <td style="background: #AEF1AE">
+          validOctal.||(validLetterParams)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          68
+        </td>
+        <td>
+          2628
+          -
+          2659
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.ValidFilePermissions.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new ValidFilePermissions(value)
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          70
+        </td>
+        <td>
+          2628
+          -
+          2668
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          cats.syntax.ValidatedIdOpsBinCompat0.validNec
+        </td>
+        <td style="background: #AEF1AE">
+          cats.implicits.catsSyntaxValidatedIdBinCompat0[com.vertica.spark.config.ValidFilePermissions](new ValidFilePermissions(value)).validNec[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          81
+        </td>
+        <td>
+          69
+        </td>
+        <td>
+          2628
+          -
+          2668
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          cats.syntax.ValidatedIdOpsBinCompat0.validNec
+        </td>
+        <td style="background: #AEF1AE">
+          cats.implicits.catsSyntaxValidatedIdBinCompat0[com.vertica.spark.config.ValidFilePermissions](new ValidFilePermissions(value)).validNec[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          71
+        </td>
+        <td>
+          2688
+          -
+          2712
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.error.InvalidFilePermissions.apply
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.util.error.InvalidFilePermissions.apply()
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          73
+        </td>
+        <td>
+          2688
+          -
+          2723
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          cats.syntax.ValidatedIdOpsBinCompat0.invalidNec
+        </td>
+        <td style="background: #AEF1AE">
+          cats.implicits.catsSyntaxValidatedIdBinCompat0[com.vertica.spark.util.error.InvalidFilePermissions](com.vertica.spark.util.error.InvalidFilePermissions.apply()).invalidNec[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          83
+        </td>
+        <td>
+          72
+        </td>
+        <td>
+          2688
+          -
+          2723
+        </td>
+        <td>
+          TypeApply
+        </td>
+        <td>
+          cats.syntax.ValidatedIdOpsBinCompat0.invalidNec
+        </td>
+        <td style="background: #AEF1AE">
+          cats.implicits.catsSyntaxValidatedIdBinCompat0[com.vertica.spark.util.error.InvalidFilePermissions](com.vertica.spark.util.error.InvalidFilePermissions.apply()).invalidNec[Nothing]
+        </td>
+      </tr><tr>
+        <td>
+          108
+        </td>
+        <td>
+          74
+        </td>
+        <td>
+          4194
+          -
+          4197
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          109
+        </td>
+        <td>
+          75
+        </td>
+        <td>
+          4242
+          -
+          4249
+        </td>
+        <td>
+          ApplyToImplicitArgs
+        </td>
+        <td>
+          scala.Array.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Array.apply[org.apache.spark.sql.types.StructField]()((ClassTag.apply[org.apache.spark.sql.types.StructField](classOf[org.apache.spark.sql.types.StructField]): scala.reflect.ClassTag[org.apache.spark.sql.types.StructField]))
+        </td>
+      </tr><tr>
+        <td>
+          110
+        </td>
+        <td>
+          76
+        </td>
+        <td>
+          4289
+          -
+          4294
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          false
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          77
+        </td>
+        <td>
+          4349
+          -
+          4352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.immutable.Nil
+        </td>
+        <td style="background: #AEF1AE">
+          scala.collection.immutable.Nil
+        </td>
+      </tr><tr>
+        <td>
+          111
+        </td>
+        <td>
+          78
+        </td>
+        <td>
+          4338
+          -
+          4353
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.sql.types.StructType.apply
+        </td>
+        <td style="background: #AEF1AE">
+          org.apache.spark.sql.types.StructType.apply(scala.collection.immutable.Nil)
+        </td>
+      </tr><tr>
+        <td>
+          114
+        </td>
+        <td>
+          79
+        </td>
+        <td>
+          4433
+          -
+          4471
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.pushdownFilters_=
+        </td>
+        <td style="background: #AEF1AE">
+          this.pushdownFilters_=(pushdownFilters)
+        </td>
+      </tr><tr>
+        <td>
+          118
+        </td>
+        <td>
+          80
+        </td>
+        <td>
+          4543
+          -
+          4579
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.requiredSchema_=
+        </td>
+        <td style="background: #AEF1AE">
+          this.requiredSchema_=(requiredSchema)
+        </td>
+      </tr><tr>
+        <td>
+          122
+        </td>
+        <td>
+          81
+        </td>
+        <td>
+          4654
+          -
+          4676
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.groupBy_=
+        </td>
+        <td style="background: #AEF1AE">
+          this.groupBy_=(groupBy)
+        </td>
+      </tr><tr>
+        <td>
+          126
+        </td>
+        <td>
+          82
+        </td>
+        <td>
+          4748
+          -
+          4780
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.aggPushedDown_=
+        </td>
+        <td style="background: #AEF1AE">
+          this.aggPushedDown_=(pushdownAgg)
+        </td>
+      </tr><tr>
+        <td>
+          129
+        </td>
+        <td>
+          83
+        </td>
+        <td>
+          4835
+          -
+          4855
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.pushdownFilters
+        </td>
+        <td style="background: #AEF1AE">
+          this.pushdownFilters
+        </td>
+      </tr><tr>
+        <td>
+          130
+        </td>
+        <td>
+          84
+        </td>
+        <td>
+          4894
+          -
+          4913
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.requiredSchema
+        </td>
+        <td style="background: #AEF1AE">
+          this.requiredSchema
+        </td>
+      </tr><tr>
+        <td>
+          131
+        </td>
+        <td>
+          85
+        </td>
+        <td>
+          4953
+          -
+          4965
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.groupBy
+        </td>
+        <td style="background: #AEF1AE">
+          this.groupBy
+        </td>
+      </tr><tr>
+        <td>
+          132
+        </td>
+        <td>
+          86
+        </td>
+        <td>
+          4999
+          -
+          5017
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.aggPushedDown
+        </td>
+        <td style="background: #AEF1AE">
+          this.aggPushedDown
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          92
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$1
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$1
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          95
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$5
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$5
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          89
+        </td>
+        <td>
+          5107
+          -
+          5107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.FileStoreConfig.copy$default$3
+        </td>
+        <td style="background: #AEF1AE">
+          this.fileStoreConfig.copy$default$3
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          98
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$8
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$8
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          100
+        </td>
+        <td>
+          5058
+          -
+          5141
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy(x$6, x$5, x$7, x$8, x$9, x$10, x$11, x$12, x$13)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          91
+        </td>
+        <td>
+          5086
+          -
+          5140
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.FileStoreConfig.copy
+        </td>
+        <td style="background: #AEF1AE">
+          this.fileStoreConfig.copy(x$2, x$1, x$3, x$4)
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          94
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$4
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$4
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          97
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$7
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$7
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          88
+        </td>
+        <td>
+          5107
+          -
+          5107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.FileStoreConfig.copy$default$1
+        </td>
+        <td style="background: #AEF1AE">
+          this.fileStoreConfig.copy$default$1
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          87
+        </td>
+        <td>
+          5124
+          -
+          5139
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.SessionId.getId
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.datasource.core.SessionId.getId
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          96
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$6
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$6
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          90
+        </td>
+        <td>
+          5107
+          -
+          5107
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.FileStoreConfig.copy$default$4
+        </td>
+        <td style="background: #AEF1AE">
+          this.fileStoreConfig.copy$default$4
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          99
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$9
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$9
+        </td>
+      </tr><tr>
+        <td>
+          135
+        </td>
+        <td>
+          93
+        </td>
+        <td>
+          5063
+          -
+          5063
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.copy$default$3
+        </td>
+        <td style="background: #AEF1AE">
+          this.copy$default$3
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

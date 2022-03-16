@@ -1,0 +1,585 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/util/listeners/SparkListeners.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.util.listeners
+</span>15 <span style=''>
+</span>16 <span style=''>import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
+</span>17 <span style=''>import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+</span>18 <span style=''>import com.vertica.spark.util.error.ConnectorError
+</span>19 <span style=''>import org.apache.spark.SparkContext
+</span>20 <span style=''>import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+</span>21 <span style=''>
+</span>22 <span style=''>/**
+</span>23 <span style=''> * This wrapper is created solely for compatibility with unit testing.
+</span>24 <span style=''> * &lt;br/&gt;
+</span>25 <span style=''> * Because we could not instantiate during unit test, a dummy class that extends from
+</span>26 <span style=''> * SparkContext is needed to override the functions we are using. However, SparkContext.addSparkListener's argument
+</span>27 <span style=''> * use a private interface thus can't be override.
+</span>28 <span style=''> * */
+</span>29 <span style=''>case class SparkContextWrapper(sparkContext: Option[SparkContext]){
+</span>30 <span style=''>
+</span>31 <span style=''>  def addSparkListener(listener:SparkListener): Unit ={
+</span>32 <span style=''>    </span><span style='background: #F0ADAD'>sparkContext</span><span style=''> match {
+</span>33 <span style=''>      // We may not get a context if this is executed on executor nodes.
+</span>34 <span style=''>      case None </span><span style='background: #F0ADAD'>=&gt;</span><span style=''>
+</span>35 <span style=''>      case Some(context) =&gt; </span><span style='background: #F0ADAD'>context.addSparkListener(listener)</span><span style=''>
+</span>36 <span style=''>    }
+</span>37 <span style=''>  }
+</span>38 <span style=''>}
+</span>39 <span style=''>/**
+</span>40 <span style=''> * This listener is called at the end of Spark app to remove the export folder.
+</span>41 <span style=''> * */
+</span>42 <span style=''>class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends SparkListener {
+</span>43 <span style=''>  private val logger = </span><span style='background: #AEF1AE'>LogProvider.getLogger(classOf[ApplicationParquetCleaner])</span><span style=''>
+</span>44 <span style=''>
+</span>45 <span style=''>  private val fileStoreLayer = </span><span style='background: #AEF1AE'>new HadoopFileStoreLayer(config.fileStoreConfig, config.metadata match {
+</span>46 <span style=''></span><span style='background: #AEF1AE'>    case Some(metadata) =&gt; if (config.getRequiredSchema.nonEmpty) {
+</span>47 <span style=''></span><span style='background: #AEF1AE'>      Some(config.getRequiredSchema)
+</span>48 <span style=''></span><span style='background: #AEF1AE'>    } else {
+</span>49 <span style=''></span><span style='background: #AEF1AE'>      Some(metadata.schema)
+</span>50 <span style=''></span><span style='background: #AEF1AE'>    }
+</span>51 <span style=''></span><span style='background: #AEF1AE'>    case _ =&gt; </span><span style='background: #F0ADAD'>None</span><span style='background: #AEF1AE'>
+</span>52 <span style=''></span><span style='background: #AEF1AE'>  })</span><span style=''>
+</span>53 <span style=''>
+</span>54 <span style=''>  override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+</span>55 <span style=''>    val hdfsPath = </span><span style='background: #F0ADAD'>config.fileStoreConfig.address</span><span style=''>
+</span>56 <span style=''>    if (</span><span style='background: #F0ADAD'>!config.fileStoreConfig.preventCleanup</span><span style=''>) {
+</span>57 <span style=''>      </span><span style='background: #F0ADAD'>fileStoreLayer.removeDir(hdfsPath) match {
+</span>58 <span style=''></span><span style='background: #F0ADAD'>        case Right(_) =&gt; logger.info(&quot;Removed &quot; + hdfsPath)
+</span>59 <span style=''></span><span style='background: #F0ADAD'>        case Left(error) =&gt; logger.error(s&quot;Error removing $hdfsPath. ${error.toString}&quot;)
+</span>60 <span style=''></span><span style='background: #F0ADAD'>      }</span><span style=''>
+</span>61 <span style=''>    }
+</span>62 <span style=''>  }
+</span>63 <span style=''>}
+</span>64 <span style=''>
+</span>65 <span style=''>case class CleanerRegistrationError() extends ConnectorError {
+</span>66 <span style=''>  def getFullContext: String = </span><span style='background: #F0ADAD'>&quot;Failed to add application shutdown listener to context&quot;</span><span style=''>
+</span>67 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          32
+        </td>
+        <td>
+          2260
+        </td>
+        <td>
+          1440
+          -
+          1452
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.util.listeners.SparkContextWrapper.sparkContext
+        </td>
+        <td style="background: #F0ADAD">
+          SparkContextWrapper.this.sparkContext
+        </td>
+      </tr><tr>
+        <td>
+          34
+        </td>
+        <td>
+          2261
+        </td>
+        <td>
+          1550
+          -
+          1552
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          35
+        </td>
+        <td>
+          2262
+        </td>
+        <td>
+          1581
+          -
+          1615
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          org.apache.spark.SparkContext.addSparkListener
+        </td>
+        <td style="background: #F0ADAD">
+          context.addSparkListener(listener)
+        </td>
+      </tr><tr>
+        <td>
+          43
+        </td>
+        <td>
+          2263
+        </td>
+        <td>
+          1838
+          -
+          1895
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.config.LogProvider.getLogger
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.config.LogProvider.getLogger(classOf[com.vertica.spark.util.listeners.ApplicationParquetCleaner])
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2265
+        </td>
+        <td>
+          1977
+          -
+          1992
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.metadata
+        </td>
+        <td style="background: #AEF1AE">
+          ApplicationParquetCleaner.this.config.metadata
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2274
+        </td>
+        <td>
+          1928
+          -
+          2176
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.fs.HadoopFileStoreLayer.&lt;init&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          new com.vertica.spark.datasource.fs.HadoopFileStoreLayer(ApplicationParquetCleaner.this.config.fileStoreConfig, ApplicationParquetCleaner.this.config.metadata match {
+  case (value: com.vertica.spark.config.VerticaReadMetadata)Some[com.vertica.spark.config.VerticaReadMetadata]((metadata @ _)) =&gt; if (ApplicationParquetCleaner.this.config.getRequiredSchema.nonEmpty)
+    scala.Some.apply[org.apache.spark.sql.types.StructType](ApplicationParquetCleaner.this.config.getRequiredSchema)
+  else
+    scala.Some.apply[org.apache.spark.sql.types.StructType](metadata.schema)
+  case _ =&gt; scala.None
+})
+        </td>
+      </tr><tr>
+        <td>
+          45
+        </td>
+        <td>
+          2264
+        </td>
+        <td>
+          1953
+          -
+          1975
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.fileStoreConfig
+        </td>
+        <td style="background: #AEF1AE">
+          ApplicationParquetCleaner.this.config.fileStoreConfig
+        </td>
+      </tr><tr>
+        <td>
+          46
+        </td>
+        <td>
+          2266
+        </td>
+        <td>
+          2032
+          -
+          2065
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.TraversableOnce.nonEmpty
+        </td>
+        <td style="background: #AEF1AE">
+          ApplicationParquetCleaner.this.config.getRequiredSchema.nonEmpty
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2269
+        </td>
+        <td>
+          2075
+          -
+          2105
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.StructType](ApplicationParquetCleaner.this.config.getRequiredSchema)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2268
+        </td>
+        <td>
+          2075
+          -
+          2105
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.StructType](ApplicationParquetCleaner.this.config.getRequiredSchema)
+        </td>
+      </tr><tr>
+        <td>
+          47
+        </td>
+        <td>
+          2267
+        </td>
+        <td>
+          2080
+          -
+          2104
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.DistributedFilesystemReadConfig.getRequiredSchema
+        </td>
+        <td style="background: #AEF1AE">
+          ApplicationParquetCleaner.this.config.getRequiredSchema
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2272
+        </td>
+        <td>
+          2125
+          -
+          2146
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.StructType](metadata.schema)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2271
+        </td>
+        <td>
+          2125
+          -
+          2146
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.types.StructType](metadata.schema)
+        </td>
+      </tr><tr>
+        <td>
+          49
+        </td>
+        <td>
+          2270
+        </td>
+        <td>
+          2130
+          -
+          2145
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.VerticaReadMetadata.schema
+        </td>
+        <td style="background: #AEF1AE">
+          metadata.schema
+        </td>
+      </tr><tr>
+        <td>
+          51
+        </td>
+        <td>
+          2273
+        </td>
+        <td>
+          2167
+          -
+          2171
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #F0ADAD">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          55
+        </td>
+        <td>
+          2275
+        </td>
+        <td>
+          2284
+          -
+          2314
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.config.FileStoreConfig.address
+        </td>
+        <td style="background: #F0ADAD">
+          ApplicationParquetCleaner.this.config.fileStoreConfig.address
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2280
+        </td>
+        <td>
+          2319
+          -
+          2319
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2279
+        </td>
+        <td>
+          2319
+          -
+          2319
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          56
+        </td>
+        <td>
+          2276
+        </td>
+        <td>
+          2323
+          -
+          2361
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.Boolean.unary_!
+        </td>
+        <td style="background: #F0ADAD">
+          ApplicationParquetCleaner.this.config.fileStoreConfig.preventCleanup.unary_!
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2278
+        </td>
+        <td>
+          2371
+          -
+          2570
+        </td>
+        <td>
+          Match
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          ApplicationParquetCleaner.this.fileStoreLayer.removeDir(hdfsPath) match {
+  case (value: Unit)scala.util.Right[com.vertica.spark.util.error.ConnectorError,Unit](_) =&gt; (if (ApplicationParquetCleaner.this.logger.underlying.isInfoEnabled())
+    ApplicationParquetCleaner.this.logger.underlying.info(&quot;Removed &quot;.+(hdfsPath))
+  else
+    (): Unit)
+  case (value: com.vertica.spark.util.error.ConnectorError)scala.util.Left[com.vertica.spark.util.error.ConnectorError,Unit]((error @ _)) =&gt; (if (ApplicationParquetCleaner.this.logger.underlying.isErrorEnabled())
+    ApplicationParquetCleaner.this.logger.underlying.error(&quot;Error removing {}. {}&quot;, (scala.Array.apply[String](hdfsPath, error.toString())((ClassTag.apply[String](classOf[java.lang.String]): scala.reflect.ClassTag[String])): _*))
+  else
+    (): Unit)
+}
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          2277
+        </td>
+        <td>
+          2371
+          -
+          2405
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.fs.HadoopFileStoreLayer.removeDir
+        </td>
+        <td style="background: #F0ADAD">
+          ApplicationParquetCleaner.this.fileStoreLayer.removeDir(hdfsPath)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          2281
+        </td>
+        <td>
+          2678
+          -
+          2734
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #F0ADAD">
+          &quot;Failed to add application shutdown listener to context&quot;
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>

@@ -1,0 +1,1102 @@
+<html>
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title id="title">
+          com/vertica/spark/datasource/core/DSReader.scala.html
+        </title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/css/theme.default.min.css" type="text/css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.20.1/js/jquery.tablesorter.min.js"></script><link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" type="text/css"/><script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script><script type="text/javascript">
+        $(document).ready(function() {$(".tablesorter").tablesorter();});
+      </script>
+        <style>
+          table.codegrid { font-family: monospace; font-size: 12px; width: auto!important; }table.statementlist { width: auto!important; font-size: 13px; } table.codegrid td { padding: 0!important; border: 0!important } table td.linenumber { width: 40px!important; } 
+        </style>
+      </head>
+      <body style="font-family: monospace;">
+        <ul class="nav nav-tabs">
+          <li>
+            <a href="#codegrid" data-toggle="tab">Codegrid</a>
+          </li>
+          <li>
+            <a href="#statementlist" data-toggle="tab">Statement List</a>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane active" id="codegrid">
+            <pre style='font-size: 12pt; font-family: courier, monospace;'>1 <span style=''>// (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
+</span>2 <span style=''>// Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+</span>3 <span style=''>// You may not use this file except in compliance with the License.
+</span>4 <span style=''>// You may obtain a copy of the License at
+</span>5 <span style=''>//
+</span>6 <span style=''>// http://www.apache.org/licenses/LICENSE-2.0
+</span>7 <span style=''>//
+</span>8 <span style=''>// Unless required by applicable law or agreed to in writing, software
+</span>9 <span style=''>// distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+</span>10 <span style=''>// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+</span>11 <span style=''>// See the License for the specific language governing permissions and
+</span>12 <span style=''>// limitations under the License.
+</span>13 <span style=''>
+</span>14 <span style=''>package com.vertica.spark.datasource.core
+</span>15 <span style=''>
+</span>16 <span style=''>import com.vertica.spark.util.error._
+</span>17 <span style=''>import com.vertica.spark.config._
+</span>18 <span style=''>import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+</span>19 <span style=''>import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+</span>20 <span style=''>import org.apache.spark.sql.catalyst.InternalRow
+</span>21 <span style=''>import org.apache.spark.sql.connector.read.InputPartition
+</span>22 <span style=''>
+</span>23 <span style=''>/**
+</span>24 <span style=''>  * Interface responsible for reading from the Vertica source.
+</span>25 <span style=''>  *
+</span>26 <span style=''>  * This class is initiated and called from each spark worker.
+</span>27 <span style=''>  */
+</span>28 <span style=''>trait DSReaderInterface {
+</span>29 <span style=''>
+</span>30 <span style=''>  /**
+</span>31 <span style=''>   * Starts the read operation
+</span>32 <span style=''>   */
+</span>33 <span style=''>  def openRead(): ConnectorResult[Unit]
+</span>34 <span style=''>
+</span>35 <span style=''>  /**
+</span>36 <span style=''>   * Called by spark to read an individual row
+</span>37 <span style=''>   *
+</span>38 <span style=''>   * @return The next row if it exists, if the read is done None will be returned.
+</span>39 <span style=''>   */
+</span>40 <span style=''>  def readRow(): ConnectorResult[Option[InternalRow]]
+</span>41 <span style=''>
+</span>42 <span style=''>  /**
+</span>43 <span style=''>   * Called when all reading is done, to perform any needed cleanup operations.
+</span>44 <span style=''>   */
+</span>45 <span style=''>  def closeRead(): ConnectorResult[Unit]
+</span>46 <span style=''>}
+</span>47 <span style=''>
+</span>48 <span style=''>
+</span>49 <span style=''>/**
+</span>50 <span style=''> * Reader class, agnostic to the kind of pipe used for the operation (which VerticaPipe is used)
+</span>51 <span style=''> *
+</span>52 <span style=''> * @param config Configuration data for the operation.
+</span>53 <span style=''> * @param partition Information representing what this reader needs to read. Will be a portion of the overall read operation.
+</span>54 <span style=''> * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for read.
+</span>55 <span style=''> */
+</span>56 <span style=''>class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
+</span>57 <span style=''>  private val pipe = </span><span style='background: #AEF1AE'>pipeFactory.getReadPipe(config)</span><span style=''>
+</span>58 <span style=''>
+</span>59 <span style=''>  private var block: Option[DataBlock] = </span><span style='background: #AEF1AE'>None</span><span style=''>
+</span>60 <span style=''>  private var i: Int = </span><span style='background: #AEF1AE'>0</span><span style=''>
+</span>61 <span style=''>
+</span>62 <span style=''>  def openRead(): ConnectorResult[Unit] = {
+</span>63 <span style=''>    </span><span style='background: #AEF1AE'>i = 0</span><span style=''>
+</span>64 <span style=''>    </span><span style='background: #AEF1AE'>partition</span><span style=''> match {
+</span>65 <span style=''>      case verticaPartition: VerticaPartition =&gt; </span><span style='background: #AEF1AE'>pipe.startPartitionRead(verticaPartition)</span><span style=''>
+</span>66 <span style=''>      case _ =&gt; </span><span style='background: #AEF1AE'>Left(InvalidPartition().context(
+</span>67 <span style=''></span><span style='background: #AEF1AE'>          &quot;Unexpected state: partition of type 'VerticaPartition' was expected but not received&quot;))</span><span style=''>
+</span>68 <span style=''>    }
+</span>69 <span style=''>  }
+</span>70 <span style=''>
+</span>71 <span style=''>  def readRow(): ConnectorResult[Option[InternalRow]] = {
+</span>72 <span style=''>    val ret = </span><span style='background: #AEF1AE'>for {
+</span>73 <span style=''></span><span style='background: #AEF1AE'>      // Get current or next data block
+</span>74 <span style=''></span><span style='background: #AEF1AE'>      dataBlock &lt;- block match {
+</span>75 <span style=''></span><span style='background: #AEF1AE'>        case None =&gt;
+</span>76 <span style=''></span><span style='background: #AEF1AE'>          pipe.readData match {
+</span>77 <span style=''></span><span style='background: #AEF1AE'>            case Left(err) =&gt; Left(err)
+</span>78 <span style=''></span><span style='background: #AEF1AE'>            case Right(data) =&gt;
+</span>79 <span style=''></span><span style='background: #AEF1AE'>              block = Some(data)
+</span>80 <span style=''></span><span style='background: #AEF1AE'>              Right(data)
+</span>81 <span style=''></span><span style='background: #AEF1AE'>          }
+</span>82 <span style=''></span><span style='background: #AEF1AE'>        case Some(block) =&gt; Right(block)
+</span>83 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>84 <span style=''></span><span style='background: #AEF1AE'>
+</span>85 <span style=''></span><span style='background: #AEF1AE'>      // Get row from block. If this is the last row of the block, reset the block
+</span>86 <span style=''></span><span style='background: #AEF1AE'>      _ &lt;- if (dataBlock.data.isEmpty) {
+</span>87 <span style=''></span><span style='background: #AEF1AE'>        </span><span style='background: #F0ADAD'>Left(DoneReading())</span><span style='background: #AEF1AE'>
+</span>88 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>89 <span style=''></span><span style='background: #AEF1AE'>        Right(())
+</span>90 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>91 <span style=''></span><span style='background: #AEF1AE'>
+</span>92 <span style=''></span><span style='background: #AEF1AE'>      row = dataBlock.data(i)
+</span>93 <span style=''></span><span style='background: #AEF1AE'>      _ = i += 1
+</span>94 <span style=''></span><span style='background: #AEF1AE'>      _ = if (i &gt;= dataBlock.data.size) {
+</span>95 <span style=''></span><span style='background: #AEF1AE'>        block = None
+</span>96 <span style=''></span><span style='background: #AEF1AE'>        i = 0
+</span>97 <span style=''></span><span style='background: #AEF1AE'>      } else {
+</span>98 <span style=''></span><span style='background: #AEF1AE'>        ()
+</span>99 <span style=''></span><span style='background: #AEF1AE'>      }
+</span>100 <span style=''></span><span style='background: #AEF1AE'>    } yield Some(row)</span><span style=''>
+</span>101 <span style=''>
+</span>102 <span style=''>    ret match {
+</span>103 <span style=''>      case Right(optRow) =&gt; </span><span style='background: #AEF1AE'>Right(optRow)</span><span style=''>
+</span>104 <span style=''>      case Left(err) =&gt; err match {
+</span>105 <span style=''>        case DoneReading() =&gt; </span><span style='background: #AEF1AE'>Right(None)</span><span style=''> // If there's no more data to be read, return nothing for row
+</span>106 <span style=''>        case _ =&gt; </span><span style='background: #F0ADAD'>Left(err)</span><span style=''> // If something else went wrong, return error
+</span>107 <span style=''>      }
+</span>108 <span style=''>    }
+</span>109 <span style=''>  }
+</span>110 <span style=''>
+</span>111 <span style=''>  def closeRead(): ConnectorResult[Unit] = {
+</span>112 <span style=''>    </span><span style='background: #AEF1AE'>pipe.endPartitionRead()</span><span style=''>
+</span>113 <span style=''>  }
+</span>114 <span style=''>}
+</span></pre>
+          </div>
+          <div class="tab-pane" id="statementlist">
+            <table cellspacing="0" cellpadding="0" class="table statementlist">
+      <tr>
+        <th>Line</th>
+        <th>Stmt Id</th>
+        <th>Pos</th>
+        <th>Tree</th>
+        <th>Symbol</th>
+        <th>Code</th>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          600
+        </td>
+        <td>
+          2180
+          -
+          2211
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface.getReadPipe
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.pipeFactory.getReadPipe(DSReader.this.config)
+        </td>
+      </tr><tr>
+        <td>
+          57
+        </td>
+        <td>
+          599
+        </td>
+        <td>
+          2204
+          -
+          2210
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.config
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.config
+        </td>
+      </tr><tr>
+        <td>
+          59
+        </td>
+        <td>
+          601
+        </td>
+        <td>
+          2254
+          -
+          2258
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          60
+        </td>
+        <td>
+          602
+        </td>
+        <td>
+          2282
+          -
+          2283
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          0
+        </td>
+      </tr><tr>
+        <td>
+          63
+        </td>
+        <td>
+          603
+        </td>
+        <td>
+          2333
+          -
+          2338
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.i_=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          64
+        </td>
+        <td>
+          604
+        </td>
+        <td>
+          2343
+          -
+          2352
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.partition
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.partition
+        </td>
+      </tr><tr>
+        <td>
+          65
+        </td>
+        <td>
+          605
+        </td>
+        <td>
+          2410
+          -
+          2451
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.VerticaPipeReadInterface.startPartitionRead
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.pipe.startPartitionRead(verticaPartition)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          606
+        </td>
+        <td>
+          2473
+          -
+          2598
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.error.ConnectorError.context
+        </td>
+        <td style="background: #AEF1AE">
+          com.vertica.spark.util.error.InvalidPartition.apply().context(&quot;Unexpected state: partition of type \'VerticaPartition\' was expected but not received&quot;)
+        </td>
+      </tr><tr>
+        <td>
+          66
+        </td>
+        <td>
+          607
+        </td>
+        <td>
+          2468
+          -
+          2599
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](com.vertica.spark.util.error.InvalidPartition.apply().context(&quot;Unexpected state: partition of type \'VerticaPartition\' was expected but not received&quot;))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          636
+        </td>
+        <td>
+          2683
+          -
+          3381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.flatMap
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.block match {
+  case scala.None =&gt; DSReader.this.pipe.readData match {
+    case (value: com.vertica.spark.util.error.ConnectorError)scala.util.Left[com.vertica.spark.util.error.ConnectorError,com.vertica.spark.datasource.core.DataBlock]((err @ _)) =&gt; scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
+    case (value: com.vertica.spark.datasource.core.DataBlock)scala.util.Right[com.vertica.spark.util.error.ConnectorError,com.vertica.spark.datasource.core.DataBlock]((data @ _)) =&gt; {
+      DSReader.this.block_=(scala.Some.apply[com.vertica.spark.datasource.core.DataBlock](data));
+      scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
+    }
+  }
+  case (value: com.vertica.spark.datasource.core.DataBlock)Some[com.vertica.spark.datasource.core.DataBlock]((block @ _)) =&gt; scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](block)
+}.flatMap[com.vertica.spark.util.error.ConnectorError, Some[org.apache.spark.sql.catalyst.InternalRow]](((dataBlock: com.vertica.spark.datasource.core.DataBlock) =&gt; if (dataBlock.data.isEmpty)
+  scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
+else
+  scala.`package`.Right.apply[Nothing, Unit](()).map[(Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)](((x$1: Unit) =&gt; {
+  val row: org.apache.spark.sql.catalyst.InternalRow = dataBlock.data.apply(DSReader.this.i);
+  val x$2: Unit = DSReader.this.i_=(DSReader.this.i.+(1));
+  val x$3: Unit = if (DSReader.this.i.&gt;=(dataBlock.data.size))
+    {
+      DSReader.this.block_=(scala.None);
+      DSReader.this.i_=(0)
+    }
+  else
+    ();
+  scala.Tuple4.apply[Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit](x$1, row, x$2, x$3)
+})).map[Some[org.apache.spark.sql.catalyst.InternalRow]](((x$4: (Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)) =&gt; (x$4: (Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit) @unchecked) match {
+  case (_1: Unit, _2: org.apache.spark.sql.catalyst.InternalRow, _3: Unit, _4: Unit)(Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)(_, (row @ _), _, _) =&gt; scala.Some.apply[org.apache.spark.sql.catalyst.InternalRow](row)
+}))))
+        </td>
+      </tr><tr>
+        <td>
+          74
+        </td>
+        <td>
+          608
+        </td>
+        <td>
+          2748
+          -
+          2753
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.block
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.block
+        </td>
+      </tr><tr>
+        <td>
+          76
+        </td>
+        <td>
+          609
+        </td>
+        <td>
+          2793
+          -
+          2806
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.VerticaPipeReadInterface.readData
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.pipe.readData
+        </td>
+      </tr><tr>
+        <td>
+          77
+        </td>
+        <td>
+          610
+        </td>
+        <td>
+          2845
+          -
+          2854
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          612
+        </td>
+        <td>
+          2901
+          -
+          2919
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.block_=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.block_=(scala.Some.apply[com.vertica.spark.datasource.core.DataBlock](data))
+        </td>
+      </tr><tr>
+        <td>
+          79
+        </td>
+        <td>
+          611
+        </td>
+        <td>
+          2909
+          -
+          2919
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[com.vertica.spark.datasource.core.DataBlock](data)
+        </td>
+      </tr><tr>
+        <td>
+          80
+        </td>
+        <td>
+          613
+        </td>
+        <td>
+          2934
+          -
+          2945
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](data)
+        </td>
+      </tr><tr>
+        <td>
+          82
+        </td>
+        <td>
+          614
+        </td>
+        <td>
+          2986
+          -
+          2998
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, com.vertica.spark.datasource.core.DataBlock](block)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          615
+        </td>
+        <td>
+          3106
+          -
+          3128
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.isEmpty
+        </td>
+        <td style="background: #AEF1AE">
+          dataBlock.data.isEmpty
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          633
+        </td>
+        <td>
+          3097
+          -
+          3097
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Tuple4.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Tuple4.apply[Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit](x$1, row, x$2, x$3)
+        </td>
+      </tr><tr>
+        <td>
+          86
+        </td>
+        <td>
+          635
+        </td>
+        <td>
+          3097
+          -
+          3381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Either.map
+        </td>
+        <td style="background: #AEF1AE">
+          if (dataBlock.data.isEmpty)
+  scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
+else
+  scala.`package`.Right.apply[Nothing, Unit](()).map[(Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)](((x$1: Unit) =&gt; {
+  val row: org.apache.spark.sql.catalyst.InternalRow = dataBlock.data.apply(DSReader.this.i);
+  val x$2: Unit = DSReader.this.i_=(DSReader.this.i.+(1));
+  val x$3: Unit = if (DSReader.this.i.&gt;=(dataBlock.data.size))
+    {
+      DSReader.this.block_=(scala.None);
+      DSReader.this.i_=(0)
+    }
+  else
+    ();
+  scala.Tuple4.apply[Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit](x$1, row, x$2, x$3)
+})).map[Some[org.apache.spark.sql.catalyst.InternalRow]](((x$4: (Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)) =&gt; (x$4: (Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit) @unchecked) match {
+  case (_1: Unit, _2: org.apache.spark.sql.catalyst.InternalRow, _3: Unit, _4: Unit)(Unit, org.apache.spark.sql.catalyst.InternalRow, Unit, Unit)(_, (row @ _), _, _) =&gt; scala.Some.apply[org.apache.spark.sql.catalyst.InternalRow](row)
+}))
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          618
+        </td>
+        <td>
+          3140
+          -
+          3159
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          617
+        </td>
+        <td>
+          3140
+          -
+          3159
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Left.apply[com.vertica.spark.util.error.DoneReading, Nothing](com.vertica.spark.util.error.DoneReading.apply())
+        </td>
+      </tr><tr>
+        <td>
+          87
+        </td>
+        <td>
+          616
+        </td>
+        <td>
+          3145
+          -
+          3158
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.util.error.DoneReading.apply
+        </td>
+        <td style="background: #F0ADAD">
+          com.vertica.spark.util.error.DoneReading.apply()
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          620
+        </td>
+        <td>
+          3183
+          -
+          3192
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, Unit](())
+        </td>
+      </tr><tr>
+        <td>
+          89
+        </td>
+        <td>
+          619
+        </td>
+        <td>
+          3183
+          -
+          3192
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, Unit](())
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          621
+        </td>
+        <td>
+          3229
+          -
+          3230
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.i
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i
+        </td>
+      </tr><tr>
+        <td>
+          92
+        </td>
+        <td>
+          622
+        </td>
+        <td>
+          3214
+          -
+          3231
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.collection.LinearSeqOptimized.apply
+        </td>
+        <td style="background: #AEF1AE">
+          dataBlock.data.apply(DSReader.this.i)
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          624
+        </td>
+        <td>
+          3242
+          -
+          3248
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.i_=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i_=(DSReader.this.i.+(1))
+        </td>
+      </tr><tr>
+        <td>
+          93
+        </td>
+        <td>
+          623
+        </td>
+        <td>
+          3242
+          -
+          3248
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.+
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i.+(1)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          630
+        </td>
+        <td>
+          3289
+          -
+          3333
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          {
+  DSReader.this.block_=(scala.None);
+  DSReader.this.i_=(0)
+}
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          626
+        </td>
+        <td>
+          3263
+          -
+          3287
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Int.&gt;=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i.&gt;=(dataBlock.data.size)
+        </td>
+      </tr><tr>
+        <td>
+          94
+        </td>
+        <td>
+          625
+        </td>
+        <td>
+          3268
+          -
+          3287
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.collection.SeqLike.size
+        </td>
+        <td style="background: #AEF1AE">
+          dataBlock.data.size
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          627
+        </td>
+        <td>
+          3307
+          -
+          3311
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          95
+        </td>
+        <td>
+          628
+        </td>
+        <td>
+          3299
+          -
+          3311
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.block_=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.block_=(scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          96
+        </td>
+        <td>
+          629
+        </td>
+        <td>
+          3320
+          -
+          3325
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.DSReader.i_=
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.i_=(0)
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          632
+        </td>
+        <td>
+          3349
+          -
+          3351
+        </td>
+        <td>
+          Block
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          98
+        </td>
+        <td>
+          631
+        </td>
+        <td>
+          3349
+          -
+          3351
+        </td>
+        <td>
+          Literal
+        </td>
+        <td>
+          &lt;nosymbol&gt;
+        </td>
+        <td style="background: #AEF1AE">
+          ()
+        </td>
+      </tr><tr>
+        <td>
+          100
+        </td>
+        <td>
+          634
+        </td>
+        <td>
+          3372
+          -
+          3381
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.Some.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.Some.apply[org.apache.spark.sql.catalyst.InternalRow](row)
+        </td>
+      </tr><tr>
+        <td>
+          103
+        </td>
+        <td>
+          637
+        </td>
+        <td>
+          3427
+          -
+          3440
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, Some[org.apache.spark.sql.catalyst.InternalRow]](optRow)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          639
+        </td>
+        <td>
+          3507
+          -
+          3518
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Right.apply
+        </td>
+        <td style="background: #AEF1AE">
+          scala.`package`.Right.apply[Nothing, None.type](scala.None)
+        </td>
+      </tr><tr>
+        <td>
+          105
+        </td>
+        <td>
+          638
+        </td>
+        <td>
+          3513
+          -
+          3517
+        </td>
+        <td>
+          Select
+        </td>
+        <td>
+          scala.None
+        </td>
+        <td style="background: #AEF1AE">
+          scala.None
+        </td>
+      </tr><tr>
+        <td>
+          106
+        </td>
+        <td>
+          640
+        </td>
+        <td>
+          3599
+          -
+          3608
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          scala.util.Left.apply
+        </td>
+        <td style="background: #F0ADAD">
+          scala.`package`.Left.apply[com.vertica.spark.util.error.ConnectorError, Nothing](err)
+        </td>
+      </tr><tr>
+        <td>
+          112
+        </td>
+        <td>
+          641
+        </td>
+        <td>
+          3723
+          -
+          3746
+        </td>
+        <td>
+          Apply
+        </td>
+        <td>
+          com.vertica.spark.datasource.core.VerticaPipeReadInterface.endPartitionRead
+        </td>
+        <td style="background: #AEF1AE">
+          DSReader.this.pipe.endPartitionRead()
+        </td>
+      </tr>
+    </table>
+          </div>
+        </div>
+      </body>
+    </html>
