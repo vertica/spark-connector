@@ -1635,7 +1635,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     println(df.toString())
     val mode = SaveMode.Overwrite
     df.write.format("com.vertica.spark.datasource.VerticaSource")
-      .options(writeOpts + ("table" -> tableName, "arrlen" -> "10"))
+      .options(writeOpts + ("table" -> tableName, "array_length" -> "10"))
       .mode(mode).save()
 
     val stmt = conn.createStatement()
