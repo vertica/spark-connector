@@ -439,10 +439,10 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getArrlen(config: Map[String, String]) : ValidationResult[Long] = {
-    Try {config.getOrElse("arrlen","0").toLong} match {
-      case Success(len) => if(len < 0) InvalidArrlenError().invalidNec else  len.validNec
-      case Failure(_) =>  InvalidArrlenError().invalidNec
+  def getArrayLength(config: Map[String, String]) : ValidationResult[Long] = {
+    Try {config.getOrElse("array_length","0").toLong} match {
+      case Success(len) => if(len < 0) InvalidArrayLengthError().invalidNec else  len.validNec
+      case Failure(_) =>  InvalidArrayLengthError().invalidNec
     }
   }
 
@@ -630,7 +630,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getSaveJobStatusTable(config),
           DSConfigSetupUtils.getMergeKey(config),
           DSConfigSetupUtils.getTimeOperations(config),
-          DSConfigSetupUtils.getArrlen(config)
+          DSConfigSetupUtils.getArrayLength(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

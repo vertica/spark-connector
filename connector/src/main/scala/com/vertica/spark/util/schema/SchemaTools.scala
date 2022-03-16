@@ -67,7 +67,7 @@ trait SchemaToolsInterface {
    * @param strlen Necessary if the type is StringType, string length to use for Vertica type.
    * @return String representing Vertica type, that one could use in a create table statement
    */
-  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrlen: Long): SchemaResult[String]
+  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String]
 
   /**
    * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
@@ -94,7 +94,7 @@ trait SchemaToolsInterface {
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrlen: Long): ConnectorResult[String]
+  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String]
 
   /**
    * Gets a list of column values to be inserted within a merge.
@@ -120,7 +120,7 @@ trait SchemaToolsInterface {
   * @param schema Schema passed in with empty dataframe
   * @return Updated create external table statement
   */
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrlen: Long): ConnectorResult[String]
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -374,18 +374,18 @@ class SchemaTools extends SchemaToolsInterface {
    ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
   }
 
-  override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
+  override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.MapType(_,_,_) |
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
-      case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrlen)
+      case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
     }
   }
 
-  private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrlen: Long): SchemaResult[String] = {
-    val length = if(arrlen <=0) "" else s",$arrlen"
+  private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
+    val length = if(arrayLength <=0) "" else s",$arrayLength"
     @tailrec
       def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String, depth: Int):SchemaResult[String] = {
           dataType match {
@@ -516,7 +516,7 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrlen: Long): ConnectorResult[String] = {
+  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
     val sb = new StringBuilder()
 
     sb.append(" (")
@@ -549,7 +549,7 @@ class SchemaTools extends SchemaToolsInterface {
       }
 
       for {
-        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrlen) match {
+        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength) match {
           case Left(err) =>
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
           case Right(datatype) =>
@@ -597,7 +597,7 @@ class SchemaTools extends SchemaToolsInterface {
     columnList
   }
 
-  def updateFieldDataType(col: String, colName: String, schema: StructType, strlen: Long, arrlen: Long): String = {
+  def updateFieldDataType(col: String, colName: String, schema: StructType, strlen: Long, arrayLength: Long): String = {
     val fieldType = schema.collect {
       case field if(addDoubleQuotes(field.name) == colName) =>
         if (field.metadata.contains(maxlength) && field.dataType.simpleString == "string") {
@@ -608,7 +608,7 @@ class SchemaTools extends SchemaToolsInterface {
           "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
         }
         else  {
-          getVerticaTypeFromSparkType(field.dataType, strlen, arrlen) match {
+          getVerticaTypeFromSparkType(field.dataType, strlen, arrayLength) match {
             case Right(dataType) => dataType
             case Left(err) => Left(err)
           }
@@ -623,7 +623,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrlen: Long): ConnectorResult[String] = {
+  def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
     val indexOfOpeningParantheses = stmt.indexOf("(")
     val indexOfClosingParantheses = stmt.indexOf(")")
@@ -636,7 +636,7 @@ class SchemaTools extends SchemaToolsInterface {
       val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
 
       if(schema.nonEmpty){
-        updateFieldDataType(col, colName, schema, strlen, arrlen)
+        updateFieldDataType(col, colName, schema, strlen, arrayLength)
       }
       else if(col.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
       else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(" + longlength + ")"

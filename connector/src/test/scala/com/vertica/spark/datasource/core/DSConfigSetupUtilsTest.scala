@@ -213,22 +213,22 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(!pass2.toList.head)
   }
 
-  it should "parse arrlen" in {
+  it should "parse array_length" in {
     val opts = Map[String, String]()
-    val pass = DSConfigSetupUtils.getArrlen(opts)
+    val pass = DSConfigSetupUtils.getArrayLength(opts)
     assert(pass.toList.nonEmpty)
     assert(pass.toList.head.isInstanceOf[Long])
     assert(pass.toList.head == 0)
 
-    val opts2 = Map[String, String]("arrlen" -> "100")
-    val pass2 = DSConfigSetupUtils.getArrlen(opts2)
+    val opts2 = Map[String, String]("array_length" -> "100")
+    val pass2 = DSConfigSetupUtils.getArrayLength(opts2)
     assert(pass2.toList.nonEmpty)
     assert(pass2.toList.head.isInstanceOf[Long])
     assert(pass2.toList.head.isInstanceOf[Long])
     assert(pass2.toList.head == 100)
 
-    val opts3 = Map[String, String]("arrlen" -> "sdfsdf")
-    val pass3 = DSConfigSetupUtils.getArrlen(opts3)
+    val opts3 = Map[String, String]("array_length" -> "sdfsdf")
+    val pass3 = DSConfigSetupUtils.getArrayLength(opts3)
     pass3 match {
       case Invalid(_) => succeed
       case _ => fail

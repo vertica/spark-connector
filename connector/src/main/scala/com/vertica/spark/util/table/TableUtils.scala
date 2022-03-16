@@ -49,7 +49,7 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, arrlen: Long): ConnectorResult[Unit]
+  def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[Unit]
 
 
   /**
@@ -60,7 +60,7 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String, arrlen: Long): ConnectorResult[Unit]
+  def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String, arrayLength: Long): ConnectorResult[Unit]
 
   /**
    * Validates that an external table was created properly and can be loaded from without error
@@ -82,7 +82,7 @@ trait TableUtilsInterface {
    * @param schema Spark schema of data we want to write to the table
    * @param strlen Length to use for strings in Vertica string types
    */
-  def createTempTable(tablename: TableName, schema: StructType, strlen: Long, arrlen: Long): ConnectorResult[Unit]
+  def createTempTable(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[Unit]
 
   /**
    * Creates the job status table if it doesn't exist and adds the entry for this job.
@@ -113,11 +113,11 @@ trait TableUtilsInterface {
 class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterface) extends TableUtilsInterface {
   private val logger = LogProvider.getLogger(classOf[TableUtils])
 
-  private def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long,  arrlen: Long, temp: Boolean = false): ConnectorResult[String] = {
+  private def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long, temp: Boolean = false): ConnectorResult[String] = {
     val sb = new StringBuilder()
     sb.append(tablename.getFullTableName)
 
-    schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrlen) match {
+    schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength) match {
       case Right(columnDefs) =>
         val sb = new StringBuilder()
         if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
@@ -196,11 +196,11 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     }
   }
 
-  override def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String,  arrlen: Long): ConnectorResult[Unit] = {
+  override def createExternalTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, urlToCopyFrom: String, arrayLength: Long): ConnectorResult[Unit] = {
     val statement: ConnectorResult[String] = targetTableSql match {
       case Some(sql) => Right(sql)
       case None =>
-        schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrlen) match {
+        schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength) match {
           case Right(columnDefs) =>
             val sb = new StringBuilder()
             sb.append("CREATE EXTERNAL table ")
@@ -233,12 +233,12 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     }
   }
 
-  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, arrlen: Long): ConnectorResult[Unit] = {
+  override def createTable(tablename: TableName, targetTableSql: Option[String], schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[Unit] = {
     // Either get the user-supplied statement to create the table, or build our own
     val statement: ConnectorResult[String] = targetTableSql match {
       case Some(sql) => Right(sql)
       case None =>
-        buildCreateTableStmt(tablename, schema, strlen, arrlen)
+        buildCreateTableStmt(tablename, schema, strlen, arrayLength)
     }
 
     statement match {
@@ -254,8 +254,8 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
       .left.map(err => err.context("JDBC Error dropping table"))
   }
 
-  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long, arrlen: Long): ConnectorResult[Unit] = {
-    val statement = buildCreateTableStmt(tablename, schema, strlen, arrlen, temp = true)
+  override def createTempTable(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[Unit] = {
+    val statement = buildCreateTableStmt(tablename, schema, strlen, arrayLength, temp = true)
     logger.info(s"BUILDING TEMP TABLE WITH COMMAND: " + statement)
     statement match {
       case Left(err) => Left(err)

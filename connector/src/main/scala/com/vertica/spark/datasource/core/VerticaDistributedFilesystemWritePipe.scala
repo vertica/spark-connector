@@ -132,7 +132,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- if (tempTableExists) Left(TempTableExistsError()) else Right(())
 
       // Create table unless we're appending, or we're in external table mode (that gets created later)
-      _ <- if (!tableExistsPre && config.createExternalTable.isEmpty) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen, config.arrlen) else Right(())
+      _ <- if (!tableExistsPre && config.createExternalTable.isEmpty) tableUtils.createTable(config.tablename, config.targetTableSql, config.schema, config.strlen, config.arrayLength) else Right(())
 
       // Confirm table was created. This should only be false if the user specified an invalid target_table_sql
       tableExistsPost <- tableUtils.tableExists(config.tablename)
@@ -282,7 +282,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
           }
           else {
             logger.info("Inferring partial schema from dataframe")
-            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen, config.arrlen)
+            schemaTools.inferExternalTableSchema(createExternalTableStatement, config.schema, tableName, config.strlen, config.arrayLength)
           }
         }
         catch {
@@ -432,7 +432,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       tableName = config.tablename.name
       sessionId = config.sessionId
 
-      _ <- if (config.mergeKey.isDefined) tableUtils.createTempTable(tempTableName, config.schema, config.strlen, config.arrlen) else Right(())
+      _ <- if (config.mergeKey.isDefined) tableUtils.createTempTable(tempTableName, config.schema, config.strlen, config.arrayLength) else Right(())
 
       tempTableExists <- tableUtils.tempTableExists(tempTableName)
       _ <- if (config.mergeKey.isDefined && !tempTableExists) Left(CreateTableError(None)) else Right(())
@@ -511,7 +511,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                 schema = config.schema,
                 strlen = config.strlen,
                 urlToCopyFrom = url,
-                config.arrlen
+                config.arrayLength
               )
 
       _ <- tableUtils.validateExternalTable(config.tablename)

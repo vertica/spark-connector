@@ -277,8 +277,8 @@ case class InvalidStrlenError() extends ConnectorError {
   def getFullContext: String = "The 'strlen' param specified is invalid. " +
     "Please specify a valid integer between 1 and 32000000."
 }
-case class InvalidArrlenError() extends ConnectorError {
-  def getFullContext: String = "The 'arrlen' param specified is invalid. " +
+case class InvalidArrayLengthError() extends ConnectorError {
+  def getFullContext: String = "The 'array_length' param specified is invalid. " +
     "Please specify a positive integer value."
 }
 case class InvalidPartitionCountError() extends ConnectorError {
