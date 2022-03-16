@@ -1,4 +1,4 @@
-# Vertica Spark Connector
+# Vertica Spark Connector 
 
 [![tests-ci-badge]](https://github.com/vertica/spark-connector/actions/workflows/main.yml)
 [![coverage-badge]](./scoverage-report/index.html)
