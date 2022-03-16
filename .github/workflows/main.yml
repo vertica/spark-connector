@@ -36,7 +36,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v2
       - name: Run unit tests
-        run: cd connector && sbt assembly coverage test coverageReport
+        run: cd connector && sbt coverage test coverageReport
 #      - name: Prepare code coverage report
 #        run: |
 #          cd ./connector/target/scala-2.12/scoverage-report
