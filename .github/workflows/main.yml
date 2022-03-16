@@ -1,5 +1,5 @@
 # Workflow for running Unit tests and Integration tests
-name: main-CI
+name: Tests-CI
 
 on:
   push:
