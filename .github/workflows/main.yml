@@ -33,9 +33,6 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
-#        with:
-#          ref: ${{ github.event.pull_request.head.ref }}
-#          fetch-depth: 0
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
       - name: Prepare code coverage badge
@@ -53,13 +50,6 @@ jobs:
           fi
 
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
-#      - name: Commit changes
-#        run: |
-#          # Unstage all the files in your working tree.
-#          git rm --cached $(git ls-files)
-#          git add ./img/coverage-badge.svg
-#          git commit -m 'Commit coverage badge'
-#          git push
       - name: Publish code coverage
         if: always()
         uses: stefanzweifel/git-auto-commit-action@v4

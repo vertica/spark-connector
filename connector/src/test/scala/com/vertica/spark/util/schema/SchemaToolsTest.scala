@@ -175,308 +175,308 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         assert(fields(1).dataType == DecimalType(DecimalType.MAX_PRECISION, 16))
     }
   }
-  //
-  // it should "parse int types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.INTEGER, "INTEGER", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.SMALLINT, "SMALLINT", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.TINYINT, "TINYINT", 0, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 3)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields(0).dataType == IntegerType)
-  //       assert(fields(1).dataType == IntegerType)
-  //       assert(fields(2).dataType == IntegerType)
-  //   }
-  // }
-  //
-  // it should "parse binary types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BINARY, "BINARY", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BLOB, "BLOB", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.VARBINARY, "VARBINARY", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(4, "col4", java.sql.Types.LONGVARBINARY, "LONGVARBINARY", 0, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 4)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields(0).dataType == BinaryType)
-  //
-  //       assert(fields(1).dataType == BinaryType)
-  //
-  //       assert(fields(2).dataType == BinaryType)
-  //
-  //       assert(fields(3).dataType == BinaryType)
-  //   }
-  // }
-  //
-  // it should "parse boolean types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BOOLEAN, "BOOLEAN", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BIT, "BIT", 0, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 2)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields(0).name == "col1")
-  //       assert(fields(0).dataType == BooleanType)
-  //
-  //       assert(fields(1).name == "col2")
-  //       assert(fields(1).dataType == BooleanType)
-  //   }
-  // }
-  //
-  // it should "parse string types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   // All these types are strings or to be converted as such
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.CHAR, "CHAR", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.CLOB, "CLOB", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.LONGNVARCHAR, "LONGNVARCHAR", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(4, "col4", java.sql.Types.LONGVARCHAR, "LONGVARCHAR", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(5, "col5", java.sql.Types.NCHAR, "NCHAR", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(6, "col6", java.sql.Types.NCLOB, "NCLOB", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(7, "col7", java.sql.Types.NVARCHAR, "NVARCHAR", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(8, "col8", java.sql.Types.REF, "REF", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(9, "col9", java.sql.Types.SQLXML, "SQLXML", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(10, "col10", java.sql.Types.STRUCT, "STRUCT", 0, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(11, "col11", java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 11)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 11)
-  //       for(field <- fields) {
-  //         assert(field.dataType == StringType)
-  //       }
-  //   }
-  // }
-  //
-  // it should "parse date type" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DATE, "DATE", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == DateType)
-  //   }
-  // }
-  //
-  // it should "parse float type" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.FLOAT, "FLOAT", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == FloatType)
-  //   }
-  // }
-  //
-  // it should "parse timestamp type" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIMESTAMP, "TIMESTAMP", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == TimestampType)
-  //   }
-  // }
-  //
-  // it should "parse time type to string" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIME, "TIME", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == StringType)
-  //   }
-  // }
 
-  // it should "parse interval type to string" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "interval", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == StringType)
-  //   }
-  // }
-  //
-  // it should "parse uuid type to string" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "uuid", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == StringType)
-  //   }
-  // }
-  //
-  // it should "parse other type with error" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "asdf", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(e) => e.isInstanceOf[MissingSqlConversionError]
-  //     case Right(_) => fail
-  //   }
-  // }
-  //
-  // it should "parse rowid to long type" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.ROWID, "ROWID", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 1)
-  //       assert(fields(0).dataType == LongType)
-  //   }
-  // }
-  //
-  // it should "parse double types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DOUBLE, "DOUBLE", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.REAL, "REAL", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 2)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(_) => fail
-  //     case Right(schema) =>
-  //       val fields = schema.fields
-  //       assert(fields.length == 2)
-  //       assert(fields(0).dataType == DoubleType)
-  //       assert(fields(1).dataType == DoubleType)
-  //   }
-  // }
-  //
-  // it should "error on unsupported types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   //mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col2", java.sql.Types.DATALINK, "DATALINK", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col3", java.sql.Types.DISTINCT, "DISTINCT", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(3, "col4", java.sql.Types.JAVA_OBJECT, "JAVA_OBJECT", 0, signed = true, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(4, "col5", java.sql.Types.NULL, "NULL", 0, signed = true, nullable = true))
-  //   mockColumnCount(rsmd, 4)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(err) => assert(err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.size == 4
-  //         case _ => false
-  //       })
-  //     case Right(_) => fail
-  //   }
-  // }
-  //
-  // it should "fail when trying to parse invalid types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
-  //   mockColumnMetadata(rsmd, TestColumnDef(2, "col2", 50000, "invalid-type", 16, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 2)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(err) =>
-  //       assert(err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.size == 2
-  //         case _ => false
-  //       })
-  //       assert(err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.head match {
-  //           case MissingSqlConversionError(_, _) => true
-  //           case _ => false
-  //         }
-  //         case _ => false
-  //       })
-  //       assert(err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.tail.head match {
-  //           case MissingSqlConversionError(_, _) => true
-  //           case _ => false
-  //         }
-  //         case _ => false
-  //       })
-  //     case Right(_) => fail
-  //   }
-  // }
-  //
-  // it should "provide a good error message when trying to convert invalid SQL types to Spark types" in {
-  //   val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-  //
-  //   mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
-  //   mockColumnCount(rsmd, 1)
-  //
-  //   (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-  //     case Left(err) =>
-  //       err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
-  //           "Could not find conversion for unsupported SQL type: invalid-type" +
-  //           "\nSQL type value: 50000"))
-  //         case _ => false
-  //       }
-  //     case Right(_) => fail
-  //   }
-  // }
-  //
-  // it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
-  //   (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
-  //     case Left(err) =>
-  //       err.getUnderlyingError match {
-  //         case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
-  //           "Could not find conversion for unsupported Spark type: CharType"))
-  //         case _ => false
-  //       }
-  //     case Right(_) => fail
-  //   }
-  // }
+  it should "parse int types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.INTEGER, "INTEGER", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.SMALLINT, "SMALLINT", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.TINYINT, "TINYINT", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 3)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields(0).dataType == IntegerType)
+        assert(fields(1).dataType == IntegerType)
+        assert(fields(2).dataType == IntegerType)
+    }
+  }
+
+  it should "parse binary types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BINARY, "BINARY", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BLOB, "BLOB", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.VARBINARY, "VARBINARY", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(4, "col4", java.sql.Types.LONGVARBINARY, "LONGVARBINARY", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 4)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields(0).dataType == BinaryType)
+
+        assert(fields(1).dataType == BinaryType)
+
+        assert(fields(2).dataType == BinaryType)
+
+        assert(fields(3).dataType == BinaryType)
+    }
+  }
+
+  it should "parse boolean types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BOOLEAN, "BOOLEAN", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.BIT, "BIT", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 2)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields(0).name == "col1")
+        assert(fields(0).dataType == BooleanType)
+
+        assert(fields(1).name == "col2")
+        assert(fields(1).dataType == BooleanType)
+    }
+  }
+
+  it should "parse string types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    // All these types are strings or to be converted as such
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.CHAR, "CHAR", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.CLOB, "CLOB", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.LONGNVARCHAR, "LONGNVARCHAR", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(4, "col4", java.sql.Types.LONGVARCHAR, "LONGVARCHAR", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(5, "col5", java.sql.Types.NCHAR, "NCHAR", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(6, "col6", java.sql.Types.NCLOB, "NCLOB", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(7, "col7", java.sql.Types.NVARCHAR, "NVARCHAR", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(8, "col8", java.sql.Types.REF, "REF", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(9, "col9", java.sql.Types.SQLXML, "SQLXML", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(10, "col10", java.sql.Types.STRUCT, "STRUCT", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(11, "col11", java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 11)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 11)
+        for(field <- fields) {
+          assert(field.dataType == StringType)
+        }
+    }
+  }
+
+  it should "parse date type" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DATE, "DATE", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == DateType)
+    }
+  }
+
+  it should "parse float type" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.FLOAT, "FLOAT", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == FloatType)
+    }
+  }
+
+  it should "parse timestamp type" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIMESTAMP, "TIMESTAMP", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == TimestampType)
+    }
+  }
+
+  it should "parse time type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.TIME, "TIME", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse interval type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "interval", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse uuid type to string" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "uuid", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == StringType)
+    }
+  }
+
+  it should "parse other type with error" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.OTHER, "asdf", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(e) => e.isInstanceOf[MissingSqlConversionError]
+      case Right(_) => fail
+    }
+  }
+
+  it should "parse rowid to long type" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.ROWID, "ROWID", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType == LongType)
+    }
+  }
+
+  it should "parse double types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.DOUBLE, "DOUBLE", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.REAL, "REAL", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 2)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(_) => fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 2)
+        assert(fields(0).dataType == DoubleType)
+        assert(fields(1).dataType == DoubleType)
+    }
+  }
+
+  it should "error on unsupported types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    //mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col2", java.sql.Types.DATALINK, "DATALINK", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col3", java.sql.Types.DISTINCT, "DISTINCT", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col4", java.sql.Types.JAVA_OBJECT, "JAVA_OBJECT", 0, signed = true, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(4, "col5", java.sql.Types.NULL, "NULL", 0, signed = true, nullable = true))
+    mockColumnCount(rsmd, 4)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) => assert(err.getUnderlyingError match {
+          case ErrorList(errors) => errors.size == 4
+          case _ => false
+        })
+      case Right(_) => fail
+    }
+  }
+
+  it should "fail when trying to parse invalid types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", 50000, "invalid-type", 16, signed = false, nullable = true))
+    mockColumnCount(rsmd, 2)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) =>
+        assert(err.getUnderlyingError match {
+          case ErrorList(errors) => errors.size == 2
+          case _ => false
+        })
+        assert(err.getUnderlyingError match {
+          case ErrorList(errors) => errors.head match {
+            case MissingSqlConversionError(_, _) => true
+            case _ => false
+          }
+          case _ => false
+        })
+        assert(err.getUnderlyingError match {
+          case ErrorList(errors) => errors.tail.head match {
+            case MissingSqlConversionError(_, _) => true
+            case _ => false
+          }
+          case _ => false
+        })
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid SQL types to Spark types" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", 50000, "invalid-type", 16, signed = false, nullable = true))
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) =>
+        err.getUnderlyingError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported SQL type: invalid-type" +
+            "\nSQL type value: 50000"))
+          case _ => false
+        }
+      case Right(_) => fail
+    }
+  }
+
+  it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
+    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
+      case Left(err) =>
+        err.getUnderlyingError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported Spark type: CharType"))
+          case _ => false
+        }
+      case Right(_) => fail
+    }
+  }
 
   it should "fail when there's an error connecting to database" in {
     val jdbcLayer = mock[JdbcLayerInterface]
