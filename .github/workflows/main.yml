@@ -50,9 +50,15 @@ jobs:
 
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
       - name: Commit changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          add: './img/coverage-badge.svg'
+        run: |
+          git checkout main
+          git checkout --orphan badges
+
+          # Unstage all the files in your working tree.
+          git rm --cached $(git ls-files)
+          git add ./img/coverage-badge.svg
+          git commit -m 'Add coverage badge'
+          git push origin badges
 #      - name: Publish code coverage report
 #        uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
