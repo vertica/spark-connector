@@ -13,17 +13,17 @@
 
 package com.vertica.spark.util.schema
 
-import com.vertica.spark.datasource.jdbc._
-import org.apache.spark.sql.types.{MetadataBuilder, _}
-
-import java.sql.{ResultSet, ResultSetMetaData}
 import cats.data.NonEmptyList
 import cats.implicits._
-import scala.util.Either
-import com.vertica.spark.config.{LogProvider, TableName, TableQuery, TableSource, ValidColumnList}
+import com.vertica.spark.config._
+import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import org.apache.spark.sql.types._
+
+import java.sql.{ResultSet, ResultSetMetaData}
 import scala.annotation.tailrec
+import scala.util.Either
 import scala.util.control.Breaks.{break, breakable}
 
 case class ColumnDef(
@@ -133,7 +133,6 @@ class SchemaTools extends SchemaToolsInterface {
     "\"" + str + "\""
   }
 
-  // scalastyle:off
   private def getCatalystType(
                                sqlType: Int,
                                precision: Int,
@@ -150,10 +149,11 @@ class SchemaTools extends SchemaToolsInterface {
   private def getArrayType(elementDef: List[ColumnDef]): Either[SchemaError, ArrayType] = {
     @tailrec
     def makeNestedArrays(arrayDepth: Long, arrayElement: DataType): DataType = {
-      if(arrayDepth > 0)
+      if(arrayDepth > 0) {
         makeNestedArrays(arrayDepth - 1, ArrayType(arrayElement))
-      else
+      } else {
         arrayElement
+      }
     }
 
     elementDef.headOption match {
@@ -172,6 +172,7 @@ class SchemaTools extends SchemaToolsInterface {
                                           signed: Boolean,
                                           typename: String): Either[MissingSqlConversionError, DataType] = {
 
+    // scalastyle:off
     val answer = sqlType match {
       case java.sql.Types.BIGINT => if (signed) { LongType } else { DecimalType(DecimalType.MAX_PRECISION, 0) } //spark 2.x
       case java.sql.Types.BINARY => BinaryType
