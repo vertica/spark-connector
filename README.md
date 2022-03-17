@@ -1,7 +1,7 @@
 # Vertica Spark Connector
 
 [![tests-ci](https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/main.yml)
-[![coverage-badge]](./img/coverage-badge.svg)
+![coverage-badge](./img/coverage-badge.svg)
 [![release](https://img.shields.io/github/v/release/vertica/spark-connector?color=blue&include_prereleases)](https://github.com/vertica/spark-connector/releases/latest)
 [![maven central](https://img.shields.io/maven-central/v/com.vertica.spark/vertica-spark)](https://mvnrepository.com/artifact/com.vertica.spark/vertica-spark/latest)
 [![contributing](https://img.shields.io/badge/contributing-read-orange)](CONTRIBUTING.md)
