@@ -33,6 +33,9 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
+#        with:
+#          ref: ${{ github.event.pull_request.head.ref }}
+#          fetch-depth: 0
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
       - name: Prepare code coverage report
