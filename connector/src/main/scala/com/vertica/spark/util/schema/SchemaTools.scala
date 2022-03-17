@@ -310,12 +310,10 @@ class SchemaTools extends SchemaToolsInterface {
     /**
      * JDBC interface does not contains metadata about array element type so we need to query Vertica's system tables for
      * these information.
-     *
-     * Note: Vertica's JDBC implementation does contain information about array element type, but it is also not exposed.
      * */
     val table = tableName.replace("\"", "")
     val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$table' AND column_name='$colName'"
-    // We first query from column table for column's Vertica type. Note that this type is a Vertica's id, not JDBC.
+    // We first query from column table for column's Vertica type. Note that data_type_id is Vertica's internal type id, not JDBC.
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, (rs) => {
       val verticaType = rs.getLong("data_type_id")
       queryElementDef(verticaType, jdbcLayer)
