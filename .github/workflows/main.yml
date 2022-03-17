@@ -51,7 +51,7 @@ jobs:
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
       - name: Commit changes
         run: |
-          git checkout main
+          git checkout origin
           git checkout --orphan badges
 
           # Unstage all the files in your working tree.
