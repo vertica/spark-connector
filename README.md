@@ -154,11 +154,10 @@ Below is a detailed list of connector options that are used in the options map:
 Note: If you are using the S3 properties, the connector options has priority over the Spark configuration, which has priority over the environment variables.
 
 ## Complex Data Types
-*Complex types is currently under development and is subject to change.*
 
 ### Requirements
 Complex data types requires Vertica 11 and Vertica's JDBC connector 11. Complex data types support is backward
-compatible only with Vertica 10.x under some restrictions.
+compatible only with Vertica 10.x with some restrictions.
 
 ### Complex Type Conversion
 
@@ -169,6 +168,8 @@ compatible only with Vertica 10.x under some restrictions.
 | Struct                   | Row                            |
 | Map                      | Map (only for external tables) |
 | Array(Struct(key,value)) | Array\[Row(key, value)]        |
+
+For Map type, refer to [Vertica documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm) for more details.
 
 ### Array
 - Nested array is supported when saving data to Vertica.
