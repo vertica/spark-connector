@@ -143,7 +143,6 @@ class SchemaTools extends SchemaToolsInterface {
                                childDefs: List[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => getArrayType(childDefs)
-      case java.sql.Types.STRUCT => Left(MissingSqlConversionError(sqlType.toString, typename))
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
     }
   }
