@@ -175,6 +175,15 @@ For Map type, refer to [Vertica documentation](https://www.vertica.com/docs/late
 - Nested array is supported when saving data to Vertica.
 - Only 1D array is currently supported for reading from Vertica. Nested arrays support to be added.
 
+### Set
+Not yet supported.
+
+### ROW
+Not yet supported.
+
+### Map
+Not yet supported.
+
 ### Backwards compatibility:
 
 Complex data types is only backward compatible only with Vertica 10 with the following restrictions.
