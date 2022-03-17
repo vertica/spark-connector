@@ -38,7 +38,8 @@ jobs:
 #          fetch-depth: 0
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
-      - name: Prepare code coverage report
+      - name: Prepare code coverage badge
+        if: always()
         run: |
           sudo apt-get update
           sudo apt-get install -y libxml2-utils
@@ -60,6 +61,7 @@ jobs:
 #          git commit -m 'Commit coverage badge'
 #          git push
       - name: Publish code coverage
+        if: always()
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_options: '--allow-empty --no-verify'
