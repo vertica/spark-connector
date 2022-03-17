@@ -50,7 +50,7 @@ jobs:
           fi
 
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
-      - name: Publish code coverage
+      - name: Publish code coverage badge
         if: always()
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
