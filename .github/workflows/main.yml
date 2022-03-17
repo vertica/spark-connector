@@ -49,21 +49,21 @@ jobs:
           fi
 
           wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
-      - name: Commit changes
-        run: |
-          # Unstage all the files in your working tree.
-          git rm --cached $(git ls-files)
-          git add ./img/coverage-badge.svg
-          git commit -m 'Commit coverage badge'
-          git push
-#      - name: Publish code coverage report
-#        uses: stefanzweifel/git-auto-commit-action@v4
-#        with:
-#          commit_options: '--allow-empty --no-verify'
-#          commit_message: Commit code coverage report
-#          skip_fetch: true
-#          skip_dirty_check: true
-#          file_pattern: './img/coverage-badge.svg'
+#      - name: Commit changes
+#        run: |
+#          # Unstage all the files in your working tree.
+#          git rm --cached $(git ls-files)
+#          git add ./img/coverage-badge.svg
+#          git commit -m 'Commit coverage badge'
+#          git push
+      - name: Publish code coverage
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_options: '--allow-empty --no-verify'
+          commit_message: Commit code coverage
+          skip_fetch: true
+          skip_dirty_check: true
+          file_pattern: '*.svg'
 
   run-integration-tests-spark-3-0-2:
     runs-on: ubuntu-latest
