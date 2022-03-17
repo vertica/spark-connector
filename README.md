@@ -1,10 +1,11 @@
-# Vertica Spark Connector 
+# Vertica Spark Connector
 
-[![tests-ci-badge]](https://github.com/vertica/spark-connector/actions/workflows/main.yml) ![coverage-badge]
-[![release-badge]](https://github.com/vertica/spark-connector/releases/latest)
-[![maven-badge]](https://maven-badges.herokuapp.com/maven-central/com.vertica.spark/vertica-spark)
-[![contributing-badge]](CONTRIBUTING.md)
-[![license-badge]](https://opensource.org/licenses/Apache-2.0)
+[![tests-ci](https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/main.yml)
+[![coverage-badge]](./img/coverage-badge.svg)
+[![release](https://img.shields.io/github/v/release/vertica/spark-connector?color=blue&include_prereleases)](https://github.com/vertica/spark-connector/releases/latest)
+[![maven central](https://img.shields.io/maven-central/v/com.vertica.spark/vertica-spark)](https://mvnrepository.com/artifact/com.vertica.spark/vertica-spark/latest)
+[![contributing](https://img.shields.io/badge/contributing-read-orange)](CONTRIBUTING.md)
+[![license](https://img.shields.io/badge/license-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
@@ -197,9 +198,4 @@ This is simply an issue with hadoop closing file handles on files that have been
 
 [![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)")
 
-[tests-ci-badge]: https://github.com/vertica/spark-connector/actions/workflows/main.yml/badge.svg
-[license-badge]: https://img.shields.io/badge/License-Apache%202.0-orange.svg
-[coverage-badge]: ./img/coverage-badge.svg
-[release-badge]: https://img.shields.io/github/v/release/vertica/spark-connector?color=blue&include_prereleases
-[maven-badge]: https://maven-badges.herokuapp.com/maven-central/com.vertica.spark/vertica-spark/badge.svg
-[contributing-badge]: https://img.shields.io/badge/Contributing-read-blue
+
