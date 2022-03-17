@@ -11,13 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
-import com.vertica.spark.functests.{CleanupUtilTests, EndToEndTests, HDFSTests, JDBCTests, LargeDataTests}
-import org.scalatest.{Args, TestSuite}
+import com.vertica.spark.functests._
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
+import org.scalatest.{Args, TestSuite}
+
 import scala.util.Try
 
 class VReporter extends org.scalatest.Reporter {

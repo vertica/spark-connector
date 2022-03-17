@@ -13,8 +13,7 @@
 package com.vertica.spark.util.version
 
 import com.vertica.spark.config.LogProvider
-import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils, VerticaJdbcLayer}
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.NoResultError
 
 object VerticaVersionUtils {
