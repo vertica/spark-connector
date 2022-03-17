@@ -59,6 +59,7 @@ jobs:
           commit_options: '--allow-empty --no-verify'
           commit_message: Commit code coverage
           skip_dirty_check: true
+          skip_fetch: true
           file_pattern: '*.svg'
 
   run-integration-tests-spark-3-0-2:
