@@ -244,12 +244,11 @@ class SchemaTools extends SchemaToolsInterface {
     // Query for an empty result set from Vertica.
     // This is simply so we can load the metadata of the result set
     // and use this to retrieve the name and type information of each column
-    var tableName = ""
-    val query = tableSource match {
-      case tablename: TableName =>
-        tableName =  tablename.getFullTableName
-        "SELECT * FROM " + tablename.getFullTableName + " WHERE 1=0"
-      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+    val (tableName, query) = tableSource match {
+      case tb: TableName =>
+        (tb.getFullTableName, "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0")
+      case TableQuery(query, _) =>
+        ("", "SELECT * FROM (" + query + ") AS x WHERE 1=0")
     }
 
     jdbcLayer.query(query) match {
