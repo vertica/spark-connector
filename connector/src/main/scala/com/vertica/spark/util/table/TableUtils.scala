@@ -16,11 +16,11 @@ package com.vertica.spark.util.table
 import com.vertica.spark.config.{EscapeUtils, LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerStringParam, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ConnectorError, CreateTableError, DropTableError, JdbcError, JobStatusCreateError, JobStatusUpdateError, SchemaConversionError, TableCheckError}
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import org.apache.spark.sql.types.StructType
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
  * Interface for common functionality dealing with Vertica tables.
