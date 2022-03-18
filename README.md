@@ -167,13 +167,19 @@ compatible only with Vertica 10.x with some restrictions.
 | Array                    | Set                            |
 | Struct                   | Row                            |
 | Map                      | Map (only for external tables) |
-| Array(Struct(key,value)) | Array\[Row(key, value)]        |
 
-For Map type, refer to [Vertica documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm) for more details.
+Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
+
+- Maps are only supported in external tables, but can model an internal Map as an `Array[Row(key, value)]`. Refer to Vertica documentations [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
+- Arrays and Sets do not support Long types
+
+For Map type, refer to  for more details.
+
 
 ### Array
-- Nested array is supported when saving data to Vertica.
-- Only 1D array is currently supported for reading from Vertica. Nested arrays support to be added.
+There are two types of arrays supported by Vertica, native and nested arrays (non-native arrays). More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
+- On save operations, native and non-native arrays are supported.
+- On load operations, on native arrays are supported for now.
 
 ### Set
 Not yet supported.
