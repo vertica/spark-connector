@@ -215,7 +215,7 @@ class SchemaTools extends SchemaToolsInterface {
       case _ => null
     }
 
-    if (answer == nul) Left(MissingSqlConversionError(sqlType.toString, typename))
+    if (answer == null) Left(MissingSqlConversionError(sqlType.toString, typename))
     else Right(answer)
   }
 
