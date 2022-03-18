@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.Logger
  * @param logger Logger for logging how long operation took
  * @param operationName Name of operation being timed
  */
-class Timer (val enabled: Boolean, val logger: Logger, val operationName: String ) {
+class Timer (val enabled: Boolean, val logger: Logger, val operationName: Sring ) {
 
   var t0 = 0L
 
