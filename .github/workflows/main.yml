@@ -198,7 +198,7 @@ jobs:
       - name: Commit badge
         run: |
           git add ./img/coverage-badge.svg
-          git commit "Adding code coverage badge"
+          git commit -am "Adding code coverage badge"
           git push
 #        uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
