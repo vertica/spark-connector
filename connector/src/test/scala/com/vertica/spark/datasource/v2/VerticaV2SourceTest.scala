@@ -216,6 +216,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
     val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+
     val columnA: NamedReference = ColumnReference("a")
     val columnB: NamedReference = ColumnReference("b")
     val columnC: NamedReference = ColumnReference("c")
