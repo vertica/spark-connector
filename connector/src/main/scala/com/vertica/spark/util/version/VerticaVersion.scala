@@ -16,6 +16,9 @@ import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.NoResultError
 
+import scala.util.Try
+
+
 object VerticaVersionUtils {
   private val logger = LogProvider.getLogger(this.getClass)
   private val version: Option[VerticaVersion] = None
@@ -36,11 +39,12 @@ object VerticaVersionUtils {
       Left(NoResultError(query))
     }).getOrElse(DEFAULT_VERTICA_VERSION)
 
-
   private def extractVersion(str: String): VerticaVersion = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
-    val pattern(major, minor, service, hotfix) = str
-    VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
+    Try{
+      val pattern(major, minor, service, hotfix) = str
+      VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
+    }.getOrElse(DEFAULT_VERTICA_VERSION)
   }
 }
 
