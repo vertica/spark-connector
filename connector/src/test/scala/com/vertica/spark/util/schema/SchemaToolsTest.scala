@@ -404,7 +404,6 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-
   it should "parse 1D arrays" in {
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
@@ -413,22 +412,45 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val verticaArrayType = 1506
     val tableName = tablename.getFullTableName.replace("\"", "")
     mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
-    val verticaElementType = verticaArrayType - 1500;
-    val mockRs1 = mockQueryTypes(verticaElementType, hasData = true,jdbcLayer)
+    val mockRs1 = mockQueryTypes(verticaArrayType, hasData = true,jdbcLayer)
     (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
     (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
     mockColumnCount(rsmd, 1)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(error) =>
-        println(error)
-        fail
+      case Left(error) =>  fail(error.getFullContext)
       case Right(schema) =>
         val fields = schema.fields
         assert(fields.length == 1)
         assert(fields(0).dataType.isInstanceOf[ArrayType])
         assert(fields(0).dataType.asInstanceOf[ArrayType]
           .elementType.isInstanceOf[LongType])
+        assert(!fields(0).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+    }
+  }
+
+  it should "correctly detect Vertica Set" in {
+    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+
+    val verticaSetType = 2706
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaSetType, jdbcLayer)
+    val mockRs1 = mockQueryTypes(verticaSetType, hasData = true,jdbcLayer)
+    (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
+    (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) => fail(error.getFullContext)
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType.isInstanceOf[ArrayType])
+        assert(fields(0).dataType.asInstanceOf[ArrayType]
+          .elementType.isInstanceOf[LongType])
+        assert(fields(0).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
     }
   }
 
@@ -441,35 +463,40 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val tableName = tablename.getFullTableName.replace("\"", "")
     mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
     mockColumnCount(rsmd, 1)
-    val verticaElementType = verticaArrayType - 1500;
+    val verticaElementType = verticaArrayType;
     mockQueryTypes(verticaElementType, hasData = false,jdbcLayer)
-    mockQueryComplexType(verticaArrayType, false, isFieldNative = false, jdbcLayer)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(err) => succeed
-      case Right(_) => fail
+      case Right(schema) => fail(schema.toString)
     }
   }
 
   private def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
     val mockRs = mock[ResultSet]
-    val queryColumnDef = s"SELECT data_type_id FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
+    val queryColumnDef = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
     (jdbcLayer.query _)
       .expects(queryColumnDef, *)
       .returns(Right(mockRs))
     (mockRs.next _).expects().returns(true)
     (mockRs.getLong: String => Long).expects("data_type_id").returning(verticaTypeFound)
+    (mockRs.getString: String => String).expects("data_type").returning("VerticaTypeString")
     (mockRs.close _).expects()
   }
 
-  private def mockQueryTypes(typeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
+  private def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
     val mockRs = mock[ResultSet]
-    (jdbcLayer.query _)
-      .expects(s"SELECT jdbc_type, type_name FROM types WHERE type_id=$typeId", *)
-      .returns(Right(mockRs))
-    (mockRs.next _).expects().returns(hasData)
-    (mockRs.close _).expects()
-    if(!hasData) (mockRs.close _).expects()
+    var elementId = verticaTypeId - 1500
+    val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
+    if (isSet) elementId = verticaTypeId - 2700
+    val isNative = elementId < SchemaTools.VERTICA_PRIMITIVES_MAX_ID
+    if(isNative){
+      (jdbcLayer.query _)
+        .expects(s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$elementId", *)
+        .returns(Right(mockRs))
+      (mockRs.next _).expects().returns(hasData)
+      (mockRs.close _).expects()
+    }
     mockRs
   }
 
@@ -477,28 +504,31 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
     val testColDef = TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true)
+
     mockColumnMetadata(rsmd, testColDef)
 
-    val verticaArrayType = 0L
+    val verticaArrayType = 10000000L
     val tableName = tablename.getFullTableName.replace("\"", "")
     mockQueryColumns(tableName, testColDef.name, verticaArrayType, jdbcLayer)
 
-    val verticaElementType = verticaArrayType - 1500;
-    mockQueryTypes(verticaElementType, hasData = false, jdbcLayer)
-
-    val fieldId1 = 1L
+    val fieldId1 = 10000000L
     val mockRs1 = mockQueryComplexType(verticaArrayType, true, isFieldNative = false, jdbcLayer)
-    var field1TypeName = "_ct_" + fieldId1.toString
+    val field1TypeName = "_ct_" + fieldId1.toString
     (mockRs1.getString: String => String).expects("field_type_name").returns(field1TypeName)
     (mockRs1.getLong: String => Long).expects("field_id").returns(fieldId1)
 
-    val fieldId2 = 2L
+    val fieldId2 = 6L
     val mockRs2 = mockQueryComplexType(fieldId1, true, isFieldNative = true, jdbcLayer)
     val field2TypeName = fieldId2.toString
     (mockRs2.getString: String => String).expects("field_type_name").returns(field2TypeName)
     (mockRs2.getLong: String => Long).expects("field_id").returns(fieldId2)
 
-    val mockRs3 = mockQueryTypes(fieldId2, hasData = true, jdbcLayer)
+    val mockRs3 = mock[ResultSet]
+    (jdbcLayer.query _)
+      .expects(s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$fieldId2", *)
+      .returns(Right(mockRs3))
+    (mockRs3.next _).expects().returns(true)
+    (mockRs3.close _).expects()
     (mockRs3.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
     (mockRs3.getString: (String) => String).expects("type_name").returns("Integer")
 
@@ -519,6 +549,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
         assert(element1.isInstanceOf[ArrayType])
         val element2 = element1.asInstanceOf[ArrayType].elementType
         assert(element2.isInstanceOf[LongType])
+        assert(!fields(1).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
     }
   }
 
@@ -643,7 +674,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0) == Right("TIMESTAMP"))
   }
 
-  it should "Convert array to vertica array" in {
+  it should "Convert Spark Sql array to Vertica array" in {
     val schemaTools = new SchemaTools
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
@@ -661,7 +692,6 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       case Right(_) => fail
     }
   }
-
 
   it should "Convert string types to vertica type properly" in {
     val schemaTools = new SchemaTools
