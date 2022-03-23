@@ -22,9 +22,9 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
-import java.sql.{ResultSet, ResultSetMetaData}
+import java.sql.ResultSetMetaData
 import scala.annotation.tailrec
-import scala.util.Either
+import scala.util.{Either, Try}
 import scala.util.control.Breaks.{break, breakable}
 
 case class ColumnDef(
@@ -379,7 +379,7 @@ class SchemaTools extends SchemaToolsInterface {
       jdbcLayer.query(queryComplexType) match {
         // Because this is a tailrec, we can't use finally block
         case Right(rs) =>
-        if (rs.next()) {
+          if (rs.next()) {
             val fieldTypeName = rs.getString("field_type_name")
             val verticaType = rs.getLong("field_id")
             rs.close()
@@ -562,9 +562,22 @@ class SchemaTools extends SchemaToolsInterface {
             addDoubleQuotes(info.label)
           }
         case java.sql.Types.TIME => castToVarchar(info.label)
+        case java.sql.Types.ARRAY =>
+          val isArraySetType = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
+          // Casting on Vertica side as a work around until Vertica Export supports Set
+          if(isArraySetType) castToArray(info) else info.label
         case _ => addDoubleQuotes(info.label)
       }
     }).mkString(",")
+  }
+
+  private def castToArray(colInfo: ColumnDef) = {
+    val label = colInfo.label
+    val elementType = colInfo.childDefinitions.headOption match {
+       case Some(elementDef) => elementDef.colTypeName
+       case None => "UNKNOWN"
+    }
+    s"(${label}::ARRAY[${elementType}]) as $label"
   }
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
