@@ -19,7 +19,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.schema.SchemaTools.{VERTICA_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
+import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
 import java.sql.ResultSetMetaData
@@ -132,8 +132,9 @@ trait SchemaToolsInterface {
 
 object SchemaTools {
   //  This number is chosen from diff of array and set base id.
-  val VERTICA_ARRAY_BASE_ID: Long = 1500L
+  val VERTICA_NATIVE_ARRAY_BASE_ID: Long = 1500L
   val VERTICA_SET_BASE_ID: Long = 2700L
+  // This number is not defined be Vertica, so we use the delta of set and native array base id.
   val VERTICA_PRIMITIVES_MAX_ID:Long = 1200L
   val VERTICA_SET_MAX_ID: Long = 2700L + VERTICA_PRIMITIVES_MAX_ID
 }
@@ -311,7 +312,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def queryColumnDef(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
-     * JDBC interface does not contains metadata about array element type so we need to query Vertica's system tables for
+     * JDBC interface does not contains data about array elements. We need to query Vertica's system tables for
      * these information.
      * */
     val table = tableName.replace("\"", "")
@@ -338,16 +339,18 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def makeArrayColumnDef(arrayColDef: ColumnDef, verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
-     * The types table list all native types in Vertica, their vertica Id, JDBC id, and other metadata.
-     * 1D primitive arrays, and subsequently sets, is considered a native type.
-     * A native array has it's vertica type id = 1500 + primitive element id.
-     * For set, type id = 2700 + primitive element id.
+     * A 1D primitive array is considered a Native type by Vertica. Their type information is tracked in types table.
+     * Else, nested arrays or arrays with complex elements are tracked in complex_types table.
+     * We could infer from the vertica id if it is a native type or not.
      * */
-    var elementId = verticaTypeId - VERTICA_ARRAY_BASE_ID
+    // Native array id = 1500 + primitive type id
+    var elementId = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
+    // Sets are also tracked in types table
     val isSet = elementId > VERTICA_PRIMITIVES_MAX_ID && elementId < VERTICA_SET_MAX_ID
+    // Set id = 2700 + primitive type id
     if (isSet) elementId = verticaTypeId - VERTICA_SET_BASE_ID
-    val isPrimitive = elementId < VERTICA_PRIMITIVES_MAX_ID
-    val elementDef = if (isPrimitive) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
+    val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
+    val elementDef = if (isNativeArray) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
     else getNestedArrayElementDef(verticaTypeId, jdbcLayer)
     fillArrayColumnDef(arrayColDef, elementDef, isSet)
   }
