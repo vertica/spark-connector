@@ -774,4 +774,21 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       case Right(str) => fail
     }
   }
+
+  it should "Cast Vertica SET to ARRAY in column string" in {
+    val requiredSchema = StructType(Nil)
+
+    val typeName="COL_TYPE_NAME"
+    val elementDef = ColumnDef("element", java.sql.Types.BIGINT, typeName, 0, 0, true, false, Metadata.empty)
+
+    val colName = "col1"
+    val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build()
+    val colDef = List(ColumnDef(colName, java.sql.Types.ARRAY, "SET", 0, 0, true, false, metadata, List(elementDef)))
+
+    val colsString = new SchemaTools().makeColumnsString(colDef, requiredSchema)
+    println(colsString)
+    val expected = s"($colName::ARRAY[$typeName]) as $colName"
+    println(expected)
+    assert(colsString.trim().equals(expected))
+  }
 }
