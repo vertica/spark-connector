@@ -421,7 +421,16 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class MissingNameNodeAddressError() extends ConnectorError {
   override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
 }
-
+case class VerticaComplexTypeNotFound(typeId: Long)
+  extends RuntimeException(s"Complex type $typeId not found in vertica complex_types table.")
+    with ConnectorError {
+  override def getFullContext: String = this.getMessage
+}
+case class VerticaNativeTypeNotFound(verticaId: Long)
+  extends RuntimeException(s"Vertica type $verticaId not found in vertica types table.")
+    with ConnectorError {
+  override def getFullContext: String = this.getMessage
+}
 /**
   * Enumeration of the list of possible JDBC errors.
   */

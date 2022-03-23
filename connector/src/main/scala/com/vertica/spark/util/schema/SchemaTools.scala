@@ -19,6 +19,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.schema.SchemaTools.{VERTICA_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
 import java.sql.{ResultSet, ResultSetMetaData}
@@ -37,6 +38,12 @@ case class ColumnDef(
                       metadata: Metadata,
                       childDefinitions: List[ColumnDef] = Nil
                     )
+
+object MetadataKey {
+  val NAME = "name"
+  val IS_VERTICA_SET = "isVerticaSet"
+  val DEPTH = "depth"
+}
 
 /**
  * Interface for functionality around retrieving and translating SQL schema between Spark and Vertica.
@@ -123,6 +130,14 @@ trait SchemaToolsInterface {
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String]
 }
 
+object SchemaTools {
+  //  This number is chosen from diff of array and set base id.
+  val VERTICA_ARRAY_BASE_ID: Long = 1500L
+  val VERTICA_SET_BASE_ID: Long = 2700L
+  val VERTICA_PRIMITIVES_MAX_ID:Long = 1200L
+  val VERTICA_SET_MAX_ID: Long = 2700L + VERTICA_PRIMITIVES_MAX_ID
+}
+
 class SchemaTools extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
   private val unknown = "UNKNOWN"
@@ -159,7 +174,7 @@ class SchemaTools extends SchemaToolsInterface {
     elementDef.headOption match {
       case Some(element) =>
         getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
-          case Right(elementType) => Right(ArrayType(makeNestedArrays(element.metadata.getLong("depth"), elementType)))
+          case Right(elementType) => Right(ArrayType(makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType)))
           case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
         }
       case None => Left(MissingElementTypeError())
@@ -263,13 +278,13 @@ class SchemaTools extends SchemaToolsInterface {
             val fieldScale = rsmd.getScale(idx)
             val isSigned = rsmd.isSigned(idx)
             val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
-            val metadata = new MetadataBuilder().putString("name", columnLabel).build()
+            val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
             val colType = rsmd.getColumnType(idx)
             val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
             checkForComplexType(colDef, tableName, jdbcLayer) match {
               case Right(columnDef) => columnDef
               case Left(err) => err match {
-                case e: ArrayElementTypeNotFound => throw e
+                case e: VerticaComplexTypeNotFound => throw e
                 case _ => throw new RuntimeException(err.getFullContext)
               }
             }
@@ -288,57 +303,68 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def checkForComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     colDef.colType match {
-      case java.sql.Types.ARRAY =>
-        val elementDef = getArrayElementDef(colDef.label, tableName, jdbcLayer)
-        makeArrayDef(colDef, elementDef)
+      case java.sql.Types.ARRAY |
+           java.sql.Types.STRUCT => queryColumnDef(colDef, tableName, jdbcLayer)
       case _ => Right(colDef)
     }
   }
 
-  private def makeArrayDef(arrayDef: ColumnDef, elementDef: ConnectorResult[ColumnDef]): ConnectorResult[ColumnDef] =
-    elementDef match {
-      case Right(value) =>
-        val metaData = new MetadataBuilder()
-          .putString("name", arrayDef.label)
-          .putLong("depth", value.metadata.getLong("depth"))
-          .build
-        Right(arrayDef.copy(childDefinitions = List(value), metadata = metaData))
-      case Left(err) => Left(err)
-    }
-
-  private def getArrayElementDef(colName:String, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def queryColumnDef(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
      * JDBC interface does not contains metadata about array element type so we need to query Vertica's system tables for
      * these information.
      * */
     val table = tableName.replace("\"", "")
-    val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$table' AND column_name='$colName'"
+    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$table' AND column_name='${colDef.label}'"
     // We first query from column table for column's Vertica type. Note that data_type_id is Vertica's internal type id, not JDBC.
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, (rs) => {
       val verticaType = rs.getLong("data_type_id")
-      queryElementDef(verticaType, jdbcLayer)
+      val typeName = getTypeName(rs.getString("data_type"))
+      colDef.colType match {
+        case java.sql.Types.ARRAY => makeArrayColumnDef(colDef, verticaType, jdbcLayer)
+        // Todo: implement Row support
+        case java.sql.Types.STRUCT => Left(MissingSqlConversionError(colDef.colType.toString, typeName))
+        case _ => Left(MissingSqlConversionError(colDef.colType.toString, typeName))
+      }
     })
   }
 
-  private def queryElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    /**
-     * The types table list all native types in Vertica and their metadata and their JDBC type.
-     * A Vertica 1D primitives array is a native array and is recorded here as well.
-     *
-     * If it's a native array, it has id = 1500 + primitive element id. Thus we subtract
-     * 1500 to obtain the Vertica type of the element and query from types table.
-     * */
-    val verticaTypeId = verticaType - 1500;
-    val queryType = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaTypeId"
-    JdbcUtils.queryAndNext(queryType, jdbcLayer,
-      // On success, we return a column def for the element.
-      (rs) => Right(makeArrayElementDef(rs, 0)),
-      // On failure, this means the element is not a primitive. We now need to query complex_types table to
-      // figure the element type.
-      (_) => getNestedElementDef(verticaType, jdbcLayer))
+  private def getTypeName(dataType:String) : String = {
+    dataType
+      .replace('[',',')
+      .replace(']',',')
+      .split(',')(0)
   }
 
-  private def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def makeArrayColumnDef(arrayColDef: ColumnDef, verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    /**
+     * The types table list all native types in Vertica, their vertica Id, JDBC id, and other metadata.
+     * 1D primitive arrays, and subsequently sets, is considered a native type.
+     * A native array has it's vertica type id = 1500 + primitive element id.
+     * For set, type id = 2700 + primitive element id.
+     * */
+    var elementId = verticaTypeId - VERTICA_ARRAY_BASE_ID
+    val isSet = elementId > VERTICA_PRIMITIVES_MAX_ID && elementId < VERTICA_SET_MAX_ID
+    if (isSet) elementId = verticaTypeId - VERTICA_SET_BASE_ID
+    val isPrimitive = elementId < VERTICA_PRIMITIVES_MAX_ID
+    val elementDef = if (isPrimitive) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
+    else getNestedArrayElementDef(verticaTypeId, jdbcLayer)
+    fillArrayColumnDef(arrayColDef, elementDef, isSet)
+  }
+
+  private def fillArrayColumnDef(srcArrayDef: ColumnDef, elementDef: ConnectorResult[ColumnDef], isVerticaSet: Boolean): ConnectorResult[ColumnDef] =
+    elementDef match {
+      case Right(element) =>
+        val metaData = new MetadataBuilder()
+          .putString(MetadataKey.NAME, srcArrayDef.label)
+          .putBoolean(MetadataKey.IS_VERTICA_SET, isVerticaSet)
+          .putLong(MetadataKey.DEPTH, element.metadata.getLong(MetadataKey.DEPTH))
+          .build
+        Right(srcArrayDef.copy(childDefinitions = List(element), metadata = metaData))
+      case Left(err) => Left(err)
+    }
+
+  private def getNestedArrayElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
      * complex_types table records all complex types created in Vertica, including nested arrays.
      * Each row has a field_id linking and the complex type to it's child. For a nested array, each nested element
@@ -362,11 +388,11 @@ class SchemaTools extends SchemaToolsInterface {
               getNestedElementDef(verticaType, jdbcLayer, depth + 1)
             } else {
               // Once the element type is found, query from types table
-              queryVerticaTypesDef(verticaType, depth , jdbcLayer)
+              queryVerticaPrimitiveDef(verticaType, depth, jdbcLayer)
             }
           } else {
             rs.close()
-            Left(ArrayElementTypeNotFound(verticaType))
+            Left(VerticaComplexTypeNotFound(verticaType))
           }
         case Left(error) => Left(error)
       }
@@ -375,25 +401,28 @@ class SchemaTools extends SchemaToolsInterface {
     getNestedElementDef(verticaType, jdbcLayer, 0)
   }
 
-  private def queryVerticaTypesDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    val queryNativeTypes = s"SELECT jdbc_type, type_name FROM types WHERE type_id=$verticaType"
+  private def queryVerticaPrimitiveDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val queryNativeTypes = s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$verticaType"
     JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
-      (rs) => Right(makeArrayElementDef(rs, depth)),
-      (_) => Left(ArrayElementTypeNotFound(verticaType)))
+      (rs) =>{
+        val jdbcType = rs.getLong("jdbc_type").toInt
+        val typeName = rs.getString("type_name")
+        Right(makeArrayElementDef(jdbcType, typeName, depth))
+      },
+      (_) => Left(VerticaNativeTypeNotFound(verticaType)))
   }
 
-  private def makeArrayElementDef(rs: ResultSet, depth: Int) = {
-    val sqlType  = rs.getLong("jdbc_type").toInt
-    val typeName = rs.getString("type_name")
+  private def makeArrayElementDef(jdbcType: Int, typeName: String, depth: Int) = {
+    val sqlType = jdbcType
     val fieldSize = DecimalType.MAX_PRECISION
     val fieldScale = 0
     val isSigned = true
     val nullable = 1 != ResultSetMetaData.columnNoNulls
     val metadata = new MetadataBuilder()
-      .putString("name", "element")
-      .putLong("depth", depth)
+      .putString(MetadataKey.NAME, "element")
+      .putLong(MetadataKey.DEPTH, depth)
       .build()
-   ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+    ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
   }
 
   override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
