@@ -21,6 +21,7 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import java.sql.Connection
 
 object Main {
+  val tableName = "dftest"
 
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
@@ -38,22 +39,57 @@ object Main {
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
     val conn: Connection = TestUtils.getJDBCConnection(options("host"), db = options("db"), user = options("user"), password = options("password"))
-    TestUtils.createTableBySQL(conn,"dftest","create table dftest (a SET[int])")
-    TestUtils.populateTableBySQL(conn.createStatement(), "insert into dftest values (SET[1])", 1)
     try {
       /**
        * SET is not a defined data type in JDBC and thus is converted to Array.
        * In Spark, we differentiate arrays from sets by marking the column's metadata.
        * */
-      readSetFromVertica(spark, options)
+      writeNewTableToWithSetToVertica(spark, options)
+      // writeToExistingTable(spark, options)
+      readFromVertica(spark, options)
     } finally {
       conn.close()
       spark.close()
     }
   }
 
-  def readSetFromVertica(spark: SparkSession, options: Map[String, String]): Unit = {
-    val readOpts = options + ("table" -> "dftest")
+  def writeNewTableToWithSetToVertica(spark: SparkSession, options: Map[String, String]): Unit = {
+    // Table name needs to be specified in option
+    val writeOpts = options + ("table" -> tableName)
+    // Marking the metadata.
+    val metadata = new MetadataBuilder()
+      .putBoolean(MetadataKey.IS_VERTICA_SET, true)
+      .build
+    // Define schema of a table with a SET column. We add the metadata above to mark it as a Vertica SET.
+    val schema = new StructType(Array(StructField("col1", ArrayType(IntegerType), metadata = metadata)))
+    // Data. Note that unique elements will not be checked until Vertica starts ingesting.
+    val data = Seq(Row(Array(1, 2, 3, 4, 5, 6)))
+    // Create a dataframe corresponding to the schema and data specified above
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    // Write dataframe to Vertica. note the data source
+    df.write.format("com.vertica.spark.datasource.VerticaSource")
+      .options(writeOpts)
+      .save()
+  }
+
+  def writeToExistingTable(spark: SparkSession, options: Map[String, String]): Unit = {
+    // Table name needs to be specified in option
+    val writeOpts = options + ("table" -> tableName)
+    // Define schema of a table with a SET column. We add the metadata above to mark it as a Vertica SET.
+    val schema = new StructType(Array(StructField("col1", ArrayType(IntegerType))))
+    // Data. Note that unique elements will not be checked until Vertica starts ingesting.
+    val data = Seq(Row(Array(1, 2, 3, 4, 5, 6)))
+    // Create a dataframe corresponding to the schema and data specified above
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    // Write dataframe to Vertica. note the data source
+    df.write.format("com.vertica.spark.datasource.VerticaSource")
+      .options(writeOpts)
+      .mode(SaveMode.Overwrite)
+      .save()
+  }
+
+  def readFromVertica(spark: SparkSession, options: Map[String, String]): Unit = {
+    val readOpts = options + ("table" -> tableName)
     // Load a set from Vertica as array and display it
     val df = spark.read.format("com.vertica.spark.datasource.VerticaSource")
       .options(readOpts)
