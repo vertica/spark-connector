@@ -72,9 +72,11 @@ trait SchemaToolsInterface {
    *
    * @param sparkType One of Sparks' DataTypes
    * @param strlen Necessary if the type is StringType, string length to use for Vertica type.
+   * @param arrayLength Necessary if the type is ArrayType, array element length to use for Vertica type.
+   * @param metadata metadata of struct field. Necessary to infer Vertica array vs Vertica Set.
    * @return String representing Vertica type, that one could use in a create table statement
    */
-  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String]
+  def getVerticaTypeFromSparkType (sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String]
 
   /**
    * Compares table schema and spark schema to return a list of columns to use when copying spark data to the given Vertica table.
@@ -428,32 +430,36 @@ class SchemaTools extends SchemaToolsInterface {
     ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
   }
 
-  override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
+  override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata = Metadata.empty): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.MapType(_,_,_) |
            org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
-      case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength)
+      case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength, metadata)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
     }
   }
 
-  private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
-    val length = if(arrayLength <=0) "" else s",$arrayLength"
+  private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {
+    val length = if (arrayLength <= 0) "" else s",$arrayLength"
+    val isArraySetType = Try{metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
+    val keyword = if(isArraySetType) "SET" else "ARRAY"
+
     @tailrec
-      def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator:String, depth: Int):SchemaResult[String] = {
-          dataType match {
-            case ArrayType(elementType, _) =>
-              recursion(elementType, s"${leftAccumulator}ARRAY[", s"$length]$rightAccumulator", depth+1)
-            case _ =>
-              this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
-                case Right(verticaType) =>
-                  Right(s"$leftAccumulator$verticaType$rightAccumulator")
-                case Left(error) => Left(error)
-              }
+    def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator: String, depth: Int): SchemaResult[String] = {
+      dataType match {
+        case ArrayType(elementType, _) =>
+          recursion(elementType, s"$leftAccumulator$keyword[", s"$length]$rightAccumulator", depth + 1)
+        case _ =>
+          this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
+            case Right(verticaType) =>
+              Right(s"$leftAccumulator$verticaType$rightAccumulator")
+            case Left(error) => Left(error)
           }
       }
-    recursion(dataType,"ARRAY[",s"$length]",0)
+    }
+
+    recursion(dataType, s"$keyword[", s"$length]", 0)
   }
 
   private def sparkPrimitiveToVerticaPrimitive(sparkType: org.apache.spark.sql.types.DataType, strlen: Long): SchemaResult[String] = {
@@ -616,7 +622,7 @@ class SchemaTools extends SchemaToolsInterface {
       }
 
       for {
-        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength) match {
+        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength, s.metadata) match {
           case Left(err) =>
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
           case Right(datatype) =>
@@ -674,8 +680,8 @@ class SchemaTools extends SchemaToolsInterface {
         else if(field.metadata.contains(maxlength) && field.dataType.simpleString == "binary"){
           "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
         }
-        else  {
-          getVerticaTypeFromSparkType(field.dataType, strlen, arrayLength) match {
+        else {
+          getVerticaTypeFromSparkType(field.dataType, strlen, arrayLength, field.metadata) match {
             case Right(dataType) => dataType
             case Left(err) => Left(err)
           }
