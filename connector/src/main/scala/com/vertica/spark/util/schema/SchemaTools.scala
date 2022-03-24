@@ -41,7 +41,7 @@ case class ColumnDef(
 
 object MetadataKey {
   val NAME = "name"
-  val IS_VERTICA_SET = "isVerticaSet"
+  val IS_VERTICA_SET = "is_vertica_set"
   val DEPTH = "depth"
 }
 
