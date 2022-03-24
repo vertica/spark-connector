@@ -45,7 +45,6 @@ object Main {
        * In Spark, we differentiate arrays from sets by marking the column's metadata.
        * */
       writeNewTableToWithSetToVertica(spark, options)
-      // writeToExistingTable(spark, options)
       readFromVertica(spark, options)
     } finally {
       conn.close()
@@ -69,21 +68,7 @@ object Main {
     // Write dataframe to Vertica. note the data source
     df.write.format("com.vertica.spark.datasource.VerticaSource")
       .options(writeOpts)
-      .save()
-  }
-
-  def writeToExistingTable(spark: SparkSession, options: Map[String, String]): Unit = {
-    // Table name needs to be specified in option
-    val writeOpts = options + ("table" -> tableName)
-    // Define schema of a table with a SET column. We add the metadata above to mark it as a Vertica SET.
-    val schema = new StructType(Array(StructField("col1", ArrayType(IntegerType))))
-    // Data. Note that unique elements will not be checked until Vertica starts ingesting.
-    val data = Seq(Row(Array(1, 2, 3, 4, 5, 6)))
-    // Create a dataframe corresponding to the schema and data specified above
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    // Write dataframe to Vertica. note the data source
-    df.write.format("com.vertica.spark.datasource.VerticaSource")
-      .options(writeOpts)
+      // In Overwrite mode, the table in Vertica will be dropped and recreated with a SET column
       .mode(SaveMode.Overwrite)
       .save()
   }

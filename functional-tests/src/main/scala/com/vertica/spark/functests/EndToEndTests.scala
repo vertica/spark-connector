@@ -16,7 +16,7 @@ package com.vertica.spark.functests
 import java.sql.{Connection, Date, Statement, Timestamp}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.schema.MetadataKey
+import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
@@ -1643,6 +1643,42 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       val columnRs = stmt.executeQuery(s"select data_type_length from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
       assert(columnRs.getLong("data_type_length") == 65000L)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write SET to Vertica" in {
+    val tableName = "dftest"
+    val colName = "col1"
+    val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build
+    val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType), metadata = metadata)))
+
+    val data = Seq(Row(Array(88,99,111)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"SELECT $colName FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
+      assert(array(0) == 88L)
+      assert(array(1) == 99L)
+      assert(array(2) == 111L)
+      val columnRs = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName'")
+      assert(columnRs.next)
+      assert(columnRs.getLong("data_type_id") > SchemaTools.VERTICA_SET_BASE_ID)
     }
     catch{
       case err : Exception => fail(err)

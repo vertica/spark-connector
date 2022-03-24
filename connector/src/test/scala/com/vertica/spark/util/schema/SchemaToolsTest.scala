@@ -681,6 +681,13 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
   }
 
+  it should "Convert Spark Set to Vertica Set" in {
+    val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, metadata) == Right("SET[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, metadata) == Right("SET[VARCHAR(0),2]"))
+  }
+
   it should "Provide error message on unknown element type conversion to vertica" in {
     (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
       case Left(err) =>
