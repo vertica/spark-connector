@@ -181,7 +181,9 @@ There are two types of arrays supported by Vertica, native and nested arrays (no
 - On load operations, on native arrays are supported for now.
 
 ### Set
-Not yet supported.
+JDBC does not define a data type like [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm), thus it is represented as an array in Spark with its metadata containing `is_vertica_set:true`:
+- On load operations, arrays column's metadata will contains the above value if it is a set in Vertica.
+- On save operations, data will be written into Vertica. Because JDBC does not define a set type, unique elements are only check once Vertica start loading data from staging area.
 
 ### Row
 Not yet supported.
