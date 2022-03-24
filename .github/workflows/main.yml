@@ -37,26 +37,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
-      - name: Prepare code coverage badge
-        if: always()
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-utils
-          cd ./connector/target/scala-2.12/scoverage-report
-          coverage=$(xmllint --xpath "scoverage/@statement-rate" scoverage.xml |sed 's/statement-rate="//'| sed 's/"//')
-          
-          if (( $(echo "$coverage >= 80" | bc -l) )) ; then
-             COLOR=brightgreen
-          else
-             COLOR=red
-          fi
-          
-          wget "https://img.shields.io/badge/coverage-$coverage%25-$COLOR" -O ../../../../img/coverage-badge.svg
-      - name: Upload coverage badge
-        uses: actions/upload-artifact@v1
+      - name: "Upload coverage to Codecov"
+        uses: "codecov/codecov-action@v2"
         with:
-          name: coverage-badge.svg
-          path: /home/runner/work/spark-connector/spark-connector/img/coverage-badge.svg
+          fail_ci_if_error: true
   run-integration-tests-spark-3-0-2:
     runs-on: ubuntu-latest
     needs: build
@@ -184,22 +168,22 @@ jobs:
 #        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.2.0" -DhadoopVersion="3.0.1"
 #      - name: Remove docker containers
 #        run: cd docker && docker-compose down
-  publish-code-coverage-badge:
-    runs-on: ubuntu-latest
-    needs: [run-analysis, run-unit-tests, run-integration-tests-spark-3-2-0, run-integration-tests-spark-3-1-1, run-integration-tests-spark-3-0-2]
-    steps:
-      - name: Checkout the project
-        uses: actions/checkout@v2
-      - name: Download badge
-        uses: actions/download-artifact@v2
-        with:
-          name: coverage-badge.svg
-          path: ./img/
-      - name: Commit badge
-        run: |
-          git add ./img/coverage-badge.svg
-          git commit -am "Adding code coverage badge"
-          git push
+#  publish-code-coverage-badge:
+#    runs-on: ubuntu-latest
+#    needs: [run-analysis, run-unit-tests, run-integration-tests-spark-3-2-0, run-integration-tests-spark-3-1-1, run-integration-tests-spark-3-0-2]
+#    steps:
+#      - name: Checkout the project
+#        uses: actions/checkout@v2
+#      - name: Download badge
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: coverage-badge.svg
+#          path: ./img/
+#      - name: Commit badge
+#        run: |
+#          git add ./img/coverage-badge.svg
+#          git commit -am "Adding code coverage badge"
+#          git push
 #        uses: stefanzweifel/git-auto-commit-action@v4
 #        with:
 #          commit_options: '--allow-empty --no-verify'
