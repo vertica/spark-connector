@@ -3,9 +3,9 @@ name: test-ci
 
 on:
   push:
-    branches: [ adding_badeges ]
+    branches: [ main ]
   pull_request:
-    branches: [ adding_badeges ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
