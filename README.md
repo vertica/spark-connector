@@ -193,11 +193,14 @@ Not yet supported.
 
 ### Backwards Compatibility
 
-Complex data types is backwards compatible only with Vertica 10 with the following restrictions:
+Complex data types is backwards compatible only with **Vertica 10** with the following restrictions:
 
-| Complex Type | Dataframe Operation | Restrictions                                                                                                                            |
-|--------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Array        | save() & load()     | 1D primitive arrays are supported only for internal table. `array_length` option not supported and element count will not be specified. |
+| Complex Type | Dataframe Operation | Restrictions                                                                                                         |
+|--------------|---------------------|----------------------------------------------------------------------------------------------------------------------|
+| Array        | load()              | Only support native arrays.                                                                                          |
+| Array        | save()              | For Vertica managed tables, only native arrays are supported. Complex arrays are only supported for external tables. |
+| Set          | load()              | Not supported                                                                                                        |
+
 
 ## Examples
 
