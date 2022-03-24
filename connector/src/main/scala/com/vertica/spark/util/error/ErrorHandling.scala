@@ -169,12 +169,6 @@ case class CommitError(error: ConnectorError) extends ConnectorError {
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 
-case class ArrayElementTypeNotFound(typeId: Long)
-  extends RuntimeException(s"Element type $typeId not found in vertica.")
-    with ConnectorError {
-  override def getFullContext: String = this.getMessage
-}
-
 case class ViewExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to an existing view in Vertica."
 }
@@ -421,15 +415,11 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class MissingNameNodeAddressError() extends ConnectorError {
   override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
 }
-case class VerticaComplexTypeNotFound(typeId: Long)
-  extends RuntimeException(s"Complex type $typeId not found in vertica complex_types table.")
-    with ConnectorError {
-  override def getFullContext: String = this.getMessage
+case class VerticaComplexTypeNotFound(typeId: Long) extends ConnectorError {
+  override def getFullContext: String = s"Complex type $typeId not found in vertica complex_types table."
 }
-case class VerticaNativeTypeNotFound(verticaId: Long)
-  extends RuntimeException(s"Vertica type $verticaId not found in vertica types table.")
-    with ConnectorError {
-  override def getFullContext: String = this.getMessage
+case class VerticaNativeTypeNotFound(verticaId: Long) extends ConnectorError {
+  override def getFullContext: String = s"Vertica type $verticaId not found in vertica types table."
 }
 /**
   * Enumeration of the list of possible JDBC errors.

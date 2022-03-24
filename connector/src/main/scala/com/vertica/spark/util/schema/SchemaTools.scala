@@ -284,10 +284,7 @@ class SchemaTools extends SchemaToolsInterface {
             val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
             checkForComplexType(colDef, tableName, jdbcLayer) match {
               case Right(columnDef) => columnDef
-              case Left(err) => err match {
-                case e: VerticaComplexTypeNotFound => throw e
-                case _ => throw new RuntimeException(err.getFullContext)
-              }
+              case Left(err) => throw new RuntimeException(err.getFullContext)
             }
           })
           Right(colDefSeq)
