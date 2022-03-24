@@ -439,6 +439,13 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getArrayLength(config: Map[String, String]) : ValidationResult[Long] = {
+    Try {config.getOrElse("array_length","0").toLong} match {
+      case Success(len) => if(len < 0) InvalidArrayLengthError().invalidNec else  len.validNec
+      case Failure(_) =>  InvalidArrayLengthError().invalidNec
+    }
+  }
+
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
     val user = DSConfigSetupUtils.getUser(config)
     val password = DSConfigSetupUtils.getPassword(config)
@@ -622,7 +629,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getCreateExternalTable(config),
           DSConfigSetupUtils.getSaveJobStatusTable(config),
           DSConfigSetupUtils.getMergeKey(config),
-          DSConfigSetupUtils.getTimeOperations(config)
+          DSConfigSetupUtils.getTimeOperations(config),
+          DSConfigSetupUtils.getArrayLength(config)
         ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec

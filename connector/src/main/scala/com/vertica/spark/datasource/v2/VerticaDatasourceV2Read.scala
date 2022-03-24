@@ -34,10 +34,6 @@ case class PushFilter(filter: Filter, filterString: String) extends PushdownFilt
   def getFilterString: String = this.filterString
 }
 
-case class PushdownAggregate(aggregation: Aggregation, aggregationString: String) {
-  def getAggregationString: String = this.aggregationString
-}
-
 case class NonPushFilter(filter: Filter) extends AnyVal
 
 case class ExpectedRowDidNotExistError() extends ConnectorError {

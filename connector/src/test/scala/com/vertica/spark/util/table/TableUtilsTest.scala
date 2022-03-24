@@ -216,7 +216,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
-    utils.createTable(TableName(tablename, None), None, schema, strlen) match {
+    utils.createTable(TableName(tablename, None), None, schema, strlen, 0) match {
       case Left(errors) => fail(errors.getFullContext)
       case Right(_) => ()
     }
@@ -239,7 +239,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(schemaTools, jdbcLayerInterface)
 
-    utils.createExternalTable(TableName(tablename, None), None, schema, strlen, url) match {
+    utils.createExternalTable(TableName(tablename, None), None, schema, strlen, url, 0) match {
       case Left(errors) => fail(errors.getFullContext)
       case Right(_) => ()
     }
@@ -262,7 +262,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
 
     val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
-    utils.createTable(TableName(tablename, None), Some(stmt), schema, strlen) match {
+    utils.createTable(TableName(tablename, None), Some(stmt), schema, strlen, 0) match {
       case Left(errors) => fail(errors.getFullContext)
       case Right(_) => ()
     }

@@ -249,15 +249,16 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnMetadata(rsmd, TestColumnDef(7, "col7", java.sql.Types.NVARCHAR, "NVARCHAR", 0, signed = false, nullable = true))
     mockColumnMetadata(rsmd, TestColumnDef(8, "col8", java.sql.Types.REF, "REF", 0, signed = false, nullable = true))
     mockColumnMetadata(rsmd, TestColumnDef(9, "col9", java.sql.Types.SQLXML, "SQLXML", 0, signed = false, nullable = true))
-    mockColumnMetadata(rsmd, TestColumnDef(10, "col10", java.sql.Types.STRUCT, "STRUCT", 0, signed = false, nullable = true))
-    mockColumnMetadata(rsmd, TestColumnDef(11, "col11", java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
-    mockColumnCount(rsmd, 11)
+    mockColumnMetadata(rsmd, TestColumnDef(10, "col11", java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 10)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(_) => fail
+      case Left(err) =>
+        println(err)
+        fail
       case Right(schema) =>
         val fields = schema.fields
-        assert(fields.length == 11)
+        assert(fields.length == 10)
         for(field <- fields) {
           assert(field.dataType == StringType)
         }
@@ -354,6 +355,11 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  it should "make column string" in {
+    (new SchemaTools()).makeColumnsString(Nil, StructType(Nil))
+    succeed
+  }
+
   it should "parse other type with error" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
@@ -398,10 +404,136 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+
+  it should "parse 1D arrays" in {
+    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+
+    val verticaArrayType = 1506
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
+    val verticaElementType = verticaArrayType - 1500;
+    val mockRs1 = mockQueryTypes(verticaElementType, hasData = true,jdbcLayer)
+    (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
+    (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
+    mockColumnCount(rsmd, 1)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>
+        println(error)
+        fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType.isInstanceOf[ArrayType])
+        assert(fields(0).dataType.asInstanceOf[ArrayType]
+          .elementType.isInstanceOf[LongType])
+    }
+  }
+
+  it should "error on type not found" in {
+    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+
+    val verticaArrayType = 1506
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
+    mockColumnCount(rsmd, 1)
+    val verticaElementType = verticaArrayType - 1500;
+    mockQueryTypes(verticaElementType, hasData = false,jdbcLayer)
+    mockQueryComplexType(verticaArrayType, false, isFieldNative = false, jdbcLayer)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(err) => succeed
+      case Right(_) => fail
+    }
+  }
+
+  private def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
+    val mockRs = mock[ResultSet]
+    val queryColumnDef = s"SELECT data_type_id FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
+    (jdbcLayer.query _)
+      .expects(queryColumnDef, *)
+      .returns(Right(mockRs))
+    (mockRs.next _).expects().returns(true)
+    (mockRs.getLong: String => Long).expects("data_type_id").returning(verticaTypeFound)
+    (mockRs.close _).expects()
+  }
+
+  private def mockQueryTypes(typeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
+    val mockRs = mock[ResultSet]
+    (jdbcLayer.query _)
+      .expects(s"SELECT jdbc_type, type_name FROM types WHERE type_id=$typeId", *)
+      .returns(Right(mockRs))
+    (mockRs.next _).expects().returns(hasData)
+    (mockRs.close _).expects()
+    if(!hasData) (mockRs.close _).expects()
+    mockRs
+  }
+
+  it should "parse nested array" in {
+    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
+    val testColDef = TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+
+    val verticaArrayType = 0L
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name, verticaArrayType, jdbcLayer)
+
+    val verticaElementType = verticaArrayType - 1500;
+    mockQueryTypes(verticaElementType, hasData = false, jdbcLayer)
+
+    val fieldId1 = 1L
+    val mockRs1 = mockQueryComplexType(verticaArrayType, true, isFieldNative = false, jdbcLayer)
+    var field1TypeName = "_ct_" + fieldId1.toString
+    (mockRs1.getString: String => String).expects("field_type_name").returns(field1TypeName)
+    (mockRs1.getLong: String => Long).expects("field_id").returns(fieldId1)
+
+    val fieldId2 = 2L
+    val mockRs2 = mockQueryComplexType(fieldId1, true, isFieldNative = true, jdbcLayer)
+    val field2TypeName = fieldId2.toString
+    (mockRs2.getString: String => String).expects("field_type_name").returns(field2TypeName)
+    (mockRs2.getLong: String => Long).expects("field_id").returns(fieldId2)
+
+    val mockRs3 = mockQueryTypes(fieldId2, hasData = true, jdbcLayer)
+    (mockRs3.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
+    (mockRs3.getString: (String) => String).expects("type_name").returns("Integer")
+
+    mockColumnCount(rsmd, 2)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>
+        println(error)
+        fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 2)
+        assert(fields(0).dataType.isInstanceOf[LongType])
+
+        val arrayDef = fields(1).dataType
+        assert(arrayDef.isInstanceOf[ArrayType])
+        val element1 = arrayDef.asInstanceOf[ArrayType].elementType
+        assert(element1.isInstanceOf[ArrayType])
+        val element2 = element1.asInstanceOf[ArrayType].elementType
+        assert(element2.isInstanceOf[LongType])
+    }
+  }
+
+  private def mockQueryComplexType(complexTypeId: Long, hasData: Boolean, isFieldNative: Boolean, jdbcLayer: JdbcLayerInterface) = {
+    val mockRs = mock[ResultSet]
+    val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$complexTypeId'"
+    (jdbcLayer.query _).expects(queryComplexType, *).returns(Right(mockRs))
+    (mockRs.next _).expects().returns(hasData)
+    (mockRs.close _).expects()
+    mockRs
+  }
+
   it should "error on unsupported types" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
-    //mockColumnMetadata(rsmd, ColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true))
     mockColumnMetadata(rsmd, TestColumnDef(1, "col2", java.sql.Types.DATALINK, "DATALINK", 0, signed = true, nullable = true))
     mockColumnMetadata(rsmd, TestColumnDef(2, "col3", java.sql.Types.DISTINCT, "DISTINCT", 0, signed = true, nullable = true))
     mockColumnMetadata(rsmd, TestColumnDef(3, "col4", java.sql.Types.JAVA_OBJECT, "JAVA_OBJECT", 0, signed = true, nullable = true))
@@ -467,7 +599,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
-    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0, 0) match {
       case Left(err) =>
         err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -496,29 +628,48 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "Convert basic spark types to vertica types" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1) == Right("VARBINARY(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1) == Right("BOOLEAN"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1 ) == Right("TINYINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1 ) == Right("DATE"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1) == Right("INTERVAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 ) == Right("DOUBLE PRECISION"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0,0), 1 ) == Right("DECIMAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1 ) == Right("FLOAT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 ) == Right("INTEGER"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 ) == Right("BIGINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 ) == Right("null"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 ) == Right("SMALLINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 ) == Right("TIMESTAMP"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1, 0) == Right("VARBINARY(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1, 0) == Right("BOOLEAN"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1, 0 ) == Right("TINYINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0 ) == Right("DATE"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0) == Right("INTERVAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0) == Right("DOUBLE PRECISION"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0,0), 1 , 0) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0 ) == Right("FLOAT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0) == Right("INTEGER"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0) == Right("BIGINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 , 0) == Right("null"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 , 0) == Right("SMALLINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0) == Right("TIMESTAMP"))
+  }
+
+  it should "Convert array to vertica array" in {
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
+  }
+
+  it should "Provide error message on unknown element type conversion to vertica" in {
+    (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
+      case Left(err) =>
+        err.getUnderlyingError match {
+          case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
+            "Could not find conversion for unsupported Spark type: CharType"))
+          case _ => false
+        }
+      case Right(_) => fail
+    }
   }
 
 
   it should "Convert string types to vertica type properly" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024) == Right("VARCHAR(1024)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000) == Right("VARCHAR(5000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000) == Right("VARCHAR(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000) == Right("LONG VARCHAR(100000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024, 0) == Right("VARCHAR(1024)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000, 0) == Right("VARCHAR(5000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000, 0) == Right("VARCHAR(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000, 0) == Right("LONG VARCHAR(100000)"))
   }
 
   it should "Return a list of column names to use for copy statement" in {
@@ -542,7 +693,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val schemaTools= new SchemaTools
     val col = "\"name\" varchar"
     val colName = "\"name\""
-    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024, 0)
     assert(updatedField == "\"name\" VARCHAR(1024)")
   }
 
@@ -551,7 +702,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val schemaTools= new SchemaTools
     val col = "\"age\" integer"
     val colName = "\"age\""
-    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024, 0)
     assert(updatedField == "\"age\" integer")
   }
 
@@ -560,7 +711,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val schemaTools= new SchemaTools
     val col = "\"age\" UNKNOWN"
     val colName = "\"age\""
-    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024)
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024, 0)
     assert(updatedField == "\"age\" INTEGER")
   }
 
@@ -572,7 +723,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" varchar" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
@@ -588,7 +739,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
-    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100) match {
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
       case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
       case Right(str) => fail
     }

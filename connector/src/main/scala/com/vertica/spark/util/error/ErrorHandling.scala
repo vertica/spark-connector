@@ -85,6 +85,9 @@ case class SchemaDiscoveryError() extends ConnectorError {
     "There may be an issue with connectivity to the database."
 
 }
+case class NoResultError(query: String) extends ConnectorError{
+  def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
+}
 case class SchemaColumnListError(error: ConnectorError) extends ConnectorError {
   private val message = "Failed to create a valid column list for the write operation " +
     "due to mismatch with the existing table."
@@ -165,6 +168,13 @@ case class CommitError(error: ConnectorError) extends ConnectorError {
   def getFullContext: String = ErrorHandling.appendErrors(this.message, this.error.getFullContext)
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
+
+case class ArrayElementTypeNotFound(typeId: Long)
+  extends RuntimeException(s"Element type $typeId not found in vertica.")
+    with ConnectorError {
+  override def getFullContext: String = this.getMessage
+}
+
 case class ViewExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to an existing view in Vertica."
 }
@@ -266,6 +276,10 @@ case class InvalidFailedRowsTolerance() extends ConnectorError {
 case class InvalidStrlenError() extends ConnectorError {
   def getFullContext: String = "The 'strlen' param specified is invalid. " +
     "Please specify a valid integer between 1 and 32000000."
+}
+case class InvalidArrayLengthError() extends ConnectorError {
+  def getFullContext: String = "The 'array_length' param specified is invalid. " +
+    "Please specify a positive integer value."
 }
 case class InvalidPartitionCountError() extends ConnectorError {
   def getFullContext: String = "The 'num_partitions' param specified is invalid. " +
@@ -462,6 +476,16 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
     "\nSQL type value: " + sqlType
 }
+
+case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
+  def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
+    "\nSQL type value: " + sqlType
+}
+
+case class MissingElementTypeError() extends SchemaError {
+  def getFullContext: String = s"Missing array element type."
+}
+
 case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
 }
