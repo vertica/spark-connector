@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
-      - name: upload coverage report to codecov
+      - name: Upload coverage report to codecov
         uses: codecov/codecov-action@v2
         with:
           flags: unittests
