@@ -10,11 +10,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import java.util.Properties
+
+val appProperties = settingKey[Properties]("Connector version properties")
+appProperties := {
+  val prop = new Properties()
+  IO.load(prop, new File("version.properties"))
+  prop
+}
 
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector"
 organization := "com.vertica"
-version := "3.0.3"
+version := appProperties.value.getProperty("version")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
