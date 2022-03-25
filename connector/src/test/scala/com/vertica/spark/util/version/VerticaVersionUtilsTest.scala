@@ -13,11 +13,32 @@
 
 package com.vertica.spark.util.version
 
+import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.{ComplexTypesNotSupported, ErrorList}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+
+import java.sql.ResultSet
+
+object VerticaVersionUtilsTest extends VerticaVersionUtilsTest {
+  def mockGetVersion(jdbcLayer: JdbcLayerInterface): Unit = {
+    val mockRs = mock[ResultSet]
+    (jdbcLayer.query _).expects("SELECT version();", *).returns(Right(mockRs))
+    (mockRs.next _).expects().returning(true)
+    (mockRs.getString: Int => String).expects(1).returns(" Vertica Analytic Database v11.1.2-3")
+    (mockRs.close _).expects()
+  }
+
+  def mockFailedGetVersion(jdbcLayer: JdbcLayerInterface): Unit = {
+    val mockRs = mock[ResultSet]
+    (jdbcLayer.query _).expects("SELECT version();", *).returns(Right(mockRs))
+    (mockRs.next _).expects().returning(false)
+    (mockRs.close _).expects()
+    (mockRs.close _).expects()
+  }
+}
 
 class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
   private val complexTypesSchema: StructType = StructType(Array(
@@ -33,6 +54,29 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   private val complexArraySchema: StructType = StructType(Array(
     StructField("ct1", ArrayType(ArrayType(IntegerType, false), false), false, Metadata.empty),
     StructField("col2", IntegerType, false, Metadata.empty)))
+
+  it should "Obtain a Vertica version number" in {
+    val jdbcLayer = mock[JdbcLayerInterface]
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
+    val version = VerticaVersionUtils.getVersion(jdbcLayer)
+    assert(version.major == 11)
+    assert(version.minor == 1)
+    assert(version.servicePack == 2)
+    assert(version.hotfix == 3)
+  }
+
+  it should "Obtain the default Vertica version number on failure" in {
+    val jdbcLayer = mock[JdbcLayerInterface]
+    val mockRs = mock[ResultSet]
+    (jdbcLayer.query _).expects("SELECT version();", *).returns(Right(mockRs))
+    (mockRs.next _).expects().returning(false)
+    (mockRs.close _).expects()
+    (mockRs.close _).expects()
+
+    val version = VerticaVersionUtils.getVersion(jdbcLayer)
+    assert(version.compare(VerticaVersionUtils.LATEST) == 0)
+  }
 
   it should "Deny checking writing complex types to Vertica version =< 9" in {
     VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, writingToExternal = false,
