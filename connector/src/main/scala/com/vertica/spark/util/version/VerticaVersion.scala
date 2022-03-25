@@ -12,12 +12,14 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
+import cats.data.NonEmptyList
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ComplexTypesNotSupported, ErrorList, NoResultError}
-import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
+import com.vertica.spark.util.error.{ComplexArrayNotSupported, ComplexTypeNotSupported, ComplexTypesNotSupported, ConnectorError, ErrorList, NoResultError}
+import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
 
+import java.util
 import scala.util.Try
 
 
@@ -50,28 +52,33 @@ object VerticaVersionUtils {
     }.getOrElse(LATEST)
   }
 
-  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
+  def checkSchemaTypesWriteSupport(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
     if(version.major > 10) {
       Right()
     } else if (version.major < 10) {
       checkComplexTypesSupportV9OrLess(schema, version)
     } else {
-      checkTypesWriteSupportV10(schema, version)
+      checkTypesWriteSupportV10(schema, writingToExternal, version)
     }
-    Right()
   }
 
-  private def checkTypesWriteSupportV10(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    val errorList  = schema.foldLeft(List[StructField]())((complexCols, field) => {
+  private def checkTypesWriteSupportV10(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
+    val errorsList  = schema.foldLeft(List[ConnectorError]())((accumErrors, field) => {
       field.dataType match {
-        case ArrayType(_,_) | StructType(_) => complexCols :+ field
-        case _ => complexCols
+        case ArrayType(elementType,_) => elementType match {
+          case ArrayType(_,_) | StructType(_) | MapType(_,_,_) =>
+            if(!writingToExternal) accumErrors :+ ComplexArrayNotSupported(version.toString)
+            else accumErrors
+          case _ => accumErrors
+        }
+        case t : StructType => accumErrors :+ ComplexTypeNotSupported(t.toString, version.toString)
+        case _ => accumErrors
       }
     })
-    if(errorList.isEmpty) {
+    if(errorsList.isEmpty) {
       Right()
     }else{
-      Left(ComplexTypesNotSupported(List(), version))
+      Left(ErrorList(NonEmptyList(errorsList.head, errorsList.tail)))
     }
   }
 
@@ -85,12 +92,12 @@ object VerticaVersionUtils {
     if(complexCols.isEmpty) {
       Right()
     }else{
-      Left(ComplexTypesNotSupported(complexCols.map(_.name), version))
+      Left(ComplexTypesNotSupported(complexCols, version.toString))
     }
   }
 }
 
-case class VerticaVersion(major: Int, minor: Int, servicePack: Int, hotfix: Int) extends Ordered[VerticaVersion] {
+case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 
   override def compare(that: VerticaVersion): Int =
