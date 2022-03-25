@@ -431,6 +431,13 @@ case class VerticaNativeTypeNotFound(verticaId: Long)
     with ConnectorError {
   override def getFullContext: String = this.getMessage
 }
+
+
+case class ComplexTypesNotSupported(nameList: List[String], version: String) extends ConnectorError{
+  override def getFullContext: String = s"Your Vertica version $version does not support complex types. Complex types are only support in Vertica 10 or higher. \n" +
+    s"Complex types columns are: ${nameList.mkString(",")}"
+}
+
 /**
   * Enumeration of the list of possible JDBC errors.
   */

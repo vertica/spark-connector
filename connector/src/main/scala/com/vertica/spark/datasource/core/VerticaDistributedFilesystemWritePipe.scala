@@ -23,6 +23,7 @@ import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
@@ -107,6 +108,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
+      // Ensure Vertica version is compatible.
+      _ <- checkSchemaTypesSupport(config.schema, jdbcLayer)
+
       // Set spark configuration
       _ = setSparkCalendarConf()
 
@@ -157,6 +161,11 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         Right(())
       }
     } yield ()
+  }
+
+  def checkSchemaTypesSupport(schema: StructType, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+    val version: VerticaVersion = VerticaVersionUtils.getVersion(jdbcLayer)
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(schema, version)
   }
 
   val timer = new Timer(config.timeOperations, logger, "Writing Partition.")
