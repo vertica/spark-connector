@@ -81,6 +81,8 @@ jobs:
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.0
         run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.0.2" -DhadoopVersion="2.4.0" 
       - name: Remove docker containers
@@ -124,6 +126,8 @@ jobs:
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.1
         run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.1.1" -DhadoopVersion="3.3.1"
       - name: Remove docker containers
@@ -167,6 +171,8 @@ jobs:
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Copy functional tests to home directory of client container
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /
       - name: Run the integration tests on Spark 3.2
         run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="3.2.0" -DhadoopVersion="3.0.1"
       - name: Remove docker containers
