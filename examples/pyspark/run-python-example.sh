@@ -1,4 +1,4 @@
-CONNECTOR_VERSION=$(cat ../examples.properties | grep ${connector-version} | cut -d':' -f2)
+CONNECTOR_VERSION=$(cat ../../version.properties | grep ${connector-version} | cut -d'=' -f2)
 yum install -y python3
 export JAVA_HOME=/usr/lib/jvm/jre-11-openjdk
 export SPARK_DIST_CLASSPATH=$(/hadoop-3.3.0/bin/hadoop classpath)

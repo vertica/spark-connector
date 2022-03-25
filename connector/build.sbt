@@ -16,7 +16,7 @@ import java.util.Properties
 val versionProps = settingKey[Properties]("Connector version properties")
 versionProps := {
   val prop = new Properties()
-  IO.load(prop, new File("../../connector/version.properties"))
+  IO.load(prop, new File(".../version.properties"))
   prop
 }
 
