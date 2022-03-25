@@ -28,8 +28,7 @@ object VerticaVersionUtils {
   private val version: Option[VerticaVersion] = None
   // Should always be the latest major release.
   // scalastyle:off
-  private val LATEST: VerticaVersion = VerticaVersion(11, 0, 0, 0)
-  private val VERSION_10X: VerticaVersion = VerticaVersion(10,0,0,0)
+  val LATEST: VerticaVersion = VerticaVersion(11)
 
   /**
    * Query and cache Vertica version. Return the default version on any error.
