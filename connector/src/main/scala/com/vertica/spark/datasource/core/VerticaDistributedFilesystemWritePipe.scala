@@ -109,7 +109,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ <- checkSchemaForDuplicates(config.schema)
 
       // Ensure Vertica version is compatible.
-      _ <- checkSchemaTypesSupport(config.schema, jdbcLayer)
+      _ <- checkSchemaTypesSupport(config, jdbcLayer)
 
       // Set spark configuration
       _ = setSparkCalendarConf()
@@ -163,9 +163,10 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield ()
   }
 
-  def checkSchemaTypesSupport(schema: StructType, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+  private def checkSchemaTypesSupport(config: DistributedFilesystemWriteConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
     val version: VerticaVersion = VerticaVersionUtils.getVersion(jdbcLayer)
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(schema, version)
+    val writingToExternal = config.createExternalTable.isDefined
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(config.schema, writingToExternal, version)
   }
 
   val timer = new Timer(config.timeOperations, logger, "Writing Partition.")
