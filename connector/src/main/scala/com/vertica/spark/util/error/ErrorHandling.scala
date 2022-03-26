@@ -431,17 +431,19 @@ case class VerticaNativeTypeNotFound(verticaId: Long)
     with ConnectorError {
   override def getFullContext: String = this.getMessage
 }
-case class ComplexTypesNotSupported(nameList: List[StructField], version: String) extends ConnectorError{
+case class ComplexTypeColumnsNotSupported(nameList: List[StructField], version: String) extends ConnectorError{
   override def getFullContext: String = s"Your Vertica version $version does not support complex types. Complex types are only support in Vertica 10 or higher. \n" +
     s"Complex types columns are: ${nameList.map(_.name).mkString(", ")}"
 }
-case class ComplexArrayNotSupported(version: String) extends ConnectorError {
-  override def getFullContext: String = s"Your Vertica version $version does not support writing complex array. Writing complex array are only support in Vertica 11 or higher."
+case class ComplexArrayWritingNotSupported(colName: String, version: String) extends ConnectorError {
+  override def getFullContext: String = s"Column $colName: Writing complex array are only support in Vertica 11 or higher. Your Vertica is version $version."
 }
-case class ComplexTypeNotSupported(complexType: String, version: String) extends ConnectorError {
-  override def getFullContext: String = s"Complex type $complexType is not supported for your Vertica version $version."
+case class ComplexTypeNotSupported(colName: String, complexType: String, version: String) extends ConnectorError {
+  override def getFullContext: String = s"Column $colName: Complex type $complexType is not supported for your Vertica version $version."
 }
-
+case class ComplexArrayReadNotSupported(name: String, version: String) extends ConnectorError {
+  override def getFullContext: String = s"Column $name: Reading complex array is not supported."
+}
 /**
   * Enumeration of the list of possible JDBC errors.
   */

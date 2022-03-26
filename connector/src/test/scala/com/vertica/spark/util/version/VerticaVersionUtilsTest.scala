@@ -14,7 +14,7 @@
 package com.vertica.spark.util.version
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.{ComplexTypesNotSupported, ErrorList}
+import com.vertica.spark.util.error.{ComplexTypeColumnsNotSupported, ErrorList}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -78,19 +78,11 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     assert(version.compare(VerticaVersionUtils.LATEST) == 0)
   }
 
-  it should "Deny checking writing complex types to Vertica version =< 9" in {
+  it should "Deny writing complex types to Vertica version =< 9" in {
     VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, writingToExternal = false,
       VerticaVersion(9)) match {
       case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ComplexTypesNotSupported])
-    }
-  }
-
-  it should "Allow checking writing complex types to Vertica version >= 11" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, writingToExternal = false,
-      VerticaVersion(11)) match {
-      case Right(_) => succeed
-      case Left(error) => fail
+      case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
     }
   }
 
@@ -112,6 +104,48 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Allow writing native arrays to tables in Vertica 10" in {
     VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, writingToExternal = false,
+      VerticaVersion(10)) match {
+      case Right(_) => succeed
+      case Left(error) => fail
+    }
+  }
+
+
+
+  it should "Deny reading complex types to Vertica version =< 9" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
+      VerticaVersion(9)) match {
+      case Right(_) => fail
+      case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
+    }
+  }
+
+  it should "Allow reading native arrays from Vertica >= 11" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema,
+      VerticaVersion(11)) match {
+      case Right(_) => succeed
+      case Left(error) => fail
+    }
+  }
+
+  it should "Deny reading complex types from Vertica >= 11" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
+      VerticaVersion(11)) match {
+      case Right(_) => fail
+      case Left(error) => assert(error.isInstanceOf[ErrorList])
+    }
+  }
+
+  it should "Deny reading complex arrays from Vertica 10" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(complexArraySchema,
+      VerticaVersion(10)) match {
+      case Right(_) => fail
+      case Left(error) => assert(error.isInstanceOf[ErrorList])
+    }
+  }
+
+  it should "Allow reading native arrays from Vertica 10" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema,
       VerticaVersion(10)) match {
       case Right(_) => succeed
       case Left(error) => fail

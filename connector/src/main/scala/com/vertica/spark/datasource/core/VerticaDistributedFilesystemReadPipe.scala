@@ -26,6 +26,7 @@ import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.connector.expressions.aggregate._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.StructType
 
@@ -229,6 +230,8 @@ class VerticaDistributedFilesystemReadPipe(
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
+      _ <- checkSchemaTypesReadSupport(config, jdbcLayer)
+
       // Create unique directory for session
       perm = config.filePermissions
 
@@ -344,6 +347,11 @@ class VerticaDistributedFilesystemReadPipe(
     }
 
     ret
+  }
+
+  private def checkSchemaTypesReadSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+    val version = VerticaVersionUtils.getVersion(jdbcLayer)
+    VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
