@@ -543,34 +543,26 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
-    val sb = new StringBuilder()
-
-    sb.append(" (")
-    var first = true
-    schema.foreach(s => {
-      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable=" + s.nullable)
-      if (!first) {
-        sb.append(",\n")
+    val colDefsOrErrors = schema.map(col => {
+      val colName = "\"" + col.name + "\""
+      val notNull = if (!col.nullable) "NOT NULL" else ""
+      getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength) match {
+        case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+        case Right(colType) =>
+          Right(s"$colName $colType $notNull")
       }
-      first = false
-      sb.append("\"" + s.name + "\" ")
+    }).toList
 
-      for {
-        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength) match {
-          case Left(err) =>
-            return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
-          case Right(datatype) =>
-            Right(datatype)
-        }
-        _ = sb.append(col)
-        _ = if (!s.nullable) {
-          sb.append(" NOT NULL")
-        }
-      } yield ()
-    })
+    val result = colDefsOrErrors
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+      .map(columnDef => columnDef)
+      .left.map(errors => ErrorList(errors))
 
-    sb.append(")")
-    Right(sb.toString)
+    result match {
+      case Right(colDefList) => Right(s"(${colDefList.mkString(", ")})")
+      case Left(err) => Left(err)
+    }
   }
 
   def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
