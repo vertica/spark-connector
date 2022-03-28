@@ -399,10 +399,21 @@ class SchemaTools extends SchemaToolsInterface {
   override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
-      case org.apache.spark.sql.types.MapType(_,_,_) |
-           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.MapType(_,_,_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.StructType(fields) => sparkStructToVerticaRow(fields, strlen, arrayLength)
       case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
+    }
+  }
+
+  private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
+    makeTableColumnDefs(StructType(fields), strlen, null, arrayLength) match {
+      case Left(err: SchemaError) => Left(err)
+      case Right(fieldDefs) => Right("ROW" +
+        fieldDefs
+          // Row definition cannot have constraints
+          .replace("NOT NULL", "")
+          .trim())
     }
   }
 
@@ -585,7 +596,7 @@ class SchemaTools extends SchemaToolsInterface {
     })
 
     sb.append(")")
-    Right(sb.toString)
+    Right(sb.toString.trim)
   }
 
   def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {

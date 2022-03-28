@@ -471,6 +471,10 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   * Enumeration of the list of possible schema errors.
   */
 trait SchemaError extends ConnectorError
+case class SchemaErrorList(schemaErrors: NonEmptyList[SchemaError]) extends SchemaError {
+  def getFullContext: String = this.schemaErrors.toList.map(errs => errs.getFullContext).mkString("\n")
+  override def getUserMessage: String = this.schemaErrors.toList.map(errs => errs.getUserMessage).mkString("\n")
+}
 
 case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +

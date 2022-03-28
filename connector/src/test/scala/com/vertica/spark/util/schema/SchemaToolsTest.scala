@@ -650,6 +650,25 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
   }
 
+  it should "Convert primitive struct to Vertica row" in {
+    val schemaTools = new SchemaTools
+    val result = schemaTools.getVerticaTypeFromSparkType(StructType(Array(
+      StructField("col1", IntegerType, false, Metadata.empty),
+      StructField("col2", IntegerType, false, Metadata.empty),
+      StructField("col2", DecimalType(2, 1), false, Metadata.empty),
+    )), 0, 0)
+    assert(result == Right("ROW(\"col1\" INTEGER,\n\"col2\" INTEGER )"))
+  }
+
+  it should "Convert native struct to Vertica row" in {
+    val schemaTools = new SchemaTools
+    val result = schemaTools.getVerticaTypeFromSparkType(StructType(Array(
+      StructField("col1", IntegerType, true,Metadata.empty ),
+      StructField("col2", IntegerType, false,Metadata.empty ),
+    )), 0, 0)
+    assert(result == Right("ROW(\"col1\" INTEGER,\n\"col2\" INTEGER )"))
+  }
+
   it should "Provide error message on unknown element type conversion to vertica" in {
     (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
       case Left(err) =>
