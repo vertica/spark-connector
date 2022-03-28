@@ -83,7 +83,7 @@ object VerticaVersionUtils {
   }
 
   def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    if(version.major > 11) {
+    if(version.major > 10) {
       checkCTReadSupportV11AndHigher(schema, version)
     } else if (version.major < 10) {
       checkCTSupportV9AndLess(schema, version)

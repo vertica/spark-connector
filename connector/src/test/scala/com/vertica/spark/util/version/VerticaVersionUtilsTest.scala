@@ -110,8 +110,6 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     }
   }
 
-
-
   it should "Deny reading complex types to Vertica version =< 9" in {
     VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
       VerticaVersion(9)) match {
