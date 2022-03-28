@@ -409,10 +409,11 @@ class SchemaTools extends SchemaToolsInterface {
   private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
     makeTableColumnDefs(StructType(fields), strlen, null, arrayLength) match {
       case Left(err: SchemaError) => Left(err)
-      case Right(fieldDefs) => Right("ROW" +
-        fieldDefs
+      case Right(fieldDefs) =>
+        Right("ROW" +
+          fieldDefs
           // Row definition cannot have constraints
-          .replace("NOT NULL", "")
+          .replace(" NOT NULL", "")
           .trim())
     }
   }
