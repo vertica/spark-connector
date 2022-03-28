@@ -549,7 +549,7 @@ class SchemaTools extends SchemaToolsInterface {
       getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength) match {
         case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))
         case Right(colType) =>
-          Right(s"$colName $colType $notNull")
+          Right(s"$colName $colType $notNull".trim())
       }
     }).toList
 
@@ -560,7 +560,7 @@ class SchemaTools extends SchemaToolsInterface {
       .left.map(errors => ErrorList(errors))
 
     result match {
-      case Right(colDefList) => Right(s"(${colDefList.mkString(", ")})")
+      case Right(colDefList) => Right(s" (${colDefList.mkString(", ")})")
       case Left(err) => Left(err)
     }
   }
