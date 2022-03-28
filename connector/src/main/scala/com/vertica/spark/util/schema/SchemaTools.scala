@@ -431,7 +431,11 @@ class SchemaTools extends SchemaToolsInterface {
       case org.apache.spark.sql.types.ByteType => Right("TINYINT")
       case org.apache.spark.sql.types.DateType => Right("DATE")
       case org.apache.spark.sql.types.CalendarIntervalType => Right("INTERVAL")
-      case org.apache.spark.sql.types.DecimalType() => Right("DECIMAL")
+      case decimalType: org.apache.spark.sql.types.DecimalType =>
+        if(decimalType.precision == 0)
+          Right("DECIMAL")
+        else
+          Right(s"DECIMAL(${decimalType.precision}, ${decimalType.scale})")
       case org.apache.spark.sql.types.DoubleType => Right("DOUBLE PRECISION")
       case org.apache.spark.sql.types.FloatType => Right("FLOAT")
       case org.apache.spark.sql.types.IntegerType => Right("INTEGER")
@@ -551,31 +555,12 @@ class SchemaTools extends SchemaToolsInterface {
       first = false
       sb.append("\"" + s.name + "\" ")
 
-      // remains empty unless we have a DecimalType with precision/scale
-      var decimal_qualifier: String = ""
-      if (s.dataType.toString.contains("DecimalType")) {
-
-        // has precision only
-        val p = "DecimalType\\((\\d+)\\)".r
-        if (s.dataType.toString.matches(p.toString)) {
-          val p(prec) = s.dataType.toString
-          decimal_qualifier = "(" + prec + ")"
-        }
-
-        // has precision and scale
-        val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
-        if (s.dataType.toString.matches(ps.toString)) {
-          val ps(prec, scale) = s.dataType.toString
-          decimal_qualifier = "(" + prec + "," + scale + ")"
-        }
-      }
-
       for {
         col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength) match {
           case Left(err) =>
             return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
           case Right(datatype) =>
-            Right(datatype + decimal_qualifier)
+            Right(datatype)
         }
         _ = sb.append(col)
         _ = if (!s.nullable) {
