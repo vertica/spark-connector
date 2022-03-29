@@ -1761,12 +1761,54 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(rs.next)
       val struct = rs.getObject(colName).asInstanceOf[java.sql.Struct]
       val fields = struct.getAttributes
+      assert(fields.length == 2)
       val field1 = fields(0).asInstanceOf[Array[AnyRef]]
       val nestedArrElement = field1(0).asInstanceOf[Array[AnyRef]](0)
       val field2 = fields(1).asInstanceOf[java.sql.Struct]
+      assert(field2.getAttributes.length == 1)
       val field3 = field2.getAttributes()(0)
       assert(nestedArrElement == 77)
       assert(field3 == 88)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write a table with column type Array[Row]" in {
+    val tableName = "dftest"
+    val colName = "col1"
+    val arrayRow = StructField(colName, ArrayType(StructType(Array(
+      StructField("key", StringType),
+      StructField("value", IntegerType),
+    ))))
+    val schema = new StructType(Array(
+      StructField("required", IntegerType),
+      arrayRow
+    ))
+
+    val data = Seq(Row(1, Array(Row("key1", 77))))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"SELECT $colName FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert (rs.next)
+      val array = rs.getArray(colName).getArray.asInstanceOf[Array[AnyRef]]
+      val fields = array(0).asInstanceOf[java.sql.Struct].getAttributes
+      assert(fields.length == 2)
+      assert(fields(0) == "key1")
+      assert(fields(1) == 77)
     }
     catch{
       case err : Exception => fail(err)

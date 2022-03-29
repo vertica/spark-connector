@@ -649,6 +649,9 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
+    // schema representing Array[Row]
+    val schema = ArrayType(StructType(Array(StructField("key",StringType), StructField("value", IntegerType))))
+    assert(schemaTools.getVerticaTypeFromSparkType(schema, 0, 0) == Right("ARRAY[ROW(\"key\" VARCHAR(0), \"value\" INTEGER)]"))
   }
 
   it should "Convert struct to Vertica row" in {
