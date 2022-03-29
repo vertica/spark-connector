@@ -75,7 +75,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     (mockRs.close _).expects()
 
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
-    assert(version.compare(VerticaVersionUtils.LATEST) == 0)
+    assert(version.compare(VerticaVersionUtils.VERRTICA_LATEST) == 0)
   }
 
   it should "Deny writing complex types to Vertica version =< 9" in {

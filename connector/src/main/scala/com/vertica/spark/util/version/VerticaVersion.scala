@@ -29,7 +29,7 @@ object VerticaVersionUtils {
   private val version: Option[VerticaVersion] = None
   // Should always be the latest major release.
   // scalastyle:off
-  val LATEST: VerticaVersion = VerticaVersion(11)
+  val VERRTICA_LATEST: VerticaVersion = VerticaVersion(11)
 
   /**
    * Query and cache Vertica version. Return the default version on any error.
@@ -40,45 +40,47 @@ object VerticaVersionUtils {
       logger.info("VERTICA VERSION: " + verticaVersion)
       Right(verticaVersion)
     }, (query) => {
-      logger.error("Failed to query for version number. Defaults to " + LATEST)
+      logger.error("Failed to query for version number. Defaults to " + VERRTICA_LATEST)
       Left(NoResultError(query))
-    }).getOrElse(LATEST)
+    }).getOrElse(VERRTICA_LATEST)
 
   private def extractVersion(str: String): VerticaVersion = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
     Try{
       val pattern(major, minor, service, hotfix) = str
       VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
-    }.getOrElse(LATEST)
+    }.getOrElse(VERRTICA_LATEST)
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
     if(version.major > 10) {
       Right()
     } else if (version.major < 10) {
-      checkCTSupportV9AndLess(schema, version)
+      checkForComplexTypes(schema, version)
     } else {
-      checkTypesWriteSupportV10(schema, writingToExternal, version)
+      checkCTWriteSupportV10(schema, writingToExternal, version)
     }
   }
 
-  private def checkTypesWriteSupportV10(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
-    val errorsList  = schema.foldLeft(List[ConnectorError]())((accumErrors, field) => {
+  private def checkCTWriteSupportV10(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
+    val notSupportedList = schema.foldLeft(List[ConnectorError]())((errors, field) => {
       field.dataType match {
-        case ArrayType(elementType,_) => elementType match {
-          case ArrayType(_,_) | StructType(_) | MapType(_,_,_) =>
-            if(!writingToExternal) accumErrors :+ ComplexArrayWritingNotSupported(field.name, version.toString)
-            else accumErrors
-          case _ => accumErrors
+        case ArrayType(elementType, _) => elementType match {
+          case ArrayType(_, _) | StructType(_) | MapType(_, _, _) =>
+            if (writingToExternal) errors
+            else errors :+ ComplexArrayWritingNotSupported(field.name, version.toString)
+          case _ => errors
         }
-        case StructType(_) | MapType(_,_,_) => accumErrors :+ ComplexTypeNotSupported(field.name, field.dataType.toString, version.toString)
-        case _ => accumErrors
+        case MapType(_, _, _) | StructType(_) =>
+          if (writingToExternal) errors
+          else errors :+ ComplexTypeNotSupported(field.name, field.dataType.toString, version.toString)
+        case _ => errors
       }
     })
-    if(errorsList.isEmpty) {
+    if(notSupportedList.isEmpty) {
       Right()
     }else{
-      Left(ErrorList(NonEmptyList(errorsList.head, errorsList.tail)))
+      Left(ErrorList(NonEmptyList(notSupportedList.head, notSupportedList.tail)))
     }
   }
 
@@ -86,7 +88,7 @@ object VerticaVersionUtils {
     if(version.major > 10) {
       checkCTReadSupportV11AndHigher(schema, version)
     } else if (version.major < 10) {
-      checkCTSupportV9AndLess(schema, version)
+      checkForComplexTypes(schema, version)
     } else {
       checkCTReadSupportV10(schema, version)
     }
@@ -130,7 +132,7 @@ object VerticaVersionUtils {
     }
   }
 
-  private def checkCTSupportV9AndLess(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
+  private def checkForComplexTypes(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
     val complexCols = schema.foldLeft(List[StructField]())((complexCols, field) => {
       field.dataType match {
         case ArrayType(_,_) | StructType(_) => complexCols :+ field
