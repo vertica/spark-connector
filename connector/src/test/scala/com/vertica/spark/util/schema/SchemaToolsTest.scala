@@ -651,31 +651,25 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
   }
 
-  it should "Convert struct of primitive fields to Vertica row" in {
+  it should "Convert struct to Vertica row" in {
     val schemaTools = new SchemaTools
-    val result = schemaTools.getVerticaTypeFromSparkType(StructType(Array(
+    val primitiveRow = StructType(Array(
       StructField("col1", IntegerType, false, Metadata.empty),
-      StructField("col2", IntegerType, false, Metadata.empty),
-    )), 0, 0)
-    assert(result == Right("ROW(\"col1\" INTEGER, \"col2\" INTEGER)"))
-  }
+      StructField("col2", IntegerType, false, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(primitiveRow, 0, 0)
+      == Right("ROW(\"col1\" INTEGER, \"col2\" INTEGER)"))
 
-  it should "Convert struct with array field to Vertica row" in {
-    val schemaTools = new SchemaTools
-    val result = schemaTools.getVerticaTypeFromSparkType(StructType(Array(
-      StructField("col1", ArrayType(IntegerType), true, Metadata.empty),
-    )), 0, 0)
-    assert(result == Right("ROW(\"col1\" ARRAY[INTEGER])"))
-  }
+    val nativeArrayRow = StructType(Array(StructField("col1", ArrayType(IntegerType), true, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(nativeArrayRow, 0, 0)
+      == Right("ROW(\"col1\" ARRAY[INTEGER])"))
 
-  it should "Convert nested struct to nested Vertica row" in {
-    val schemaTools = new SchemaTools
-    val result = schemaTools.getVerticaTypeFromSparkType(StructType(Array(
+    val nestedRows = StructType(Array(
       StructField("col1", StructType(Array(
         StructField("field1", IntegerType, true, Metadata.empty)
       )), true, Metadata.empty),
-    )), 0, 0)
-    assert(result == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
+    ))
+    assert(schemaTools.getVerticaTypeFromSparkType(nestedRows, 0, 0)
+      == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
   }
 
   it should "Provide error message on unknown element type conversion to vertica" in {

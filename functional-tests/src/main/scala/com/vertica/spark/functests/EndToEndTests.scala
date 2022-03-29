@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, Metadata, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -1661,7 +1661,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "write nested arrays array" in {
+  it should "write nested arrays" in {
     val tableName = "nested_array_write_test"
     val colName = "col1"
     val schema = new StructType(Array(
@@ -1685,6 +1685,88 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(nestedArray(0) == 88L)
       assert(nestedArray(1) == 99L)
       assert(nestedArray(2) == 111L)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write table with a struct of primitives" in {
+    val tableName = "dftest"
+    val colName = "col1"
+    val schema = new StructType(Array(
+      StructField("required", IntegerType),
+      StructField(colName, StructType(Array(
+        StructField("field1", IntegerType, false, Metadata.empty)
+      )))))
+
+    val data = Seq(Row(1,Row(77)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"SELECT $colName FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert(rs.next)
+      val struct = rs.getObject(colName).asInstanceOf[java.sql.Struct]
+      val fields = struct.getAttributes()
+      assert(fields.length == 1)
+      println(fields(0).isInstanceOf[Long])
+      println(fields(0) == 77)
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "write table with a struct of complex type" in {
+    val tableName = "dftest"
+    val colName = "col1"
+    val schema = new StructType(Array(
+      StructField("required", IntegerType),
+      StructField(colName, StructType(Array(
+        StructField("field1", ArrayType(ArrayType(IntegerType))),
+        StructField("field2", StructType(Array(StructField("field3",IntegerType)))),
+      )))))
+
+    val data = Seq(
+      Row(1, Row(
+          Array(Array(77)),
+          Row(88)
+      )))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    val query = s"SELECT $colName FROM " + tableName
+    try {
+      val rs = stmt.executeQuery(query)
+      assert(rs.next)
+      val struct = rs.getObject(colName).asInstanceOf[java.sql.Struct]
+      val fields = struct.getAttributes
+      val field1 = fields(0).asInstanceOf[Array[AnyRef]]
+      val nestedArrElement = field1(0).asInstanceOf[Array[AnyRef]](0)
+      val field2 = fields(1).asInstanceOf[java.sql.Struct]
+      val field3 = field2.getAttributes()(0)
+      assert(nestedArrElement == 77)
+      assert(field3 == 88)
     }
     catch{
       case err : Exception => fail(err)
