@@ -309,22 +309,23 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  private def queryColumnDef(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    /**
-     * JDBC interface does not contains data about array elements. We need to query Vertica's system tables for
-     * these information.
-     * */
+  /**
+   * For complex types, JDBC metadata does not contains information about their elements, but they are available in
+   * Vertica systems tables. This function takes a ColumnDef of a complex type and injects it corresponding element
+   * ColumnDefs through a series of JDBC queries to Vertica system tables.
+   * */
+  private def queryColumnDef(complexTypeColDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val table = tableName.replace("\"", "")
-    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$table' AND column_name='${colDef.label}'"
+    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$table' AND column_name='${complexTypeColDef.label}'"
     // We first query from column table for column's Vertica type. Note that data_type_id is Vertica's internal type id, not JDBC.
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, (rs) => {
       val verticaType = rs.getLong("data_type_id")
       val typeName = getTypeName(rs.getString("data_type"))
-      colDef.colType match {
-        case java.sql.Types.ARRAY => makeArrayColumnDef(colDef, verticaType, jdbcLayer)
+      complexTypeColDef.colType match {
+        case java.sql.Types.ARRAY => makeArrayColumnDef(complexTypeColDef, verticaType, jdbcLayer)
         // Todo: implement Row support
-        case java.sql.Types.STRUCT => Left(MissingSqlConversionError(colDef.colType.toString, typeName))
-        case _ => Left(MissingSqlConversionError(colDef.colType.toString, typeName))
+        case java.sql.Types.STRUCT => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
+        case _ => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
       }
     })
   }
@@ -336,6 +337,9 @@ class SchemaTools extends SchemaToolsInterface {
       .split(',')(0)
   }
 
+  /**
+   * Query Vertica system tables to fill in an array ColumnDefs with it's elements.
+   * */
   private def makeArrayColumnDef(arrayColDef: ColumnDef, verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
      * A 1D primitive array is considered a Native type by Vertica. Their type information is tracked in types table.
@@ -368,7 +372,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def getNestedArrayElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
-     * complex_types table records all complex types created in Vertica, including nested arrays.
+     * complex_types table records all complex types created in Vertica.
      * Each row has a field_id linking and the complex type to it's child. For a nested array, each nested element
      * is recorded in the table and its field_id points to it's child.
      *
