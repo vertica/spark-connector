@@ -16,8 +16,8 @@ import cats.data.NonEmptyList
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ComplexArrayReadNotSupported, ComplexArrayWritingNotSupported, ComplexTypeNotSupported, ComplexTypeColumnsNotSupported, ConnectorError, ErrorList, NoResultError}
-import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
+import com.vertica.spark.util.error.{ComplexTypeColumnsNotSupported, NoResultError}
+import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
 
 import java.util
 import scala.util.Try
