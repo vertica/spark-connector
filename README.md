@@ -163,8 +163,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types requires Vertica 11 and Vertica's JDBC connector 11. Complex data types support is backwards
-compatible only with Vertica 10.x with some restrictions.
+Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11. It is compatible with Vertica 10 with some restrictions.
 
 ### Complex Type Conversion
 
@@ -180,12 +179,10 @@ Be aware that Vertica has a number of restrictions on the use of these complex t
 - Maps are only supported in external tables, but can model an internal Map as an `Array[Row(key, value)]`. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
 - Arrays and Sets do not support Long types
 
-For Map type, refer to  for more details.
-
 ### Array
-There are two types of arrays supported by Vertica, native and nested arrays (non-native arrays). More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
-- On save operations, native and non-native arrays are supported.
-- On load operations, on native arrays are supported for now.
+There are two types of arrays supported by Vertica, native and complex arrays. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
+- On Dataframe save() to Vertica, native and non-native arrays are supported.
+- On DataFrame load() from Vertica, only native arrays are supported for now.
 
 ### Set
 Not yet supported.
@@ -200,9 +197,11 @@ Not yet supported.
 
 Complex data types is backwards compatible only with Vertica 10 with the following restrictions:
 
-| Complex Type | Dataframe Operation | Restrictions                                                                                                                            |
-|--------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Array        | save() & load()     | 1D primitive arrays are supported only for internal table. `array_length` option not supported and element count will not be specified. |
+| Complex Type | Dataframe Operation | Restrictions                                                                                                                                           |
+|--------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Array        | save()              | When saving to internal Vertica tables, only native arrays are supported. `array_length` option not supported and element count will not be specified. |
+| Array        | load()              | Not supported.                                                                                                                                         |
+
 
 ## Examples
 
