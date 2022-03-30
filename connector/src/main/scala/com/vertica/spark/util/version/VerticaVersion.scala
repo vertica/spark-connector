@@ -53,83 +53,15 @@ object VerticaVersionUtils {
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
-    if(version.major > 10) {
-      Right()
-    } else if (version.major < 10) {
+    if (version.major < 10)
       checkForComplexTypes(schema, version)
-    } else {
-      checkCTWriteSupportV10(schema, writingToExternal, version)
-    }
-  }
-
-  private def checkCTWriteSupportV10(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
-    val notSupportedList = schema.foldLeft(List[ConnectorError]())((errors, field) => {
-      field.dataType match {
-        case ArrayType(elementType, _) => elementType match {
-          case ArrayType(_, _) | StructType(_) | MapType(_, _, _) =>
-            if (writingToExternal) errors
-            else errors :+ ComplexArrayWritingNotSupported(field.name, version.toString)
-          case _ => errors
-        }
-        case MapType(_, _, _) | StructType(_) =>
-          if (writingToExternal) errors
-          else errors :+ ComplexTypeNotSupported(field.name, field.dataType.toString, version.toString)
-        case _ => errors
-      }
-    })
-    if(notSupportedList.isEmpty) {
-      Right()
-    }else{
-      Left(ErrorList(NonEmptyList(notSupportedList.head, notSupportedList.tail)))
-    }
+    else Right()
   }
 
   def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    if(version.major > 10) {
-      checkCTReadSupportV11AndHigher(schema, version)
-    } else if (version.major < 10) {
+    if (version.major < 11)
       checkForComplexTypes(schema, version)
-    } else {
-      checkCTReadSupportV10(schema, version)
-    }
-  }
-
-  private def checkCTReadSupportV11AndHigher(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    val errorsFound = schema.foldLeft(List[ConnectorError]())((accumErrors, field) => {
-      field.dataType match {
-        case ArrayType(elementType,_) => elementType match {
-          case ArrayType(_,_) | StructType(_) | MapType(_,_,_) =>
-            accumErrors :+ ComplexArrayReadNotSupported(field.name, version.toString)
-          case _ => accumErrors
-        }
-        case StructType(_) | MapType(_,_,_) => accumErrors :+ ComplexTypeNotSupported(field.name, field.dataType.toString, version.toString)
-        case _ => accumErrors
-      }
-    })
-    if(errorsFound.isEmpty) {
-      Right()
-    }else{
-      Left(ErrorList(NonEmptyList(errorsFound.head, errorsFound.tail)))
-    }
-  }
-
-  private def checkCTReadSupportV10(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    val errorsFound = schema.foldLeft(List[ConnectorError]())((accumErrors, field) => {
-      field.dataType match {
-        case ArrayType(elementType,_) => elementType match {
-          case ArrayType(_,_) | StructType(_) | MapType(_,_,_) =>
-            accumErrors :+ ComplexArrayReadNotSupported(field.name, version.toString)
-          case _ => accumErrors
-        }
-        case StructType(_) | MapType(_,_,_) => accumErrors :+ ComplexTypeNotSupported(field.name, field.dataType.toString, version.toString)
-        case _ => accumErrors
-      }
-    })
-    if(errorsFound.isEmpty) {
-      Right()
-    }else{
-      Left(ErrorList(NonEmptyList(errorsFound.head, errorsFound.tail)))
-    }
+    else Right()
   }
 
   private def checkForComplexTypes(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {

@@ -86,67 +86,11 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     }
   }
 
-  it should "Deny writing complex arrays to internal tables in Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexArraySchema, writingToExternal = false,
-      VerticaVersion(10)) match {
-      case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ErrorList])
-    }
-  }
-
-  it should "Allow writing complex arrays to external tables in Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexArraySchema, writingToExternal = true,
-      VerticaVersion(10)) match {
-      case Right(_) => succeed
-      case Left(error) => fail
-    }
-  }
-
-  it should "Allow writing native arrays to tables in Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, writingToExternal = false,
-      VerticaVersion(10)) match {
-      case Right(_) => succeed
-      case Left(error) => fail
-    }
-  }
-
   it should "Deny reading complex types to Vertica version =< 9" in {
     VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
       VerticaVersion(9)) match {
       case Right(_) => fail
       case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
-    }
-  }
-
-  it should "Allow reading native arrays from Vertica >= 11" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema,
-      VerticaVersion(11)) match {
-      case Right(_) => succeed
-      case Left(error) => fail
-    }
-  }
-
-  it should "Deny reading complex types from Vertica >= 11" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
-      VerticaVersion(11)) match {
-      case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ErrorList])
-    }
-  }
-
-  it should "Deny reading complex arrays from Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(complexArraySchema,
-      VerticaVersion(10)) match {
-      case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ErrorList])
-    }
-  }
-
-  it should "Allow reading native arrays from Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema,
-      VerticaVersion(10)) match {
-      case Right(_) => succeed
-      case Left(error) => fail
     }
   }
 }
