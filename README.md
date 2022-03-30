@@ -163,7 +163,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11. It is compatible with Vertica 10 with some restrictions.
+Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11.
 
 ### Complex Type Conversion
 
@@ -195,13 +195,10 @@ Not yet supported.
 
 ### Backwards Compatibility
 
-Complex data types is backwards compatible only with Vertica 10 with the following restrictions:
-
-| Complex Type | Dataframe Operation | Restrictions                                                                                                                                           |
-|--------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Array        | save()              | When saving to internal Vertica tables, only native arrays are supported. `array_length` option not supported and element count will not be specified. |
-| Array        | load()              | Not supported.                                                                                                                                         |
-
+Complex data types is backwards compatible only with Vertica 10 with limited support:
+- For save operations, only native array is supported for internal tables.
+- Other complex types can only be saved to external tables.
+- Loading complex types is not supported.
 
 ## Examples
 
