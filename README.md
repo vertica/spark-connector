@@ -198,7 +198,7 @@ Not yet supported.
 Complex data types is backwards compatible only with Vertica 10 with limited support:
 - For save operations, only native array is supported for internal tables.
 - Other complex types can only be saved to external tables.
-- Loading complex types is not supported.
+- Loading native arrays and other complex types is not supported.
 
 ## Examples
 
