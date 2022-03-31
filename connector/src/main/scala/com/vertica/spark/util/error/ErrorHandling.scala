@@ -475,12 +475,10 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
     "\nSQL type value: " + sqlType
 }
-
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
-
 case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."
 }

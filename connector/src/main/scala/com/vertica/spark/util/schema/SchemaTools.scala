@@ -565,20 +565,16 @@ class SchemaTools extends SchemaToolsInterface {
         case java.sql.Types.ARRAY =>
           val isArraySetType = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
           // Casting on Vertica side as a work around until Vertica Export supports Set
-          if(isArraySetType) castToArray(info) else info.label
+          if(isArraySetType) {
+            val elementTypeName = Try{info.childDefinitions.head.colTypeName}.getOrElse("UNKNOWN")
+            castToArray(info.label, elementTypeName)
+          } else info.label
         case _ => addDoubleQuotes(info.label)
       }
     }).mkString(",")
   }
 
-  private def castToArray(colInfo: ColumnDef) = {
-    val label = colInfo.label
-    val elementType = colInfo.childDefinitions.headOption match {
-       case Some(elementDef) => elementDef.colTypeName
-       case None => "UNKNOWN"
-    }
-    s"(${label}::ARRAY[${elementType}]) as $label"
-  }
+  private def castToArray(colName: String, elementType: String): String = s"(${colName}::ARRAY[${elementType}]) as $colName"
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
     val sb = new StringBuilder()

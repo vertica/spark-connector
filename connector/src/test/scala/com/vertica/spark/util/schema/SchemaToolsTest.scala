@@ -786,9 +786,6 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val colDef = List(ColumnDef(colName, java.sql.Types.ARRAY, "SET", 0, 0, true, false, metadata, List(elementDef)))
 
     val colsString = new SchemaTools().makeColumnsString(colDef, requiredSchema)
-    println(colsString)
-    val expected = s"($colName::ARRAY[$typeName]) as $colName"
-    println(expected)
-    assert(colsString.trim().equals(expected))
+    assert(colsString.trim().equals(s"($colName::ARRAY[$typeName]) as $colName"))
   }
 }
