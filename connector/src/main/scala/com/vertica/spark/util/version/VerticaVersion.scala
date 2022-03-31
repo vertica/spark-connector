@@ -75,13 +75,12 @@ object VerticaVersionUtils {
         case _ => complexCols
       }
     })
+}
 
+case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
+  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 
-  case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
-    override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
-
-    override def compare(that: VerticaVersion): Int =
-      (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
-        (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
-  }
+  override def compare(that: VerticaVersion): Int =
+    (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
+      (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
 }
