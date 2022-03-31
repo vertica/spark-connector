@@ -421,10 +421,6 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class MissingNameNodeAddressError() extends ConnectorError {
   override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
 }
-case class ComplexTypeColumnsNotSupported(nameList: List[StructField], version: String) extends ConnectorError{
-  override def getFullContext: String = s"Your Vertica version is $version, which does not support the following complex types for the operation.\n" +
-    s"Complex types columns are: ${nameList.map(_.name).mkString(", ")}"
-}
 /**
   * Enumeration of the list of possible JDBC errors.
   */
@@ -484,7 +480,10 @@ case class ArrayElementConversionError(sqlType: String, typeName: String) extend
   def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
-
+case class ComplexTypeColumnsNotSupported(nameList: List[StructField], version: String, operation: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support $operation complex types.\n" +
+    s"Complex types columns are: ${nameList.map(_.name).mkString(", ")}"
+}
 case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."
 }

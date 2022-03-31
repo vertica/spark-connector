@@ -53,36 +53,35 @@ object VerticaVersionUtils {
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
-    if (version.major < 10)
-      checkForComplexTypes(schema, version)
-    else Right()
+    if (version.major < 10) {
+      val ctCols = checkForComplexTypes(schema)
+      if (ctCols.nonEmpty) Left(ComplexTypeColumnsNotSupported(ctCols, version.toString, "write"))
+      else Right()
+    } else Right()
   }
 
   def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    if (version.major < 11)
-      checkForComplexTypes(schema, version)
-    else Right()
+    if (version.major < 11) {
+      val ctCols = checkForComplexTypes(schema)
+      if (ctCols.nonEmpty) Left(ComplexTypeColumnsNotSupported(ctCols, version.toString, "read"))
+      else Right()
+    } else Right()
   }
 
-  private def checkForComplexTypes(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    val complexCols = schema.foldLeft(List[StructField]())((complexCols, field) => {
+  private def checkForComplexTypes(schema: StructType) =
+    schema.foldLeft(List[StructField]())((complexCols, field) => {
       field.dataType match {
-        case ArrayType(_,_) | StructType(_) => complexCols :+ field
+        case ArrayType(_, _) | StructType(_) => complexCols :+ field
         case _ => complexCols
       }
     })
-    if(complexCols.isEmpty) {
-      Right()
-    }else{
-      Left(ComplexTypeColumnsNotSupported(complexCols, version.toString))
-    }
+
+
+  case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
+    override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
+
+    override def compare(that: VerticaVersion): Int =
+      (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
+        (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
   }
-}
-
-case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
-  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
-
-  override def compare(that: VerticaVersion): Int =
-    (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
-      (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
 }

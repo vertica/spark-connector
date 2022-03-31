@@ -230,7 +230,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
-      _ <- checkSchemaTypesReadSupport(config, jdbcLayer)
+      _ <- checkSchemaTypesSupport(config, jdbcLayer)
 
       // Create unique directory for session
       perm = config.filePermissions
@@ -349,7 +349,7 @@ class VerticaDistributedFilesystemReadPipe(
     ret
   }
 
-  private def checkSchemaTypesReadSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+  private def checkSchemaTypesSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
     VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
   }
