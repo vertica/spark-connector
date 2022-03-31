@@ -471,9 +471,10 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   * Enumeration of the list of possible schema errors.
   */
 trait SchemaError extends ConnectorError
-case class SchemaErrorList(schemaErrors: NonEmptyList[SchemaError]) extends SchemaError {
-  def getFullContext: String = this.schemaErrors.toList.map(errs => errs.getFullContext).mkString("\n")
-  override def getUserMessage: String = this.schemaErrors.toList.map(errs => errs.getUserMessage).mkString("\n")
+
+case class StructFieldsError(error: ConnectorError) extends SchemaError {
+  def getFullContext: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
+  override def getUserMessage: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
 }
 
 case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {

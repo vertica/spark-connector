@@ -675,6 +675,11 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
   }
 
+  it should "convert Spark Map to Vertica Map" in {
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0) == Right(s"VARBINARY(65000)"))
+  }
+
   it should "Provide error message on unknown element type conversion to vertica" in {
     (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
       case Left(err) =>

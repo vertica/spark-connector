@@ -250,6 +250,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(JdbcSchemaError(suberr))
       checkErrReturnsMessages(InferExternalTableSchemaError(suberr))
       checkErrReturnsMessages(MergeColumnListError(suberr))
+      checkErrReturnsMessages(StructFieldsError(suberr))
     }
     match {
       case Failure(e) => fail(e)
