@@ -176,8 +176,8 @@ Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11.
 
 Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
 
-- Maps are only supported in external tables, but can model an internal Map as an `Array[Row(key, value)]`. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
-- Arrays and Sets do not support Long types
+- While maps are only supported in external tables, it can bw modeled as `Array[Row(key, value)]` for use in internal tables. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
+- Arrays and Sets do not support Long types.
 
 ### Array
 There are two types of arrays supported by Vertica, native and complex arrays. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
@@ -195,10 +195,7 @@ Not yet supported.
 
 ### Backwards Compatibility
 
-Complex data types is backwards compatible only with Vertica 10 with limited support:
-- For save operations, only native array is supported for internal tables.
-- Other complex types can only be saved to external tables.
-- Loading native arrays and other complex types is not supported.
+For Vertica 10, only saving native arrays is supported.
 
 ## Examples
 
