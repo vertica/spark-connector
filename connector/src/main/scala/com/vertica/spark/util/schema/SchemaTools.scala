@@ -17,11 +17,14 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
+import com.vertica.spark.datasource.v2.{NonPushFilter, PushFilter}
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.types._
 
 import java.sql.{ResultSet, ResultSetMetaData}
+import scala.::
 import scala.annotation.tailrec
 import scala.util.Either
 import scala.util.control.Breaks.{break, breakable}
@@ -121,6 +124,13 @@ trait SchemaToolsInterface {
   * @return Updated create external table statement
   */
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String]
+
+  /**
+   * Check if the column types is valid for an internal table in Vertica.
+   *
+   * @param schema schema of the table
+   */
+  def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -571,6 +581,40 @@ class SchemaTools extends SchemaToolsInterface {
       case Left(err) => Left(JdbcSchemaError(err))
     }
     valueList
+  }
+
+  def checkValidTableSchema(schema: StructType): ConnectorResult[Unit] = {
+    val initialAccumulators: (List[StructField], List[StructField]) = (List(), List())
+    val (nativeCols, complexTypeCol): (List[StructField], List[StructField]) = schema
+      .foldLeft(initialAccumulators)((acc, col) => {
+        val (nativeCols, complexTypeCols) = acc
+        isNativeType(col) match {
+          case Right(col) => (col :: nativeCols, complexTypeCols)
+          case Left(col) => (nativeCols, col :: complexTypeCols)
+        }
+      })
+    if(complexTypeCol.nonEmpty && nativeCols.isEmpty){
+      Left(InvalidTableSchemaComplexType(complexTypeCol))
+    }else{
+      Right()
+    }
+  }
+
+  private def isNativeType(field: StructField): Either[StructField,StructField] = {
+    field.dataType match {
+      case ArrayType(elementType, _) =>
+        elementType match {
+          case MapType(_, _, _) || StructType(_) | ArrayType(_, _) => Left(field)
+          case _ => Right(field)
+        }
+      case MapType(_, _, _) || StructType(_) => Left(field)
+      case _ => Right(field)
+    }
+  }
+
+  case class InvalidTableSchemaComplexType(complexTypesCols: List[StructField]) extends SchemaError {
+    def getFullContext: String = "Table schema with complex types requires at least one native type column.\n"+
+    "Complex types columns: " + complexTypesCols.map(_.name).mkString(", ")
   }
 
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
