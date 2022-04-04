@@ -166,7 +166,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   private def checkSchemaTypesSupport(config: DistributedFilesystemWriteConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
     val version: VerticaVersion = VerticaVersionUtils.getVersion(jdbcLayer)
     val writingToExternal = config.createExternalTable.isDefined
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(config.schema, writingToExternal, version)
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(config.schema, version)
   }
 
   val timer = new Timer(config.timeOperations, logger, "Writing Partition.")

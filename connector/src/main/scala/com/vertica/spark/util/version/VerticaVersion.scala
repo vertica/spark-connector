@@ -15,9 +15,10 @@ package com.vertica.spark.util.version
 import cats.data.NonEmptyList
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
+import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ComplexTypeColumnsNotSupported, NoResultError}
-import org.apache.spark.sql.types.{ArrayType, StructField, StructType}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, NativeArrayReadNotSupported, NativeArrayWriteNotSupported, NoResultError}
+import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
 
 import java.util
 import scala.util.Try
@@ -30,7 +31,7 @@ object VerticaVersionUtils {
   // Should always be the latest major release.
   // scalastyle:off
   val VERRTICA_LATEST: VerticaVersion = VerticaVersion(11)
-
+  val complexTypeUtils = new ComplexTypeUtils()
   /**
    * Query and cache Vertica version. Return the default version on any error.
    * */
@@ -52,29 +53,44 @@ object VerticaVersionUtils {
     }.getOrElse(VERRTICA_LATEST)
   }
 
-  def checkSchemaTypesWriteSupport(schema: StructType, writingToExternal: Boolean, version: VerticaVersion): ConnectorResult[Unit] = {
-    if (version.major < 10) {
-      val ctCols = checkForComplexTypes(schema)
-      if (ctCols.nonEmpty) Left(ComplexTypeColumnsNotSupported(ctCols, version.toString, "write"))
-      else Right()
-    } else Right()
+  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
+    val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
+    val complexTypeFound = complexTypeCols.nonEmpty
+    val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
+    if (version.major <= 9) {
+        if(complexTypeFound)
+          Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
+        else if (nativeArrayCols.nonEmpty)
+          Left(NativeArrayWriteNotSupported(nativeArrayCols, version.toString))
+        else
+          Right()
+    } else if (version.major == 10) {
+      if(complexTypeFound)
+        Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
+      else
+        Right()
+    } else {
+      Right()
+    }
   }
 
   def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    if (version.major < 11) {
-      val ctCols = checkForComplexTypes(schema)
-      if (ctCols.nonEmpty) Left(ComplexTypeColumnsNotSupported(ctCols, version.toString, "read"))
+    val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
+    val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
+    if (version.major <= 10) {
+      if (complexTypeCols.nonEmpty)
+        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
+      else if (nativeArrayCols.nonEmpty)
+        Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
       else Right()
-    } else Right()
+    } else {
+      // Complex type read is not supported.
+      if (complexTypeCols.nonEmpty)
+        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
+      else
+        Right()
+    }
   }
-
-  private def checkForComplexTypes(schema: StructType) =
-    schema.foldLeft(List[StructField]())((complexCols, field) => {
-      field.dataType match {
-        case ArrayType(_, _) | StructType(_) => complexCols :+ field
-        case _ => complexCols
-      }
-    })
 }
 
 case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {

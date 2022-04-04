@@ -484,9 +484,21 @@ case class ArrayElementConversionError(sqlType: String, typeName: String) extend
   def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
-case class ComplexTypeColumnsNotSupported(nameList: List[StructField], version: String, operation: String) extends SchemaError {
-  override def getFullContext: String = s"Vertica $version does not support $operation complex types.\n" +
-    s"Complex types columns are: ${nameList.map(_.name).mkString(", ")}"
+case class ComplexTypeReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support reading complex types.\n" +
+    s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+}
+case class ComplexTypeWriteNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support writing complex types.\n" +
+    s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+}
+case class NativeArrayReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support reading native array.\n" +
+    s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+}
+case class NativeArrayWriteNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support writing native array.\n" +
+    s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
 }
 case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."

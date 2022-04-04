@@ -14,7 +14,7 @@
 package com.vertica.spark.util.version
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.{ComplexTypeColumnsNotSupported, ErrorList}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ErrorList, NativeArrayWriteNotSupported}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -42,18 +42,16 @@ object VerticaVersionUtilsTest extends VerticaVersionUtilsTest {
 
 class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
   private val complexTypesSchema: StructType = StructType(Array(
-    StructField("ct1", ArrayType(IntegerType, false), false, Metadata.empty),
+    StructField("ct1", ArrayType(ArrayType(IntegerType)), false, Metadata.empty),
     StructField("ct2", StructType(Array(StructField("element",IntegerType, false, Metadata.empty))), false, Metadata.empty),
     StructField("ct3", MapType(IntegerType, IntegerType, false), false, Metadata.empty),
-    StructField("col2", IntegerType, false, Metadata.empty)))
+    StructField("col1", IntegerType, false, Metadata.empty)))
+
+  private val primitiveTypeSchema: StructType = StructType(Array(
+    StructField("col1", IntegerType, false, Metadata.empty)))
 
   private val nativeArraySchema: StructType = StructType(Array(
-    StructField("ct1", ArrayType(IntegerType, false), false, Metadata.empty),
-    StructField("col2", IntegerType, false, Metadata.empty)))
-
-  private val complexArraySchema: StructType = StructType(Array(
-    StructField("ct1", ArrayType(ArrayType(IntegerType, false), false), false, Metadata.empty),
-    StructField("col2", IntegerType, false, Metadata.empty)))
+    StructField("ct1", ArrayType(IntegerType, false), false, Metadata.empty)))
 
   it should "Obtain a Vertica version number" in {
     val jdbcLayer = mock[JdbcLayerInterface]
@@ -78,24 +76,92 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     assert(version.compare(VerticaVersionUtils.VERRTICA_LATEST) == 0)
   }
 
-  it should "Deny writing complex types to Vertica version =< 9" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, writingToExternal = false,
-      VerticaVersion(9)) match {
-      case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
+  it should "Allow writing primitive" in {
+    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(primitiveTypeSchema, VerticaVersion(i)) match {
+        case Right(_) =>
+        case Left(err) => fail(err.toString)
+      }
+    })
+  }
+
+  it should "Error on writing complex types to Vertica version <= 9" in {
+    (1 to 9).foreach(i => {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, VerticaVersion(i)) match {
+        case Right(_) => fail
+        case Left(err) =>
+          assert(err.isInstanceOf[ComplexTypeWriteNotSupported])
+          assert(err.asInstanceOf[ComplexTypeWriteNotSupported].colList.length == 3)
+      }
+    })
+  }
+
+  it should "Error on writing native arrays to Vertica version <= 9" in {
+    (1 to 9).foreach(i => {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(i)) match {
+        case Right(_) => fail
+        case Left(err) =>
+          assert(err.isInstanceOf[NativeArrayWriteNotSupported])
+          assert(err.asInstanceOf[NativeArrayWriteNotSupported].colList.length == 1)
+      }
+    })
+  }
+
+  it should "Allow writing native array to Vertica 10" in {
+    // scalastyle:off
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(10)) match {
+      case Right(_) => succeed
+      case Left(_) => fail
     }
   }
 
-  it should "Deny reading complex types to Vertica version =< 10" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
-      VerticaVersion(9)) match {
+  it should "Error on writing complex types to Vertica 10" in {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, VerticaVersion(10)) match {
       case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
+      case Left(err) =>
+        assert(err.isInstanceOf[ComplexTypeWriteNotSupported])
+        assert(err.asInstanceOf[ComplexTypeWriteNotSupported].colList.length == 3)
     }
-    VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema,
-      VerticaVersion(10)) match {
-      case Right(_) => fail
-      case Left(error) => assert(error.isInstanceOf[ComplexTypeColumnsNotSupported])
+  }
+
+  it should "Allow writing complex types to Vertica 11" in {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(complexTypesSchema, VerticaVersion(11)) match {
+      case Right(_) => succeed
+      case Left(err) => fail(err.toString)
+    }
+  }
+
+  it should "Allow native array to Vertica 11" in {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(11)) match {
+      case Right(_) => succeed
+      case Left(err) => fail(err.toString)
+    }
+  }
+
+  it should "Allow reading primitive types" in {
+    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+      VerticaVersionUtils.checkSchemaTypesReadSupport(primitiveTypeSchema, VerticaVersion(i)) match {
+        case Right(_) =>
+        case Left(err) => fail(err.toString)
+      }
+    })
+  }
+
+  it should "Error on reading complex" in {
+    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+      VerticaVersionUtils.checkSchemaTypesReadSupport(complexTypesSchema, VerticaVersion(i)) match {
+        case Right(_) => fail
+        case Left(err) =>
+          assert(err.isInstanceOf[ComplexTypeReadNotSupported])
+          assert(err.asInstanceOf[ComplexTypeReadNotSupported].colList.length == 3)
+      }
+    })
+  }
+
+  it should "Allow reading native array on Vertica 11" in {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema, VerticaVersion(11)) match {
+      case Right(_) => succeed
+      case Left(err) => fail
     }
   }
 }

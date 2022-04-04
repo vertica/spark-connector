@@ -18,6 +18,7 @@ import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.datasource.v2.{NonPushFilter, PushFilter}
+import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.pushdown.PushdownUtils
@@ -138,6 +139,7 @@ class SchemaTools extends SchemaToolsInterface {
   private val unknown = "UNKNOWN"
   private val maxlength = "maxlength"
   private val longlength = 65000
+  private val complexTypeUtils = new ComplexTypeUtils()
 
   private def addDoubleQuotes(str: String): String = {
     "\"" + str + "\""
@@ -584,31 +586,11 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit] = {
-    val initialAccumulators: (List[StructField], List[StructField]) = (List(), List())
-    val (nativeCols, complexTypeCol): (List[StructField], List[StructField]) = schema
-      .foldLeft(initialAccumulators)((acc, col) => {
-        val (nativeCols, complexTypeCols) = acc
-        isNativeType(col) match {
-          case Right(col) => (col :: nativeCols, complexTypeCols)
-          case Left(col) => (nativeCols, col :: complexTypeCols)
-        }
-      })
-    if(complexTypeCol.nonEmpty && nativeCols.isEmpty){
-      Left(InvalidTableSchemaComplexType(complexTypeCol))
-    }else{
+    val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
+    if (complexTypeCols.nonEmpty && nativeCols.isEmpty) {
+      Left(InvalidTableSchemaComplexType(complexTypeCols))
+    } else {
       Right()
-    }
-  }
-
-  private def isNativeType(field: StructField): Either[StructField,StructField] = {
-    field.dataType match {
-      case ArrayType(elementType, _) =>
-        elementType match {
-          case MapType(_, _, _) | StructType(_) | ArrayType(_, _) => Left(field)
-          case _ => Right(field)
-        }
-      case MapType(_, _, _) | StructType(_) => Left(field)
-      case _ => Right(field)
     }
   }
 
