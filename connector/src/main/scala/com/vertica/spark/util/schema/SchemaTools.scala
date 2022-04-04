@@ -587,8 +587,11 @@ class SchemaTools extends SchemaToolsInterface {
 
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
-    if (complexTypeCols.nonEmpty && nativeCols.isEmpty) {
-      Left(InvalidTableSchemaComplexType(complexTypeCols))
+    if (nativeCols.isEmpty) {
+      if(complexTypeCols.nonEmpty)
+        Left(InvalidTableSchemaComplexType(complexTypeCols))
+      else
+        Left(EmptySchemaError())
     } else {
       Right()
     }

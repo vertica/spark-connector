@@ -421,6 +421,9 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class MissingNameNodeAddressError() extends ConnectorError {
   override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
 }
+case class EmptySchemaError() extends SchemaError {
+  def getFullContext: String = "Table schema requires at least one native type column"
+}
 case class InvalidTableSchemaComplexType(complexTypesCols: List[StructField]) extends SchemaError {
   def getFullContext: String = "Table schema with complex types requires at least one native type column.\n" +
     "Complex types columns: " + complexTypesCols.map(_.name).mkString(", ")
