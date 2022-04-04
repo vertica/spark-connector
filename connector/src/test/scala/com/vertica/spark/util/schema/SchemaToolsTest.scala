@@ -746,13 +746,14 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  it should "Return error when schema only contains complex types columns" in {
+  private val primitiveCol = StructField("col1", IntegerType)
+  private val nativeArrayCol = StructField("col1", ArrayType(IntegerType))
+  private val complexArrayCol = StructField("col1", ArrayType(ArrayType(IntegerType)))
+  private val mapCol = StructField("col1", MapType(IntegerType, IntegerType))
+  private val rowCol = StructField("col1", StructType(Array(StructField("col2", IntegerType))))
+
+  it should "Error when schema only contains complex types columns" in {
     val schemaTools = new SchemaTools()
-    val primitiveCol = StructField("col1", IntegerType)
-    val nativeArrayCol = StructField("col1", ArrayType(IntegerType))
-    val complexArrayCol = StructField("col1", ArrayType(ArrayType(IntegerType)))
-    val mapCol = StructField("col1", MapType(IntegerType, IntegerType))
-    val rowCol = StructField("col1", StructType(Array(StructField("col2", IntegerType))))
 
     val failingSchema = StructType(Array(complexArrayCol, mapCol, rowCol))
     assert(schemaTools.checkValidTableSchema(failingSchema)
@@ -768,5 +769,9 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.checkValidTableSchema(passingSchema3) == Right())
   }
 
+  it should "Error on empty schema" in {
+    val emptySchema = new StructType(Array())
+    assert(new SchemaTools().checkValidTableSchema(emptySchema) == Left(EmptySchemaError()))
+  }
 
 }
