@@ -181,7 +181,7 @@ Be aware that Vertica has a number of restrictions on the use of these complex t
 
 ### Array
 There are two types of arrays supported by Vertica, native and complex arrays. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
-- On Dataframe save() to Vertica, native and non-native arrays are supported.
+- On Dataframe save() to Vertica, native and complex arrays are supported.
 - On DataFrame load() from Vertica, only native arrays are supported for now.
 
 ### Set
