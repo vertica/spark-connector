@@ -114,19 +114,19 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
   private val logger = LogProvider.getLogger(classOf[TableUtils])
 
   private def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long, temp: Boolean = false): ConnectorResult[String] = {
-    val columnDefs = for {
+  for {
       _ <- schemaTools.checkValidTableSchema(schema)
-      result <- schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength)
-    } yield result
+      columnDefs <- schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength)
+    } yield {
+      val sb = new StringBuilder()
+      if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
+      sb.append(tablename.getFullTableName)
 
-    val sb = new StringBuilder()
-    if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
-    sb.append(tablename.getFullTableName)
+      sb.append(columnDefs)
 
-    sb.append(columnDefs)
-
-    if(temp) sb.append(" ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(" INCLUDE SCHEMA PRIVILEGES ")
-    Right(sb.toString)
+      if(temp) sb.append(" ON COMMIT PRESERVE ROWS INCLUDE SCHEMA PRIVILEGES ") else sb.append(" INCLUDE SCHEMA PRIVILEGES ")
+      sb.toString
+    }
   }
 
   override def tempTableExists(table: TableName): ConnectorResult[Boolean] = {

@@ -604,17 +604,12 @@ class SchemaTools extends SchemaToolsInterface {
     field.dataType match {
       case ArrayType(elementType, _) =>
         elementType match {
-          case MapType(_, _, _) || StructType(_) | ArrayType(_, _) => Left(field)
+          case MapType(_, _, _) | StructType(_) | ArrayType(_, _) => Left(field)
           case _ => Right(field)
         }
-      case MapType(_, _, _) || StructType(_) => Left(field)
+      case MapType(_, _, _) | StructType(_) => Left(field)
       case _ => Right(field)
     }
-  }
-
-  case class InvalidTableSchemaComplexType(complexTypesCols: List[StructField]) extends SchemaError {
-    def getFullContext: String = "Table schema with complex types requires at least one native type column.\n"+
-    "Complex types columns: " + complexTypesCols.map(_.name).mkString(", ")
   }
 
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {
