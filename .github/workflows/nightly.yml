@@ -31,4 +31,4 @@ jobs:
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
           # Optional Input
           name: 'Alex Workflow Bot'
-          icon_emoji: ':poop:'
+          icon_emoji: ':ezy:'
