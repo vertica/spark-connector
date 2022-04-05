@@ -1,10 +1,13 @@
 @echo off
+@REM setlocal EnableDelayedExpansion
 
+set VERTICA_VERSION=%~2
 IF "%~1" == "kerberos" (
 	call sandbox-kerberos-clientenv.bat
 ) ELSE (
 	echo "running non-kerberized docker compose"
-	docker compose -f docker-compose.yml up -d
+	echo "with vertica version: %VERTICA_VERSION%"
+    docker compose -f docker-compose-test.yml up -d
     docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
     docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
 	docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
