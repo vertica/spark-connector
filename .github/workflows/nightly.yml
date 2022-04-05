@@ -93,7 +93,7 @@ jobs:
     if: always()
     name: Post Workflow Status To Slack
     needs:
-      [ run-integration-tests-spark-3-2-0,
+      [  run-integration-tests-spark-3-0-2-Vertica-10-1-1-0,
 #        run-integration-tests-spark-3-1-1,
 #        run-integration-tests-spark-3-0-2
       ]
