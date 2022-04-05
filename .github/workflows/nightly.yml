@@ -1,6 +1,8 @@
 name: Scheduled Test
 
 on:
+  push:
+    branches: [ nightly_action ]
   workflow_dispatch:
 jobs:
   job-1:
