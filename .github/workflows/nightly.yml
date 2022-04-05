@@ -28,7 +28,7 @@ jobs:
         with:
           # Required Input
           repo_token: ${{secrets.GITHUB_TOKEN}}
-          slack_webhook_url: 'https://hooks.slack.com/services/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'
+          slack_webhook_url: 'https://hooks.slack.com/services/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'
           # Optional Input
           name: 'Alex Workflow Bot'
           icon_emoji: ':poop:'
