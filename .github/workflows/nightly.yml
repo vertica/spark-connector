@@ -1,0 +1,32 @@
+name: Scheduled Test
+
+on:
+
+jobs:
+  job-1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: echo "Hello"
+  job-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say World
+        run: echo "World"
+  slack-workflow-status:
+    if: always()
+    name: Post Workflow Status To Slack
+    needs:
+      - job-1
+      - job-2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          # Required Input
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: 'https://hooks.slack.com/services/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'
+          # Optional Input
+          name: 'Alex Workflow Bot'
+          icon_emoji: ':poop:'
