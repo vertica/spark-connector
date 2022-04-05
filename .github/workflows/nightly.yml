@@ -2,8 +2,7 @@ name: Scheduled Test
 
 on:
   schedule:
-    - cron: '5 * * * *'
-  workflow_dispatch:
+    - cron: '8 * * * *'
 jobs:
   job-1:
     runs-on: ubuntu-latest
