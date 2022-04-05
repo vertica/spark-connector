@@ -30,7 +30,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v2
       - name: check
-        run: echo "VERSION VERTICA_VERSION."
+        run: echo "VERSION $VERTICA_VERSION."
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Create db in Vertica
