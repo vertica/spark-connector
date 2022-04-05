@@ -2,8 +2,8 @@ name: Scheduled Test
 
 on:
   schedule:
-    # Every day at 1am
-    - cron: '20 14 * * *'
+    # Every 8th minutes
+    - cron: '*/8 * * * *'
 jobs:
   job-1:
     runs-on: ubuntu-latest
