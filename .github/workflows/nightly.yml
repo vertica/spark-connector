@@ -1,7 +1,7 @@
 name: Scheduled Test
 
 on:
-
+  workflow_dispatch:
 jobs:
   job-1:
     runs-on: ubuntu-latest
