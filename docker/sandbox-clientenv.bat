@@ -1,12 +1,4 @@
 @echo off
-@REM setlocal EnableDelayedExpansion
-
-set VERTICA_VERSION=%~2
-IF "%VERTICA_VERSION%" == "" (
-    echo "with vertica latest"
-) ELSE (
-    echo "with vertica %VERTICA_VERSION%"
-)
 
 IF "%~1" == "kerberos" (
 	call sandbox-kerberos-clientenv.bat
