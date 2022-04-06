@@ -486,7 +486,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   private def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
     val mockRs = mock[ResultSet]
-    var elementId = verticaTypeId - 1500
+    var elementId = verticaTypeId - SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
     val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
     if (isSet) elementId = verticaTypeId - 2700
     val isNative = elementId < SchemaTools.VERTICA_PRIMITIVES_MAX_ID

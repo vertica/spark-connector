@@ -135,8 +135,8 @@ object SchemaTools {
   val VERTICA_NATIVE_ARRAY_BASE_ID: Long = 1500L
   val VERTICA_SET_BASE_ID: Long = 2700L
   // This number is not defined be Vertica, so we use the delta of set and native array base id.
-  val VERTICA_PRIMITIVES_MAX_ID:Long = 1200L
-  val VERTICA_SET_MAX_ID: Long = 2700L + VERTICA_PRIMITIVES_MAX_ID
+  val VERTICA_PRIMITIVES_MAX_ID:Long = VERTICA_SET_BASE_ID - VERTICA_NATIVE_ARRAY_BASE_ID
+  val VERTICA_SET_MAX_ID: Long = VERTICA_SET_BASE_ID + VERTICA_PRIMITIVES_MAX_ID
 }
 
 class SchemaTools extends SchemaToolsInterface {
