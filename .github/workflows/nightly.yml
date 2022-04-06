@@ -1,8 +1,6 @@
 name: Scheduled Test
 
 on:
-  push:
-    branches: [ nightly_action ]
   schedule:
     # Every day at 4:18 am
     - cron: '18 4 * * *'
