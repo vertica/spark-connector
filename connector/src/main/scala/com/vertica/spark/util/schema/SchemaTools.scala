@@ -347,11 +347,11 @@ class SchemaTools extends SchemaToolsInterface {
      * We could infer from the vertica id if it is a native type or not.
      * */
     // Native array id = 1500 + primitive type id
-    var elementId = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
+    val id = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
     // Sets are also tracked in types table
-    val isSet = elementId > VERTICA_PRIMITIVES_MAX_ID && elementId < VERTICA_SET_MAX_ID
+    val isSet = id > VERTICA_PRIMITIVES_MAX_ID && id < VERTICA_SET_MAX_ID
     // Set id = 2700 + primitive type id
-    if (isSet) elementId = verticaTypeId - VERTICA_SET_BASE_ID
+    val elementId = if (isSet) verticaTypeId - VERTICA_SET_BASE_ID else id
     val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
     val elementDef = if (isNativeArray) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
     else getNestedArrayElementDef(verticaTypeId, jdbcLayer)
