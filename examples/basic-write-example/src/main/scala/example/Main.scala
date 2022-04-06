@@ -14,10 +14,9 @@
 package example
 
 import java.sql.Connection
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
 
 object Main  {
@@ -28,8 +27,10 @@ object Main  {
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
       "db" -> conf.getString("functional-tests.db"),
-      "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-      "password" -> conf.getString("functional-tests.password")
+      "staging_fs_url" -> (conf.getString("functional-tests.filepath")),
+      "password" -> conf.getString("functional-tests.password"),
+      // "create_external_table" -> "true",
+      // "prevent_cleanup"-> "true"
     )
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
@@ -40,16 +41,17 @@ object Main  {
     try {
       val tableName = "dftest"
       // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val schema = new StructType(Array())
       // Create a row with element '77'
-      val data = Seq(Row(77))
+      val data = Seq(Row())
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      // Outputs dataframe schema
-      println(df.toString())
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts + ("table" -> tableName))
+        .mode(mode)
+        .save()
 
     } finally {
       spark.close()
