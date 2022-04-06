@@ -41,7 +41,7 @@ do
   esac
 done
 
-if [ $KERBEROS == 1 ]
+if [ "$KERBEROS" == "1" ]
   then
     echo "running kerberos docker compose"
     docker compose -f docker-compose-kerberos.yml up -d
