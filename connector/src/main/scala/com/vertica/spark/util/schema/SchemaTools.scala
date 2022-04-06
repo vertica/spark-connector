@@ -272,22 +272,24 @@ class SchemaTools extends SchemaToolsInterface {
       case Right(rs) =>
         try {
           val rsmd = rs.getMetaData
-          val colDefSeq: Seq[ColumnDef] = (1 to rsmd.getColumnCount).map(idx => {
-            val columnLabel = rsmd.getColumnLabel(idx)
-            val typeName = rsmd.getColumnTypeName(idx)
-            val fieldSize = DecimalType.MAX_PRECISION
-            val fieldScale = rsmd.getScale(idx)
-            val isSigned = rsmd.isSigned(idx)
-            val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
-            val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
-            val colType = rsmd.getColumnType(idx)
-            val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-            checkForComplexType(colDef, tableName, jdbcLayer) match {
-              case Right(columnDef) => columnDef
-              case Left(err) => throw new RuntimeException(err.getFullContext)
-            }
-          })
-          Right(colDefSeq)
+          val colDefsOrErrors: List[ConnectorResult[ColumnDef]] =
+            (1 to rsmd.getColumnCount)
+              .map(idx => {
+                val columnLabel = rsmd.getColumnLabel(idx)
+                val typeName = rsmd.getColumnTypeName(idx)
+                val fieldSize = DecimalType.MAX_PRECISION
+                val fieldScale = rsmd.getScale(idx)
+                val isSigned = rsmd.isSigned(idx)
+                val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
+                val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
+                val colType = rsmd.getColumnType(idx)
+                val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+                checkForComplexType(colDef, tableName, jdbcLayer)
+              }).toList
+          colDefsOrErrors
+            .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+            .map(columnDef => columnDef)
+            .left.map(errors => ErrorList(errors))
         }
         catch {
           case e: Throwable =>
