@@ -17,15 +17,12 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
-import com.vertica.spark.datasource.v2.{NonPushFilter, PushFilter}
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.types._
 
 import java.sql.{ResultSet, ResultSetMetaData}
-import scala.::
 import scala.annotation.tailrec
 import scala.util.Either
 import scala.util.control.Breaks.{break, breakable}

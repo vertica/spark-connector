@@ -17,7 +17,7 @@ import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, NativeArrayReadNotSupported, NativeArrayWriteNotSupported, NoResultError}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, InternalMapNotSupported, NativeArrayReadNotSupported, NativeArrayWriteNotSupported, NoResultError}
 import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
 
 import java.util
@@ -53,7 +53,7 @@ object VerticaVersionUtils {
     }.getOrElse(VERRTICA_LATEST)
   }
 
-  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
+  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion, toInternalTable: Boolean): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
     val complexTypeFound = complexTypeCols.nonEmpty
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
@@ -70,7 +70,10 @@ object VerticaVersionUtils {
       else
         Right()
     } else {
-      Right()
+        if(toInternalTable && complexTypeCols.exists(_.dataType.isInstanceOf[MapType]))
+          Left(InternalMapNotSupported())
+        else
+          Right()
     }
   }
 
