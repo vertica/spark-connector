@@ -45,16 +45,26 @@ If you have used the `sandbox-clientenv.sh` script to create a docker environmen
 In the docker folder (`spark-connector/docker`), run this command to start the vertica, spark, hdfs, kerberos services and enter the CLI environment:
 
 ```
-./sandbox-clientenv.sh kerberos
+./sandbox-clientenv.sh -k
 ```
 
 
 On Windows, you can run the equivalent batch file:
 
 ```
-sandbox-clientenv.bat kerberos
+sandbox-clientenv.bat -k
 ```
-This will put you in the sandbox client (i.e. client container) environment.
+This will put you in the sandbox client (i.e. client container) environment. 
+
+By default, the script will pull the [latest](https://hub.docker.com/r/vertica/vertica-k8s) Vertica docker image. To use an older version of Vertica, you can specify a specific tag by appending the option `-v [TAG]`. For example, to use Vertica 10.1.1-0:
+
+```
+./sandbox-clientenv.sh -k -v 10.1.1-0
+```
+
+```
+./sandbox-clientenv.bat -k -v 10.1.1-0
+```
 
 ## Run test
 
