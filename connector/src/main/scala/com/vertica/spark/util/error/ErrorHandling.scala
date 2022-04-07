@@ -474,7 +474,6 @@ trait SchemaError extends ConnectorError
 
 case class StructFieldsError(error: ConnectorError) extends SchemaError {
   def getFullContext: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
-  override def getUserMessage: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
 }
 
 case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {

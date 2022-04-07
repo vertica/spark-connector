@@ -94,7 +94,7 @@ trait SchemaToolsInterface {
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String]
+  def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String]
 
   /**
    * Gets a list of column values to be inserted within a merge.
@@ -407,7 +407,7 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
-    makeTableColumnDefs(StructType(fields), strlen, null, arrayLength) match {
+    makeTableColumnDefs(StructType(fields), strlen, arrayLength) match {
       case Left(err) => Left(StructFieldsError(err))
       case Right(fieldDefs) =>
         Right("ROW" +
@@ -554,7 +554,7 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
+  def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val colDefsOrErrors = schema.map(col => {
       val colName = "\"" + col.name + "\""
       val notNull = if (!col.nullable) "NOT NULL" else ""
