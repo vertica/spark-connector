@@ -41,7 +41,7 @@ object Main  {
       // Define schema of a table with a single integer attribute
     val schema = new StructType(Array())
       // Create a row with element '77'
-      val data = Seq(Row())
+      val data = Seq(Row(77))
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       val mode = SaveMode.Overwrite
