@@ -488,7 +488,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val mockRs = mock[ResultSet]
     var elementId = verticaTypeId - SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
     val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
-    if (isSet) elementId = verticaTypeId - 2700
+    if (isSet) elementId = verticaTypeId - SchemaTools.VERTICA_SET_BASE_ID
     val isNative = elementId < SchemaTools.VERTICA_PRIMITIVES_MAX_ID
     if(isNative){
       (jdbcLayer.query _)
