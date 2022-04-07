@@ -43,10 +43,10 @@ object Main {
       val stmt = conn.createStatement
       val n = 20
       // Creates a table called dftest with an integer attribute
-      // TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
-      // val insert = "insert into " + tableName + " values(2)"
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
+      val insert = "insert into " + tableName + " values(2)"
       // Inserts 20 rows of the value '2' into dftest
-      // TestUtils.populateTableBySQL(stmt, insert, n)
+      TestUtils.populateTableBySQL(stmt, insert, n)
       // Read dftest into a dataframe
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
         .options(readOpts + ("table" -> tableName))
