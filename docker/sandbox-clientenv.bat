@@ -1,10 +1,16 @@
 @echo off
 
-IF "%~1" == "kerberos" (
+:GETOPTS
+if /I "%1" == "-v" set VERTICA_VERSION=%2& shift
+if /I "%1" == "-k" set KERBEROS=1 & shift
+shift
+if not "%1" == "" goto GETOPTS
+
+if defined KERBEROS (
 	call sandbox-kerberos-clientenv.bat
 ) ELSE (
 	echo "running non-kerberized docker compose"
-	docker compose -f docker-compose.yml up -d
+    docker compose -f docker-compose.yml up -d
     docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
     docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
 	docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
@@ -14,5 +20,6 @@ IF "%~1" == "kerberos" (
 	docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
     docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
 	docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+	docker exec docker_vertica_1 vsql -c "select version();"
 	docker exec -it docker_client_1 /bin/bash
 )

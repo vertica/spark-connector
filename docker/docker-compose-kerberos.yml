@@ -29,7 +29,7 @@ services:
       - "./keytabs:/keytabs"
     privileged: true
   vertica:
-    image: "vertica/vertica-k8s"
+    image: "vertica/vertica-k8s:${VERTICA_VERSION:-latest}"
     container_name: "vertica"
     networks:
       - "example"

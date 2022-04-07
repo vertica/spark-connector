@@ -33,7 +33,15 @@ function configure_containers() {
   configure_db
 }
 
-if [ "$1" == "kerberos" ]
+while getopts 'kv:' c
+do
+  case $c in
+    k) KERBEROS=1 ;;
+    v) export VERTICA_VERSION=$OPTARG ;;
+  esac
+done
+
+if [ "$KERBEROS" == "1" ]
   then
     echo "running kerberos docker compose"
     docker compose -f docker-compose-kerberos.yml up -d

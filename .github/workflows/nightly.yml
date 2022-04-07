@@ -1,0 +1,58 @@
+name: Scheduled Test
+
+on:
+  schedule:
+    # Every day at 4:18 am
+    - cron: '18 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Build the project
+        run: cd connector && sbt package
+      - name: Upload the build artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: build-jar-file
+          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.1.0.jar
+  build-docker-with-vertica-10-1-1-0:
+    runs-on: ubuntu-latest
+    env:
+      VERTICA_VERSION: 10.1.1-0
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: check
+        run: echo "VERSION $VERTICA_VERSION."
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Print Vertica version
+        run: docker exec docker_vertica_1 vsql -c "select version();"
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  slack-workflow-status:
+    if: always()
+    name: Post Workflow Status To Slack
+    needs:
+      [
+        build-docker-with-vertica-10-1-1-0,
+      ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        if: always()
+        with:
+          # Required Input
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
+          # Optional Input
+          name: 'Alex Workflow Bot'
+          icon_emoji: ':ezy:'
