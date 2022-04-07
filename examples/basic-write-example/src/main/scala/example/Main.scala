@@ -43,6 +43,9 @@ object Main  {
       val data = Seq(Row(77))
       // Create a dataframe corresponding to the schema and data specified above
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      // Outputs dataframe schema
+      println(df.toString())
+      // Save mode
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
       df.write.format("com.vertica.spark.datasource.VerticaSource")
