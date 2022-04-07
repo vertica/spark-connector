@@ -1,5 +1,3 @@
-import java.util.Properties
-
 // (c) Copyright [2020-2021] Micro Focus or one of its affiliates.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // You may not use this file except in compliance with the License.
@@ -12,6 +10,8 @@ import java.util.Properties
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import java.util.Properties
+
 val props = settingKey[Properties]("Connector version properties")
 props := {
   val prop = new Properties()
