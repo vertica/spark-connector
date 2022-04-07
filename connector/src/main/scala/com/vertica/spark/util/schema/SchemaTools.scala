@@ -410,7 +410,7 @@ class SchemaTools extends SchemaToolsInterface {
   private def queryVerticaPrimitiveDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val queryNativeTypes = s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$verticaType"
     JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
-      (rs) =>{
+      (rs) => {
         val jdbcType = rs.getLong("jdbc_type").toInt
         val typeName = rs.getString("type_name")
         Right(makeArrayElementDef(jdbcType, typeName, depth))
