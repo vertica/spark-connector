@@ -1593,29 +1593,35 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "read Vertica SET as ARRAY" in {
     val tableName1 = "dftest_array"
-    val n = 1
+    val n = 10
     val stmt = conn.createStatement
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a SET[int])")
-
-    val insert = "insert into "+ tableName1 + " values(set[2])"
+    val insert = "insert into "+ tableName1 + " values(set[0,1,2,3,4,5])"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try{
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-      assert(df.count() == 1)
+      assert(df.count() == n)
       val arrayCol = df.schema.fields(0)
       assert(arrayCol.dataType.isInstanceOf[ArrayType])
       assert(arrayCol.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
       val elementDataType = arrayCol.dataType.asInstanceOf[ArrayType]
       assert(elementDataType.elementType.isInstanceOf[LongType])
-      df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
+      df.rdd.foreach(row => {
+        assert(row.get(0).isInstanceOf[mutable.WrappedArray[Long]])
+        val array = row.getAs[mutable.WrappedArray[Long]](0)
+        (0 to 5).foreach(i => {
+          assert(array(i) == i)
+        })
+      }
+      )
     }catch {
       case e: Exception => fail(e)
     }finally {
       stmt.close()
+      TestUtils.dropTable(conn, tableName1)
     }
-    TestUtils.dropTable(conn, tableName1)
   }
 
 
