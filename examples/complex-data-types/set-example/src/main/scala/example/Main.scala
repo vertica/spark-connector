@@ -45,23 +45,19 @@ object Main {
        * SET is not a defined data type in JDBC and thus is converted to Array.
        * In Spark, we differentiate arrays from sets by marking the column's metadata.
        * */
-      readSetFromVertica(spark, options)
+      val readOpts = options + ("table" -> "dftest")
+      // Load a set from Vertica as array and display it
+      val df = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(readOpts)
+        .load()
+      df.show()
+      val col1 = df.schema.fields(0)
+      // Since set are ingested into Spark as array, we mark such array as set in it's metadata
+      println(s"Is ${col1.name} SET type: " + col1.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+      println()
     } finally {
       conn.close()
       spark.close()
     }
-  }
-
-  def readSetFromVertica(spark: SparkSession, options: Map[String, String]): Unit = {
-    val readOpts = options + ("table" -> "dftest")
-    // Load a set from Vertica as array and display it
-    val df = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-      .options(readOpts)
-      .load()
-    df.show()
-    val col1 = df.schema.fields(0)
-    // Since set are ingested into Spark as array, we mark such array as set in it's metadata
-    println(s"Is ${col1.name} SET type: " + col1.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
-    println()
   }
 }
