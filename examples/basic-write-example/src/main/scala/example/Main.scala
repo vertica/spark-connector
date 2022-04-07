@@ -13,11 +13,10 @@
 
 package example
 
-import java.sql.Connection
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
-import org.apache.spark.sql.types.{ArrayType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 object Main  {
   def main(args: Array[String]): Unit = {
@@ -39,7 +38,7 @@ object Main  {
     try {
       val tableName = "dftest"
       // Define schema of a table with a single integer attribute
-    val schema = new StructType(Array())
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
       // Create a row with element '77'
       val data = Seq(Row(77))
       // Create a dataframe corresponding to the schema and data specified above
