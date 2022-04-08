@@ -116,7 +116,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
   private def buildCreateTableStmt(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long, temp: Boolean = false): ConnectorResult[String] = {
   for {
       _ <- schemaTools.checkValidTableSchema(schema)
-      columnDefs <- schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength)
+      columnDefs <- schemaTools.makeTableColumnDefs(schema, strlen, arrayLength)
     } yield {
       val sb = new StringBuilder()
       if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
