@@ -445,8 +445,8 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def sparkArrayToVerticaArray(dataType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {
     val length = if (arrayLength <= 0) "" else s",$arrayLength"
-    val isArraySetType = Try{metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
-    val keyword = if(isArraySetType) "SET" else "ARRAY"
+    val isSet = Try{metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
+    val keyword = if(isSet) "SET" else "ARRAY"
 
     @tailrec
     def recursion(dataType: DataType, leftAccumulator: String, rightAccumulator: String, depth: Int): SchemaResult[String] = {
@@ -579,9 +579,9 @@ class SchemaTools extends SchemaToolsInterface {
           }
         case java.sql.Types.TIME => castToVarchar(info.label)
         case java.sql.Types.ARRAY =>
-          val isArraySetType = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
+          val isSet = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
           // Casting on Vertica side as a work around until Vertica Export supports Set
-          if(isArraySetType) castToArray(info) else info.label
+          if(isSet) castToArray(info) else info.label
         case _ => addDoubleQuotes(info.label)
       }
     }).mkString(",")
@@ -589,10 +589,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def castToArray(colInfo: ColumnDef): String = {
     val label = colInfo.label
-    val elementType = colInfo.childDefinitions.headOption match {
-       case Some(elementDef) => elementDef.colTypeName
-       case None => "UNKNOWN"
-    }
+    val elementType = colInfo.childDefinitions.headOption.getOrElse("UNKNOWN")
     s"(${label}::ARRAY[${elementType}]) as $label"
   }
 
