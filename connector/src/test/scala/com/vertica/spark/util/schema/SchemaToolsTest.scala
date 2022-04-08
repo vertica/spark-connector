@@ -630,7 +630,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
-    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0, 0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0, 0, Metadata.empty) match {
       case Left(err) =>
         err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -659,27 +659,27 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "Convert basic spark types to vertica types" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1, 0) == Right("VARBINARY(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1, 0) == Right("BOOLEAN"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1, 0 ) == Right("TINYINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0 ) == Right("DATE"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0) == Right("INTERVAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0) == Right("DOUBLE PRECISION"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0, 0), 1 , 0) == Right("DECIMAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(5, 2), 1 , 0) == Right("DECIMAL(5, 2)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0 ) == Right("FLOAT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0) == Right("INTEGER"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0) == Right("BIGINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 , 0) == Right("null"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 , 0) == Right("SMALLINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0) == Right("TIMESTAMP"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1, 0, Metadata.empty) == Right("VARBINARY(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1, 0, Metadata.empty) == Right("BOOLEAN"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1, 0, Metadata.empty) == Right("TINYINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0, Metadata.empty ) == Right("DATE"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0, Metadata.empty) == Right("INTERVAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0, Metadata.empty) == Right("DOUBLE PRECISION"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0, 0), 1 , 0, Metadata.empty) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(5, 2), 1 , 0, Metadata.empty) == Right("DECIMAL(5, 2)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0, Metadata.empty ) == Right("FLOAT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0, Metadata.empty) == Right("INTEGER"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0, Metadata.empty) == Right("BIGINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 , 0, Metadata.empty) == Right("null"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 , 0, Metadata.empty) == Right("SMALLINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0, Metadata.empty) == Right("TIMESTAMP"))
   }
 
   it should "Convert Spark Sql array to Vertica array" in {
     val schemaTools = new SchemaTools
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, Metadata.empty) == Right("ARRAY[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, Metadata.empty) == Right("ARRAY[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2, Metadata.empty) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
   }
 
   it should "Convert Spark Set to Vertica Set" in {
@@ -690,7 +690,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   }
 
   it should "Provide error message on unknown element type conversion to vertica" in {
-    (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0, Metadata.empty) match {
       case Left(err) =>
         err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -704,10 +704,10 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
   it should "Convert string types to vertica type properly" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024, 0) == Right("VARCHAR(1024)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000, 0) == Right("VARCHAR(5000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000, 0) == Right("VARCHAR(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000, 0) == Right("LONG VARCHAR(100000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024, 0, Metadata.empty) == Right("VARCHAR(1024)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000, 0, Metadata.empty) == Right("VARCHAR(5000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000, 0, Metadata.empty) == Right("VARCHAR(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000, 0, Metadata.empty) == Right("LONG VARCHAR(100000)"))
   }
 
   it should "Return a list of column names to use for copy statement" in {

@@ -1683,7 +1683,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(array(2) == 111L)
       val columnRs = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
-      assert(columnRs.getLong("data_type_id") > SchemaTools.VERTICA_SET_BASE_ID)
+      val verticaId = columnRs.getLong("data_type_id")
+      assert(verticaId > SchemaTools.VERTICA_SET_BASE_ID & verticaId < SchemaTools.VERTICA_SET_MAX_ID)
     }
     catch{
       case err : Exception => fail(err)

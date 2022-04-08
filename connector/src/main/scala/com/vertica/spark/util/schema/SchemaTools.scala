@@ -433,7 +433,7 @@ class SchemaTools extends SchemaToolsInterface {
     ColumnDef("element", sqlType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
   }
 
-  override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata = Metadata.empty): SchemaResult[String] = {
+  override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.MapType(_,_,_) |
@@ -587,7 +587,7 @@ class SchemaTools extends SchemaToolsInterface {
     }).mkString(",")
   }
 
-  private def castToArray(colInfo: ColumnDef) = {
+  private def castToArray(colInfo: ColumnDef): String = {
     val label = colInfo.label
     val elementType = colInfo.childDefinitions.headOption match {
        case Some(elementDef) => elementDef.colTypeName
@@ -600,7 +600,7 @@ class SchemaTools extends SchemaToolsInterface {
     val colDefsOrErrors = schema.map(col => {
       val colName = "\"" + col.name + "\""
       val notNull = if (!col.nullable) "NOT NULL" else ""
-      getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength) match {
+      getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength, col.metadata) match {
         case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))
         case Right(colType) =>
           Right(s"$colName $colType $notNull".trim())
