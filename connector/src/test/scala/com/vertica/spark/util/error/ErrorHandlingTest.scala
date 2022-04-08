@@ -328,4 +328,15 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       case Success(_) => ()
     }
   }
+
+  it should "return full context and user message for complex types errors" in {
+    Try {
+      checkErrReturnsMessages(VerticaComplexTypeNotFound(0))
+      checkErrReturnsMessages(VerticaNativeTypeNotFound(0))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
 }
