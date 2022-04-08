@@ -16,14 +16,16 @@ package com.vertica.spark.util.schema
 import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.jdbc.JdbcUtils.queryAndNext
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.types._
 
-import java.sql.ResultSetMetaData
+import java.sql.{ResultSet, ResultSetMetaData}
 import scala.annotation.tailrec
 import scala.util.{Either, Try}
 import scala.util.control.Breaks.{break, breakable}
@@ -311,9 +313,13 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def checkForComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val version = VerticaVersionUtils.getVersion(jdbcLayer)
     colDef.colType match {
       case java.sql.Types.ARRAY |
-           java.sql.Types.STRUCT => queryColumnDef(colDef, tableName, jdbcLayer)
+           java.sql.Types.STRUCT |
+           // Vertica 10 report complex types as varchar.
+           java.sql.Types.VARCHAR & version.major == 10
+      => queryColumnDef(colDef, tableName, jdbcLayer)
       case _ => Right(colDef)
     }
   }
@@ -334,9 +340,31 @@ class SchemaTools extends SchemaToolsInterface {
         case java.sql.Types.ARRAY => makeArrayColumnDef(complexTypeColDef, verticaType, jdbcLayer)
         // Todo: implement Row support for reading.
         case java.sql.Types.STRUCT => Right(complexTypeColDef)
+        // Handling Vertica 10 reporting complex types as varchar
+        case java.sql.Types.VARCHAR => makeDummyColumnDef(complexTypeColDef, verticaType, jdbcLayer)
         case _ => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
       }
     })
+  }
+
+  /**
+   * Special function for Vertica 10. We check to see if the column is actually a complex type in Vertica.
+   * If so, then we return a complex type ColumnDef. This ColumnDef structure is not correct; It is only meant as
+   * a marker so we can return an error later on.
+   *
+   * If it is not a complex type in Vertica, then return the ColumnDef as is.
+   * */
+  private def makeDummyColumnDef(colDef: ColumnDef, verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    if(verticaType > VERTICA_NATIVE_ARRAY_BASE_ID && verticaType < VERTICA_SET_MAX_ID) {
+      Right(colDef.copy(colType = java.sql.Types.ARRAY))
+    } else {
+      val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
+      // If found, we return a struct regardless of the actual CT type.
+      def handleCTFound(rs: ResultSet): ConnectorResult[ColumnDef] = Right(colDef.copy(colType = java.sql.Types.STRUCT))
+      // Else, return the column def as is.
+      def handleCTNotFound(q:String): ConnectorResult[ColumnDef] = Right(colDef)
+      JdbcUtils.queryAndNext(queryComplexType, jdbcLayer, handleCTFound, handleCTNotFound)
+    }
   }
 
   private def getTypeName(dataType:String) : String = {
