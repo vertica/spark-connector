@@ -588,9 +588,11 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def castToArray(colInfo: ColumnDef): String = {
-    val label = colInfo.label
-    val elementType = colInfo.childDefinitions.headOption.getOrElse("UNKNOWN")
-    s"(${label}::ARRAY[${elementType}]) as $label"
+    val colName = colInfo.label
+    colInfo.childDefinitions.headOption match {
+      case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
+      case None => s"($colName::ARRAY[UKNOWN]) as $colName"
+    }
   }
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
