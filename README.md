@@ -198,7 +198,7 @@ Not yet supported.
 Not yet supported.
 
 ### Backwards Compatibility
-Complex data types is supported in Vertica 10.x **but only 1D array save() is supported.**  
+For Vertica 10.x **only 1D array save() is supported.**  
 
 ## Examples
 
