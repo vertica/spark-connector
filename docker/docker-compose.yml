@@ -10,7 +10,7 @@ services:
     ports:
       - "5005:5005"
   vertica:
-    image: vertica/vertica-k8s
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1
     entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:

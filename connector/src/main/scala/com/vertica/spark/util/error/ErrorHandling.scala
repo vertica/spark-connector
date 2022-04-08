@@ -169,12 +169,6 @@ case class CommitError(error: ConnectorError) extends ConnectorError {
   override def getUserMessage: String = ErrorHandling.appendErrors(this.message, this.error.getUserMessage)
 }
 
-case class ArrayElementTypeNotFound(typeId: Long)
-  extends RuntimeException(s"Element type $typeId not found in vertica.")
-    with ConnectorError {
-  override def getFullContext: String = this.getMessage
-}
-
 case class ViewExistsError() extends ConnectorError {
   def getFullContext: String = "Table name provided cannot refer to an existing view in Vertica."
 }
@@ -421,6 +415,12 @@ case class MergeColumnListError(error: ConnectorError) extends ConnectorError {
 case class MissingNameNodeAddressError() extends ConnectorError {
   override def getFullContext: String = "Could not find name node address in Hadoop configuration. Please set either dfs.namenode.http-address or dfs.namenode.https-address in hdfs-site.xml"
 }
+case class VerticaComplexTypeNotFound(typeId: Long) extends ConnectorError {
+  override def getFullContext: String = s"Complex type $typeId not found in vertica complex_types table."
+}
+case class VerticaNativeTypeNotFound(verticaId: Long) extends ConnectorError {
+  override def getFullContext: String = s"Vertica type $verticaId not found in vertica types table."
+}
 case class EmptySchemaError() extends SchemaError {
   def getFullContext: String = "Table schema requires at least one native type column"
 }
@@ -478,11 +478,14 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   */
 trait SchemaError extends ConnectorError
 
+case class StructFieldsError(error: ConnectorError) extends SchemaError {
+  def getFullContext: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
+}
+
 case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
     "\nSQL type value: " + sqlType
 }
-
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType

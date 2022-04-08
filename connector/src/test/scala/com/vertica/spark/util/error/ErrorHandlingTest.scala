@@ -250,6 +250,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(JdbcSchemaError(suberr))
       checkErrReturnsMessages(InferExternalTableSchemaError(suberr))
       checkErrReturnsMessages(MergeColumnListError(suberr))
+      checkErrReturnsMessages(StructFieldsError(suberr))
     }
     match {
       case Failure(e) => fail(e)
@@ -321,6 +322,17 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val secondStr = "389rh#@$#Tldfn"
 
       checkErrReturnsMessages(V1ReplacementOption(firstStr, secondStr))
+    }
+    match {
+      case Failure(e) => fail(e)
+      case Success(_) => ()
+    }
+  }
+
+  it should "return full context and user message for complex types errors" in {
+    Try {
+      checkErrReturnsMessages(VerticaComplexTypeNotFound(0))
+      checkErrReturnsMessages(VerticaNativeTypeNotFound(0))
     }
     match {
       case Failure(e) => fail(e)

@@ -198,7 +198,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     val statement: ConnectorResult[String] = targetTableSql match {
       case Some(sql) => Right(sql)
       case None =>
-        schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength) match {
+        schemaTools.makeTableColumnDefs(schema, strlen, arrayLength) match {
           case Right(columnDefs) =>
             val sb = new StringBuilder()
             sb.append("CREATE EXTERNAL table ")
