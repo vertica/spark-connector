@@ -137,8 +137,8 @@ object SchemaTools {
   val VERTICA_NATIVE_ARRAY_BASE_ID: Long = 1500L
   val VERTICA_SET_BASE_ID: Long = 2700L
   // This number is not defined be Vertica, so we use the delta of set and native array base id.
-  val VERTICA_PRIMITIVES_MAX_ID:Long = 1200L
-  val VERTICA_SET_MAX_ID: Long = 2700L + VERTICA_PRIMITIVES_MAX_ID
+  val VERTICA_PRIMITIVES_MAX_ID:Long = VERTICA_SET_BASE_ID - VERTICA_NATIVE_ARRAY_BASE_ID
+  val VERTICA_SET_MAX_ID: Long = VERTICA_SET_BASE_ID + VERTICA_PRIMITIVES_MAX_ID
 }
 
 class SchemaTools extends SchemaToolsInterface {
@@ -274,25 +274,24 @@ class SchemaTools extends SchemaToolsInterface {
       case Right(rs) =>
         try {
           val rsmd = rs.getMetaData
-          val colDefSeq: Seq[ColumnDef] = (1 to rsmd.getColumnCount).map(idx => {
-            val columnLabel = rsmd.getColumnLabel(idx)
-            val typeName = rsmd.getColumnTypeName(idx)
-            val fieldSize = DecimalType.MAX_PRECISION
-            val fieldScale = rsmd.getScale(idx)
-            val isSigned = rsmd.isSigned(idx)
-            val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
-            val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
-            val colType = rsmd.getColumnType(idx)
-            val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-            checkForComplexType(colDef, tableName, jdbcLayer) match {
-              case Right(columnDef) => columnDef
-              case Left(err) => err match {
-                case e: VerticaComplexTypeNotFound => throw e
-                case _ => throw new RuntimeException(err.getFullContext)
-              }
-            }
-          })
-          Right(colDefSeq)
+          val colDefsOrErrors: List[ConnectorResult[ColumnDef]] =
+            (1 to rsmd.getColumnCount)
+              .map(idx => {
+                val columnLabel = rsmd.getColumnLabel(idx)
+                val typeName = rsmd.getColumnTypeName(idx)
+                val fieldSize = DecimalType.MAX_PRECISION
+                val fieldScale = rsmd.getScale(idx)
+                val isSigned = rsmd.isSigned(idx)
+                val nullable = rsmd.isNullable(idx) != ResultSetMetaData.columnNoNulls
+                val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
+                val colType = rsmd.getColumnType(idx)
+                val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
+                checkForComplexType(colDef, tableName, jdbcLayer)
+              }).toList
+          colDefsOrErrors
+            .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+            .map(columnDef => columnDef)
+            .left.map(errors => ErrorList(errors))
         }
         catch {
           case e: Throwable =>
@@ -350,11 +349,11 @@ class SchemaTools extends SchemaToolsInterface {
      * We could infer from the vertica id if it is a native type or not.
      * */
     // Native array id = 1500 + primitive type id
-    var elementId = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
+    val id = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
     // Sets are also tracked in types table
-    val isSet = elementId > VERTICA_PRIMITIVES_MAX_ID && elementId < VERTICA_SET_MAX_ID
+    val isSet = id > VERTICA_PRIMITIVES_MAX_ID && id < VERTICA_SET_MAX_ID
     // Set id = 2700 + primitive type id
-    if (isSet) elementId = verticaTypeId - VERTICA_SET_BASE_ID
+    val elementId = if (isSet) verticaTypeId - VERTICA_SET_BASE_ID else id
     val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
     val elementDef = if (isNativeArray) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
     else getNestedArrayElementDef(verticaTypeId, jdbcLayer)
@@ -413,7 +412,7 @@ class SchemaTools extends SchemaToolsInterface {
   private def queryVerticaPrimitiveDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val queryNativeTypes = s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$verticaType"
     JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
-      (rs) =>{
+      (rs) => {
         val jdbcType = rs.getLong("jdbc_type").toInt
         val typeName = rs.getString("type_name")
         Right(makeArrayElementDef(jdbcType, typeName, depth))
@@ -473,7 +472,11 @@ class SchemaTools extends SchemaToolsInterface {
       case org.apache.spark.sql.types.ByteType => Right("TINYINT")
       case org.apache.spark.sql.types.DateType => Right("DATE")
       case org.apache.spark.sql.types.CalendarIntervalType => Right("INTERVAL")
-      case org.apache.spark.sql.types.DecimalType() => Right("DECIMAL")
+      case decimalType: org.apache.spark.sql.types.DecimalType =>
+        if(decimalType.precision == 0)
+          Right("DECIMAL")
+        else
+          Right(s"DECIMAL(${decimalType.precision}, ${decimalType.scale})")
       case org.apache.spark.sql.types.DoubleType => Right("DOUBLE PRECISION")
       case org.apache.spark.sql.types.FloatType => Right("FLOAT")
       case org.apache.spark.sql.types.IntegerType => Right("INTEGER")
@@ -594,53 +597,26 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
-    val sb = new StringBuilder()
-
-    sb.append(" (")
-    var first = true
-    schema.foreach(s => {
-      logger.debug("colname=" + "\"" + s.name + "\"" + "; type=" + s.dataType + "; nullable=" + s.nullable)
-      if (!first) {
-        sb.append(",\n")
+    val colDefsOrErrors = schema.map(col => {
+      val colName = "\"" + col.name + "\""
+      val notNull = if (!col.nullable) "NOT NULL" else ""
+      getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength) match {
+        case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))
+        case Right(colType) =>
+          Right(s"$colName $colType $notNull".trim())
       }
-      first = false
-      sb.append("\"" + s.name + "\" ")
+    }).toList
 
-      // remains empty unless we have a DecimalType with precision/scale
-      var decimal_qualifier: String = ""
-      if (s.dataType.toString.contains("DecimalType")) {
+    val result = colDefsOrErrors
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+      .map(columnDef => columnDef)
+      .left.map(errors => ErrorList(errors))
 
-        // has precision only
-        val p = "DecimalType\\((\\d+)\\)".r
-        if (s.dataType.toString.matches(p.toString)) {
-          val p(prec) = s.dataType.toString
-          decimal_qualifier = "(" + prec + ")"
-        }
-
-        // has precision and scale
-        val ps = "DecimalType\\((\\d+),(\\d+)\\)".r
-        if (s.dataType.toString.matches(ps.toString)) {
-          val ps(prec, scale) = s.dataType.toString
-          decimal_qualifier = "(" + prec + "," + scale + ")"
-        }
-      }
-
-      for {
-        col <- getVerticaTypeFromSparkType(s.dataType, strlen, arrayLength, s.metadata) match {
-          case Left(err) =>
-            return Left(SchemaConversionError(err).context("Schema error when trying to create table"))
-          case Right(datatype) =>
-            Right(datatype + decimal_qualifier)
-        }
-        _ = sb.append(col)
-        _ = if (!s.nullable) {
-          sb.append(" NOT NULL")
-        }
-      } yield ()
-    })
-
-    sb.append(")")
-    Right(sb.toString)
+    result match {
+      case Right(colDefList) => Right(s" (${colDefList.mkString(", ")})")
+      case Left(err) => Left(err)
+    }
   }
 
   def getMergeInsertValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {

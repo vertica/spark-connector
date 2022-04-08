@@ -486,9 +486,9 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   private def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
     val mockRs = mock[ResultSet]
-    var elementId = verticaTypeId - 1500
+    var elementId = verticaTypeId - SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
     val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
-    if (isSet) elementId = verticaTypeId - 2700
+    if (isSet) elementId = verticaTypeId - SchemaTools.VERTICA_SET_BASE_ID
     val isNative = elementId < SchemaTools.VERTICA_PRIMITIVES_MAX_ID
     if(isNative){
       (jdbcLayer.query _)
@@ -665,7 +665,8 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0 ) == Right("DATE"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0) == Right("INTERVAL"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0) == Right("DOUBLE PRECISION"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0,0), 1 , 0) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0, 0), 1 , 0) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(5, 2), 1 , 0) == Right("DECIMAL(5, 2)"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0 ) == Right("FLOAT"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0) == Right("INTEGER"))
     assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0) == Right("BIGINT"))

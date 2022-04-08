@@ -10,11 +10,20 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import java.util.Properties
+
+// Retrieving the connector version number from a common file.
+val versionProps = settingKey[Properties]("Connector version properties")
+versionProps := {
+  val prop = new Properties()
+  IO.load(prop, new File("../version.properties"))
+  prop
+}
 
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
-version := "3.0.3"
+version := versionProps.value.getProperty("connector-version")
 
 val sparkVersion = Option(System.getProperty("sparkVersion")).getOrElse("3.2.0")
 val hadoopVersion = Option(System.getProperty("hadoopVersion")).getOrElse("3.1.1")

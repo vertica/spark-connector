@@ -10,16 +10,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import java.util.Properties
+
+// Retrieving the common property config containing the connector version number.
+val props = settingKey[Properties]("Connector version properties")
+props := {
+  val prop = new Properties()
+  IO.load(prop, new File("../../version.properties"))
+  prop
+}
 
 scalaVersion := "2.12.12"
 name := "spark-vertica-connector-demo-example"
 organization := "com.vertica"
-version := "3.0.3"
+version := props.value.getProperty("connector-version")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
-  "com.vertica.spark" % "vertica-spark" % "3.0.3-slim"
+  "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"
 )

@@ -12,18 +12,17 @@
 // limitations under the License.
 import java.util.Properties
 
-// Retrieving the connector version number from a common file.
-val versionProps = settingKey[Properties]("Connector version properties")
-versionProps := {
+val props = settingKey[Properties]("Connector version properties")
+props := {
   val prop = new Properties()
-  IO.load(prop, new File("../../version.properties"))
+  IO.load(prop, new File("../../../version.properties"))
   prop
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-basic-read-example"
+name := "spark-vertica-connector-set-example"
 organization := "com.vertica"
-version := versionProps.value.getProperty("connector-version")
+version := props.value.getProperty("connector-version")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
