@@ -117,7 +117,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     val sb = new StringBuilder()
     sb.append(tablename.getFullTableName)
 
-    schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength) match {
+    schemaTools.makeTableColumnDefs(schema, strlen, arrayLength) match {
       case Right(columnDefs) =>
         val sb = new StringBuilder()
         if(temp) sb.append("CREATE TEMPORARY TABLE ") else sb.append("CREATE table ")
@@ -200,7 +200,7 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     val statement: ConnectorResult[String] = targetTableSql match {
       case Some(sql) => Right(sql)
       case None =>
-        schemaTools.makeTableColumnDefs(schema, strlen, jdbcLayer, arrayLength) match {
+        schemaTools.makeTableColumnDefs(schema, strlen, arrayLength) match {
           case Right(columnDefs) =>
             val sb = new StringBuilder()
             sb.append("CREATE EXTERNAL table ")

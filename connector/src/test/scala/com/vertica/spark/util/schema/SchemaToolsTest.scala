@@ -680,6 +680,35 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
+    // schema representing Array[Row]
+    val schema = ArrayType(StructType(Array(StructField("key",StringType), StructField("value", IntegerType))))
+    assert(schemaTools.getVerticaTypeFromSparkType(schema, 0, 0) == Right("ARRAY[ROW(\"key\" VARCHAR(0), \"value\" INTEGER)]"))
+  }
+
+  it should "Convert struct to Vertica row" in {
+    val schemaTools = new SchemaTools
+    val primitiveRow = StructType(Array(
+      StructField("col1", IntegerType, false, Metadata.empty),
+      StructField("col2", IntegerType, false, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(primitiveRow, 0, 0)
+      == Right("ROW(\"col1\" INTEGER, \"col2\" INTEGER)"))
+
+    val nativeArrayRow = StructType(Array(StructField("col1", ArrayType(IntegerType), true, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(nativeArrayRow, 0, 0)
+      == Right("ROW(\"col1\" ARRAY[INTEGER])"))
+
+    val nestedRows = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("field1", IntegerType, true, Metadata.empty)
+      )), true, Metadata.empty),
+    ))
+    assert(schemaTools.getVerticaTypeFromSparkType(nestedRows, 0, 0)
+      == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
+  }
+
+  it should "convert Spark Map to Vertica Map" in {
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0) == Right(s"VARBINARY(65000)"))
   }
 
   it should "Provide error message on unknown element type conversion to vertica" in {

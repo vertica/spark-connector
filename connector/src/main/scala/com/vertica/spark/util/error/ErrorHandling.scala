@@ -471,6 +471,10 @@ case class ParamsNotSupported(operation: String) extends JdbcError {
   */
 trait SchemaError extends ConnectorError
 
+case class StructFieldsError(error: ConnectorError) extends SchemaError {
+  def getFullContext: String = s"${this.error.getClass.getSimpleName}: ${error.getFullContext}"
+}
+
 case class MissingSqlConversionError(sqlType: String, typename: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type: " + typename +
     "\nSQL type value: " + sqlType

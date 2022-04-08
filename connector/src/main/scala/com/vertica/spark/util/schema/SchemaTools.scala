@@ -101,7 +101,7 @@ trait SchemaToolsInterface {
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
    * */
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String]
+  def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String]
 
   /**
    * Gets a list of column values to be inserted within a merge.
@@ -323,8 +323,8 @@ class SchemaTools extends SchemaToolsInterface {
       val typeName = getTypeName(rs.getString("data_type"))
       complexTypeColDef.colType match {
         case java.sql.Types.ARRAY => makeArrayColumnDef(complexTypeColDef, verticaType, jdbcLayer)
-        // Todo: implement Row support
-        case java.sql.Types.STRUCT => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
+        // Todo: implement Row support for reading.
+        case java.sql.Types.STRUCT => Right(complexTypeColDef)
         case _ => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
       }
     })
@@ -434,10 +434,22 @@ class SchemaTools extends SchemaToolsInterface {
   override def getVerticaTypeFromSparkType(sparkType: org.apache.spark.sql.types.DataType, strlen: Long, arrayLength: Long): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
-      case org.apache.spark.sql.types.MapType(_,_,_) |
-           org.apache.spark.sql.types.StructType(_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.MapType(_,_,_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.StructType(fields) => sparkStructToVerticaRow(fields, strlen, arrayLength)
       case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
+    }
+  }
+
+  private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
+    makeTableColumnDefs(StructType(fields), strlen, arrayLength) match {
+      case Left(err) => Left(StructFieldsError(err))
+      case Right(fieldDefs) =>
+        Right("ROW" +
+          fieldDefs
+          // Row definition cannot have constraints
+          .replace(" NOT NULL", "")
+          .trim())
     }
   }
 
@@ -449,7 +461,7 @@ class SchemaTools extends SchemaToolsInterface {
             case ArrayType(elementType, _) =>
               recursion(elementType, s"${leftAccumulator}ARRAY[", s"$length]$rightAccumulator", depth+1)
             case _ =>
-              this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
+              this.getVerticaTypeFromSparkType(dataType, strlen, arrayLength) match {
                 case Right(verticaType) =>
                   Right(s"$leftAccumulator$verticaType$rightAccumulator")
                 case Left(error) => Left(error)
@@ -586,7 +598,7 @@ class SchemaTools extends SchemaToolsInterface {
 
   private def castToArray(colName: String, elementType: String): String = s"(${colName}::ARRAY[${elementType}]) as $colName"
 
-  def makeTableColumnDefs(schema: StructType, strlen: Long, jdbcLayer: JdbcLayerInterface, arrayLength: Long): ConnectorResult[String] = {
+  def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val colDefsOrErrors = schema.map(col => {
       val colName = "\"" + col.name + "\""
       val notNull = if (!col.nullable) "NOT NULL" else ""
