@@ -1661,10 +1661,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "write SET to Vertica" in {
     val tableName = "dftest"
+    // Ensure that we are create the table from scratch
+    TestUtils.dropTable(conn, tableName)
+
     val colName = "col1"
     val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build
     val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType), metadata = metadata)))
-
     val data = Seq(Row(Array(88,99,111)))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     println(df.toString())
@@ -1685,8 +1687,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       assert(columnRs.next)
       val verticaId = columnRs.getLong("data_type_id")
       assert(verticaId > SchemaTools.VERTICA_SET_BASE_ID & verticaId < SchemaTools.VERTICA_SET_MAX_ID)
-    }
-    catch{
+    } catch {
       case err : Exception => fail(err)
     }
     finally {
