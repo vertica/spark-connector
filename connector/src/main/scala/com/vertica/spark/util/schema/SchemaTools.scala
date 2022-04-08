@@ -323,8 +323,8 @@ class SchemaTools extends SchemaToolsInterface {
       val typeName = getTypeName(rs.getString("data_type"))
       complexTypeColDef.colType match {
         case java.sql.Types.ARRAY => makeArrayColumnDef(complexTypeColDef, verticaType, jdbcLayer)
-        // Todo: implement Row support
-        case java.sql.Types.STRUCT => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
+        // Todo: implement Row support for reading.
+        case java.sql.Types.STRUCT => Right(complexTypeColDef)
         case _ => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
       }
     })
