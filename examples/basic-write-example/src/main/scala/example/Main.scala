@@ -13,12 +13,10 @@
 
 package example
 
-import java.sql.Connection
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 object Main  {
   def main(args: Array[String]): Unit = {
@@ -47,9 +45,13 @@ object Main  {
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       // Outputs dataframe schema
       println(df.toString())
+      // Save mode
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts + ("table" -> tableName))
+        .mode(mode)
+        .save()
 
     } finally {
       spark.close()

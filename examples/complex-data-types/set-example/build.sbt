@@ -12,7 +12,6 @@
 // limitations under the License.
 import java.util.Properties
 
-// Retrieving the common property config containing the connector version number.
 val props = settingKey[Properties]("Connector version properties")
 props := {
   val prop = new Properties()
@@ -21,7 +20,7 @@ props := {
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-array-example"
+name := "spark-vertica-connector-set-example"
 organization := "com.vertica"
 version := props.value.getProperty("connector-version")
 
