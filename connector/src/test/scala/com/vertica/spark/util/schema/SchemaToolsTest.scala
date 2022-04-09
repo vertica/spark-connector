@@ -686,7 +686,35 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build
     val schemaTools = new SchemaTools
     assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, metadata) == Right("SET[VARCHAR(0)]"))
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, metadata) == Right("SET[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2,  metadata) == Right("SET[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, Metadata.empty) == Right("ARRAY[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, Metadata.empty) == Right("ARRAY[VARCHAR(0),2]"))
+  }
+
+  it should "Convert struct to Vertica row" in {
+    val schemaTools = new SchemaTools
+    val primitiveRow = StructType(Array(
+      StructField("col1", IntegerType, false, Metadata.empty),
+      StructField("col2", IntegerType, false, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(primitiveRow, 0, 0, Metadata.empty)
+      == Right("ROW(\"col1\" INTEGER, \"col2\" INTEGER)"))
+
+    val nativeArrayRow = StructType(Array(StructField("col1", ArrayType(IntegerType), true, Metadata.empty)))
+    assert(schemaTools.getVerticaTypeFromSparkType(nativeArrayRow, 0, 0, Metadata.empty)
+      == Right("ROW(\"col1\" ARRAY[INTEGER])"))
+
+    val nestedRows = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("field1", IntegerType, true, Metadata.empty)
+      )), true, Metadata.empty),
+    ))
+    assert(schemaTools.getVerticaTypeFromSparkType(nestedRows, 0, 0, Metadata.empty)
+      == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
+  }
+
+  it should "convert Spark Map to Vertica Map" in {
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0, Metadata.empty) == Right(s"VARBINARY(65000)"))
   }
 
   it should "Provide error message on unknown element type conversion to vertica" in {
