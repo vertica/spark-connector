@@ -13,9 +13,9 @@
 
 package com.vertica.spark.util.schema
 
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory
+
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 import com.vertica.spark.config.{TableName, TableQuery}
@@ -26,13 +26,13 @@ import com.vertica.spark.util.error._
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
 /**
-  * Tests functionality of schema tools: converting schema between JDBC and Spark types.
-  *
-  * Tests here not exhaustive of all possible options, covers common cases and edge cases. Integration tests should cover a wider selection of closer to real world cases of table schema.
-  */
-class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
+ * Tests functionality of schema tools: converting schema between JDBC and Spark types.
+ *
+ * Tests here not exhaustive of all possible options, covers common cases and edge cases. Integration tests should cover a wider selection of closer to real world cases of table schema.
+ */
+class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.OneInstancePerTest {
 
-  private def mockJdbcDeps(tablename: TableName): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+  private[schema] def mockJdbcDeps(tablename: TableName): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
@@ -45,7 +45,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   }
 
-  private def mockJdbcDepsQuery(query: TableQuery): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+  private[schema] def mockJdbcDepsQuery(query: TableQuery): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
@@ -58,7 +58,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   }
 
-  private def mockColumnMetadata(rsmd: ResultSetMetaData, col: TestColumnDef) = {
+  private[schema] def mockColumnMetadata(rsmd: ResultSetMetaData, col: TestColumnDef) = {
     (rsmd.getColumnLabel _).expects(col.index).returning(col.name)
     (rsmd.getColumnType _).expects(col.index).returning(col.colType)
     (rsmd.getColumnTypeName _).expects(col.index).returning(col.colTypeName)
@@ -67,7 +67,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.isNullable _).expects(col.index).returning(if(col.nullable) ResultSetMetaData.columnNullable else ResultSetMetaData.columnNoNulls)
   }
 
-  private def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
+  private[schema] def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
@@ -118,7 +118,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 3)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(schema) =>
         val fields = schema.fields
         assert(fields(0).name == "col1")
@@ -847,3 +847,5 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(colsString.trim().equals(s"($colName::ARRAY[$typeName]) as $colName"))
   }
 }
+// For package private access without instantiation
+object SchemaToolsTests extends SchemaToolsTests

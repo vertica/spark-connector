@@ -14,6 +14,7 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactory.readLayer
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.Timer
@@ -104,12 +105,13 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     // Log a warning if the user wants to perform a merge, but also wants to overwrite data
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
     logger.info("Writing data to Parquet file.")
+    val verticaVersion = VerticaVersionUtils.getVersion(jdbcLayer)
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
 
       // Ensure Vertica version is compatible.
-      _ <- checkSchemaTypesSupport(config, jdbcLayer)
+      _ <- checkSchemaTypesSupport(config, verticaVersion)
 
       // Set spark configuration
       _ = setSparkCalendarConf()
@@ -163,8 +165,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     } yield ()
   }
 
-  private def checkSchemaTypesSupport(config: DistributedFilesystemWriteConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
-    val version: VerticaVersion = VerticaVersionUtils.getVersion(jdbcLayer)
+  private def checkSchemaTypesSupport(config: DistributedFilesystemWriteConfig, version: VerticaVersion): ConnectorResult[Unit] = {
     val toInternalTable = config.createExternalTable.isEmpty
     VerticaVersionUtils.checkSchemaTypesWriteSupport(config.schema, version, toInternalTable)
   }
