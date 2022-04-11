@@ -15,17 +15,17 @@ package com.vertica.spark.datasource.v2
 
 import java.util
 import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
 import org.apache.spark.sql.SparkSession
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import com.vertica.spark.util.version.{SparkVersion, SparkVersionUtils}
 
 import collection.JavaConverters._
 
@@ -88,19 +88,10 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         }
         logger.debug("Config loaded")
 
-        // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with right feature support
-        var sparkNewerThan31 = true
-        try {
-          val sparkVersion = SparkSession.getActiveSession.get.version
-          val versionList = sparkVersion.split("\\.").map(_.toInt)
-          if(versionList.length >= 2 && versionList(0) == 3 && versionList(1) < 2) {
-            sparkNewerThan31 = false
-          }
-        }
-        catch { // Couldn't recgonize version string, assume newer version
-          case _: java.lang.NumberFormatException => sparkNewerThan31 = true
-        }
-
+        // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with the correct feature support
+        val comparison = SparkVersionUtils.getVersion(SparkSession.getActiveSession.get)
+          .compare(SparkVersion(3,2,0))
+        val sparkNewerThan31 = comparison >= 0
         val scanBuilder = if(sparkNewerThan31) {
           classOf[VerticaScanBuilderWithPushdown]
             .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
