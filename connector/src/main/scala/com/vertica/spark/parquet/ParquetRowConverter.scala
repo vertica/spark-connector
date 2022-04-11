@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.RebaseDateTime.RebaseSpec
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, CaseInsensitiveMap, DateTimeUtils, GenericArrayData}
-import org.apache.spark.sql.execution.datasources.{DataSourceUtils, DataSourceUtils2}
+import org.apache.spark.sql.execution.datasources.{DataSourceUtils, DataSourceUtilsSpark3_2_0}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types._
@@ -137,7 +137,8 @@ private[parquet] class ParquetRowConverter(
                                             convertTz: Option[ZoneId],
                                             datetimeRebaseMode: LegacyBehaviorPolicy.Value,
                                             int96RebaseMode: LegacyBehaviorPolicy.Value,
-                                            updater: ParentContainerUpdater)
+                                            updater: ParentContainerUpdater,
+                                            sparkNewerThan320: Boolean)
   extends ParquetGroupConverter(updater) with Logging {
 
   assert(
@@ -187,27 +188,14 @@ private[parquet] class ParquetRowConverter(
    */
   def currentRecord: InternalRow = currentRow
 
-  // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with the correct feature support
-  var sparkNewerThan320 = false
-  // try {
-  //   val sparkVersion = SparkSession.getActiveSession.get.version
-  //   val versionList = sparkVersion.split("\\.").map(_.toInt)
-  //   if(versionList.length >= 2 && versionList(0) == 3 && versionList(1) == 2 && versionList(2) < 1) {
-  //     sparkNewerThan320 = false
-  //   }
-  // }
-  // catch { // Couldn't recgonize version string, assume newer version
-  //   case _: java.lang.NumberFormatException => sparkNewerThan320 = true
-  // }
-
   private val dateRebaseFunc = if(sparkNewerThan320) DataSourceUtils.createDateRebaseFuncInRead(datetimeRebaseMode, "Parquet")
-  else DataSourceUtils2.creteDateRebaseFuncInRead(datetimeRebaseMode, "Parquet")
+  else DataSourceUtilsSpark3_2_0.creteDateRebaseFuncInRead(datetimeRebaseMode, "Parquet")
 
   private val timestampRebaseFunc: Long => Long = if(sparkNewerThan320) DataSourceUtils.createTimestampRebaseFuncInRead(RebaseSpec(datetimeRebaseMode), "Parquet")
-  else DataSourceUtils2.creteTimestampRebaseFuncInRead(datetimeRebaseMode, "Parquet")
+  else DataSourceUtilsSpark3_2_0.creteTimestampRebaseFuncInRead(datetimeRebaseMode, "Parquet")
 
   private val int96RebaseFunc = if(sparkNewerThan320) DataSourceUtils.createTimestampRebaseFuncInRead(RebaseSpec(int96RebaseMode), "Parquet INT96")
-  else DataSourceUtils2.creteTimestampRebaseFuncInRead(int96RebaseMode, "Parquet INT96")
+  else DataSourceUtilsSpark3_2_0.creteTimestampRebaseFuncInRead(int96RebaseMode, "Parquet INT96")
   // Converters for each field.
   private[this] val fieldConverters: Array[Converter with HasParentContainerUpdater] = {
     // (SPARK-31116) Use case insensitive map if spark.sql.caseSensitive is false

@@ -21,6 +21,7 @@ import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema.SchemaTools
 import com.vertica.spark.util.table.TableUtils
+import com.vertica.spark.util.version.{SparkVersion, SparkVersionUtils}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
@@ -61,6 +62,8 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
+    val comparison = SparkVersionUtils.getVersion(SparkSession.getActiveSession.get).compare(SparkVersion(3,2,0))
+    val sparkNewerThan320 = comparison > 0
     config match {
       case cfg: DistributedFilesystemReadConfig =>
         val hadoopFileStoreLayer = new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
@@ -70,7 +73,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
             Some(metadata.schema)
           }
           case _ => None
-        })
+        }, sparkNewerThan320 = sparkNewerThan320)
         readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
         val sparkContext: Option[SparkContext] = SparkSession.getActiveSession match {
           case None => None
