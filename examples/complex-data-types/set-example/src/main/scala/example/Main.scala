@@ -37,26 +37,39 @@ object Main {
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
-    val conn: Connection = TestUtils.getJDBCConnection(options("host"), db = options("db"), user = options("user"), password = options("password"))
-    TestUtils.createTableBySQL(conn,"dftest","create table dftest (a SET[int])")
-    TestUtils.populateTableBySQL(conn.createStatement(), "insert into dftest values (SET[1])", 1)
+
     try {
-      /**
-       * SET is not a defined data type in JDBC and thus is converted to Array.
-       * In Spark, we differentiate arrays from sets by marking the column's metadata.
-       * */
-      val readOpts = options + ("table" -> "dftest")
+      val tableName = "dftest"
+      // Table name needs to be specified in option
+      val writeOpts = options + ("table" -> tableName)
+      // Schema's metadata.
+      val metadata = new MetadataBuilder()
+        .putBoolean(MetadataKey.IS_VERTICA_SET, true)
+        .build
+      // Define schema of a table with a SET column. We add the metadata above to mark it as a Vertica SET.
+      val schema = new StructType(Array(StructField("col1", ArrayType(IntegerType), metadata = metadata)))
+      // Data. Note that unique elements will not be checked until Vertica starts ingesting.
+      val data = Seq(Row(Array(1, 2, 3, 4, 5, 6)))
+      // Create a dataframe corresponding to the schema and data specified above
+      val dfWrite = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      // Write dataframe to Vertica. note the data source
+      dfWrite.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts)
+        // In Overwrite mode, the table in Vertica will be dropped and recreated with a SET column
+        .mode(SaveMode.Overwrite)
+        .save()
+
+      val readOpts = options + ("table" -> tableName)
       // Load a set from Vertica as array and display it
-      val df = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      val dfRead = spark.read.format("com.vertica.spark.datasource.VerticaSource")
         .options(readOpts)
         .load()
-      df.show()
-      val col1 = df.schema.fields(0)
-      // Since set are ingested into Spark as array, we mark such array as set in it's metadata
+      dfRead.show()
+      val col1 = dfRead.schema.fields(0)
+      // When reading, an array will be marked if it is a set in Vertica.
       println(s"Is ${col1.name} SET type: " + col1.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
       println()
     } finally {
-      conn.close()
       spark.close()
     }
   }

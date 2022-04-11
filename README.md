@@ -163,8 +163,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types requires Vertica 11 and Vertica's JDBC connector 11. Complex data types support is backwards
-compatible only with Vertica 10.x with some restrictions.
+Complex data types requires Vertica 11 and Vertica's JDBC connector 11.
 
 ### Complex Type Conversion
 
@@ -188,7 +187,9 @@ There are two types of arrays supported by Vertica, native and nested arrays (no
 - On load operations, on native arrays are supported for now.
 
 ### Set
-Not yet supported.
+JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). Thus, it is represented as an array in Spark with its metadata containing `is_vertica_set = true`:
+- On load operations, arrays column's metadata will contains the above value if it is a set in Vertica.
+- On save operations, data will be written into Vertica as set if the array column's metadata contains `is_vertica_set = true`. Unique elements are only checked once Vertica start loading data from staging area.
 
 ### Row
 Not yet supported.
@@ -197,12 +198,7 @@ Not yet supported.
 Not yet supported.
 
 ### Backwards Compatibility
-
-Complex data types is backwards compatible only with Vertica 10 with the following restrictions:
-
-| Complex Type | Dataframe Operation | Restrictions                                                                                                                            |
-|--------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Array        | save() & load()     | 1D primitive arrays are supported only for internal table. `array_length` option not supported and element count will not be specified. |
+For Vertica 10.x **only 1D array save() is supported.**  
 
 ## Examples
 
