@@ -17,7 +17,8 @@ import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.datasource.core.DSConfigSetupUtils.ValidationResult
 import com.vertica.spark.datasource.core.SessionId
 import com.vertica.spark.datasource.v2.PushdownFilter
-import com.vertica.spark.util.error.{InvalidFilePermissions}
+import com.vertica.spark.util.error.InvalidFilePermissions
+import com.vertica.spark.util.version.SparkVersion
 import org.apache.spark.sql.types.{StructField, StructType}
 
 /**
@@ -103,7 +104,8 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = true
+                                                  timeOperations : Boolean = true,
+                                                  sparkVersion: SparkVersion
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var groupBy: Array[StructField] = Array()

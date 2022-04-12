@@ -13,7 +13,7 @@
 package com.vertica.spark.util.version
 
 object SparkVersionUtils {
-  val LATEST_SPARK: SparkVersion = SparkVersion(3,2,1)
+  val DEFAULT_SPARK: SparkVersion = SparkVersion(3,2,1)
 
   def getVersion(versionString: String): SparkVersion = {
     try {
@@ -21,7 +21,7 @@ object SparkVersionUtils {
       SparkVersion(versionList(0), versionList(1), versionList(2))
     }
     catch {
-      case _: NumberFormatException => LATEST_SPARK
+      case _: NumberFormatException => DEFAULT_SPARK
     }
   }
 

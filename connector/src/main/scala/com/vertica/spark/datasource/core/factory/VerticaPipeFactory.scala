@@ -62,9 +62,9 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
-    val sparkNewerThan320 = SparkVersionUtils.compareWith32(SparkSession.getActiveSession.get.version) > 0
     config match {
       case cfg: DistributedFilesystemReadConfig =>
+        val sparkNewerThan320 = SparkVersionUtils.compareWith32(cfg.sparkVersion.toString) > 0
         val hadoopFileStoreLayer = new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
           case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
             Some(cfg.getRequiredSchema)
@@ -72,7 +72,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
             Some(metadata.schema)
           }
           case _ => None
-        }, sparkNewerThan320 = sparkNewerThan320)
+        }, sparkReadNewerThan320 = sparkNewerThan320)
         readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
         val sparkContext: Option[SparkContext] = SparkSession.getActiveSession match {
           case None => None
@@ -88,13 +88,12 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
-    val sparkNewerThan320 = SparkVersionUtils.compareWith32(SparkSession.getActiveSession.get.version) > 0
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         val schemaTools = new SchemaTools
         writeLayer = checkJdbcLayer(writeLayer, cfg.jdbcConfig)
         new VerticaDistributedFilesystemWritePipe(cfg,
-          new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema), sparkNewerThan320),
+          new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema), sparkReadNewerThan320 = true),
           writeLayer.get,
           schemaTools,
           new TableUtils(schemaTools, writeLayer.get)

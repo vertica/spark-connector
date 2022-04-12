@@ -14,7 +14,7 @@ class SparkVersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   it should "get default Spark version on fail" in {
     val version = SparkVersionUtils.getVersion("abc")
-    assert(version.compare(SparkVersionUtils.LATEST_SPARK) == 0)
+    assert(version.compare(SparkVersionUtils.DEFAULT_SPARK) == 0)
   }
 
   it should "compare correctly Spark 3.2.0" in {

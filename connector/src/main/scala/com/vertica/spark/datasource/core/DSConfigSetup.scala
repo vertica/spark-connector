@@ -26,6 +26,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.SparkSession
 
 
@@ -549,7 +550,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getFilePermissions(config),
       DSConfigSetupUtils.getMaxRowGroupSize(config),
       DSConfigSetupUtils.getMaxFileSize(config),
-      DSConfigSetupUtils.getTimeOperations(config)
+      DSConfigSetupUtils.getTimeOperations(config),
+      SparkVersionUtils.getVersion(SparkSession.getActiveSession.get.version).validNec
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
@@ -589,7 +591,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    */
   override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
     config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _) =>
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _,_) =>
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError())
           case Some(metadata) => Right(metadata.schema)
