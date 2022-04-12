@@ -68,8 +68,7 @@ scalastyleFailOnWarning := true
 // - Pipe Factory: as the rest of the components rely on abstract interfaces, this is the place
 //   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
 // - Parquet reader files taken from third part spark library
-// - DataSourceUtilsSpark3_2_0 was copied from spark
-coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*;DataSourceUtilsSpark3_2_0.*"
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*;"
 coverageMinimum := 80
 coverageFailOnMinimum := true
 
