@@ -18,19 +18,19 @@
 
 package org.apache.spark.sql.execution.datasources.parquet.vertica
 
+import com.vertica.spark.parquet.VerticaDataSourceUtils
+import com.vertica.spark.parquet.vertica.VerticaDataSourceUtils
+
 import java.math.{BigDecimal, BigInteger}
 import java.nio.ByteOrder
 import java.time.{ZoneId, ZoneOffset}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import org.apache.parquet.column.Dictionary
 import org.apache.parquet.io.api.{Binary, Converter, GroupConverter, PrimitiveConverter}
 import org.apache.parquet.schema.{GroupType, OriginalType, Type}
 import org.apache.parquet.schema.OriginalType.LIST
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.{BINARY, FIXED_LEN_BYTE_ARRAY, INT32, INT64, INT96}
-
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
@@ -189,13 +189,13 @@ private[parquet] class ParquetRowConverter(
    */
   def currentRecord: InternalRow = currentRow
 
-  private val dateRebaseFunc = DataSourceUtils.creteDateRebaseFuncInRead(
+  private val dateRebaseFunc = VerticaDataSourceUtils.createDateRebaseFuncInRead(
     datetimeRebaseMode, "Parquet")
 
-  private val timestampRebaseFunc = DataSourceUtils.creteTimestampRebaseFuncInRead(
+  private val timestampRebaseFunc = VerticaDataSourceUtils.createTimestampRebaseFuncInRead(
     datetimeRebaseMode, "Parquet")
 
-  private val int96RebaseFunc = DataSourceUtils.creteTimestampRebaseFuncInRead(
+  private val int96RebaseFunc = VerticaDataSourceUtils.createTimestampRebaseFuncInRead(
     int96RebaseMode, "Parquet INT96")
 
   // Converters for each field.
