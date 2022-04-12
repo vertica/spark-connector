@@ -12,21 +12,21 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
-import org.apache.spark.sql.SparkSession
-
 object SparkVersionUtils {
-  val DEFAULT_SPARK = SparkVersion(3,2,0)
-  def getVersion(sparkSession: SparkSession): SparkVersion ={
+  val LATEST_SPARK: SparkVersion = SparkVersion(3,2,1)
+
+  def getVersion(versionString: String): SparkVersion = {
     try {
-      val sparkVersion = sparkSession.version
-      val versionList = sparkVersion.split("\\.").map(_.toInt)
+      val versionList = versionString.split("\\.").map(_.toInt)
       SparkVersion(versionList(0), versionList(1), versionList(2))
     }
     catch {
-      // Couldn't recgonize version string, default to 3.2.0
-      case _: Throwable => DEFAULT_SPARK
+      case _: NumberFormatException => LATEST_SPARK
     }
   }
+
+  def compareWith32(versionString: String): Int = getVersion(versionString).compare(SparkVersion(3,2,0))
+
 }
 
 case class SparkVersion(major: Int, minor: Int, patch: Int) extends Ordered[SparkVersion] {
