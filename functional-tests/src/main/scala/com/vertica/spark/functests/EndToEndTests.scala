@@ -18,6 +18,7 @@ import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.MetadataKey
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
@@ -35,7 +36,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   val numSparkPartitions = 4
   val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
-  val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
 
   private val spark = SparkSession.builder()
     .master("local[*]")
@@ -43,6 +43,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .getOrCreate()
+
+  val isNewerThan32: Boolean = SparkVersionUtils.compareWith32(spark.version) > 0
+  val fsLayer = new HadoopFileStoreLayer(fsConfig, None, isNewerThan32)
 
   override def afterEach(): Unit ={
     val anyFiles= fsLayer.getFileList(fsConfig.address)

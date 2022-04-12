@@ -21,6 +21,7 @@ import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.InputPartition
 
@@ -37,7 +38,8 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     metadata = None,
     filePermissions = ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
     maxRowGroupSize = 64,
-    maxFileSize = 512)
+    maxFileSize = 512,
+    sparkVersion = SparkVersionUtils.DEFAULT_SPARK)
 
   override def beforeAll(): Unit = {
   }

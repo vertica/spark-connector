@@ -27,6 +27,7 @@ import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
@@ -55,7 +56,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       metadata = Some(VerticaReadMetadata(new StructType())),
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       maxRowGroupSize = 64,
-      maxFileSize = 512)
+      maxFileSize = 512,
+      sparkVersion = SparkVersionUtils.DEFAULT_SPARK)
   }
 
   private def makeIntColumnDef: ColumnDef = {

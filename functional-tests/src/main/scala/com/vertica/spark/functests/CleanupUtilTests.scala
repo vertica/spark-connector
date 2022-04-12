@@ -16,14 +16,23 @@ package com.vertica.spark.functests
 import com.vertica.spark.config.FileStoreConfig
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.cleanup.{CleanupUtils, FileCleanupInfo}
+import com.vertica.spark.util.version.SparkVersionUtils
+import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
 class CleanupUtilTests(val cfg: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+  private val spark = SparkSession.builder()
+    .master("local[*]")
+    .appName("Vertica Connector Test Prototype")
+    .getOrCreate()
 
-  val fsLayer = new HadoopFileStoreLayer(cfg, None)
+  val isNewerThan32: Boolean = SparkVersionUtils.compareWith32(spark.version) > 0
+  val fsLayer = new HadoopFileStoreLayer(cfg, None, isNewerThan32)
   val path: String = cfg.address + "/CleanupTest"
   private val perms = "777"
+
+  spark.close()
 
   val cleanupUtils = new CleanupUtils
 

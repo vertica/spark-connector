@@ -144,7 +144,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType], sparkNewerThan320: Boolean) extends FileStoreLayerInterface {
+class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType], sparkReadNewerThan320: Boolean) extends FileStoreLayerInterface {
   private val S3_ACCESS_KEY: String = "fs.s3a.access.key"
   private val S3_SECRET_KEY: String = "fs.s3a.secret.key"
   private val S3_SESSION_TOKEN: String = "fs.s3a.session.token"
@@ -310,7 +310,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       enableVectorizedReader = false,
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED,
       int96RebaseMode = LegacyBehaviorPolicy.CORRECTED,
-      sparkNewerThan320
+      sparkReadNewerThan320
     )
 
     // Get reader

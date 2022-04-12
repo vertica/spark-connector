@@ -14,12 +14,12 @@
 package com.vertica.spark.functests
 
 import java.sql.Connection
-
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.FsPermission
@@ -45,7 +45,8 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
   private val perms = "777"
 
   val dirTestCfg: FileStoreConfig = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
-  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
+  val isNewerThan32: Boolean = SparkVersionUtils.compareWith32(spark.version) > 0
+  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema), isNewerThan32)
   var jdbcLayer : JdbcLayerInterface = _
 
   override def beforeAll(): Unit = {
@@ -144,7 +145,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
   it should "write then read a parquet file" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema), isNewerThan32)
     val path = fsCfg.address
     val filename = path + "testwriteread.parquet"
 
@@ -178,7 +179,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
   it should "write then copy into vertica" in {
     val intSchema = new StructType(Array(StructField("a", IntegerType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(intSchema), isNewerThan32)
 
     val path = fsCfg.address
     val filename = path + "testwriteload.parquet"
@@ -222,7 +223,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
   it should "write a timestamp then copy into vertica" in {
     val timestampSchema = new StructType(Array(StructField("a", TimestampType)))
-    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(timestampSchema))
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(timestampSchema), isNewerThan32)
     val path = fsCfg.address
     val filename = path + "testwritetimestamp.parquet"
 

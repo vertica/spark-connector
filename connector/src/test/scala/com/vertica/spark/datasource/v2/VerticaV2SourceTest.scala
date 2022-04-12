@@ -30,6 +30,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
@@ -65,7 +66,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     metadata = None,
     ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
     maxRowGroupSize = 64,
-    maxFileSize = 512)
+    maxFileSize = 512,
+    sparkVersion = SparkVersionUtils.DEFAULT_SPARK)
 
   val writeConfig: DistributedFilesystemWriteConfig = DistributedFilesystemWriteConfig(
     jdbcConfig = jdbcConfig,
