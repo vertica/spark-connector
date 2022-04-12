@@ -70,7 +70,7 @@ class ParquetReadSupport(
       enableVectorizedReader = true,
       datetimeRebaseMode = LegacyBehaviorPolicy.CORRECTED,
       int96RebaseMode = LegacyBehaviorPolicy.LEGACY,
-      sparkNewerThan320)
+      false)
   }
 
   /**

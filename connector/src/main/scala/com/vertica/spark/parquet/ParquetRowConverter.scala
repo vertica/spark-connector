@@ -400,7 +400,8 @@ private[parquet] class ParquetRowConverter(
           convertTz,
           datetimeRebaseMode,
           int96RebaseMode,
-          wrappedUpdater)
+          wrappedUpdater,
+          sparkNewerThan320)
 
       case t =>
         throw new RuntimeException(
