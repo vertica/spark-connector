@@ -245,11 +245,6 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   def readSchema(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[StructType] = {
-    val tableName = tableSource match {
-      case tableName: TableName => tableName.getFullTableName.replaceAll("\"","")
-      case _ => ""
-    }
-
     this.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colInfo) =>
@@ -737,9 +732,11 @@ class SchemaToolsV10() extends SchemaTools {
 
   override def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     val tableName = tableSource match {
-      case tb: TableName => tb.getFullTableName
-      case TableQuery(_, _) => ""
+      case tableName: TableName => tableName.getFullTableName.replaceAll("\"","")
+      case _ => ""
     }
+
+    // return super.getColumnInfo(jdbcLayer, tableSource)
 
     super.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
@@ -763,13 +760,12 @@ class SchemaToolsV10() extends SchemaTools {
    * If column is not of complex type in Vertica, then return the ColumnDef as is.
    * */
   private def checkV10ComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='${colDef.label}'"
     def handleVerticaTypeFound(rs: ResultSet): ConnectorResult[ColumnDef] = {
       val verticaType = rs.getLong("data_type_id")
       if(verticaType > VERTICA_NATIVE_ARRAY_BASE_ID && verticaType < VERTICA_SET_MAX_ID) {
         Right(colDef.copy(colType = java.sql.Types.ARRAY))
       } else {
-        val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
+        val queryComplexType = s"SELECT field_type_name FROM complex_types WHERE type_id='$verticaType'"
         // If found, we return a struct regardless of the actual CT type.
         def handleCTFound(rs: ResultSet): ConnectorResult[ColumnDef] = Right(colDef.copy(colType = java.sql.Types.STRUCT))
         // Else, return the column def as is.
@@ -778,6 +774,7 @@ class SchemaToolsV10() extends SchemaTools {
       }
     }
 
+    val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$tableName' AND column_name='${colDef.label}'"
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
   }
 }

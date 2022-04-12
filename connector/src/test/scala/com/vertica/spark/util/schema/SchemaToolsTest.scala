@@ -471,7 +471,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  private def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
+  private[schema] def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
     val mockRs = mock[ResultSet]
     val queryColumnDef = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
     (jdbcLayer.query _)
@@ -483,7 +483,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     (mockRs.close _).expects()
   }
 
-  private def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
+  private[schema] def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
     val mockRs = mock[ResultSet]
     var elementId = verticaTypeId - SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
     val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
