@@ -16,8 +16,10 @@ package com.vertica.spark.util.listeners
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.SparkSession
 
 /**
  * This wrapper is created solely for compatibility with unit testing.
@@ -41,15 +43,16 @@ case class SparkContextWrapper(sparkContext: Option[SparkContext]){
  * */
 class ApplicationParquetCleaner(config: DistributedFilesystemReadConfig) extends SparkListener {
   private val logger = LogProvider.getLogger(classOf[ApplicationParquetCleaner])
-
-  private val fileStoreLayer = new HadoopFileStoreLayer(config.fileStoreConfig, config.metadata match {
+  private val sparkNewerThan320 = SparkVersionUtils.compareWith32(SparkSession.getActiveSession.get.version) > 0
+  private val metadata = config.metadata match {
     case Some(metadata) => if (config.getRequiredSchema.nonEmpty) {
       Some(config.getRequiredSchema)
     } else {
       Some(metadata.schema)
     }
     case _ => None
-  })
+  }
+  private val fileStoreLayer = new HadoopFileStoreLayer(config.fileStoreConfig, metadata, sparkNewerThan320)
 
   override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
     val hdfsPath = config.fileStoreConfig.address

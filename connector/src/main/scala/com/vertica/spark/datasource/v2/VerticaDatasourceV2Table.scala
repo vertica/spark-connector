@@ -89,7 +89,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         logger.debug("Config loaded")
 
         // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with the correct feature support
-        val comparison = SparkVersionUtils.getVersion(SparkSession.getActiveSession.get)
+        val comparison = SparkVersionUtils.getVersion(SparkSession.getActiveSession.get.version)
           .compare(SparkVersion(3,2,0))
         val sparkNewerThan31 = comparison >= 0
         val scanBuilder = if(sparkNewerThan31) {
