@@ -69,7 +69,7 @@ scalastyleFailOnWarning := true
 //   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
 // - Parquet reader files taken from third part spark library
 // - DataSourceUtilsSpark3_2_0 was copied from spark
-coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*;DataSourceUtilsSpark3_2_0"
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*;DataSourceUtilsSpark3_2_0.*"
 coverageMinimum := 80
 coverageFailOnMinimum := true
 
