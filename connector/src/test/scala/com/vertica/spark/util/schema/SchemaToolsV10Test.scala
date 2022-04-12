@@ -25,8 +25,6 @@ class SchemaToolsV10Test extends AnyFlatSpec with MockFactory with org.scalatest
     val colName = "col1"
     mockColumnMetadata(rsmd, TestColumnDef(1, colName, java.sql.Types.VARCHAR, "VARCHAR", 0, signed = false, nullable = true))
     mockColumnCount(rsmd, 1)
-    val tableName = tablename.getFullTableName
-    // (jdbcLayer.query _).expects(s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='$colName'")
 
     new SchemaToolsV10().getColumnInfo(jdbcLayer, tablename)
   }
