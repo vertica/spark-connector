@@ -312,8 +312,7 @@ class SchemaTools extends SchemaToolsInterface {
   private def checkForComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     colDef.colType match {
       case java.sql.Types.ARRAY |
-           java.sql.Types.STRUCT
-      => queryColumnDef(colDef, tableName, jdbcLayer)
+           java.sql.Types.STRUCT => queryColumnDef(colDef, tableName, jdbcLayer)
       case _ => Right(colDef)
     }
   }
@@ -730,6 +729,10 @@ class SchemaTools extends SchemaToolsInterface {
   }
 }
 
+/**
+ * A SchemaTools extension specifically for Vertica 10.x. Because Vertica 10 report Complex types as VARCHAR,
+ * SchemaToolsV10 will intercept super().getColumnInfo() calls to check for complex types through queries to Vertica.
+ * */
 class SchemaToolsV10() extends SchemaTools {
 
   override def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
@@ -753,11 +756,11 @@ class SchemaToolsV10() extends SchemaTools {
   }
 
   /**
-   * Special function for Vertica 10. We check to see if the column is actually a complex type in Vertica.
-   * If so, then we return a complex type ColumnDef. This ColumnDef structure is not correct; It is only meant as
-   * a marker so we can return an error later on.
+   * We check to see if the column is actually a complex type in Vertica 10. If so, then we return a complex type
+   * ColumnDef. This ColumnDef is not correct; It is only meant to mark the column as complex type so we can return
+   * an error later on.
    *
-   * If it is not a complex type in Vertica, then return the ColumnDef as is.
+   * If column is not of complex type in Vertica, then return the ColumnDef as is.
    * */
   private def checkV10ComplexType(colDef: ColumnDef, tableName: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='${colDef.label}'"
@@ -773,7 +776,6 @@ class SchemaToolsV10() extends SchemaTools {
         def handleCTNotFound(q:String): ConnectorResult[ColumnDef] = Right(colDef)
         JdbcUtils.queryAndNext(queryComplexType, jdbcLayer, handleCTFound, handleCTNotFound)
       }
-
     }
 
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
