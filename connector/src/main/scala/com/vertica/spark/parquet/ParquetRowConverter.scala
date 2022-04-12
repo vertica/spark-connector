@@ -18,9 +18,6 @@
 
 package org.apache.spark.sql.execution.datasources.parquet.vertica
 
-import com.vertica.spark.parquet.VerticaDataSourceUtils
-import com.vertica.spark.parquet.vertica.VerticaDataSourceUtils
-
 import java.math.{BigDecimal, BigInteger}
 import java.nio.ByteOrder
 import java.time.{ZoneId, ZoneOffset}
