@@ -79,7 +79,7 @@ object Main {
     // Define schema of a table with a 1D array column
     val schema = new StructType(Array(StructField("col1", ArrayType(IntegerType))))
     // data
-    val data = Seq(Row(Array(1, 2, 3, 4, 5, 6)))
+    val data = Seq(Row(Array(1, 1, 1, 2, 2, 2)))
     // Create a dataframe corresponding to the schema and data specified above
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     // Write dataframe to Vertica. note the data source
@@ -105,7 +105,7 @@ object Main {
     // data
     val data = Seq(Row(
       "vertica",
-      Array(Array(1, 2, 3, 4, 5, 6))))
+      Array(Array(9, 9, 9, 4, 4, 4))))
     // Create a dataframe corresponding to the schema and data specified above
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
     // Write dataframe to Vertica. note the data source

@@ -48,7 +48,7 @@ object Main extends App {
   var testsFailed: Seq[TestFailed] = List()
   def runSuite(suite: TestSuite): Unit = {
     val reporter = new VReporter()
-    val result = suite.run(None, Args(reporter))
+    val result = suite.run(Some("should write table with a struct of primitives"), Args(reporter))
     if(!result.succeeds()) {
       testsFailed = testsFailed ++ reporter.testsFailed
       throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
@@ -123,7 +123,7 @@ object Main extends App {
     tlsConfig = tlsConfig)
 
   try {
-    runSuite(new JDBCTests(jdbcConfig))
+    // runSuite(new JDBCTests(jdbcConfig))
 
     val filename = conf.getString("functional-tests.filepath")
     val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
@@ -223,14 +223,14 @@ object Main extends App {
       awsEnableSsl,
       awsEnablePathStyle
     ))
-    runSuite(new HDFSTests(
-      fileStoreConfig,
-      jdbcConfig
-    ))
-
-    runSuite(new CleanupUtilTests(
-      fileStoreConfig
-    ))
+    // runSuite(new HDFSTests(
+    //   fileStoreConfig,
+    //   jdbcConfig
+    // ))
+    //
+    // runSuite(new CleanupUtilTests(
+    //   fileStoreConfig
+    // ))
 
     val writeOpts = readOpts
     runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))

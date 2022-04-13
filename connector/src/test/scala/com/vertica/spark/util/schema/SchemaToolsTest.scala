@@ -629,7 +629,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "provide a good error message when trying to convert invalid Spark types to SQL types" in {
-    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0, 0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(CharType(0), 0, 0, Metadata.empty) match {
       case Left(err) =>
         err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -658,30 +658,36 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   it should "Convert basic spark types to vertica types" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1, 0) == Right("VARBINARY(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1, 0) == Right("BOOLEAN"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1, 0 ) == Right("TINYINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0 ) == Right("DATE"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0) == Right("INTERVAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0) == Right("DOUBLE PRECISION"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0, 0), 1 , 0) == Right("DECIMAL"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(5, 2), 1 , 0) == Right("DECIMAL(5, 2)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0 ) == Right("FLOAT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0) == Right("INTEGER"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0) == Right("BIGINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 , 0) == Right("null"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 , 0) == Right("SMALLINT"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0) == Right("TIMESTAMP"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BinaryType, 1, 0, Metadata.empty) == Right("VARBINARY(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.BooleanType, 1, 0, Metadata.empty) == Right("BOOLEAN"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ByteType, 1, 0, Metadata.empty) == Right("TINYINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DateType, 1, 0, Metadata.empty ) == Right("DATE"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.CalendarIntervalType, 1, 0, Metadata.empty) == Right("INTERVAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DoubleType, 1 , 0, Metadata.empty) == Right("DOUBLE PRECISION"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(0, 0), 1 , 0, Metadata.empty) == Right("DECIMAL"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.DecimalType(5, 2), 1 , 0, Metadata.empty) == Right("DECIMAL(5, 2)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.FloatType, 1, 0, Metadata.empty ) == Right("FLOAT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.IntegerType, 1 , 0, Metadata.empty) == Right("INTEGER"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.LongType, 1 , 0, Metadata.empty) == Right("BIGINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.NullType, 1 , 0, Metadata.empty) == Right("null"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.ShortType, 1 , 0, Metadata.empty) == Right("SMALLINT"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.TimestampType, 1 , 0, Metadata.empty) == Right("TIMESTAMP"))
   }
 
   it should "Convert Spark Sql array to Vertica array" in {
     val schemaTools = new SchemaTools
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0) == Right("ARRAY[VARCHAR(0)]"))
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2) == Right("ARRAY[VARCHAR(0),2]"))
-    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
-    // schema representing Array[Row]
-    val schema = ArrayType(StructType(Array(StructField("key",StringType), StructField("value", IntegerType))))
-    assert(schemaTools.getVerticaTypeFromSparkType(schema, 0, 0) == Right("ARRAY[ROW(\"key\" VARCHAR(0), \"value\" INTEGER)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, Metadata.empty) == Right("ARRAY[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, Metadata.empty) == Right("ARRAY[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(ArrayType(StringType)), 100, 2, Metadata.empty) == Right("ARRAY[ARRAY[VARCHAR(100),2],2]"))
+  }
+
+  it should "Convert Spark Set to Vertica Set" in {
+    val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build
+    val schemaTools = new SchemaTools
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, metadata) == Right("SET[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2,  metadata) == Right("SET[VARCHAR(0),2]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 0, Metadata.empty) == Right("ARRAY[VARCHAR(0)]"))
+    assert(schemaTools.getVerticaTypeFromSparkType(ArrayType(StringType), 0, 2, Metadata.empty) == Right("ARRAY[VARCHAR(0),2]"))
   }
 
   it should "Convert struct to Vertica row" in {
@@ -689,11 +695,11 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val primitiveRow = StructType(Array(
       StructField("col1", IntegerType, false, Metadata.empty),
       StructField("col2", IntegerType, false, Metadata.empty)))
-    assert(schemaTools.getVerticaTypeFromSparkType(primitiveRow, 0, 0)
+    assert(schemaTools.getVerticaTypeFromSparkType(primitiveRow, 0, 0, Metadata.empty)
       == Right("ROW(\"col1\" INTEGER, \"col2\" INTEGER)"))
 
     val nativeArrayRow = StructType(Array(StructField("col1", ArrayType(IntegerType), true, Metadata.empty)))
-    assert(schemaTools.getVerticaTypeFromSparkType(nativeArrayRow, 0, 0)
+    assert(schemaTools.getVerticaTypeFromSparkType(nativeArrayRow, 0, 0, Metadata.empty)
       == Right("ROW(\"col1\" ARRAY[INTEGER])"))
 
     val nestedRows = StructType(Array(
@@ -701,17 +707,17 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         StructField("field1", IntegerType, true, Metadata.empty)
       )), true, Metadata.empty),
     ))
-    assert(schemaTools.getVerticaTypeFromSparkType(nestedRows, 0, 0)
+    assert(schemaTools.getVerticaTypeFromSparkType(nestedRows, 0, 0, Metadata.empty)
       == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
   }
 
   it should "convert Spark Map to Vertica Map" in {
     val schemaTools = new SchemaTools
-    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0) == Right(s"VARBINARY(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0, Metadata.empty) == Right(s"VARBINARY(65000)"))
   }
 
   it should "Provide error message on unknown element type conversion to vertica" in {
-    (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0) match {
+    (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0, Metadata.empty) match {
       case Left(err) =>
         err.getUnderlyingError match {
           case ErrorList(errors) => errors.toList.foreach(error => assert(error.getUserMessage ==
@@ -725,10 +731,10 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   it should "Convert string types to vertica type properly" in {
     val schemaTools = new SchemaTools
 
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024, 0) == Right("VARCHAR(1024)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000, 0) == Right("VARCHAR(5000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000, 0) == Right("VARCHAR(65000)"))
-    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000, 0) == Right("LONG VARCHAR(100000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 1024, 0, Metadata.empty) == Right("VARCHAR(1024)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 5000, 0, Metadata.empty) == Right("VARCHAR(5000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 65000, 0, Metadata.empty) == Right("VARCHAR(65000)"))
+    assert(schemaTools.getVerticaTypeFromSparkType(org.apache.spark.sql.types.StringType, 100000, 0, Metadata.empty) == Right("LONG VARCHAR(100000)"))
   }
 
   it should "Return a list of column names to use for copy statement" in {
@@ -844,7 +850,10 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val colDef = List(ColumnDef(colName, java.sql.Types.ARRAY, "SET", 0, 0, true, false, metadata, List(elementDef)))
 
     val colsString = new SchemaTools().makeColumnsString(colDef, requiredSchema)
-    assert(colsString.trim().equals(s"($colName::ARRAY[$typeName]) as $colName"))
+    println(colsString)
+    val expected = s"($colName::ARRAY[$typeName]) as $colName"
+    println(expected)
+    assert(colsString.trim().equals(expected))
   }
 }
 // For package private access without instantiation
