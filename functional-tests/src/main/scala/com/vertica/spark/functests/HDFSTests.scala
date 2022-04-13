@@ -35,7 +35,7 @@ import org.scalatest.BeforeAndAfterAll
  */
 
 class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
-  private val spark = SparkSession.builder()
+  private lazy val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .getOrCreate()

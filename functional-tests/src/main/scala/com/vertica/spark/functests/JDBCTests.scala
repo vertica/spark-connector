@@ -33,7 +33,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
   val tablename = "test_table"
 
-  private val _ = SparkSession.builder()
+  private lazy val _ = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
