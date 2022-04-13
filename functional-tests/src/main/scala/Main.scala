@@ -16,8 +16,11 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Args, TestSuite}
+import scopt.OParser
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 class VReporter extends org.scalatest.Reporter {
@@ -46,15 +49,19 @@ class VReporter extends org.scalatest.Reporter {
 
 object Main extends App {
   var testsFailed: Seq[TestFailed] = List()
-  def runSuite(suite: TestSuite): Unit = {
+  def runSuite(suite: TestSuite, testName: Option[String] = None): Unit = {
+    suite.suiteName
     val reporter = new VReporter()
-    val result = suite.run(None, Args(reporter))
+    val result = suite.run(testName, Args(reporter))
     if(!result.succeeds()) {
       testsFailed = testsFailed ++ reporter.testsFailed
       throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     }
     println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
   }
+
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", test: String = "")
+
 
   val conf: Config = ConfigFactory.load()
   var readOpts = Map(
@@ -94,7 +101,7 @@ object Main extends App {
   val auth = if(Try{conf.getString("functional-tests.password")}.isSuccess) {
     readOpts = readOpts + (
       "password" -> conf.getString("functional-tests.password"),
-    )
+      )
     BasicJdbcAuth(
       username = conf.getString("functional-tests.user"),
       password = conf.getString("functional-tests.password"),
@@ -121,129 +128,159 @@ object Main extends App {
     db = conf.getString("functional-tests.db"),
     auth = auth,
     tlsConfig = tlsConfig)
+  val filename = conf.getString("functional-tests.filepath")
 
-  try {
-    runSuite(new JDBCTests(jdbcConfig))
-
-    val filename = conf.getString("functional-tests.filepath")
-    val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
-      case (Some(accessKeyId), Some(secretAccessKey)) => {
-        Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
-      }
-      case (None, None) =>
-        for {
-          accessKeyId <- Try {
-            conf.getString("functional-tests.aws_access_key_id")
-          }.toOption
-          secretAccessKey <- Try {
-            conf.getString("functional-tests.aws_secret_access_key")
-          }.toOption
-        } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
-      case _ => None
+  val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
+    case (Some(accessKeyId), Some(secretAccessKey)) => {
+      Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
     }
+    case (None, None) =>
+      for {
+        accessKeyId <- Try {
+          conf.getString("functional-tests.aws_access_key_id")
+        }.toOption
+        secretAccessKey <- Try {
+          conf.getString("functional-tests.aws_secret_access_key")
+        }.toOption
+      } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
+    case _ => None
+  }
 
-
-    val awsRegion = sys.env.get("AWS_DEFAULT_REGION") match {
-      case Some(region) => Some(AWSArg(Visible, EnvVar, region))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_region")
-        }.toOption match {
-          case Some(region) => Some(AWSArg(Visible, ConnectorOption, region))
-          case None => None
-        }
+  val awsRegion = sys.env.get("AWS_DEFAULT_REGION") match {
+    case Some(region) => Some(AWSArg(Visible, EnvVar, region))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_region")
+      }.toOption match {
+        case Some(region) => Some(AWSArg(Visible, ConnectorOption, region))
+        case None => None
       }
     }
+  }
 
-    val awsSessionToken = sys.env.get("AWS_SESSION_TOKEN") match {
-      case Some(token) => Some(AWSArg(Visible, EnvVar, token))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_session_token")
-        }.toOption match {
-          case Some(token) => Some(AWSArg(Visible, ConnectorOption, token))
-          case None => None
-        }
+  val awsSessionToken = sys.env.get("AWS_SESSION_TOKEN") match {
+    case Some(token) => Some(AWSArg(Visible, EnvVar, token))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_session_token")
+      }.toOption match {
+        case Some(token) => Some(AWSArg(Visible, ConnectorOption, token))
+        case None => None
       }
     }
+  }
 
-    val awsCredentialsProvider = sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
-      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_credentials_provider")
-        }.toOption match {
-          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-          case None => None
-        }
+  val awsCredentialsProvider = sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
+    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_credentials_provider")
+      }.toOption match {
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
       }
     }
+  }
 
-    val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
-      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_enable_ssl")
-        }.toOption match {
-          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-          case None => None
-        }
+  val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
+    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_enable_ssl")
+      }.toOption match {
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
       }
     }
+  }
 
-    val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
-      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_endpoint")
-        }.toOption match {
-          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-          case None => None
-        }
+  val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
+    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_endpoint")
+      }.toOption match {
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
       }
     }
+  }
 
-    val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
-      case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
-      case None => {
-        Try {
-          conf.getString("functional-tests.aws_enable_path_style")
-        }.toOption match {
-          case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
-          case None => None
-        }
+  val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
+    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case None => {
+      Try {
+        conf.getString("functional-tests.aws_enable_path_style")
+      }.toOption match {
+        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case None => None
       }
     }
+  }
 
-    val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
-      awsRegion,
-      awsSessionToken,
-      awsCredentialsProvider,
-      awsEndpoint,
-      awsEnableSsl,
-      awsEnablePathStyle
-    ))
+  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
+    awsRegion,
+    awsSessionToken,
+    awsCredentialsProvider,
+    awsEndpoint,
+    awsEnableSsl,
+    awsEnablePathStyle
+  ))
 
-    runSuite(new HDFSTests(
-      fileStoreConfig,
-      jdbcConfig
-    ))
+  val writeOpts = readOpts
 
-    runSuite(new CleanupUtilTests(
-      fileStoreConfig
-    ))
+  val builder = OParser.builder[Options]
+  val optParser = {
+    import builder._
+    OParser.sequence(
+      opt[Unit]('l', "large")
+        .optional()
+        .action((_, options: Options) => options.copy(large = true))
+        .text("Include large data tests"),
+      opt[Unit]('v', "v10")
+        .action((_, options: Options) => options.copy(v10 = true))
+        .text("Use complex type tests for Vertica 10"),
+      opt[String]('s', "suite")
+        .action((value: String, options: Options) => options.copy(suite = value))
+        .text("A specific test suite name to run"),
+      opt[String]('t', "test")
+        .action((value: String, options: Options) => options.copy(test = value))
+        .text("Name of a specific test in a suite to run. Will error if option -s is not given."),
+     help('h', "help")
+        .text("Print help"),
+    )
+  }
 
-    val writeOpts = readOpts
-    runSuite(new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+  OParser.parse(optParser, args, Options()) match {
+    case Some(options) => executeTests(options)
+    case None => sys.exit(1)
+  }
 
-    if (args.length == 1 && args(0) == "Large") {
-      runSuite(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+  def executeTests(options: Options): Unit = {
+    val baseTestSuites = ListBuffer(
+      new JDBCTests(jdbcConfig),
+      new HDFSTests(fileStoreConfig, jdbcConfig),
+      new CleanupUtilTests(fileStoreConfig),
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+    )
+    if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+
+    val suitesForExecution = if (options.suite.isBlank) baseTestSuites.toList
+    else baseTestSuites.filter(_.suiteName.equals(options.suite)).toList
+    assert(suitesForExecution.nonEmpty, s"Test suite ${options.suite} does not exist.")
+    val testName: Option[String] = if (options.test.isBlank) None else Some("should " + options.test)
+    try {
+      suitesForExecution.foreach(suite => {
+        runSuite(suite, testName)
+      })
+    } finally {
+      if (testsFailed.nonEmpty)
+        println(s"SUMMARY: total ${testsFailed.length} tests failed")
+      testsFailed.foreach(test => {
+        println("- TEST FAILED: " + test.testName + "\n" + test.message + "\n")
+      })
     }
-  } finally {
-    if (testsFailed.nonEmpty)
-      println(s"SUMMARY: total ${testsFailed.length} tests failed")
-    testsFailed.foreach(test => {
-      println("- TEST FAILED: " + test.testName + "\n" + test.message + "\n")
-    })
   }
 }
