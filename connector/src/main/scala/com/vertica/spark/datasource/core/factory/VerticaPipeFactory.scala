@@ -19,8 +19,9 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.listeners.SparkContextWrapper
-import com.vertica.spark.util.schema.SchemaTools
+import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsV10}
 import com.vertica.spark.util.table.TableUtils
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
@@ -76,9 +77,13 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case None => None
           case Some(session) => Some(session.sparkContext)
         }
+
+        val verticaVersion = VerticaVersionUtils.getVersion(readLayer.get)
+        val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
+
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
           readLayer.get,
-          new SchemaTools,
+          schemaTools,
           new CleanupUtils,
           sparkContext = SparkContextWrapper(sparkContext)
         )
@@ -88,8 +93,9 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
-        val schemaTools = new SchemaTools
         writeLayer = checkJdbcLayer(writeLayer, cfg.jdbcConfig)
+        val verticaVersion = VerticaVersionUtils.getVersion(writeLayer.get)
+        val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         new VerticaDistributedFilesystemWritePipe(cfg,
           new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
           writeLayer.get,

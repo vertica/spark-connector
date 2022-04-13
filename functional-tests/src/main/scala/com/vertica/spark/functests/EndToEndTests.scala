@@ -15,19 +15,20 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, Date, Statement, Timestamp}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, _}
 import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, Metadata, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, Metadata, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.apache.spark.sql.functions._
 
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
@@ -4427,6 +4428,64 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(success)
 
     TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "Error on reading complex types" in {
+    Try {
+      val tableName = "dftest"
+      val stmt = conn.createStatement
+      val n = 3
+      // Creates a table called dftest with an integer attribute
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b row(int), c array[array[int]])")
+      val insert = "insert into " + tableName + " values(2, row(2), array[array[10]])"
+      // Inserts 20 rows of the value '2' into dftest
+      TestUtils.populateTableBySQL(stmt, insert, n)
+      // Read dftest into a dataframe
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(readOpts + ("table" -> tableName))
+        .load()
+      df.show()
+    } match {
+      case Success(_) => fail("Expected error on reading complex types")
+      case Failure(exp) => exp match {
+        case ConnectorException(connectorErr) => connectorErr match {
+          case ComplexTypeReadNotSupported(_,_) => succeed
+          case err => fail("Unexpected error: " + err.getFullContext)
+        }
+        case exp => fail("Unexpected exception", exp)
+      }
+    }
+  }
+
+  it should "Error on writing map to internal Vertica table" in {
+    Try {
+      val tableName = "dftest"
+      // Define schema of a table with a single integer attribute
+      val schema = new StructType(Array(StructField("col1", MapType(IntegerType, IntegerType))))
+      // Create a row with element '77'
+      val data = Seq(Row(Map()+(77 -> 88)))
+      // Create a dataframe corresponding to the schema and data specified above
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      // Outputs dataframe schema
+      println(df.toString())
+      // Save mode
+      val mode = SaveMode.Overwrite
+      // Write dataframe to Vertica
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts + ("table" -> tableName))
+        .mode(mode)
+        .save()
+
+    } match {
+      case Success(_) => fail("Expected to fail")
+      case Failure(exp) => exp match {
+        case ConnectorException(err) => err match {
+          case InternalMapNotSupported() => succeed
+          case _ => fail("Unexpected error " + err.getFullContext)
+        }
+        case _ => fail("Unexpected exception", exp)
+      }
+    }
   }
 
 }

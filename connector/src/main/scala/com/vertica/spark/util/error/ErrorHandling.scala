@@ -21,7 +21,7 @@ import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error.ErrorHandling.invariantViolation
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.{DataType, StructField}
 
 trait ConnectorError {
   // Adds context to an error
@@ -44,7 +44,7 @@ case class ContextError(ctxt: String, private val error: ConnectorError) extends
 }
 
 
-class ConnectorException(val error: ConnectorError) extends Exception {
+case class ConnectorException(val error: ConnectorError) extends Exception {
   override def getMessage: String = this.error.getUserMessage
 }
 
@@ -421,6 +421,13 @@ case class VerticaComplexTypeNotFound(typeId: Long) extends ConnectorError {
 case class VerticaNativeTypeNotFound(verticaId: Long) extends ConnectorError {
   override def getFullContext: String = s"Vertica type $verticaId not found in vertica types table."
 }
+case class EmptySchemaError() extends SchemaError {
+  def getFullContext: String = "Table schema requires at least one native type column"
+}
+case class InvalidTableSchemaComplexType() extends SchemaError {
+  def getFullContext: String = "Table schema with complex types requires at least one native type column. Refer to Vertica complex types documentation for more details." +
+  "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ExternalTypes.htm"
+}
 /**
   * Enumeration of the list of possible JDBC errors.
   */
@@ -482,6 +489,26 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
   def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
     "\nSQL type value: " + sqlType
+}
+case class ComplexTypeReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support reading the following complex types columns: " +
+    colList.map(_.name).mkString(", ")
+}
+case class ComplexTypeWriteNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support writing the following complex types columns: " +
+   colList.map(_.name).mkString(", ")
+}
+case class InternalMapNotSupported() extends SchemaError {
+  override def getFullContext: String = "Internal Vertica tables does not support Map columns. Map data structure can be represented internally as Array[Rows(key, value)]. Refer to Vertica documentation for more details." +
+  "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm \n"
+}
+case class NativeArrayReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support reading the following native array columns: " +
+   colList.map(_.name).mkString(", ")
+}
+case class NativeArrayWriteNotSupported(colList: List[StructField], version: String) extends SchemaError {
+  override def getFullContext: String = s"Vertica $version does not support writing the following native array columns: " +
+  colList.map(_.name).mkString(", ")
 }
 case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."

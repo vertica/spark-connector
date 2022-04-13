@@ -13,13 +13,13 @@
 
 package com.vertica.spark.util.error
 
-import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError}
+import com.vertica.spark.datasource.v2.ExpectedRowDidNotExistError
 import com.vertica.spark.util.general.Utils
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.types.{IntegerType, MapType, StructField, StructType}
 
 import scala.util.{Failure, Success, Try}
 
@@ -212,7 +212,9 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(UnknownColumnTypesError())
       checkErrReturnsMessages(CreateExternalTableAlreadyExistsError())
       checkErrReturnsMessages(CreateExternalTableMergeKey())
-
+      checkErrReturnsMessages(EmptySchemaError())
+      checkErrReturnsMessages(InternalMapNotSupported())
+      checkErrReturnsMessages(InvalidTableSchemaComplexType())
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()
@@ -338,5 +340,26 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       case Failure(e) => fail(e)
       case Success(_) => ()
     }
+  }
+
+  it should "list all columns in error message" in {
+    val versionString = "1.2.3"
+    val colList = List(StructField("col1", StructType(Nil)), StructField("col2",  IntegerType))
+
+    val expected2 = s"Vertica $versionString does not support reading the following complex types columns: " +
+     colList.map(_.name).mkString(", ")
+    assert(ComplexTypeReadNotSupported(colList, "1.2.3").getFullContext == expected2)
+
+    val expected3 = s"Vertica $versionString does not support writing the following complex types columns: " +
+      colList.map(_.name).mkString(", ")
+    assert(ComplexTypeWriteNotSupported(colList, "1.2.3").getFullContext == expected3)
+
+    val expected4 = s"Vertica $versionString does not support writing the following native array columns: " +
+      colList.map(_.name).mkString(", ")
+    assert(NativeArrayWriteNotSupported(colList, "1.2.3").getFullContext == expected4)
+
+    val expected5 = s"Vertica $versionString does not support reading the following native array columns: " +
+      colList.map(_.name).mkString(", ")
+    assert(NativeArrayReadNotSupported(colList, "1.2.3").getFullContext == expected5)
   }
 }

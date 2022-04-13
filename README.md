@@ -166,7 +166,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types requires Vertica 11 and Vertica's JDBC connector 11.
+Complex data types require at least Vertica 11 and Vertica JDBC Driver 11.
 
 ### Complex Type Conversion
 
@@ -179,15 +179,13 @@ Complex data types requires Vertica 11 and Vertica's JDBC connector 11.
 
 Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
 
-- Maps are only supported in external tables, but can model an internal Map as an `Array[Row(key, value)]`. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
-- Arrays and Sets do not support Long types
-
-For Map type, refer to  for more details.
+- While maps are only supported in external tables, it can be modeled as `Array[Row(key, value)]` for use in internal tables. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
+- Arrays and Sets do not support Long types.
 
 ### Array
-There are two types of arrays supported by Vertica, native and nested arrays (non-native arrays). More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
-- On save operations, native and non-native arrays are supported.
-- On load operations, on native arrays are supported for now.
+There are two types of arrays supported by Vertica, native and complex arrays. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
+- On Dataframe save() to Vertica, native and complex arrays are supported.
+- On DataFrame load() from Vertica, only native arrays are supported for now.
 
 ### Set
 JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). Thus, it is represented as an array in Spark with its metadata containing `is_vertica_set = true`:
@@ -201,6 +199,8 @@ Not yet supported.
 Not yet supported.
 
 ### Backwards Compatibility
+
+For Vertica 10, only saving native arrays is supported.
 For Vertica 10.x **only 1D array save() is supported.**  
 
 ## Examples

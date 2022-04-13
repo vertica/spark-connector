@@ -27,6 +27,7 @@ import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.version.VerticaVersionUtilsTest
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 
@@ -67,6 +68,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(expectedJdbcCommand, expectedJdbcParams).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
     jdbcLayer
   }
 
@@ -169,6 +171,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(expectedJdbcCommand, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -188,6 +191,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(fileStoreLayer).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
@@ -211,6 +215,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.execute _).expects(expectedJdbcCommand, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1", StructType(Nil), query)
@@ -230,6 +236,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.close _).expects().returning(Right(()))
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
@@ -253,6 +261,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Left(ConnectionError(new Exception())))
     (jdbcLayer.close _).expects().returning(Right(()))
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -293,6 +303,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right())
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -342,6 +354,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right())
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
@@ -402,6 +416,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
@@ -450,6 +466,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
 
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
@@ -486,6 +504,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.execute _).expects(*, *).returning(Right(()))
     (jdbcLayer.close _).expects().returning(Right(()))
 
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1")
@@ -519,6 +539,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.execute _).expects(*, *).returning(Right())
     (jdbcLayer.close _).expects().returning(Right(()))
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val cleanupUtils = mock[CleanupUtilsInterface]
     (cleanupUtils.cleanupAll _).expects(*,*).returning(Right(()))
@@ -951,6 +973,8 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val jdbcLayer = mock[JdbcLayerInterface]
     (jdbcLayer.configureSession _).expects(*).returning(Right(()))
     (jdbcLayer.close _).expects().returning(Right(()))
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
     val cleanupUtils = mock[CleanupUtilsInterface]
 

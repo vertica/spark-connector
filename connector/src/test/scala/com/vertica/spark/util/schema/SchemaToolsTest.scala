@@ -13,12 +13,11 @@
 
 package com.vertica.spark.util.schema
 
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalamock.scalatest.MockFactory
+
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
-
 import com.vertica.spark.config.{TableName, TableQuery}
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
@@ -27,13 +26,13 @@ import com.vertica.spark.util.error._
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
 /**
-  * Tests functionality of schema tools: converting schema between JDBC and Spark types.
-  *
-  * Tests here not exhaustive of all possible options, covers common cases and edge cases. Integration tests should cover a wider selection of closer to real world cases of table schema.
-  */
-class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
+ * Tests functionality of schema tools: converting schema between JDBC and Spark types.
+ *
+ * Tests here not exhaustive of all possible options, covers common cases and edge cases. Integration tests should cover a wider selection of closer to real world cases of table schema.
+ */
+class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.OneInstancePerTest {
 
-  private def mockJdbcDeps(tablename: TableName): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+  private[schema] def mockJdbcDeps(tablename: TableName): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
@@ -46,7 +45,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   }
 
-  private def mockJdbcDepsQuery(query: TableQuery): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
+  private[schema] def mockJdbcDepsQuery(query: TableQuery): (JdbcLayerInterface, ResultSet, ResultSetMetaData) = {
     val jdbcLayer = mock[JdbcLayerInterface]
     val resultSet = mock[ResultSet]
     val rsmd = mock[ResultSetMetaData]
@@ -59,7 +58,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
 
   }
 
-  private def mockColumnMetadata(rsmd: ResultSetMetaData, col: TestColumnDef) = {
+  private[schema] def mockColumnMetadata(rsmd: ResultSetMetaData, col: TestColumnDef) = {
     (rsmd.getColumnLabel _).expects(col.index).returning(col.name)
     (rsmd.getColumnType _).expects(col.index).returning(col.colType)
     (rsmd.getColumnTypeName _).expects(col.index).returning(col.colTypeName)
@@ -68,7 +67,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     (rsmd.isNullable _).expects(col.index).returning(if(col.nullable) ResultSetMetaData.columnNullable else ResultSetMetaData.columnNoNulls)
   }
 
-  private def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
+  private[schema] def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
@@ -119,7 +118,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     mockColumnCount(rsmd, 3)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
-      case Left(_) => fail
+      case Left(err) => fail(err.getFullContext)
       case Right(schema) =>
         val fields = schema.fields
         assert(fields(0).name == "col1")
@@ -454,6 +453,26 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  it should "parse Vertica row as Struct" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.STRUCT, "ROW", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+    mockColumnCount(rsmd, 1)
+
+    val verticaType = 123456789L
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaType, jdbcLayer)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>  fail(error.getFullContext)
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields.head.dataType.isInstanceOf[StructType])
+        assert(fields.head.dataType.asInstanceOf[StructType].fields.isEmpty)
+    }
+  }
+
   it should "error on type not found" in {
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
@@ -472,7 +491,7 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
-  private def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
+  private[schema] def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
     val mockRs = mock[ResultSet]
     val queryColumnDef = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
     (jdbcLayer.query _)
@@ -480,11 +499,11 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
       .returns(Right(mockRs))
     (mockRs.next _).expects().returns(true)
     (mockRs.getLong: String => Long).expects("data_type_id").returning(verticaTypeFound)
-    (mockRs.getString: String => String).expects("data_type").returning("VerticaTypeString")
+    (mockRs.getString: String => String).expects("data_type").returning("VerticaTypeName")
     (mockRs.close _).expects()
   }
 
-  private def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
+  private[schema] def mockQueryTypes(verticaTypeId: Long, hasData: Boolean, jdbcLayer: JdbcLayerInterface): ResultSet = {
     val mockRs = mock[ResultSet]
     var elementId = verticaTypeId - SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
     val isSet = elementId > SchemaTools.VERTICA_PRIMITIVES_MAX_ID
@@ -811,6 +830,35 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     }
   }
 
+  private val primitiveCol = StructField("col1", IntegerType)
+  private val nativeArrayCol = StructField("col1", ArrayType(IntegerType))
+  private val complexArrayCol = StructField("col1", ArrayType(ArrayType(IntegerType)))
+  private val mapCol = StructField("col1", MapType(IntegerType, IntegerType))
+  private val rowCol = StructField("col1", StructType(Array(StructField("col2", IntegerType))))
+
+  it should "Error when schema only contains complex types columns" in {
+    val schemaTools = new SchemaTools()
+
+    val failingSchema = StructType(Array(complexArrayCol, mapCol, rowCol))
+    assert(schemaTools.checkValidTableSchema(failingSchema)
+      == Left(InvalidTableSchemaComplexType()))
+
+    val passingSchema1 = StructType(Array(primitiveCol, complexArrayCol, mapCol, rowCol))
+    assert(schemaTools.checkValidTableSchema(passingSchema1) == Right())
+
+    val passingSchema2 = StructType(Array(nativeArrayCol, complexArrayCol, mapCol, rowCol))
+    assert(schemaTools.checkValidTableSchema(passingSchema2) == Right())
+
+    val passingSchema3 = StructType(Array(nativeArrayCol, primitiveCol))
+    assert(schemaTools.checkValidTableSchema(passingSchema3) == Right())
+  }
+
+  it should "Error on empty schema" in {
+    val emptySchema = new StructType(Array())
+    assert(new SchemaTools().checkValidTableSchema(emptySchema) == Left(EmptySchemaError()))
+  }
+
+
   it should "Cast Vertica SET to ARRAY in column string" in {
     val requiredSchema = StructType(Nil)
 
@@ -828,3 +876,5 @@ class SchemaToolsTests extends AnyFlatSpec with BeforeAndAfterAll with MockFacto
     assert(colsString.trim().equals(expected))
   }
 }
+// For package private access without instantiation
+object SchemaToolsTests extends SchemaToolsTests
