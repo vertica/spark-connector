@@ -214,6 +214,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(CreateExternalTableMergeKey())
       checkErrReturnsMessages(EmptySchemaError())
       checkErrReturnsMessages(InternalMapNotSupported())
+      checkErrReturnsMessages(InvalidTableSchemaComplexType())
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()
@@ -345,24 +346,20 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val versionString = "1.2.3"
     val colList = List(StructField("col1", StructType(Nil)), StructField("col2",  IntegerType))
 
-    val expected1 = "Table schema with complex types requires at least one native type column.\n" +
-      "Complex types columns: " + colList.map(_.name).mkString(", ")
-    assert(InvalidTableSchemaComplexType(colList).getFullContext == expected1)
-
-    val expected2 = s"Vertica $versionString does not support reading complex types.\n" +
-      s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+    val expected2 = s"Vertica $versionString does not support reading the following complex types columns: " +
+     colList.map(_.name).mkString(", ")
     assert(ComplexTypeReadNotSupported(colList, "1.2.3").getFullContext == expected2)
 
-    val expected3 = s"Vertica $versionString does not support writing complex types.\n" +
-      s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+    val expected3 = s"Vertica $versionString does not support writing the following complex types columns: " +
+      colList.map(_.name).mkString(", ")
     assert(ComplexTypeWriteNotSupported(colList, "1.2.3").getFullContext == expected3)
 
-    val expected4 = s"Vertica $versionString does not support writing native array.\n" +
-      s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+    val expected4 = s"Vertica $versionString does not support writing the following native array columns: " +
+      colList.map(_.name).mkString(", ")
     assert(NativeArrayWriteNotSupported(colList, "1.2.3").getFullContext == expected4)
 
-    val expected5 = s"Vertica $versionString does not support reading native array.\n" +
-      s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
+    val expected5 = s"Vertica $versionString does not support reading the following native array columns: " +
+      colList.map(_.name).mkString(", ")
     assert(NativeArrayReadNotSupported(colList, "1.2.3").getFullContext == expected5)
   }
 }

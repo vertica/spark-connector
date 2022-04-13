@@ -841,7 +841,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val failingSchema = StructType(Array(complexArrayCol, mapCol, rowCol))
     assert(schemaTools.checkValidTableSchema(failingSchema)
-      == Left(InvalidTableSchemaComplexType(List(rowCol, mapCol, complexArrayCol))))
+      == Left(InvalidTableSchemaComplexType()))
 
     val passingSchema1 = StructType(Array(primitiveCol, complexArrayCol, mapCol, rowCol))
     assert(schemaTools.checkValidTableSchema(passingSchema1) == Right())

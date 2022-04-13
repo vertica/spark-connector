@@ -652,7 +652,7 @@ class SchemaTools extends SchemaToolsInterface {
     val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
     if (nativeCols.isEmpty) {
       if(complexTypeCols.nonEmpty)
-        Left(InvalidTableSchemaComplexType(complexTypeCols))
+        Left(InvalidTableSchemaComplexType())
       else
         Left(EmptySchemaError())
     } else {
