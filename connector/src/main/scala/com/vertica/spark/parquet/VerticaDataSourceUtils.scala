@@ -26,6 +26,9 @@ import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
  * */
 object VerticaDataSourceUtils {
 
+  /**
+   * Create a function that rebase a given datetime value
+   * */
   def createDateRebaseFuncInRead(
                                  rebaseMode: LegacyBehaviorPolicy.Value,
                                  format: String): Int => Int = rebaseMode match {
@@ -38,6 +41,9 @@ object VerticaDataSourceUtils {
     case LegacyBehaviorPolicy.CORRECTED => identity[Int]
   }
 
+  /**
+   * Create a function that rebase a given timestamp value
+   * */
   def createTimestampRebaseFuncInRead(
                                       rebaseMode: LegacyBehaviorPolicy.Value,
                                       format: String): Long => Long = rebaseMode match {
