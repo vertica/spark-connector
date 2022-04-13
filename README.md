@@ -163,7 +163,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11.
+Complex data types require at least Vertica 11 and Vertica JDBC Driver 11.
 
 ### Complex Type Conversion
 
@@ -176,7 +176,7 @@ Complex data types requires at least Vertica 11 and Vertica's JDBC Driver 11.
 
 Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
 
-- While maps are only supported in external tables, it can bw modeled as `Array[Row(key, value)]` for use in internal tables. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
+- While maps are only supported in external tables, it can be modeled as `Array[Row(key, value)]` for use in internal tables. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
 - Arrays and Sets do not support Long types.
 
 ### Array
