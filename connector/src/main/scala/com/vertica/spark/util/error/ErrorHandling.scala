@@ -499,7 +499,8 @@ case class ComplexTypeWriteNotSupported(colList: List[StructField], version: Str
     s"Complex types columns are: ${colList.map(_.name).mkString(", ")}"
 }
 case class InternalMapNotSupported() extends SchemaError {
-  override def getFullContext: String = "Internal Vertica tables does not support Map columns. Map data structure can be represented internally as Array[Rows(key, value)]. Refer to Vertica documentation for more details."
+  override def getFullContext: String = "Internal Vertica tables does not support Map columns. Map data structure can be represented internally as Array[Rows(key, value)]. Refer to Vertica documentation for more details.\n" +
+  "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm \n"
 }
 case class NativeArrayReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
   override def getFullContext: String = s"Vertica $version does not support reading native array.\n" +
