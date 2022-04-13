@@ -24,10 +24,11 @@ class ComplexTypeUtils {
     schema
       .foldLeft(initialAccumulators)((acc, col) => {
         val (nativeCols, complexTypeCols) = acc
-        if (isNativeType(col))
+        if (isNativeType(col)) {
           (col :: nativeCols, complexTypeCols)
-        else
+        } else {
           (nativeCols, col :: complexTypeCols)
+        }
       })
   }
 
