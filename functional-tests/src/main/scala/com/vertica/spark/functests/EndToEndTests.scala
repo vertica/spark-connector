@@ -4457,7 +4457,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
   }
 
-  it should "Error on writing map internal Vertica table" in {
+  it should "Error on writing map to internal Vertica table" in {
     Try {
       val tableName = "dftest"
       // Define schema of a table with a single integer attribute
