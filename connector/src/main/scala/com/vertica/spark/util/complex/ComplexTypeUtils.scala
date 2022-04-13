@@ -24,22 +24,22 @@ class ComplexTypeUtils {
     schema
       .foldLeft(initialAccumulators)((acc, col) => {
         val (nativeCols, complexTypeCols) = acc
-        isNativeType(col) match {
-          case Right(col) => (col :: nativeCols, complexTypeCols)
-          case Left(col) => (nativeCols, col :: complexTypeCols)
-        }
+        if (isNativeType(col))
+          (col :: nativeCols, complexTypeCols)
+        else
+          (nativeCols, col :: complexTypeCols)
       })
   }
 
-  private def isNativeType(field: StructField): Either[StructField,StructField] = {
+  private def isNativeType(field: StructField): Boolean = {
     field.dataType match {
       case ArrayType(elementType, _) =>
         elementType match {
-          case MapType(_, _, _) | StructType(_) | ArrayType(_, _) => Left(field)
-          case _ => Right(field)
+          case MapType(_, _, _) | StructType(_) | ArrayType(_, _) => false
+          case _ => true
         }
-      case MapType(_, _, _) | StructType(_) => Left(field)
-      case _ => Right(field)
+      case MapType(_, _, _) | StructType(_) => false
+      case _ => true
     }
   }
 }
