@@ -425,7 +425,7 @@ case class EmptySchemaError() extends SchemaError {
   def getFullContext: String = "Table schema requires at least one native type column"
 }
 case class InvalidTableSchemaComplexType() extends SchemaError {
-  def getFullContext: String = "Table schema with complex types requires at least one native type column. Refer to Vertica complex types documentation for more details."+
+  def getFullContext: String = "Table schema with complex types requires at least one native type column. Refer to Vertica complex types documentation for more details." +
   "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ExternalTypes.htm"
 }
 /**
