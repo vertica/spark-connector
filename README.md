@@ -25,6 +25,7 @@ The connector relies on a distributed filesystem, such as HDFS, to act as a brid
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - A Vertica installation
+- Spark 3.0.0 or higher
 - An HDFS cluster or S3 bucket, for use as an intermediary between Spark and Vertica
 - A spark application, either running locally for quick testing, or running on a spark cluster. If using S3, Spark must be using hadoop 3.3
 
@@ -35,6 +36,8 @@ For an easier quick test of the connector using a dockerized environment, see [t
 Follow the [Vertica Documenation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm) for steps on installing Vertica.
 
 ### Spark
+
+The connector requires Spark 3.0.0 or higher.
 
 There are several examples of spark programs that use this connector in the [examples](/examples) directory. 
 
@@ -221,10 +224,6 @@ For information on how to configure Kerberos and TLS with the connector, see the
 For information on tuning performance, see [here in our performance-tests section.](performance-tests/README.md)
 
 ## Limitations
-
-The connector supports versions of Spark between 3.0 and 3.1.1.
-
-The connector supports basic Spark types. Complex types are not currently supported (arrays, maps, structs).
 
 If using S3 rather than HDFS, the spark cluster must be running with hadoop 3.3. Our [S3 user manual](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md) goes over how to configure this.
 
