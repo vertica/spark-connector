@@ -13,13 +13,13 @@
 
 package com.vertica.spark.util.error
 
-import com.vertica.spark.datasource.v2.{ExpectedRowDidNotExistError}
+import com.vertica.spark.datasource.v2.ExpectedRowDidNotExistError
 import com.vertica.spark.util.general.Utils
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.apache.hadoop.fs.Path
-import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.types.{IntegerType, MapType, StructField, StructType}
 
 import scala.util.{Failure, Success, Try}
 
@@ -212,7 +212,8 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(UnknownColumnTypesError())
       checkErrReturnsMessages(CreateExternalTableAlreadyExistsError())
       checkErrReturnsMessages(CreateExternalTableMergeKey())
-
+      checkErrReturnsMessages(EmptySchemaError())
+      checkErrReturnsMessages(InternalMapNotSupported())
     } match {
       case Failure(e) => fail(e)
       case Success(_) => ()
@@ -338,5 +339,22 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       case Failure(e) => fail(e)
       case Success(_) => ()
     }
+  }
+
+  it should "list all columns in error message" in {
+    val versionString = "1.2.3"
+    val list = List(StructField("col1", StructType(Nil)), StructField("col2",  IntegerType))
+
+    val expected1 = "Table schema with complex types requires at least one native type column.\n" +
+      "Complex types columns: " + list.map(_.name).mkString(", ")
+    assert(InvalidTableSchemaComplexType(list).getFullContext == expected1)
+
+    val expected2 = s"Vertica $versionString does not support reading complex types.\n" +
+      s"Complex types columns are: ${list.map(_.name).mkString(", ")}"
+    assert(ComplexTypeReadNotSupported(list, "1.2.3").getFullContext == expected2)
+
+    val expected3 = s"Vertica $versionString does not support writing complex types.\n" +
+      s"Complex types columns are: ${list.map(_.name).mkString(", ")}"
+    assert(ComplexTypeWriteNotSupported(list, "1.2.3").getFullContext == expected3)
   }
 }
