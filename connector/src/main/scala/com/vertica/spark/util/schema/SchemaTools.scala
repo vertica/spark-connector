@@ -466,7 +466,7 @@ class SchemaTools extends SchemaToolsInterface {
         case ArrayType(elementType, _) =>
           recursion(elementType, s"$leftAccumulator$keyword[", s"$length]$rightAccumulator", depth + 1)
         case _ =>
-          this.sparkPrimitiveToVerticaPrimitive(dataType, strlen) match {
+          this.getVerticaTypeFromSparkType(dataType, strlen, arrayLength, metadata) match {
             case Right(verticaType) =>
               Right(s"$leftAccumulator$verticaType$rightAccumulator")
             case Left(error) => Left(error)
