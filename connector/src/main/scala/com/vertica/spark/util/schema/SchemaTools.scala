@@ -169,24 +169,27 @@ class SchemaTools extends SchemaToolsInterface {
                                childDefs: List[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => getArrayType(childDefs)
+      case java.sql.Types.STRUCT => Right(StructType(List()))
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
     }
   }
 
   private def getArrayType(elementDef: List[ColumnDef]): Either[SchemaError, ArrayType] = {
     @tailrec
-    def makeNestedArrays(arrayDepth: Long, arrayElement: DataType): DataType = {
+    def makeNestedArrays(arrayDepth: Long, arrayElement: DataType): ArrayType = {
       if(arrayDepth > 0) {
         makeNestedArrays(arrayDepth - 1, ArrayType(arrayElement))
       } else {
-        arrayElement
+        ArrayType(arrayElement)
       }
     }
 
     elementDef.headOption match {
       case Some(element) =>
         getCatalystTypeFromJdbcType(element.colType, element.size, element.scale, element.signed, element.colTypeName) match {
-          case Right(elementType) => Right(ArrayType(makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType)))
+          case Right(elementType) =>
+            val arrayType = makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType)
+            Right(arrayType)
           case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
         }
       case None => Left(MissingElementTypeError())
@@ -233,7 +236,6 @@ class SchemaTools extends SchemaToolsInterface {
       case java.sql.Types.ROWID => LongType
       case java.sql.Types.SMALLINT => IntegerType
       case java.sql.Types.SQLXML => StringType
-      case java.sql.Types.STRUCT => StringType
       case java.sql.Types.TIME => StringType
       case java.sql.Types.TIMESTAMP => TimestampType
       case java.sql.Types.TINYINT => IntegerType

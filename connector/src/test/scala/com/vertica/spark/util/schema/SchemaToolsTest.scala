@@ -453,6 +453,26 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
+  it should "parse Vertica row as Struct" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.STRUCT, "ROW", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+    mockColumnCount(rsmd, 1)
+
+    val verticaType = 123456789L
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    mockQueryColumns(tableName, testColDef.name,verticaType, jdbcLayer)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>  fail(error.getFullContext)
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields.head.dataType.isInstanceOf[StructType])
+        assert(fields.head.dataType.asInstanceOf[StructType].fields.isEmpty)
+    }
+  }
+
   it should "error on type not found" in {
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
@@ -479,7 +499,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       .returns(Right(mockRs))
     (mockRs.next _).expects().returns(true)
     (mockRs.getLong: String => Long).expects("data_type_id").returning(verticaTypeFound)
-    (mockRs.getString: String => String).expects("data_type").returning("VerticaTypeString")
+    (mockRs.getString: String => String).expects("data_type").returning("VerticaTypeName")
     (mockRs.close _).expects()
   }
 
