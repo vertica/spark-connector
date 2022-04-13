@@ -133,7 +133,7 @@ trait SchemaToolsInterface {
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String]
 
   /**
-   * Check if the column types is valid for an internal table in Vertica.
+   * Check if the column schema is valid for as an internal Vertica table.
    *
    * @param schema schema of the table
    */
@@ -335,11 +335,16 @@ class SchemaTools extends SchemaToolsInterface {
     })
   }
 
+  /**
+   * Type name report by Vertica could be INTEGER or ARRAY[...] or ROW(...)
+   * and we want to extract just the type identifier
+   * */
   protected def getTypeName(dataType:String) : String = {
     dataType
-      .replace('[',',')
-      .replace(']',',')
-      .split(',')(0)
+      .replaceFirst("\\[",",")
+      .replaceFirst("\\(",",")
+      .split(',')
+      .head
   }
 
   /**
