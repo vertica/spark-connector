@@ -11,21 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.functests
+package com.vertica.spark.functests.endtoend
 
-import java.sql.{Connection, Date, Statement, Timestamp}
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.functests.TestUtils
+import com.vertica.spark.util.error._
 import org.apache.log4j.Logger
 import org.apache.spark.SparkException
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
-import org.apache.spark.sql.types.{BinaryType, BooleanType, ByteType, DateType, Decimal, DecimalType, DoubleType, FloatType, IntegerType, LongType, MapType, MetadataBuilder, ShortType, StringType, StructField, StructType, TimestampType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SparkSession}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.flatspec.AnyFlatSpec
 import org.apache.spark.sql.functions._
-import scala.util.{Failure, Success, Try}
+import org.apache.spark.sql.types._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+
+import java.sql.{Connection, Date, Statement, Timestamp}
 
 /**
  * Abstract class for test suits that test connector operations against Vertica. It initializes a SparkSession,

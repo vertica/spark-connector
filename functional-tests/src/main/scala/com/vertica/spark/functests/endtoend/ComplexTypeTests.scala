@@ -1,15 +1,11 @@
-package com.vertica.spark.functests
+package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, EmptySchemaError, InternalMapNotSupported}
-import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
-import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, MetadataBuilder, StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.functests.TestUtils
+import com.vertica.spark.util.schema.MetadataKey
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
-import java.sql.Connection
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 

@@ -15,6 +15,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
+import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests}
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Args, TestSuite}
@@ -233,7 +234,7 @@ object Main extends App {
     OParser.sequence(
       opt[Unit]('l', "large")
         .optional()
-        .action((_, options: Options) => options.copy(large = true))
+        .action((_, testList: Options) => testList.copy(large = true))
         .text("Include large data tests"),
       opt[Unit]('v', "v10")
         .action((_, options: Options) => options.copy(v10 = true))
@@ -256,15 +257,15 @@ object Main extends App {
 
   def executeTests(options: Options): Unit = {
     val baseTestSuites = ListBuffer(
-      // new JDBCTests(jdbcConfig),
-      // new HDFSTests(fileStoreConfig, jdbcConfig),
+      new JDBCTests(jdbcConfig),
+      new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
-      new Testing(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
-      // new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     )
-    // if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    // else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    // if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+
+    if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
 
     val suitesForExecution = if (options.suite.isBlank) baseTestSuites.toList
     else baseTestSuites.filter(_.suiteName.equals(options.suite)).toList
