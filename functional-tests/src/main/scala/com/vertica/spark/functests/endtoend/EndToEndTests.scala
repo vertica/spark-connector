@@ -24,9 +24,10 @@ import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.{Assertion, BeforeAndAfterAll, BeforeAndAfterEach}
 
 import java.sql.{Connection, Date, Statement, Timestamp}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Abstract class for test suits that test connector operations against Vertica. It initializes a SparkSession,
@@ -59,6 +60,16 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   override def afterAll(): Unit = {
     spark.close()
     conn.close()
+  }
+
+  protected def failIfError(result: Try[Assertion]): Assertion = {
+    result match {
+      case Success(_) => succeed
+      case Failure(exception) => exception match {
+        case ConnectorException(error) => fail("Unexpected connector error: " + error.getFullContext)
+        case e: Throwable => fail("Unexpected exception", e)
+      }
+    }
   }
 }
 
