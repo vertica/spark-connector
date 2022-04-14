@@ -50,17 +50,13 @@ case class VReporter(suiteName: String) extends org.scalatest.Reporter {
 case class TestSuiteFailed(tests: List[TestFailed] = List(), failedCount: Int, total: Int)
 
 object Main extends App {
-  var testSuitesFailed: List[VReporter] = List()
-  def runSuite(suite: TestSuite, testName: Option[String] = None): Boolean = {
+  def runSuite(suite: TestSuite, testName: Option[String] = None): VReporter = {
     suite.suiteName
     val reporter = VReporter(suite.suiteName)
     val result = suite.run(testName, Args(reporter))
-    val status = if (result.succeeds()) "passed" else {
-      testSuitesFailed = testSuitesFailed :+ reporter
-      "failed"
-    }
+    val status = if (result.succeeds()) "passed" else "failed"
     println(suite.suiteName + "-- Test run "+ status +": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
-    result.succeeds()
+    reporter
   }
 
   case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", test: String = "")
@@ -260,40 +256,40 @@ object Main extends App {
 
   def executeTests(options: Options): Unit = {
     val baseTestSuites = ListBuffer(
-      new JDBCTests(jdbcConfig),
-      new HDFSTests(fileStoreConfig, jdbcConfig),
+      // new JDBCTests(jdbcConfig),
+      // new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
-      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+      new Testing(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+      // new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     )
-    if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
+    // if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    // else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
+    // if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
 
     val suitesForExecution = if (options.suite.isBlank) baseTestSuites.toList
     else baseTestSuites.filter(_.suiteName.equals(options.suite)).toList
     assert(suitesForExecution.nonEmpty, s"Test suite ${options.suite} does not exist.")
     val testName: Option[String] = if (options.test.isBlank) None else Some("should " + options.test)
-    val result = Try {
-      suitesForExecution.foreach(suite => {
-        runSuite(suite, testName)
-      })
-    }
 
-    if(testSuitesFailed.isEmpty) {
-      println(s"ALL PASSED")
-      println(s"Test suites executed, in order: \n" + suitesForExecution.map(_.suiteName).mkString(" -> "))
-      sys.exit(0)
-    }else {
-      println("TESTS FAILED")
-      println(s"Test suites executed, in order: \n" + suitesForExecution.map(_.suiteName).mkString(" -> "))
-      testSuitesFailed.foreach(report => {
-        println(s"SUMMARY: ${report.suiteName} failed ${report.errCount} out of ${report.testCount} tests")
-        report.testsFailed.foreach(failedTest => {
-          println(s" - FAILED: ${failedTest.testName}, message:")
-          println(s"  ${failedTest.message}")
-        })
-      })
-      sys.exit(1)
-    }
+    val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
+
+    println("SUMMARY:")
+    println(s"Test suites executed, in order: \n" + results.map(_.suiteName).mkString(" -> "))
+    val exitCode = results.map(result => printResultAndGetFailedCount(result)).sum
+    sys.exit(exitCode)
   }
+
+  private def printResultAndGetFailedCount(result: VReporter) = {
+    val testFailed = result.errCount > 0
+    val status = if (testFailed) "FAILED" else "PASSED"
+    println(s"${result.suiteName} $status")
+    if (testFailed) {
+      result.testsFailed.foreach(failedTest => {
+        println(s" - FAILED: ${failedTest.testName}, message:")
+        println(s"  ${failedTest.message}")
+      })
+    }
+    result.errCount
+  }
+
 }
