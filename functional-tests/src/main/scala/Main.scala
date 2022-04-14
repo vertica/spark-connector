@@ -18,7 +18,7 @@ import com.vertica.spark.functests._
 import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests}
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.{Args, TestSuite}
+import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
 import scopt.OParser
 
 import scala.collection.mutable.ListBuffer
@@ -60,7 +60,7 @@ object Main extends App {
     reporter
   }
 
-  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", test: String = "")
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "")
 
   val conf: Config = ConfigFactory.load()
   var readOpts = Map(
@@ -243,7 +243,7 @@ object Main extends App {
         .action((value: String, options: Options) => options.copy(suite = value))
         .text("A specific test suite name to run"),
       opt[String]('t', "test")
-        .action((value: String, options: Options) => options.copy(test = value))
+        .action((value: String, options: Options) => options.copy(testName = value.trim))
         .text("Name of a specific test in a suite to run. Will error if option -s is not given."),
      help('h', "help")
         .text("Print help"),
@@ -256,21 +256,8 @@ object Main extends App {
   }
 
   def executeTests(options: Options): Unit = {
-    val baseTestSuites = ListBuffer(
-      new JDBCTests(jdbcConfig),
-      new HDFSTests(fileStoreConfig, jdbcConfig),
-      new CleanupUtilTests(fileStoreConfig),
-      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
-    )
-
-    if (options.v10) baseTestSuites.append(new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    else baseTestSuites.append(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
-    if (options.large) baseTestSuites.append(new LargeDataTests(readOpts, writeOpts, jdbcConfig))
-
-    val suitesForExecution = if (options.suite.isBlank) baseTestSuites.toList
-    else baseTestSuites.filter(_.suiteName.equals(options.suite)).toList
-    assert(suitesForExecution.nonEmpty, s"Test suite ${options.suite} does not exist.")
-    val testName: Option[String] = if (options.test.isBlank) None else Some("should " + options.test)
+    val suitesForExecution = buildTestSuitesForExecution(options)
+    val testName = getTestName(options)
 
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
 
@@ -278,6 +265,37 @@ object Main extends App {
     println(s"Test suites executed, in order: \n" + results.map(_.suiteName).mkString(" -> "))
     val exitCode = results.map(result => printResultAndGetFailedCount(result)).sum
     sys.exit(exitCode)
+  }
+
+  private def getTestName(options: Options): Option[String] = {
+    if (options.testName.isBlank) {
+      None
+    } else {
+      val testName = if (!options.testName.startsWith("should")) {
+        "should " + options.testName
+      } else {
+        options.testName
+      }
+      Some(testName)
+    }
+  }
+
+  private def buildTestSuitesForExecution(options: Options): Seq[AnyFlatSpec with BeforeAndAfterAll] = {
+    var testSuites = Seq(
+      new JDBCTests(jdbcConfig),
+      new HDFSTests(fileStoreConfig, jdbcConfig),
+      new CleanupUtilTests(fileStoreConfig),
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+    )
+
+    testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+    else testSuites :+ new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+
+    testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig) else testSuites
+
+    val result = if (!options.suite.isBlank) testSuites.filter(_.suiteName.equals(options.suite)) else testSuites
+    assert(result.nonEmpty, s"Test suite ${options.suite} does not exist.")
+    result
   }
 
   private def printResultAndGetFailedCount(result: VReporter) = {
