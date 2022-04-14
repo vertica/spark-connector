@@ -267,7 +267,9 @@ class SchemaTools extends SchemaToolsInterface {
   case class ColumnInfoQueryData(tableName: String, dbSchema: String, emptyQuery: String)
   protected def getColumnInfoQueryData(tableSource: TableSource): ColumnInfoQueryData = tableSource match {
     case tb: TableName =>
-      ColumnInfoQueryData(tb.getTableName, tb.getDbSchema ,
+      ColumnInfoQueryData(
+        tb.getTableName.replace("\"",""),
+        tb.getDbSchema.replace("\"",""),
         // Query for an empty result set from Vertica.
         // This is simply so we can load the metadata of the result set
         // and use this to retrieve the name and type information of each column
@@ -326,8 +328,6 @@ class SchemaTools extends SchemaToolsInterface {
    * ColumnDefs through a series of JDBC queries to Vertica system tables.
    * */
   private def queryColumnDef(complexTypeColDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    val table = tableName.replace("\"", "")
-
     def handleColumnExist(rs: ResultSet): ConnectorResult[ColumnDef] = {
       // Note that data_type_id is Vertica's internal type id, not JDBC.
       val verticaType = rs.getLong("data_type_id")
@@ -342,7 +342,7 @@ class SchemaTools extends SchemaToolsInterface {
     // We query from Vertica for the column's Vertica type.
     val colName = complexTypeColDef.label
     val schemaCond = if(dbSchema.nonEmpty) s" AND table_schema='$dbSchema'" else ""
-    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$table'$schemaCond AND column_name='$colName'"
+    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='$colName'"
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleColumnExist)
   }
 
@@ -793,7 +793,7 @@ class SchemaToolsV10() extends SchemaTools {
         JdbcUtils.queryAndNext(queryComplexType, jdbcLayer, handleCTFound, handleCTNotFound)
       }
     }
-    val schemaCond = if(dbSchema.nonEmpty) s" AND $dbSchema" else ""
+    val schemaCond = if(dbSchema.nonEmpty) s" AND table_schema='$dbSchema'" else ""
     val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='${colDef.label}'"
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
   }
