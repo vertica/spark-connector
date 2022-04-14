@@ -238,13 +238,13 @@ object Main extends App {
         .text("Include large data tests"),
       opt[Unit]('v', "v10")
         .action((_, options: Options) => options.copy(v10 = true))
-        .text("Use complex type tests for Vertica 10"),
+        .text("Use Vertica 10 complex type tests"),
       opt[String]('s', "suite")
         .action((value: String, options: Options) => options.copy(suite = value))
-        .text("A specific test suite name to run"),
+        .text("Specify a specific test suite name to run"),
       opt[String]('t', "test")
         .action((value: String, options: Options) => options.copy(testName = value.trim))
-        .text("Name of a specific test in a suite to run. Will error if option -s is not given."),
+        .text("Specify a test name in a suite to run. Will error if option -s is not given."),
      help('h', "help")
         .text("Print help"),
     )
