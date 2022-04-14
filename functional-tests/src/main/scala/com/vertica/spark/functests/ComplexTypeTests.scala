@@ -2,7 +2,7 @@ package com.vertica.spark.functests
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, InternalMapNotSupported}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, EmptySchemaError, InternalMapNotSupported}
 import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, MetadataBuilder, StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}

@@ -23,7 +23,7 @@ import scopt.OParser
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
-class VReporter extends org.scalatest.Reporter {
+case class VReporter(suiteName: String) extends org.scalatest.Reporter {
   var testCount = 0
   var succeededCount = 0
   var errCount = 0
@@ -47,21 +47,23 @@ class VReporter extends org.scalatest.Reporter {
   }
 }
 
+case class TestSuiteFailed(tests: List[TestFailed] = List(), failedCount: Int, total: Int)
+
 object Main extends App {
-  var testsFailed: Seq[TestFailed] = List()
-  def runSuite(suite: TestSuite, testName: Option[String] = None): Unit = {
+  var testSuitesFailed: List[VReporter] = List()
+  def runSuite(suite: TestSuite, testName: Option[String] = None): Boolean = {
     suite.suiteName
-    val reporter = new VReporter()
+    val reporter = VReporter(suite.suiteName)
     val result = suite.run(testName, Args(reporter))
-    if(!result.succeeds()) {
-      testsFailed = testsFailed ++ reporter.testsFailed
-      throw new Exception(suite.suiteName + "-- Test run failed: " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+    val status = if (result.succeeds()) "passed" else {
+      testSuitesFailed = testSuitesFailed :+ reporter
+      "failed"
     }
-    println(suite.suiteName + "-- Test run succeeded: " + reporter.succeededCount + " out of " + reporter.testCount + " tests passed.")
+    println(suite.suiteName + "-- Test run "+ status +": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+    result.succeeds()
   }
 
   case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", test: String = "")
-
 
   val conf: Config = ConfigFactory.load()
   var readOpts = Map(
@@ -271,16 +273,27 @@ object Main extends App {
     else baseTestSuites.filter(_.suiteName.equals(options.suite)).toList
     assert(suitesForExecution.nonEmpty, s"Test suite ${options.suite} does not exist.")
     val testName: Option[String] = if (options.test.isBlank) None else Some("should " + options.test)
-    try {
+    val result = Try {
       suitesForExecution.foreach(suite => {
         runSuite(suite, testName)
       })
-    } finally {
-      if (testsFailed.nonEmpty)
-        println(s"SUMMARY: total ${testsFailed.length} tests failed")
-      testsFailed.foreach(test => {
-        println("- TEST FAILED: " + test.testName + "\n" + test.message + "\n")
+    }
+
+    if(testSuitesFailed.isEmpty) {
+      println(s"ALL PASSED")
+      println(s"Test suites executed, in order: \n" + suitesForExecution.map(_.suiteName).mkString(" -> "))
+      sys.exit(0)
+    }else {
+      println("TESTS FAILED")
+      println(s"Test suites executed, in order: \n" + suitesForExecution.map(_.suiteName).mkString(" -> "))
+      testSuitesFailed.foreach(report => {
+        println(s"SUMMARY: ${report.suiteName} failed ${report.errCount} out of ${report.testCount} tests")
+        report.testsFailed.foreach(failedTest => {
+          println(s" - FAILED: ${failedTest.testName}, message:")
+          println(s"  ${failedTest.message}")
+        })
       })
+      sys.exit(1)
     }
   }
 }
