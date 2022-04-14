@@ -25,7 +25,11 @@ In the sandbox environment, change your working directory to functional-tests
 cd spark-connector/functional-tests
 ```
 
-From the functional-tests directory, `sbt run` from the command line. Alternatively, to run the LargeDataTests, use `sbt "run Large"`.
+### Starting Functional Tests
+
+To execute the default functional tests, use `sbt run` from the command line.
+
+By default, a set of functional test suites will be executed, but you can specify arguments to modify you test run. For example, `sbt run -l` will add LargeDataTests to the test suites for execution. Use `sbt run -h` for a list of arguments. 
 
 ### Using S3:
 Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):

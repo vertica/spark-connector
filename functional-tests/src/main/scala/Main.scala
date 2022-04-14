@@ -52,15 +52,12 @@ case class TestSuiteFailed(tests: List[TestFailed] = List(), failedCount: Int, t
 
 object Main extends App {
   def runSuite(suite: TestSuite, testName: Option[String] = None): VReporter = {
-    suite.suiteName
     val reporter = VReporter(suite.suiteName)
     val result = suite.run(testName, Args(reporter))
     val status = if (result.succeeds()) "passed" else "failed"
     println(suite.suiteName + "-- Test run "+ status +": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
     reporter
   }
-
-  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "")
 
   val conf: Config = ConfigFactory.load()
   var readOpts = Map(
@@ -228,6 +225,7 @@ object Main extends App {
 
   val writeOpts = readOpts
 
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "")
   val builder = OParser.builder[Options]
   val optParser = {
     import builder._
