@@ -57,6 +57,15 @@ final case class TableName(name: String, dbschema: Option[String]) extends Table
     }
   }
 
+  def getTableName : String = EscapeUtils.sqlEscapeAndQuote(name)
+
+  def getDbSchema : String =  {
+    dbschema match {
+      case None => ""
+      case Some(schema) => EscapeUtils.sqlEscapeAndQuote(schema)
+    }
+  }
+
   /**
    * The table's name is used as an identifier for the operation.
    */
