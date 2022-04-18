@@ -225,24 +225,38 @@ object Main extends App {
 
   val writeOpts = readOpts
 
+  private def defaultTestSuite: String = {
+    val result = Seq(
+      new JDBCTests(jdbcConfig),
+      new HDFSTests(fileStoreConfig, jdbcConfig),
+      new CleanupUtilTests(fileStoreConfig),
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
+      new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+    ).mkString("\n")
+    closeSparkSession()
+    result + "\n"
+  }
+
   case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "")
   val builder = OParser.builder[Options]
   val optParser = {
     import builder._
     OParser.sequence(
+      note("The default test suites are:\n" + defaultTestSuite),
+      note("Use the following options to alter the test suites:\n"),
       opt[Unit]('l', "large")
         .optional()
         .action((_, testList: Options) => testList.copy(large = true))
-        .text("Include large data tests"),
+        .text("Add LargeDataTests to run."),
       opt[Unit]('v', "v10")
         .action((_, options: Options) => options.copy(v10 = true))
-        .text("Use Vertica 10 complex type tests"),
+        .text("Replace ComplexDataTypeTests with ComplexDataTypeTestsV10 for Vertica 10.x."),
       opt[String]('s', "suite")
         .action((value: String, options: Options) => options.copy(suite = value))
-        .text("Specify a specific test suite name to run"),
+        .text("Specify a specific test suite name to run."),
       opt[String]('t', "test")
         .action((value: String, options: Options) => options.copy(testName = value.trim))
-        .text("Specify a test name in a suite to run. Will error if option -s is not given."),
+        .text("Specify a test name in a suite to run. Require -s to be given."),
      help('h', "help")
         .text("Print help"),
     )
@@ -258,15 +272,17 @@ object Main extends App {
     val testName = getTestName(options)
 
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
-    SparkSession.getActiveSession match {
-      case Some(session) => session.close()
-      case _ =>
-    }
+    closeSparkSession()
 
     println("SUMMARY:")
     println(s"Test suites executed, in order: \n" + results.map(_.suiteName).mkString(" -> "))
     val exitCode = results.map(result => printResultAndGetFailedCount(result)).sum
     sys.exit(exitCode)
+  }
+
+  private def closeSparkSession(): Unit = SparkSession.getActiveSession match {
+    case Some(session) => session.close()
+    case _ =>
   }
 
   private def getTestName(options: Options): Option[String] = {
@@ -283,11 +299,11 @@ object Main extends App {
   }
 
   private def buildTestSuitesForExecution(options: Options): Seq[AnyFlatSpec with BeforeAndAfterAll] = {
-    var testSuites = Seq(
+    var testSuites =  Seq(
       new JDBCTests(jdbcConfig),
       new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
-      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
     )
 
     testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
@@ -295,9 +311,13 @@ object Main extends App {
 
     testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig) else testSuites
 
-    val result = if (!options.suite.isBlank) testSuites.filter(_.suiteName.equals(options.suite)) else testSuites
-    assert(result.nonEmpty, s"Test suite ${options.suite} does not exist.")
-    result
+    if(options.suite.isBlank) {
+      testSuites
+    } else {
+      val result = testSuites.filter(_.suiteName.equals(options.suite))
+      assert(result.nonEmpty, s"Test suite ${options.suite} does not exist.")
+      result
+    }
   }
 
   private def printResultAndGetFailedCount(result: VReporter) = {
