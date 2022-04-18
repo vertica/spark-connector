@@ -6,8 +6,9 @@ import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWri
 import com.vertica.spark.util.schema.MetadataKey
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
-import org.scalatest.Assertion
+import org.scalatest.{Assertion, stats}
 
+import java.util
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -108,20 +109,23 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     }
   }
 
-  it should "Error on reading complex types from Vertica 10" in {
+  import spark.implicits._
+
+  it should "error on reading complex types from Vertica 10" in {
+    val stagingPath = fsConfig.address + "dftest"
+    val columns = Seq("col1")
+    val data = Seq(Array(1,7,3,2,6,5), Array(1,7,3,2,6,5))
+    spark.sparkContext.parallelize(data)
+      .toDF(columns:_*)
+      .write.parquet(stagingPath)
+
+    spark.read.parquet(stagingPath).show()
     val tableName = "dftest"
-    val stmt = conn.createStatement
-    val n = 1
-    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
 
-    val insert = "insert into "+ tableName + " values(2)"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-
-    assert(df.count() == 1)
-    df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
-    TestUtils.dropTable(conn, tableName)
+    val stmt = conn.createStatement()
+    val query = s"CREATE EXTERNAL TABLE $tableName (col1 Array[int]) AS COPY FROM '$stagingPath/*.parquet'"
+    stmt.execute(query)
+    println(query)
   }
 
   it should "read varchar type from Vertica 10 with dbschema specified" in {
