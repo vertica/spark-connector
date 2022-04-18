@@ -72,7 +72,7 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     }
   }
 
-  it should "error on writing complex data to Vertica" in {
+  it should "error on writing complex type data to Vertica" in {
     val tableName = "dftest"
     val schema = new StructType(Array(
       StructField("ss", IntegerType),
@@ -90,14 +90,12 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
         .options(option)
         .mode(mode)
         .save()
-      fail()
     }
     TestUtils.dropTable(conn, tableName)
 
     result match {
       case Success(_) => fail("Expected failure")
       case Failure(exception) => exception match {
-        case e: Throwable => fail("Expected ConnectorException.", e)
         case ConnectorException(err) => err match {
           case value: ComplexTypeWriteNotSupported =>
             value.colList.foreach(col => {
@@ -105,6 +103,7 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
             })
           case _ => fail("Unexpected Connector Error")
         }
+        case e: Throwable => fail("Expected Exception.", e)
       }
     }
   }
@@ -131,13 +130,17 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     val n = 1
     TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a varchar)")
 
-    val insert = "insert into "+ tableName + " values(\"Test values\")"
+    val insert = "insert into "+ tableName + " values(\'test value\')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    val result = Try{spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()}
 
-    assert(df.count() == 1)
-    df.rdd.foreach(row => assert(row.getAs[String](0) == "a"))
+    result match {
+      case Failure(exception) => fail("Unexpected exception", exception)
+      case Success(df: DataFrame) =>
+        assert(df.count() == 1)
+        df.rdd.foreach(row => assert(row.getAs[String](0) == "test value"))
+    }
     TestUtils.dropTable(conn, tableName)
   }
 }
