@@ -225,7 +225,7 @@ object Main extends App {
 
   val writeOpts = readOpts
 
-  private def defaultTestSuite: String = {
+  private def defaultTestSuites: String = {
     val result = Seq(
       new JDBCTests(jdbcConfig),
       new HDFSTests(fileStoreConfig, jdbcConfig),
@@ -242,7 +242,7 @@ object Main extends App {
   val optParser = {
     import builder._
     OParser.sequence(
-      note("The default test suites are:\n" + defaultTestSuite),
+      note("The default test suites are:\n" + defaultTestSuites),
       note("Use the following options to alter the test suites:\n"),
       opt[Unit]('l', "large")
         .optional()
