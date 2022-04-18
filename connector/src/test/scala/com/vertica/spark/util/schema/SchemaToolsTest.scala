@@ -428,33 +428,6 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  it should "query columns in a table under a schema space" in {
-    val schema = "schema"
-    val tableSource = this.tablename.copy(dbschema = Some(schema))
-    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tableSource)
-    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
-    mockColumnMetadata(rsmd, testColDef)
-
-    val verticaArrayType = 1506
-    mockQueryColumns(tableSource.getTableName.replaceAll("\"", ""),
-      testColDef.name, verticaArrayType, jdbcLayer, schema)
-    val mockRs1 = mockQueryTypes(verticaArrayType, hasData = true,jdbcLayer)
-    (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
-    (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
-    mockColumnCount(rsmd, 1)
-
-    (new SchemaTools).readSchema(jdbcLayer, tableSource) match {
-      case Left(error) =>  fail(error.getFullContext)
-      case Right(schema) =>
-        val fields = schema.fields
-        assert(fields.length == 1)
-        assert(fields(0).dataType.isInstanceOf[ArrayType])
-        assert(fields(0).dataType.asInstanceOf[ArrayType]
-          .elementType.isInstanceOf[LongType])
-        assert(!fields(0).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
-    }
-  }
-
   it should "correctly detect Vertica Set" in {
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
@@ -507,7 +480,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val verticaArrayType = 1506
     val tableName = tablename.getFullTableName.replace("\"", "")
-    mockQueryColumns(tableName, testColDef.name, verticaArrayType, jdbcLayer)
+    mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
     mockColumnCount(rsmd, 1)
     val verticaElementType = verticaArrayType;
     mockQueryTypes(verticaElementType, hasData = false,jdbcLayer)
@@ -518,10 +491,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  private[schema] def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface, schema: String = ""): Unit = {
+  private[schema] def mockQueryColumns(tableName: String, colName: String, verticaTypeFound: Long, jdbcLayer: JdbcLayerInterface): Unit = {
     val mockRs = mock[ResultSet]
-    val schemaCond = if(schema.nonEmpty) s" AND table_schema='$schema'" else ""
-    val queryColumnDef = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='$colName'"
+    val queryColumnDef = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName' AND column_name='$colName'"
     (jdbcLayer.query _)
       .expects(queryColumnDef, *)
       .returns(Right(mockRs))

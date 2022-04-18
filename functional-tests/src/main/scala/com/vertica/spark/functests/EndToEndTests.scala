@@ -1588,40 +1588,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       case e: Exception => fail(e)
     }finally {
       stmt.close()
-      TestUtils.dropTable(conn, tableName1)
     }
-  }
-
-  it should "read dataframe with 1D array with schema option" in {
-    val tableName1 = "dftest_array"
-    val dbschema = "S2VTestSchema"
-    val nameWithSchema = s"$dbschema.$tableName1"
-    val n = 1
-    val stmt = conn.createStatement
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + nameWithSchema + " (a array[int])")
-
-    val insert = "insert into "+ nameWithSchema + " values(array[2])"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-    val options = readOpts + ("table" -> tableName1, "dbschema" -> dbschema)
-    val result = Try{
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-        .options(options).load()
-      assert(df.count() == 1)
-      assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
-      val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
-      assert(dataType.elementType.isInstanceOf[LongType])
-      df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
-    }
-    stmt.close()
     TestUtils.dropTable(conn, tableName1)
-
-    result match {
-      case Success(_) => succeed
-      case Failure(exp) => exp match {
-        case e: ConnectorException => fail(e.error.getFullContext)
-        case e: Throwable => fail(s"Unexpected exception: ", e)
-      }
-    }
   }
 
   it should "read Vertica SET as ARRAY" in {
