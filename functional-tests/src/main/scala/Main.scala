@@ -16,6 +16,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
 import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests}
+import org.apache.spark.sql.SparkSession
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
@@ -102,8 +103,7 @@ object Main extends App {
       username = conf.getString("functional-tests.user"),
       password = conf.getString("functional-tests.password"),
     )
-  }
-  else {
+  } else {
     readOpts = readOpts + (
       "kerberos_service_name" -> conf.getString("functional-tests.kerberos_service_name"),
       "kerberos_host_name" -> conf.getString("functional-tests.kerberos_host_name"),
@@ -258,6 +258,10 @@ object Main extends App {
     val testName = getTestName(options)
 
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
+    SparkSession.getActiveSession match {
+      case Some(session) => session.close()
+      case _ =>
+    }
 
     println("SUMMARY:")
     println(s"Test suites executed, in order: \n" + results.map(_.suiteName).mkString(" -> "))
