@@ -270,17 +270,11 @@ object Main extends App {
     val testName = getTestName(options)
 
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
-    closeSparkSession()
 
     println("SUMMARY:")
     println(s"Test suites executed, in order: \n" + results.map(_.suiteName).mkString(" -> "))
     val exitCode = results.map(result => printResultAndGetFailedCount(result)).sum
     sys.exit(exitCode)
-  }
-
-  private def closeSparkSession(): Unit = SparkSession.getActiveSession match {
-    case Some(session) => session.close()
-    case _ =>
   }
 
   private def getTestName(options: Options): Option[String] = {

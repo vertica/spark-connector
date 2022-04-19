@@ -29,19 +29,19 @@ import buildinfo.BuildInfo
   * Should ensure that the component correctly passes on queries / other statements to vertica and correctly returns results. It should also confirm that error handling works as expected.
   */
 class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
-  var jdbcLayer: JdbcLayerInterface = _
 
   val tablename = "test_table"
 
-  private lazy val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .getOrCreate()
-
+  private var jdbcLayer: JdbcLayerInterface = _
+  private var spark: SparkSession = _
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
+    spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+      .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+      .getOrCreate()
   }
 
   override def beforeEach(): Unit = {
