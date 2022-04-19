@@ -41,6 +41,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   protected val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
   protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
   protected val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
+  protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
   protected lazy val spark: SparkSession = SparkSession.builder()
     .master("local[*]")

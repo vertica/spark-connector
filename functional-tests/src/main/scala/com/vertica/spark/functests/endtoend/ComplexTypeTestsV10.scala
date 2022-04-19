@@ -3,13 +3,9 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ConnectorException, NativeArrayReadNotSupported}
-import com.vertica.spark.util.schema.MetadataKey
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
-import org.scalatest.{Assertion, stats}
 
-import java.util
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 
@@ -109,23 +105,87 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     }
   }
 
-  import spark.implicits._
-
-  it should "error on reading complex types from Vertica 10" in {
-    val stagingPath = fsConfig.address + "dftest"
-    val columns = Seq("col1")
-    val data = Seq(Array(1,7,3,2,6,5), Array(1,7,3,2,6,5))
-    spark.sparkContext.parallelize(data)
-      .toDF(columns:_*)
-      .write.parquet(stagingPath)
-
-    spark.read.parquet(stagingPath).show()
+  it should "error on reading native arrays from external table in Vertica 10" in {
     val tableName = "dftest"
+    val stagingPath = fsConfig.address + tableName
 
-    val stmt = conn.createStatement()
-    val query = s"CREATE EXTERNAL TABLE $tableName (col1 Array[int]) AS COPY FROM '$stagingPath/*.parquet'"
-    stmt.execute(query)
-    println(query)
+    val data = Seq(Array(1, 5, 3, 4, 7, 2))
+    val rdd = spark.sparkContext.parallelize(data)
+    val rowRdd = rdd.map(attributes => Row(attributes))
+    val schema = StructType(Array(
+      StructField("col1", ArrayType(IntegerType, true), true, Metadata.empty),
+    ))
+
+    val df = spark.createDataFrame(rowRdd, schema)
+    df.write.format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(stagingPath)
+
+    val create = s"create external table $tableName (col1 Array[int]) as copy from 'webhdfs://hdfs:50070/data/dftest/*.parquet' parquet;"
+    TestUtils.createTableBySQL(conn, tableName, create)
+
+    val options = readOpts + ("table" -> tableName)
+    val result = Try {
+      spark.read.format(VERTICA_SOURCE)
+        .options(options)
+        .load()
+        .show()
+    }
+    TestUtils.dropTable(conn, tableName)
+
+    result match {
+      case Failure(exception) => exception match {
+        case ConnectorException(error) => error match {
+          case NativeArrayReadNotSupported(cols, _) => succeed
+          case _ => fail("Unexpected connector error: " + error.getFullContext, exception)
+        }
+        case _:Throwable => fail(s"Unexpected exception: ${exception.getMessage}", exception)
+      }
+      case Success(_) => fail("Expected failure")
+    }
+  }
+
+  it should "error on reading complex types from external table in Vertica 10" in {
+    val tableName = "dftest"
+    val stagingPath = fsConfig.address + tableName
+
+    val data = Seq(
+      Array(Array(1, 5, 3, 4, 7, 2))
+    )
+    val rdd = spark.sparkContext.parallelize(data)
+    val rowRdd = rdd.map(attributes => Row(attributes))
+    val schema = StructType(Array(
+      StructField("col1", ArrayType(ArrayType(IntegerType, true), true), true, Metadata.empty),
+      // StructField("col2", StructType(Array(StructField("f1", StringType))), true, Metadata.empty),
+    ))
+
+    val df = spark.createDataFrame(rowRdd, schema)
+    df.write.format("parquet")
+      .mode(SaveMode.Overwrite)
+      .save(stagingPath)
+
+    val create = s"create external table $tableName (col1 Array[Array[int]]) as copy from 'webhdfs://hdfs:50070/data/dftest/*.parquet' parquet;"
+    TestUtils.createTableBySQL(conn, tableName, create)
+
+    val options = readOpts + ("table" -> tableName)
+    val result = Try {
+      spark.read.format(VERTICA_SOURCE)
+        .options(options)
+        .load()
+        .show()
+    }
+    TestUtils.dropTable(conn, tableName)
+
+    result match {
+      case Failure(exception) => exception match {
+        case ConnectorException(error) => error match {
+          case ComplexTypeReadNotSupported(_,_) => succeed
+          case _ => fail("Unexpected connector error: " + error.getFullContext, exception)
+        }
+        case _:Throwable => fail(s"Unexpected exception: ${exception.getMessage}", exception)
+      }
+      case Success(_) => fail("Expected failure")
+    }
   }
 
   it should "read varchar type from Vertica 10 with dbschema specified" in {
