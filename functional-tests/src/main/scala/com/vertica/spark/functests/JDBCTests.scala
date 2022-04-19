@@ -33,7 +33,7 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
   val tablename = "test_table"
 
-  private lazy val _ = SparkSession.builder()
+  private lazy val spark = SparkSession.builder()
     .master("local[*]")
     .appName("Vertica Connector Test Prototype")
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
@@ -50,6 +50,10 @@ class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfter
 
   override def afterEach(): Unit = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename + ";")
+  }
+
+  override def afterAll(): Unit = {
+    spark.close()
   }
 
   it should "Create a table" in {

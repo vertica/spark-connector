@@ -22,7 +22,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
 import scopt.OParser
 
-import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 case class VReporter(suiteName: String) extends org.scalatest.Reporter {
@@ -233,7 +232,6 @@ object Main extends App {
       new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
       new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     ).mkString("\n")
-    closeSparkSession()
     result + "\n"
   }
 
@@ -242,7 +240,7 @@ object Main extends App {
   val optParser = {
     import builder._
     OParser.sequence(
-      note("The default test suites are:\n" + defaultTestSuites),
+      note("By default, the following test suites will be run:\n" + defaultTestSuites),
       note("Use the following options to alter the test suites:\n"),
       opt[Unit]('l', "large")
         .optional()
@@ -309,7 +307,7 @@ object Main extends App {
     testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     else testSuites :+ new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
-    testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig) else testSuites
+    testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
 
     if(options.suite.isBlank) {
       testSuites

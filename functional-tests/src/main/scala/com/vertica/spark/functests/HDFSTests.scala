@@ -35,18 +35,21 @@ import org.scalatest.BeforeAndAfterAll
  */
 
 class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
-  private lazy val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .getOrCreate()
 
-  private val df = spark.range(100).toDF("number")
-  private val schema = df.schema
-  private val perms = "777"
+  private lazy val (spark, fsLayer, dirTestCfg, df) = {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+    val df = spark.range(100).toDF("number")
+    val schema = df.schema
+    val dirTestCfg: FileStoreConfig = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
+    val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
+    (spark, fsLayer, dirTestCfg, df)
+  }
 
-  val dirTestCfg: FileStoreConfig = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
-  val fsLayer = new HadoopFileStoreLayer(dirTestCfg, Some(schema))
   var jdbcLayer : JdbcLayerInterface = _
+  val perms = "777"
 
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
