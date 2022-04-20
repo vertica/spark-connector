@@ -84,7 +84,7 @@ jobs:
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.0
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.0.0, 3.1.0)" -DhadoopVersion="2.4.0"
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.0.0, 3.1.0)" -DhadoopVersion="[2.7.0, 2.8.0)"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-integration-tests-spark-3-1-latest:
@@ -129,7 +129,7 @@ jobs:
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.1
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.1.0, 3.2.0)" -DhadoopVersion="3.3.1"
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.1.0, 3.2.0)" -DhadoopVersion="[3.2.0, 3.3.0)"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-integration-tests-spark-3-2-latest:
@@ -174,6 +174,6 @@ jobs:
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.2
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="3.0.1"
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="[3.3.0, 3.4.0)"
       - name: Remove docker containers
         run: cd docker && docker-compose down
