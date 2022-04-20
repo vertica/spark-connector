@@ -672,8 +672,24 @@ class SchemaTools extends SchemaToolsInterface {
       else
         Left(EmptySchemaError())
     } else {
-      Right()
+      checkMapColumnsSchema(complexTypeCols)
     }
+  }
+
+  private def checkMapColumnsSchema(complexTypeCols: List[StructField]) = {
+    complexTypeCols.filter(_.dataType.isInstanceOf[MapType])
+      .map(col => checkMapContainsPrimitives(col.name, col.dataType.asInstanceOf[MapType]))
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+      .map(_ => {})
+      .left.map(errors => ErrorList(errors))
+  }
+
+  private def checkMapContainsPrimitives(colName: String, map: MapType): ConnectorResult[Unit] = {
+    val keyType = this.sparkPrimitiveToVerticaPrimitive(map.keyType, 0)
+    val valueType = this.sparkPrimitiveToVerticaPrimitive(map.valueType, 0)
+    if(keyType.isRight && valueType.isRight) Right()
+    else Left(InvalidMapSchemaError(colName))
   }
 
   def getMergeUpdateValues(jdbcLayer: JdbcLayerInterface, tableName: TableName, tempTableName: TableName, copyColumnList: Option[ValidColumnList]): ConnectorResult[String] = {

@@ -928,6 +928,29 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       case Left(error) => assert(error.isInstanceOf[MissingSparkConversionError])
     }
   }
+
+  it should "Check for map containing complex type" in {
+    val schemaTools = new SchemaTools
+
+    val mapType1 = new MapType(ArrayType(StringType), IntegerType, true)
+    val mapType2 = new MapType(StringType, ArrayType(IntegerType), true)
+    val schema2 = StructType(Array(
+      StructField("col1", IntegerType),
+      StructField("col2", mapType2),
+      StructField("col3", mapType1)
+    ))
+
+    schemaTools.checkValidTableSchema(schema2) match {
+      case Right(_) => fail("Expected connector error")
+      case Left(error) => error match {
+        case ErrorList(errors) =>
+          assert(errors.length == 2)
+          assert(errors.head.isInstanceOf[InvalidMapSchemaError])
+          assert(errors.tail.head.isInstanceOf[InvalidMapSchemaError])
+        case ConnectionError(_) =>
+      }
+    }
+  }
 }
 // For package private access without instantiation
 object SchemaToolsTests extends SchemaToolsTests

@@ -428,6 +428,11 @@ case class InvalidTableSchemaComplexType() extends SchemaError {
   def getFullContext: String = "Table schema with complex types requires at least one native type column. Refer to Vertica complex types documentation for more details." +
   "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ExternalTypes.htm"
 }
+case class InvalidMapSchemaError(colName: String) extends SchemaError {
+  def getFullContext: String = s"$colName has map type but contains complex types. Vertica map type can only contain primitives." +
+    "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm"
+}
+
 /**
   * Enumeration of the list of possible JDBC errors.
   */

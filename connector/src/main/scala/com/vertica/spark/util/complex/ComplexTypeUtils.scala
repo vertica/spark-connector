@@ -32,6 +32,9 @@ class ComplexTypeUtils {
       })
   }
 
+  /*
+  * Check if field is a vertica native type. Vertica native types contains 1D arrays
+  * */
   private def isNativeType(field: StructField): Boolean = {
     field.dataType match {
       case ArrayType(elementType, _) =>
