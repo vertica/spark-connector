@@ -1,9 +1,10 @@
-name: Scheduled Test
-
+name: Nightly Compilation Testing
+# Compiles our connector nightly and only report on failure.
+# This allows us to stay on top of breaking change from Spark
 on:
   schedule:
-    # Every monday at 11:20 GMT
-    - cron: '20 11 * * 1'
+    # Nightly at 9:18 GMT
+    - cron: '18 9 * * *'
   workflow_dispatch:
 
 jobs:
@@ -19,60 +20,13 @@ jobs:
         with:
           name: build-jar-file
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.2.0.jar
-  integration-tests-vertica-10-1-1-0-spark-3-2-latest:
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      VERTICA_VERSION: 10.1.1-0
-    steps:
-      - name: Checkout the project
-        uses: actions/checkout@v2
-      - name: Run docker compose
-        run: cd docker && docker-compose up -d
-      - name: Print Vertica version
-        run: docker exec docker_vertica_1 vsql -c "select version();"
-      - name: Create db in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
-      - name: Download the build artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: build-jar-file
-          path: ./functional-tests/lib/
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Copy functional tests to home directory of client container
-        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
-      - name: Copy version.properties file from client container
-        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
-      - name: Run the integration tests on Spark 3.0 with Vertica 10 complex type tests
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="2.4.0 -v"
-      - name: Remove docker containers
-        run: cd docker && docker-compose down
   slack-workflow-status:
-    if: always()
     name: Post Workflow Status To Slack
     needs:
       [
         run-integration-tests-vertica-10-1-1-0,
       ]
+    if: failure()
     runs-on: ubuntu-latest
     steps:
       - name: Slack Workflow Notification
@@ -83,5 +37,5 @@ jobs:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
           # Optional Input
-          name: 'Alex Workflow Bot'
+          name: 'Nightly Spark Connector Compilation'
           icon_emoji: ':ezy:'
