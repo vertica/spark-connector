@@ -1,27 +1,17 @@
 package com.vertica.spark.functests
 
 import java.sql.Connection
-
-import com.vertica.spark.config.JDBCConfig
+import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
+import com.vertica.spark.functests.endtoend.EndToEnd
 import com.vertica.spark.util.error.ConnectorException
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
-class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
-  val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
+class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig){
 
   val numSparkPartitions = 4
-
-  private val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .getOrCreate()
-
-  override def afterAll(): Unit = {
-    spark.close()
-    conn.close()
-  }
 
   it should "save a 1600 column table using default copy logic." in {
     val tableName = "1600ColumnTable"

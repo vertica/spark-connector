@@ -166,7 +166,7 @@ Note: If you are using the S3 properties, the connector options has priority ove
 ## Complex Data Types
 
 ### Requirements
-Complex data types require at least Vertica 11 and Vertica JDBC Driver 11.
+Complex data types require at least Vertica 11 and Vertica JDBC Driver 11. Refer to the examples for usage demonstration.
 
 ### Complex Type Conversion
 
@@ -193,7 +193,7 @@ JDBC does not define a data type similar to [Vertica SET](https://www.vertica.co
 - On save operations, data will be written into Vertica as set if the array column's metadata contains `is_vertica_set = true`. Unique elements are only checked once Vertica start loading data from staging area.
 
 ### Row
-Not yet supported.
+Only save operations are supported. Fields data type can be of primitives or supported complex types.
 
 ### Map
 Not yet supported.
