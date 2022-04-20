@@ -455,11 +455,18 @@ class SchemaTools extends SchemaToolsInterface {
   override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {
     sparkType match {
       // To be reconsidered. Store as binary for now
-      case org.apache.spark.sql.types.MapType(_,_,_) => Right("VARBINARY(" + longlength + ")")
+      case org.apache.spark.sql.types.MapType(keyType, valueType, _) => sparkMapToVerticaMap(keyType, valueType, strlen)
       case org.apache.spark.sql.types.StructType(fields) => sparkStructToVerticaRow(fields, strlen, arrayLength)
       case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength, metadata)
       case _ => this.sparkPrimitiveToVerticaPrimitive(sparkType, strlen)
     }
+  }
+
+  def sparkMapToVerticaMap(keyType: DataType, valueType: DataType, strlen: Long): SchemaResult[String] = {
+    for {
+      keyVerticaType <- this.sparkPrimitiveToVerticaPrimitive(keyType, strlen)
+      valueVerticaType <- this.sparkPrimitiveToVerticaPrimitive(valueType, strlen)
+    } yield s"Map<$keyVerticaType, $valueVerticaType>"
   }
 
   private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
