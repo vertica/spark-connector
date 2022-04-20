@@ -68,7 +68,7 @@ object VerticaVersionUtils {
       if(complexTypeFound)
         // Even though Vertica 10.x supports Complex types in external tables, it seems that
         // the underlying protocol does not support complex type, thus throwing an error
-        // regardless of internal of external tables
+        // regardless of internal or external tables
         Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
       else Right()
     } else {
