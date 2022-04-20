@@ -36,7 +36,7 @@ import scala.util.{Failure, Success, Try}
  * After each test, it checks that staging area is cleared and closes connections when suit is finished.
  * */
 abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach{
+  extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   protected val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
   protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
@@ -78,7 +78,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
 }
 
 class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig)  {
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
 
   val numSparkPartitions = 4
 
