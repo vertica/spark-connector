@@ -22,10 +22,7 @@ jobs:
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.2.0.jar
   slack-workflow-status:
     name: Post Workflow Status To Slack
-    needs:
-      [
-        run-integration-tests-vertica-10-1-1-0,
-      ]
+    needs: [build]
     if: failure()
     runs-on: ubuntu-latest
     steps:
