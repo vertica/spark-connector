@@ -34,5 +34,5 @@ jobs:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
           # Optional Input
-          name: 'Nightly Spark Connector Compilation'
-          icon_emoji: ':ezy:'
+          name: 'Spark Compilation Failed'
+          icon_emoji: ':sadge:'

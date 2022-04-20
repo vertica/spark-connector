@@ -2,8 +2,8 @@ name: Weekly V10 Functional Testing
 
 on:
   schedule:
-    # Every monday at 11:20 GMT
-    - cron: '20 11 * * 1'
+    # Every monday at 11:22 GMT
+    - cron: '20 12 * * 1'
   workflow_dispatch:
 
 jobs:
