@@ -15,8 +15,8 @@ package com.vertica.spark.functests
 
 import java.sql.{Connection, DriverManager, Statement}
 import java.util.Properties
-
 import com.vertica.spark.config.{BasicJdbcAuth, JDBCConfig, KerberosAuth}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{Row, SparkSession}
 
@@ -141,6 +141,16 @@ object TestUtils {
   def getKmeans100colFloatRowRDD(kmmdata: org.apache.spark.rdd.RDD[String]): org.apache.spark.rdd.RDD[org.apache.spark.sql.Row]  = {
     val rowRDD = kmmdata.map(_.split(" ").map(col=>col.trim.toFloat).toSeq).map(row=>Row.fromSeq(row))
     rowRDD
+  }
+
+  /**
+   * Delete the directory path and recreate it
+   * */
+  def fsCleanup(fsLayer: HadoopFileStoreLayer, path: String): Any = {
+    // Extra cleanup for external table
+    fsLayer.removeDir(path)
+    // Need to recreate the root directory for the afterEach assertion check
+    fsLayer.createDir(path, "777")
   }
 
 }
