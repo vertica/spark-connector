@@ -21,7 +21,7 @@ import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
-import org.apache.spark.sql.types.{StringType, _}
+import org.apache.spark.sql.types._
 
 import java.sql.{ResultSet, ResultSetMetaData}
 import scala.annotation.tailrec
@@ -761,7 +761,7 @@ class SchemaToolsV10() extends SchemaTools {
     super.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colList) =>
-        colList.map(col => checkColumnIsCT(col, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer))
+        colList.map(col => checkColumnIsComplexType(col, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer))
           .toList
           .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
           .map(list => list)
@@ -769,7 +769,11 @@ class SchemaToolsV10() extends SchemaTools {
     }
   }
 
-  private def checkColumnIsCT(col: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  /**
+   * Vertica 10 reports complex types as string type over JDBC. Thus, we need to check if the jdbc type is a Spark
+   * string type, then we check if it is complex type.
+   * */
+  private def checkColumnIsComplexType(col: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     super.getCatalystTypeFromJdbcType(col.colType, 0, 0, false, "") match {
       case Right(dataType) => dataType match {
         case StringType => checkV10ComplexType(col, tableName, dbSchema, jdbcLayer)
@@ -806,5 +810,6 @@ class SchemaToolsV10() extends SchemaTools {
     val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='${colDef.label}'"
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
   }
+
 }
 

@@ -73,7 +73,7 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     failIfError(result)
   }
 
-  it should "Error on reading 1D array from internal table" in {
+  it should "error on reading 1D array from internal table" in {
     val tableName = "dftest"
     val stmt = conn.createStatement
     val n = 1
@@ -134,7 +134,7 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     }
   }
 
-  it should "error on reading native arrays from external table in Vertica 10" in {
+  it should "error on reading 1D arrays from external table in Vertica 10" in {
     val tableName = "dftest"
     val stagingPath = fsConfig.address + tableName
 
@@ -179,13 +179,13 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     val stagingPath = fsConfig.address + tableName
 
     val data = Seq(
-      Array(Array(1, 5, 3, 4, 7, 2))
+      (Array(Array(1, 5, 3, 4, 7, 2)), Row("a"))
     )
     val rdd = spark.sparkContext.parallelize(data)
-    val rowRdd = rdd.map(attributes => Row(attributes))
+    val rowRdd = rdd.map(attributes => Row(attributes._1, attributes._2))
     val schema = StructType(Array(
       StructField("col1", ArrayType(ArrayType(IntegerType, true), true), true, Metadata.empty),
-      // StructField("col2", StructType(Array(StructField("f1", StringType))), true, Metadata.empty),
+      StructField("col2", StructType(Array(StructField("f1", StringType, true, Metadata.empty))), true, Metadata.empty),
     ))
 
     val df = spark.createDataFrame(rowRdd, schema)
@@ -193,7 +193,7 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
       .mode(SaveMode.Overwrite)
       .save(stagingPath)
 
-    val create = s"create external table $tableName (col1 Array[Array[int]]) as copy from 'webhdfs://hdfs:50070/data/dftest/*.parquet' parquet;"
+    val create = s"create external table $tableName (col1 Array[Array[int]], col2 Row(f1 VARCHAR)) as copy from 'webhdfs://hdfs:50070/data/dftest/*.parquet' parquet;"
     TestUtils.createTableBySQL(conn, tableName, create)
 
     val options = readOpts + ("table" -> tableName)
