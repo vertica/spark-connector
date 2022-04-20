@@ -903,6 +903,31 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     println(expected)
     assert(colsString.trim().equals(expected))
   }
+
+  it should "Convert MapType to Vertica Map" in {
+    val schemaTools = new SchemaTools
+    val expected = s"Map<VARCHAR(1024), INTEGER>"
+
+    val mapType = new MapType(StringType, IntegerType, true)
+    assert(schemaTools.getVerticaTypeFromSparkType(mapType, 1024, 0, Metadata.empty)
+      == Right(expected))
+  }
+
+  it should "Error on converting MapType that uses complex type" in {
+    val schemaTools = new SchemaTools
+
+    val mapType1 = new MapType(ArrayType(StringType), IntegerType, true)
+    schemaTools.getVerticaTypeFromSparkType(mapType1, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MissingSparkConversionError])
+    }
+
+    val mapType2 = new MapType(StringType, ArrayType(IntegerType), true)
+    schemaTools.getVerticaTypeFromSparkType(mapType2, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MissingSparkConversionError])
+    }
+  }
 }
 // For package private access without instantiation
 object SchemaToolsTests extends SchemaToolsTests
