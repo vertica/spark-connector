@@ -19,13 +19,44 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
 
     val data = Seq(Row(Array(88, 99, 111)))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
-    println(df.toString())
     val mode = SaveMode.Overwrite
+    val options = writeOpts + ("table" -> tableName)
 
     val stmt = conn.createStatement()
     val result = Try {
       df.write.format("com.vertica.spark.datasource.VerticaSource")
-        .options(writeOpts + ("table" -> tableName)).mode(mode).save()
+        .options(options).mode(mode).save()
+
+      val query = s"SELECT to_json($colName) FROM " + tableName
+
+      val rs1 = stmt.executeQuery(query)
+      assert(rs1.next)
+      assert(rs1.getString(1).equals("[88,99,111]"))
+      val rs2 = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName';")
+      rs2.next
+      assert(rs2.getLong(1) == 1506)
+    }
+    stmt.close()
+    TestUtils.dropTable(conn, tableName)
+
+    failIfError(result)
+  }
+
+  it should "write 1D array to internal table with dbschema option" in {
+    val tableName = "dftest"
+    val dbschema = "public"
+    val colName = "col1"
+    val schema = new StructType(Array(StructField(colName, ArrayType(IntegerType))))
+
+    val data = Seq(Row(Array(88, 99, 111)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+    val options = writeOpts + ("table" -> tableName, "dbschema" -> dbschema)
+
+    val stmt = conn.createStatement()
+    val result = Try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(options).mode(mode).save()
 
       val query = s"SELECT to_json($colName) FROM " + tableName
 
@@ -93,13 +124,11 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     result match {
       case Success(_) => fail("Expected failure")
       case Failure(exception) => exception match {
-        case ConnectorException(err) => err match {
-          case value: ComplexTypeWriteNotSupported =>
-            value.colList.foreach(col => {
-              assert(schema.exists(_.name.equals(col.name)))
-            })
-          case _ => fail("Unexpected Connector Error")
-        }
+        case ConnectorException(err) =>
+          assert(err.isInstanceOf[ComplexTypeWriteNotSupported])
+          err.asInstanceOf[ComplexTypeWriteNotSupported].colList.foreach(col => {
+            assert(schema.exists(_.name.equals(col.name)))
+          })
         case e: Throwable => fail("Expected Exception.", e)
       }
     }
@@ -186,25 +215,5 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
       }
       case Success(_) => fail("Expected failure")
     }
-  }
-
-  it should "read varchar type from Vertica 10 with dbschema specified" in {
-    val tableName = "dftest"
-    val stmt = conn.createStatement
-    val n = 1
-    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a varchar)")
-
-    val insert = "insert into "+ tableName + " values(\'test value\')"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-
-    val result = Try{spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()}
-
-    result match {
-      case Failure(exception) => fail("Unexpected exception", exception)
-      case Success(df: DataFrame) =>
-        assert(df.count() == 1)
-        df.rdd.foreach(row => assert(row.getAs[String](0) == "test value"))
-    }
-    TestUtils.dropTable(conn, tableName)
   }
 }
