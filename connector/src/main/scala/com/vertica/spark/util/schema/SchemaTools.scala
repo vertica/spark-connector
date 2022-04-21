@@ -328,6 +328,18 @@ class SchemaTools extends SchemaToolsInterface {
    * ColumnDefs through a series of JDBC queries to Vertica system tables.
    * */
   private def queryColumnDef(complexTypeColDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    /**
+     * Type name report by Vertica could be INTEGER or ARRAY[...] or ROW(...)
+     * and we want to extract just the type identifier
+     * */
+    def getTypeName(dataType:String) : String = {
+      dataType
+        .replaceFirst("\\[",",")
+        .replaceFirst("\\(",",")
+        .split(',')
+        .head
+    }
+
     def handleColumnExist(rs: ResultSet): ConnectorResult[ColumnDef] = {
       // Note that data_type_id is Vertica's internal type id, not JDBC.
       val verticaType = rs.getLong("data_type_id")
@@ -346,17 +358,7 @@ class SchemaTools extends SchemaToolsInterface {
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleColumnExist)
   }
 
-  /**
-   * Type name report by Vertica could be INTEGER or ARRAY[...] or ROW(...)
-   * and we want to extract just the type identifier
-   * */
-  protected def getTypeName(dataType:String) : String = {
-    dataType
-      .replaceFirst("\\[",",")
-      .replaceFirst("\\(",",")
-      .split(',')
-      .head
-  }
+
 
   /**
    * Query Vertica system tables to fill in an array ColumnDefs with it's elements.
@@ -462,7 +464,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  private def sparkMapToVerticaMap(keyType: DataType, valueType: DataType, strlen: Long, useVerticaMap: Boolean = false): SchemaResult[String] = {
+  private def sparkMapToVerticaMap(keyType: DataType, valueType: DataType, strlen: Long): SchemaResult[String] = {
     val keyVerticaType = this.sparkPrimitiveToVerticaPrimitive(keyType, strlen)
     val valueVerticaType = this.sparkPrimitiveToVerticaPrimitive(valueType, strlen)
     if (keyVerticaType.isRight && valueVerticaType.isRight)
@@ -538,7 +540,7 @@ class SchemaTools extends SchemaToolsInterface {
         // and default to VARCHAR for sizes <= 65K
         val vtype = if (strlen > longlength) "LONG VARCHAR" else "VARCHAR"
         Right(vtype + "(" + strlen.toString + ")")
-      case _ => Left(MissingSparkConversionError(sparkType))
+      case _ => Left(MissingSparkPrimitivesConversionError(sparkType))
     }
   }
 
@@ -607,13 +609,21 @@ class SchemaTools extends SchemaToolsInterface {
     } yield columnList
   }
 
-  private def castToVarchar: String => String = colName => colName + "::varchar AS " + addDoubleQuotes(colName)
-
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String = {
     val requiredColumnDefs: Seq[ColumnDef] = if (requiredSchema.nonEmpty) {
       columnDefs.filter(cd => requiredSchema.fields.exists(field => field.name == cd.label))
     } else {
       columnDefs
+    }
+
+    def castToVarchar: String => String = colName => colName + "::varchar AS " + addDoubleQuotes(colName)
+
+    def castToArray(colInfo: ColumnDef): String = {
+      val colName = colInfo.label
+      colInfo.childDefinitions.headOption match {
+        case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
+        case None => s"($colName::ARRAY[UKNOWN]) as $colName"
+      }
     }
 
     requiredColumnDefs.map(info => {
@@ -634,14 +644,6 @@ class SchemaTools extends SchemaToolsInterface {
         case _ => addDoubleQuotes(info.label)
       }
     }).mkString(",")
-  }
-
-  private def castToArray(colInfo: ColumnDef): String = {
-    val colName = colInfo.label
-    colInfo.childDefinitions.headOption match {
-      case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
-      case None => s"($colName::ARRAY[UKNOWN]) as $colName"
-    }
   }
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String] = {

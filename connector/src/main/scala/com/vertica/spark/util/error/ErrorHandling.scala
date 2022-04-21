@@ -524,8 +524,8 @@ case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."
 }
 
-case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
+case class MissingSparkPrimitivesConversionError(sparkType: DataType) extends SchemaError {
+  def getFullContext: String = "Could not find conversion to Vertica for unsupported Spark primitive type: " + sparkType.typeName
 }
 case class DatabaseReadError(cause: Throwable) extends SchemaError {
   def getFullContext: String = ErrorHandling.addCause("Exception while retrieving schema.", this.cause)
