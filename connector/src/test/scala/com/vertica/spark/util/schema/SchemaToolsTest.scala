@@ -759,11 +759,6 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
   }
 
-  it should "convert Spark Map to Vertica Map" in {
-    val schemaTools = new SchemaTools
-    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0, Metadata.empty) == Right(s"VARBINARY(65000)"))
-  }
-
   it should "Provide error message on unknown element type conversion to vertica" in {
     (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0, Metadata.empty) match {
       case Left(err) =>
@@ -904,9 +899,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     assert(colsString.trim().equals(expected))
   }
 
-  it should "Convert MapType to Vertica Map" in {
+  it should "Convert Spark MapType to Vertica Map" in {
     val schemaTools = new SchemaTools
-    val expected = s"Map<VARCHAR(1024), INTEGER>"
+    val expected = s"MAP<VARCHAR(1024), INTEGER>"
 
     val mapType = new MapType(StringType, IntegerType, true)
     assert(schemaTools.getVerticaTypeFromSparkType(mapType, 1024, 0, Metadata.empty)
@@ -919,13 +914,20 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val mapType1 = new MapType(ArrayType(StringType), IntegerType, true)
     schemaTools.getVerticaTypeFromSparkType(mapType1, 1024, 0, Metadata.empty) match {
       case Right(_) => fail("Expected schema error")
-      case Left(error) => assert(error.isInstanceOf[MissingSparkConversionError])
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
     }
 
-    val mapType2 = new MapType(StringType, ArrayType(IntegerType), true)
+    val mapType3 = new MapType(IntegerType, ArrayType(StringType), true)
+    schemaTools.getVerticaTypeFromSparkType(mapType3, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
+    }
+
+    val mapType2 = new MapType(MapType(IntegerType, IntegerType), ArrayType(IntegerType), true)
     schemaTools.getVerticaTypeFromSparkType(mapType2, 1024, 0, Metadata.empty) match {
       case Right(_) => fail("Expected schema error")
-      case Left(error) => assert(error.isInstanceOf[MissingSparkConversionError])
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
+        println(error.getFullContext)
     }
   }
 
