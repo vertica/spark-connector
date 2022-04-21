@@ -525,7 +525,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
                 config.arrayLength
               )
 
-      _ <- tableUtils.validateExternalTable(config.tablename)
+      _ <- tableUtils.validateExternalTable(config.tablename, config.schema)
 
       _ <- if (config.saveJobStatusTable) {
         tableUtils.updateJobStatusTable(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, success = true)

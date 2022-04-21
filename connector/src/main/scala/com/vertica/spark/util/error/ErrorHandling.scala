@@ -432,6 +432,11 @@ case class InvalidMapSchemaError(colName: String) extends SchemaError {
   def getFullContext: String = s"$colName has map type but contains complex types. Vertica map type can only contain primitives." +
     "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm"
 }
+case class MapDataTypeConversionError(keyError: String, valueError: String) extends SchemaError {
+  override def getFullContext: String = s"Error in converting map type to Vertica:\n" +
+  s" Key error: $keyError\n" +
+  s" Value error: $valueError"
+}
 
 /**
   * Enumeration of the list of possible JDBC errors.

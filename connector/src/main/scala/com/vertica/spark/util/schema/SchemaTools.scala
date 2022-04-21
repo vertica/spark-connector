@@ -99,7 +99,7 @@ trait SchemaToolsInterface {
   def makeColumnsString(columnDefs: Seq[ColumnDef], requiredSchema: StructType): String
 
   /**
-   * Converts spark schema to table column defs in Vertica format
+   * Converts spark schema to table column defs in Vertica format for use in a CREATE TABLE statement
    *
    * @param schema Schema in spark format
    * @return List of column names and types, that can be used in a Vertica CREATE TABLE.
@@ -133,7 +133,7 @@ trait SchemaToolsInterface {
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String]
 
   /**
-   * Check if the column schema is valid for as an internal Vertica table.
+   * Check if the schema is valid for as an internal Vertica table.
    *
    * @param schema schema of the table
    */
@@ -462,11 +462,22 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  def sparkMapToVerticaMap(keyType: DataType, valueType: DataType, strlen: Long): SchemaResult[String] = {
-    for {
-      keyVerticaType <- this.sparkPrimitiveToVerticaPrimitive(keyType, strlen)
-      valueVerticaType <- this.sparkPrimitiveToVerticaPrimitive(valueType, strlen)
-    } yield s"Map<$keyVerticaType, $valueVerticaType>"
+  private def sparkMapToVerticaMap(keyType: DataType, valueType: DataType, strlen: Long, useVerticaMap: Boolean = false): SchemaResult[String] = {
+    val keyVerticaType = this.sparkPrimitiveToVerticaPrimitive(keyType, strlen)
+    val valueVerticaType = this.sparkPrimitiveToVerticaPrimitive(valueType, strlen)
+    if (keyVerticaType.isRight && valueVerticaType.isRight)
+      Right(s"MAP<${keyVerticaType.right.get}, ${valueVerticaType.right.get}>")
+    else {
+      val keyErrorMsg = keyVerticaType match {
+        case Left(error) => error.getFullContext
+        case Right(_) => "None"
+      }
+      val valueErrorMsg = valueVerticaType match {
+        case Left(error) => error.getFullContext
+        case Right(_) => "None"
+      }
+      Left(MapDataTypeConversionError(keyErrorMsg, valueErrorMsg))
+    }
   }
 
   private def sparkStructToVerticaRow(fields: Array[StructField], strlen: Long, arrayLength: Long): SchemaResult[String] = {
@@ -776,7 +787,7 @@ class SchemaTools extends SchemaToolsInterface {
  * A SchemaTools extension specifically for Vertica 10.x. Because Vertica 10 report Complex types as VARCHAR,
  * SchemaToolsV10 will intercept super().getColumnInfo() calls to check for complex types through queries to Vertica.
  * */
-class SchemaToolsV10() extends SchemaTools {
+class SchemaToolsV10 extends SchemaTools {
 
   override def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     val tableInfo = getColumnInfoQueryData(tableSource)

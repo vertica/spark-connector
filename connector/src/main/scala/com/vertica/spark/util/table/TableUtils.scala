@@ -18,7 +18,7 @@ import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerStringPar
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{MapType, StructType}
 
 import scala.util.Try
 
@@ -66,9 +66,10 @@ trait TableUtilsInterface {
    * Validates that an external table was created properly and can be loaded from without error
    *
    * @param tablename
+   * @param schema
    * @return Empty result if valid, error otherwise
    */
-  def validateExternalTable(tablename: TableName): ConnectorResult[Unit]
+  def validateExternalTable(tablename: TableName, schema: StructType): ConnectorResult[Unit]
 
   /**
    * Drops/Deletes a given table if it exists.
@@ -222,10 +223,16 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
     }
   }
 
-  override def validateExternalTable(tablename: TableName): ConnectorResult[Unit] = {
+  override def validateExternalTable(tablename: TableName, schema: StructType): ConnectorResult[Unit] = {
+    val schemaNoMap = schema.filterNot(_.dataType.isInstanceOf[MapType])
+    if(schemaNoMap.isEmpty)
+      // As of Vertica11.x, map cannot be queried and thus we can't validate external table.
+      return Right()
+
     // Load a single row from the table to verify that it can be loaded from properly.
     // Necessary since basic errors will not be detected upon creation of the external table
-    jdbcLayer.query("SELECT * FROM " + tablename.getFullTableName + " LIMIT 1;") match {
+    val cols = schemaNoMap.map(col => s""""${col.name}"""").mkString(", ")
+    jdbcLayer.query(s"SELECT $cols FROM " + tablename.getFullTableName + " LIMIT 1;") match {
       case Right(_) => Right(())
       case Left(err) => Left(err)
     }
