@@ -225,16 +225,17 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
 
   override def validateExternalTable(tablename: TableName, schema: StructType): ConnectorResult[Unit] = {
     val schemaNoMap = schema.filterNot(_.dataType.isInstanceOf[MapType])
-    if(schemaNoMap.isEmpty)
+    if(schemaNoMap.isEmpty) {
       // As of Vertica11.x, map cannot be queried and thus we can't validate external table.
-      return Right()
-
-    // Load a single row from the table to verify that it can be loaded from properly.
-    // Necessary since basic errors will not be detected upon creation of the external table
-    val cols = schemaNoMap.map(col => s""""${col.name}"""").mkString(", ")
-    jdbcLayer.query(s"SELECT $cols FROM " + tablename.getFullTableName + " LIMIT 1;") match {
-      case Right(_) => Right(())
-      case Left(err) => Left(err)
+      Right()
+    } else {
+      // Load a single row from the table to verify that it can be loaded from properly.
+      // Necessary since basic errors will not be detected upon creation of the external table
+      val cols = schemaNoMap.map(col => s""""${col.name}"""").mkString(", ")
+      jdbcLayer.query(s"SELECT $cols FROM " + tablename.getFullTableName + " LIMIT 1;") match {
+        case Right(_) => Right(())
+        case Left(err) => Left(err)
+      }
     }
   }
 
