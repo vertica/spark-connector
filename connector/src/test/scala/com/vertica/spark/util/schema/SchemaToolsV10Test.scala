@@ -25,11 +25,11 @@ class SchemaToolsV10Test extends AnyFlatSpec with MockFactory with org.scalatest
   it should "detects complex types in Vertica 10" in {
     val tableName = tablename.getFullTableName.replace("\"", "")
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
-    val testColDef1 = TestColumnDef(1, "col1", java.sql.Types.VARCHAR, "ARRAY", 0, signed = false, nullable = true)
+    val testColDef1 = TestColumnDef(1, "col1", java.sql.Types.LONGVARCHAR, "ARRAY", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef1)
     val testColDef2 = TestColumnDef(2, "col1", java.sql.Types.VARCHAR, "SET", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef2)
-    val testColDef3 = TestColumnDef(3, "col2", java.sql.Types.VARCHAR, "VERTICA_CT", 0, signed = false, nullable = true)
+    val testColDef3 = TestColumnDef(3, "col2", java.sql.Types.LONGVARCHAR, "VERTICA_CT", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef3)
     val colCount = 3
     mockColumnCount(rsmd, colCount)

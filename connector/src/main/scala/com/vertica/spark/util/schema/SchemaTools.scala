@@ -196,7 +196,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  private def getCatalystTypeFromJdbcType(sqlType: Int,
+  protected def getCatalystTypeFromJdbcType(sqlType: Int,
                                           precision: Int,
                                           scale: Int,
                                           signed: Boolean,
@@ -439,7 +439,7 @@ class SchemaTools extends SchemaToolsInterface {
       (_) => Left(VerticaNativeTypeNotFound(verticaType)))
   }
 
-  private def makeArrayElementDef(jdbcType: Int, typeName: String, depth: Int) = {
+  protected def makeArrayElementDef(jdbcType: Int, typeName: String, depth: Int): ColumnDef = {
     val sqlType = jdbcType
     val fieldSize = DecimalType.MAX_PRECISION
     val fieldScale = 0
@@ -761,14 +761,25 @@ class SchemaToolsV10() extends SchemaTools {
     super.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colList) =>
-        colList.map(col => col.colType match {
-          case java.sql.Types.VARCHAR =>
-            checkV10ComplexType(col, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer)
-          case _ => Right(col)
-        }).toList
-        .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
-        .map(list => list)
-        .left.map(errors => ErrorList(errors))
+        colList.map(col => checkColumnIsComplexType(col, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer))
+          .toList
+          .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
+          .map(list => list)
+          .left.map(errors => ErrorList(errors))
+    }
+  }
+
+  /**
+   * Vertica 10 reports complex types as string type over JDBC. Thus, we need to check if the jdbc type is a Spark
+   * string type, then we check if it is complex type.
+   * */
+  private def checkColumnIsComplexType(col: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    super.getCatalystTypeFromJdbcType(col.colType, 0, 0, false, "") match {
+      case Right(dataType) => dataType match {
+        case StringType => checkV10ComplexType(col, tableName, dbSchema, jdbcLayer)
+        case _ => Right(col)
+      }
+      case Left(_) => Right(col)
     }
   }
 
@@ -783,7 +794,8 @@ class SchemaToolsV10() extends SchemaTools {
     def handleVerticaTypeFound(rs: ResultSet): ConnectorResult[ColumnDef] = {
       val verticaType = rs.getLong("data_type_id")
       if(verticaType > VERTICA_NATIVE_ARRAY_BASE_ID && verticaType < VERTICA_SET_MAX_ID) {
-        Right(colDef.copy(colType = java.sql.Types.ARRAY))
+        val dummyChild = makeArrayElementDef(java.sql.Types.VARCHAR, "STRING", 0)
+        Right(colDef.copy(colType = java.sql.Types.ARRAY, childDefinitions = List(dummyChild)))
       } else {
         val queryComplexType = s"SELECT field_type_name FROM complex_types WHERE type_id='$verticaType'"
         // If found, we return a struct regardless of the actual CT type.
@@ -793,9 +805,11 @@ class SchemaToolsV10() extends SchemaTools {
         JdbcUtils.queryAndNext(queryComplexType, jdbcLayer, handleCTFound, handleCTNotFound)
       }
     }
+
     val schemaCond = if(dbSchema.nonEmpty) s" AND table_schema='$dbSchema'" else ""
     val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='${colDef.label}'"
     JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
   }
+
 }
 
