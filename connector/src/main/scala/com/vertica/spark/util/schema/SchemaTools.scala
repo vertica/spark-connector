@@ -456,7 +456,6 @@ class SchemaTools extends SchemaToolsInterface {
 
   override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {
     sparkType match {
-      // To be reconsidered. Store as binary for now
       case org.apache.spark.sql.types.MapType(keyType, valueType, _) => sparkMapToVerticaMap(keyType, valueType, strlen)
       case org.apache.spark.sql.types.StructType(fields) => sparkStructToVerticaRow(fields, strlen, arrayLength)
       case org.apache.spark.sql.types.ArrayType(sparkType,_) => sparkArrayToVerticaArray(sparkType, strlen, arrayLength, metadata)
@@ -622,7 +621,7 @@ class SchemaTools extends SchemaToolsInterface {
       val colName = colInfo.label
       colInfo.childDefinitions.headOption match {
         case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
-        case None => s"($colName::ARRAY[UKNOWN]) as $colName"
+        case None => s"($colName::ARRAY[UNKNOWN]) as $colName"
       }
     }
 
