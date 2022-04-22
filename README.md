@@ -196,7 +196,7 @@ JDBC does not define a data type similar to [Vertica SET](https://www.vertica.co
 Only save operations are supported. Fields data type can be of primitives or supported complex types.
 
 ### Map
-Only save operations are supported. However, Vertica's map type is only available for external tables and cannot be queried. It is recommended that you use ARRAY[ROW] format instead. More details [here](https://www.vertica.com/docs/11.0.x/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
+Only save operations are supported. However, Vertica's map can only contain primitives, is only available for external tables and cannot be queried. It is recommended that you use ARRAY[ROW] format instead. More details [here](https://www.vertica.com/docs/11.0.x/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
 
 ### Backwards Compatibility
 
