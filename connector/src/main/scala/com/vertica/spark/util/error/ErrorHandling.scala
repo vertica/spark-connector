@@ -428,6 +428,16 @@ case class InvalidTableSchemaComplexType() extends SchemaError {
   def getFullContext: String = "Table schema with complex types requires at least one native type column. Refer to Vertica complex types documentation for more details." +
   "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ExternalTypes.htm"
 }
+case class InvalidMapSchemaError(colName: String) extends SchemaError {
+  def getFullContext: String = s"$colName has map type but contains complex types. Vertica map type can only contain primitives." +
+    "https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm"
+}
+case class MapDataTypeConversionError(keyError: String, valueError: String) extends SchemaError {
+  override def getFullContext: String = s"Error in converting map type to Vertica:\n" +
+  s" Key error: $keyError\n" +
+  s" Value error: $valueError"
+}
+
 /**
   * Enumeration of the list of possible JDBC errors.
   */
@@ -514,8 +524,8 @@ case class MissingElementTypeError() extends SchemaError {
   def getFullContext: String = s"Missing array element type."
 }
 
-case class MissingSparkConversionError(sparkType: DataType) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported Spark type: " + sparkType.typeName
+case class MissingSparkPrimitivesConversionError(sparkType: DataType) extends SchemaError {
+  def getFullContext: String = "Could not find conversion to Vertica for unsupported Spark primitive type: " + sparkType.typeName
 }
 case class DatabaseReadError(cause: Throwable) extends SchemaError {
   def getFullContext: String = ErrorHandling.addCause("Exception while retrieving schema.", this.cause)

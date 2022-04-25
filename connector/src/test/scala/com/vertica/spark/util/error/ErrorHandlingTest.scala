@@ -310,7 +310,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val sparkType = IntegerType
 
       checkErrReturnsMessages(MissingSqlConversionError(sqlType, sqlType))
-      checkErrReturnsMessages(MissingSparkConversionError(sparkType))
+      checkErrReturnsMessages(MissingSparkPrimitivesConversionError(sparkType))
     }
     match {
       case Failure(e) => fail(e)

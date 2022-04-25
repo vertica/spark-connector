@@ -14,14 +14,13 @@
 package com.vertica.spark.util.table
 
 import java.sql.{ResultSet, SQLException, SQLSyntaxErrorException}
-
 import com.vertica.spark.config.{LogProvider, TableName}
 import com.vertica.spark.datasource.jdbc.{JdbcLayerParam, JdbcLayerStringParam}
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{ConnectionError, JobStatusCreateError, SyntaxError, TableCheckError}
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsInterface}
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, MapType, StructField, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -382,5 +381,37 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
 
     checkResult(utils.dropTable(TableName(tablename, None)))
+  }
+
+  it should "validate external table with a single Map column" in {
+    val tableName = TableName("dftest", None)
+    val schema = StructType(Array(
+      StructField("col1", MapType(IntegerType, IntegerType))
+    ))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    val tableUtils = new TableUtils(schemaTools = schemaToolsInterface, jdbcLayer = jdbcLayerInterface)
+    tableUtils.validateExternalTable(tableName, schema) match {
+      case Right(_) => succeed
+      case Left(error) => fail
+    }
+  }
+
+  it should "validate external table containing Map column" in {
+    val tableName = TableName("dftest", None)
+    val schema = StructType(Array(
+      StructField("col1", MapType(IntegerType, IntegerType)),
+      StructField("col2", IntegerType)
+    ))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(s"""SELECT "col2" FROM ${tableName.getFullTableName} LIMIT 1;""", *).returning(Right(mock[ResultSet]))
+    val tableUtils = new TableUtils(schemaTools = schemaToolsInterface, jdbcLayer = jdbcLayerInterface)
+    tableUtils.validateExternalTable(tableName, schema) match {
+      case Right(_) => succeed
+      case Left(error) => fail
+    }
   }
 }

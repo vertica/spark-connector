@@ -365,25 +365,56 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName)
   }
 
+  it should "write external table with Vertica map" in {
+    val tableName = "dftest"
+    val schema = new StructType(Array(
+      StructField("col1", MapType(IntegerType, IntegerType)),
+      StructField("col2", IntegerType)
+    ))
+    val data = Seq(Row(Map()+(77 -> 88), 55))
+
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+    val options = writeOpts + ("table" -> tableName, "create_external_table" -> "true", "staging_fs_url" -> (fsConfig.address +"dftest"))
+
+    val result = Try {
+      df.write.format(VERTICA_SOURCE)
+        .options(options)
+        .mode(mode)
+        .save()
+
+      val rs = conn.createStatement().executeQuery("select \"col2\" from dftest;")
+      rs.next()
+      assert(rs.getInt(1) == 55)
+    }
+
+    TestUtils.dropTable(conn, tableName)
+    // Since we are writing external table, data will persist
+    fsLayer.removeDir(fsConfig.address)
+    fsLayer.createDir(fsConfig.address, "777")
+
+    result match {
+      case Success(_) => succeed
+      case Failure(exp) => fail("Expected to succeed", exp)
+    }
+  }
+
   it should "error on writing map to internal Vertica table" in {
-    Try {
-      val tableName = "dftest"
-      // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", MapType(IntegerType, IntegerType))))
-      // Create a row with element '77'
-      val data = Seq(Row(Map()+(77 -> 88)))
-      // Create a dataframe corresponding to the schema and data specified above
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      // Outputs dataframe schema
-      println(df.toString())
-      // Save mode
-      val mode = SaveMode.Overwrite
-      // Write dataframe to Vertica
+    val tableName = "dftest"
+    val schema = new StructType(Array(StructField("col1", MapType(IntegerType, IntegerType))))
+    val data = Seq(Row(Map() + (77 -> 88)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+    val mode = SaveMode.Overwrite
+
+    val result = Try {
       df.write.format("com.vertica.spark.datasource.VerticaSource")
         .options(writeOpts + ("table" -> tableName))
         .mode(mode)
         .save()
-    } match {
+    }
+    TestUtils.dropTable(conn, tableName)
+
+    result match {
       case Success(_) => fail("Expected to fail")
       case Failure(exp) => exp match {
         case ConnectorException(err) => err match {

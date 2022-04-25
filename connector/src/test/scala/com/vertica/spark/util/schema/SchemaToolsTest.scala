@@ -759,11 +759,6 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       == Right("ROW(\"col1\" ROW(\"field1\" INTEGER))"))
   }
 
-  it should "convert Spark Map to Vertica Map" in {
-    val schemaTools = new SchemaTools
-    assert(schemaTools.getVerticaTypeFromSparkType(MapType(StringType, StringType), 0, 0, Metadata.empty) == Right(s"VARBINARY(65000)"))
-  }
-
   it should "Provide error message on unknown element type conversion to vertica" in {
     (new SchemaTools).getVerticaTypeFromSparkType(ArrayType(CharType(0)),0,0, Metadata.empty) match {
       case Left(err) =>
@@ -902,6 +897,61 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val expected = s"($colName::ARRAY[$typeName]) as $colName"
     println(expected)
     assert(colsString.trim().equals(expected))
+  }
+
+  it should "Convert Spark MapType to Vertica Map" in {
+    val schemaTools = new SchemaTools
+    val expected = s"MAP<VARCHAR(1024), INTEGER>"
+
+    val mapType = new MapType(StringType, IntegerType, true)
+    assert(schemaTools.getVerticaTypeFromSparkType(mapType, 1024, 0, Metadata.empty)
+      == Right(expected))
+  }
+
+  it should "Error on converting MapType that uses complex type" in {
+    val schemaTools = new SchemaTools
+
+    val mapType1 = new MapType(ArrayType(StringType), IntegerType, true)
+    schemaTools.getVerticaTypeFromSparkType(mapType1, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
+    }
+
+    val mapType3 = new MapType(IntegerType, ArrayType(StringType), true)
+    schemaTools.getVerticaTypeFromSparkType(mapType3, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
+    }
+
+    val mapType2 = new MapType(MapType(IntegerType, IntegerType), ArrayType(IntegerType), true)
+    schemaTools.getVerticaTypeFromSparkType(mapType2, 1024, 0, Metadata.empty) match {
+      case Right(_) => fail("Expected schema error")
+      case Left(error) => assert(error.isInstanceOf[MapDataTypeConversionError])
+        println(error.getFullContext)
+    }
+  }
+
+  it should "Check for map containing complex type" in {
+    val schemaTools = new SchemaTools
+
+    val mapType1 = new MapType(ArrayType(StringType), IntegerType, true)
+    val mapType2 = new MapType(StringType, ArrayType(IntegerType), true)
+    val schema2 = StructType(Array(
+      StructField("col1", IntegerType),
+      StructField("col2", mapType2),
+      StructField("col3", mapType1)
+    ))
+
+    schemaTools.checkValidTableSchema(schema2) match {
+      case Right(_) => fail("Expected connector error")
+      case Left(error) => error match {
+        case ErrorList(errors) =>
+          assert(errors.length == 2)
+          assert(errors.head.isInstanceOf[InvalidMapSchemaError])
+          assert(errors.tail.head.isInstanceOf[InvalidMapSchemaError])
+        case ConnectionError(_) =>
+      }
+    }
   }
 }
 // For package private access without instantiation

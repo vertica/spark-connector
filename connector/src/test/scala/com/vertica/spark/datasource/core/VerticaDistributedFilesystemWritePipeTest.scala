@@ -656,7 +656,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl, 0).returning(Right(()))
-    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -685,7 +685,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
-    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
@@ -717,7 +717,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
-    (tableUtils.validateExternalTable _).expects(tname).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
     (tableUtils.updateJobStatusTable _).expects(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true).returning(Right())
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
@@ -770,7 +770,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
 
     val tableUtils = mock[TableUtilsInterface]
     (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl, 0).returning(Right())
-    (tableUtils.validateExternalTable _).expects(tname).returning(Left(ConnectionDownError()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Left(ConnectionDownError()))
     (tableUtils.dropTable _).expects(tname).returning(Right(()))
 
     val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
