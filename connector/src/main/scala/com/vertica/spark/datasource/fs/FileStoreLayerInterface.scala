@@ -28,7 +28,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, LogProvider}
+import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, GCSOptions, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.hdfs.DistributedFileSystem
@@ -79,6 +79,7 @@ trait FileStoreLayerInterface {
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
   def getAWSOptions: AWSOptions
+  def getGCSOptions : GCSOptions
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
@@ -491,6 +492,10 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
 
   override def getAWSOptions: AWSOptions = {
     this.fileStoreConfig.awsOptions
+  }
+
+  override def getGCSOptions: GCSOptions = {
+    this.fileStoreConfig.gcsOptions
   }
 
   private def useFileSystem[T](filename: String,

@@ -363,6 +363,23 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     for {
       _ <- this.configureKerberosToFilestore(fileStoreLayer)
       _ <- this.configureAWSParameters(fileStoreLayer)
+      _ <- this.configureGCSParameters(fileStoreLayer)
+    } yield ()
+  }
+
+  private def configureGCSParameters(fileStoreLayer: FileStoreLayerInterface) : ConnectorResult[Unit] = {
+    val gcsOptions = fileStoreLayer.getGCSOptions
+    for {
+      _ <- gcsOptions.gcsAuth match {
+        case Some(gcsAuth) =>
+          val sql = s"ALTER SESSION SET GCSAuth='${gcsAuth.accessKeyId.arg}:${gcsAuth.secretAccessKey.arg}'"
+          logger.info(s"Loaded GCS access key ID from ${gcsAuth.accessKeyId.origin}")
+          logger.info(s"Loaded GCS secret access key from ${gcsAuth.secretAccessKey.origin}")
+          this.execute(sql)
+        case None =>
+          logger.info("Did not set GCSAuth")
+          Right(())
+      }
     } yield ()
   }
 

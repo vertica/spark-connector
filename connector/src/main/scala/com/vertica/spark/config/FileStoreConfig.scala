@@ -20,12 +20,17 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.conf.Configuration
 
 sealed trait ArgOrigin
+
 case object EnvVar extends ArgOrigin
+
 case object SparkConf extends ArgOrigin
+
 case object ConnectorOption extends ArgOrigin
 
 sealed trait Visibility
+
 case object Secret extends Visibility
+
 case object Visible extends Visibility
 
 case class AWSArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
@@ -37,6 +42,8 @@ case class AWSArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
 
 case class AWSAuth(accessKeyId: AWSArg[String], secretAccessKey: AWSArg[String])
 
+case class GCSAuth(accessKeyId: AWSArg[String], secretAccessKey: AWSArg[String])
+
 case class AWSOptions(
                        awsAuth: Option[AWSAuth],
                        awsRegion: Option[AWSArg[String]],
@@ -46,18 +53,22 @@ case class AWSOptions(
                        enableSSL: Option[AWSArg[String]],
                        enablePathStyle: Option[AWSArg[String]])
 
+case class GCSOptions(gcsAuth: Option[GCSAuth])
+
 /**
  * Represents configuration for a filestore used by the connector.
  *
  * There is not currently much user configuration for the filestore beyond the address to connect to.
- * @param baseAddress Address to use in the intermediate filesystem
- * @param sessionId Unique id for a given connector operation
+ *
+ * @param baseAddress    Address to use in the intermediate filesystem
+ * @param sessionId      Unique id for a given connector operation
  * @param preventCleanup A boolean that prevents cleanup if specified to true
- * @param AWSOptions Options that specify AWS credentials for using S3 storage
+ * @param AWSOptions     Options that specify AWS credentials for using S3 storage
+ * @param gcsOptions     Options that spaecify GCS credential for using GCS storage
  */
-final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions) {
+final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions, gcsOptions: GCSOptions) {
   val defaultFS =
-    if(baseAddress.startsWith("/")) {
+    if (baseAddress.startsWith("/")) {
       SparkSession.getActiveSession match {
         case Some(session) =>
           val hadoopConf = session.sparkContext.hadoopConfiguration
@@ -79,14 +90,14 @@ final case class FileStoreConfig(baseAddress: String, sessionId: String, prevent
   }
 
   def address: String = {
-    val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
+    val delimiter = if (baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
     // Create unique directory for session
     baseAddress.stripSuffix(delimiter) + delimiter + sessionId
     newBaseAddress.stripSuffix(delimiter) + delimiter + sessionId
   }
 
   def externalTableAddress: String = {
-    val delimiter = if(baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
+    val delimiter = if (baseAddress.takeRight(1) == "/" || baseAddress.takeRight(1) == "\\") "" else "/"
     // URL for directory without session ID
     baseAddress.stripSuffix(delimiter) + delimiter
     newBaseAddress.stripSuffix(delimiter) + delimiter

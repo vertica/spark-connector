@@ -30,14 +30,14 @@ import org.apache.spark.sql.SparkSession
 
 
 /**
-  * Interface for taking input of user selected options, performing any setup steps required, and returning the proper configuration structure for the operation.
-  */
+ * Interface for taking input of user selected options, performing any setup steps required, and returning the proper configuration structure for the operation.
+ */
 trait DSConfigSetupInterface[T] {
   /**
-    * Validates and returns the configuration structure for the specific read/write operation.
-    *
-    * @return Will return an error if validation of the user options failed, otherwise will return the configuration structure expected by the writer/reader.
-    */
+   * Validates and returns the configuration structure for the specific read/write operation.
+   *
+   * @return Will return an error if validation of the user options failed, otherwise will return the configuration structure expected by the writer/reader.
+   */
   def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[T]
 
   /**
@@ -48,36 +48,42 @@ trait DSConfigSetupInterface[T] {
   def performInitialSetup(config: T): ConnectorResult[Option[PartitionInfo]]
 
   /**
-    * Returns the schema for the table as required by Spark.
-    */
+   * Returns the schema for the table as required by Spark.
+   */
   def getTableSchema(config: T): ConnectorResult[StructType]
 }
 
 sealed trait TLSMode
+
 case object Disable extends TLSMode {
   override def toString: String = "disable"
 }
+
 case object Require extends TLSMode {
   override def toString: String = "require"
 }
+
 case object VerifyCA extends TLSMode {
   override def toString: String = "verify-ca"
 }
+
 case object VerifyFull extends TLSMode {
   override def toString: String = "verify-full"
 }
 
 sealed trait CreateExternalTableOption
+
 case object ExistingData extends CreateExternalTableOption {
   override def toString: String = "existing-data"
 }
+
 case object NewData extends CreateExternalTableOption {
   override def toString: String = "new-data"
 }
 
 /**
-  * Util class for common config setup functionality.
-  */
+ * Util class for common config setup functionality.
+ */
 // scalastyle:off
 object DSConfigSetupUtils {
   type ValidationResult[+A] = ValidatedNec[ConnectorError, A]
@@ -90,7 +96,7 @@ object DSConfigSetupUtils {
       case (old, replacement) => config.contains(old)
     }).map {
       case (old, replacement) =>
-          V1ReplacementOption(old, replacement)
+        V1ReplacementOption(old, replacement)
     }
   }
 
@@ -152,28 +158,36 @@ object DSConfigSetupUtils {
   }
 
   def getPort(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("port","5433").toInt} match {
+    Try {
+      config.getOrElse("port", "5433").toInt
+    } match {
       case Success(i) => if (i >= 1 && i <= 65535) i.validNec else InvalidPortError().invalidNec
       case Failure(_) => InvalidPortError().invalidNec
     }
   }
 
   def getMaxFileSize(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("max_file_size_export_mb","4096").toInt} match {
+    Try {
+      config.getOrElse("max_file_size_export_mb", "4096").toInt
+    } match {
       case Success(i) => i.validNec
       case Failure(_) => InvalidIntegerField("max_file_size_export_mb").invalidNec
     }
   }
 
   def getMaxRowGroupSize(config: Map[String, String]): ValidationResult[Int] = {
-    Try {config.getOrElse("max_row_group_size_export_mb","16").toInt} match {
+    Try {
+      config.getOrElse("max_row_group_size_export_mb", "16").toInt
+    } match {
       case Success(i) => i.validNec
       case Failure(_) => InvalidIntegerField("max_row_group_size_export_mb").invalidNec
     }
   }
 
   def getFailedRowsPercentTolerance(config: Map[String, String]): ValidationResult[Float] = {
-    Try {config.getOrElse("failed_rows_percent_tolerance","0.00").toFloat} match {
+    Try {
+      config.getOrElse("failed_rows_percent_tolerance", "0.00").toFloat
+    } match {
       case Success(f) => if (f >= 0.00 && f <= 1.00) f.validNec else InvalidFailedRowsTolerance().invalidNec
       case Failure(_) => InvalidFailedRowsTolerance().invalidNec
     }
@@ -216,6 +230,28 @@ object DSConfigSetupUtils {
         case _ => TLSModeParseError().invalidNec
       }
       case None => Disable.validNec
+    }
+  }
+
+
+  def getGCSAuth(config: Map[String, String]): ValidationResult[Option[GCSAuth]] = {
+    val visibility = Secret
+    val accessKeyIdOpt = getAWSArg(visibility)(
+      config,
+      "gcs_access_key_id",
+      "",
+      "").sequence
+    val secretAccessKeyOpt = getAWSArg(visibility)(
+      config,
+      "gcs_secret_access_key",
+      "",
+      "").sequence
+
+    (accessKeyIdOpt, secretAccessKeyOpt) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(GCSAuth).map(Some(_))
+      case (None, None) => None.validNec
+      case (Some(_), None) => MissingAWSAccessKeyId().invalidNec
+      case (None, Some(_)) => MissingAWSSecretAccessKey().invalidNec
     }
   }
 
@@ -299,17 +335,17 @@ object DSConfigSetupUtils {
   }
 
   private def getAWSArg(visibility: Visibility)(
-                 config: Map[String, String],
-                 connectorOption: String,
-                 sparkConfigOption: String,
-                 envVar: String
-               ): ValidationResult[Option[AWSArg[String]]] = {
-      getAWSArgFromConnectorOption(visibility)(
-        config,
-        connectorOption,
-        _ => getAWSArgFromSparkConfig(visibility)(
-          sparkConfigOption,
-          _ => getAWSArgFromEnvVar(visibility)(envVar)))
+    config: Map[String, String],
+    connectorOption: String,
+    sparkConfigOption: String,
+    envVar: String
+  ): ValidationResult[Option[AWSArg[String]]] = {
+    getAWSArgFromConnectorOption(visibility)(
+      config,
+      connectorOption,
+      _ => getAWSArgFromSparkConfig(visibility)(
+        sparkConfigOption,
+        _ => getAWSArgFromEnvVar(visibility)(envVar)))
   }
 
   private def getAWSArgFromConnectorOption(visibility: Visibility)(
@@ -336,7 +372,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  private def getAWSArgFromEnvVar(visibility: Visibility)(envVar: String):  ValidationResult[Option[AWSArg[String]]] = {
+  private def getAWSArgFromEnvVar(visibility: Visibility)(envVar: String): ValidationResult[Option[AWSArg[String]]] = {
     sys.env.get(envVar).map(token => AWSArg(visibility, EnvVar, token)).validNec
   }
 
@@ -363,7 +399,7 @@ object DSConfigSetupUtils {
   def getQuery(config: Map[String, String]): Option[String] = {
     config.get("query") match {
       case None => None
-        // Strip the ';' from the query to allow for queries ending with this
+      // Strip the ';' from the query to allow for queries ending with this
       case Some(value) => Some(value.stripSuffix(";"))
     }
   }
@@ -393,30 +429,34 @@ object DSConfigSetupUtils {
   // Optional param, if not specified the partition count will be decided as part of the inital steps
   def getPartitionCount(config: Map[String, String]): ValidationResult[Option[Int]] = {
     config.get("num_partitions") match {
-      case Some(partitionCount) => Try{partitionCount.toInt} match {
+      case Some(partitionCount) => Try {
+        partitionCount.toInt
+      } match {
         case Success(i) =>
-          if(i > 0) Some(i).validNec else InvalidPartitionCountError().invalidNec
+          if (i > 0) Some(i).validNec else InvalidPartitionCountError().invalidNec
         case Failure(_) => InvalidPartitionCountError().invalidNec
       }
       case None => None.validNec
     }
   }
 
-  def getStrLen(config: Map[String, String]) : ValidationResult[Long] = {
-    Try {config.getOrElse("strlen","1024").toLong} match {
+  def getStrLen(config: Map[String, String]): ValidationResult[Long] = {
+    Try {
+      config.getOrElse("strlen", "1024").toLong
+    } match {
       case Success(i) => if (i >= 1 && i <= 32000000) i.validNec else InvalidStrlenError().invalidNec
       case Failure(_) => InvalidStrlenError().invalidNec
     }
   }
 
-  def getMergeKey(config: Map[String, String]) : ValidationResult[Option[ValidColumnList]] = {
+  def getMergeKey(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
     config.get("merge_key") match {
       case None => None.validNec
       case Some(listStr) => ValidColumnList(listStr)
     }
   }
 
-  def getPreventCleanup(config: Map[String, String]) : ValidationResult[Boolean] = {
+  def getPreventCleanup(config: Map[String, String]): ValidationResult[Boolean] = {
     config.get("prevent_cleanup") match {
       case Some(str) =>
         str match {
@@ -428,7 +468,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getTimeOperations(config: Map[String, String]) : ValidationResult[Boolean] = {
+  def getTimeOperations(config: Map[String, String]): ValidationResult[Boolean] = {
     config.get("time_operations") match {
       case Some(str) =>
         str match {
@@ -439,10 +479,12 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getArrayLength(config: Map[String, String]) : ValidationResult[Long] = {
-    Try {config.getOrElse("array_length","0").toLong} match {
-      case Success(len) => if(len < 0) InvalidArrayLengthError().invalidNec else  len.validNec
-      case Failure(_) =>  InvalidArrayLengthError().invalidNec
+  def getArrayLength(config: Map[String, String]): ValidationResult[Long] = {
+    Try {
+      config.getOrElse("array_length", "0").toLong
+    } match {
+      case Success(len) => if (len < 0) InvalidArrayLengthError().invalidNec else len.validNec
+      case Failure(_) => InvalidArrayLengthError().invalidNec
     }
   }
 
@@ -465,10 +507,10 @@ object DSConfigSetupUtils {
 
   def validateAndGetJDBCSSLConfig(config: Map[String, String]): ValidationResult[JDBCTLSConfig] = {
     (getTLS(config),
-    getKeyStorePath(config),
-    getKeyStorePassword(config),
-    getTrustStorePath(config),
-    getTrustStorePassword(config)).mapN(JDBCTLSConfig)
+      getKeyStorePath(config),
+      getKeyStorePassword(config),
+      getTrustStorePath(config),
+      getTrustStorePassword(config)).mapN(JDBCTLSConfig)
   }
 
   /**
@@ -476,11 +518,11 @@ object DSConfigSetupUtils {
    */
   def validateAndGetJDBCConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JDBCConfig] = {
     (DSConfigSetupUtils.getHost(config),
-    DSConfigSetupUtils.getPort(config),
-    DSConfigSetupUtils.getDb(config),
-    DSConfigSetupUtils.validateAndGetJDBCAuth(config),
-    DSConfigSetupUtils.validateAndGetJDBCSSLConfig(config),
-    DSConfigSetupUtils.getBackupServerNode(config)).mapN(JDBCConfig)
+      DSConfigSetupUtils.getPort(config),
+      DSConfigSetupUtils.getDb(config),
+      DSConfigSetupUtils.validateAndGetJDBCAuth(config),
+      DSConfigSetupUtils.validateAndGetJDBCSSLConfig(config),
+      DSConfigSetupUtils.getBackupServerNode(config)).mapN(JDBCConfig)
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
@@ -494,7 +536,8 @@ object DSConfigSetupUtils {
         DSConfigSetupUtils.getAWSEndpoint(config),
         DSConfigSetupUtils.getAWSSSLEnabled(config),
         DSConfigSetupUtils.getAWSPathStyleEnabled(config)
-        ).mapN(AWSOptions)
+        ).mapN(AWSOptions),
+      DSConfigSetupUtils.getGCSAuth(config).map(GCSOptions)
       ).mapN(FileStoreConfig)
   }
 
@@ -525,18 +568,17 @@ object DSConfigSetupUtils {
 }
 
 
-
 /**
-  * Implementation for parsing user option map and getting read config
-  */
+ * Implementation for parsing user option map and getting read config
+ */
 class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
   private val logger: Logger = LogProvider.getLogger(classOf[DSReadConfigSetup])
 
   /**
-    * Validates the user option map and parses read config
-    *
-    * @return Either [[ReadConfig]] or sequence of [[ConnectorError]]
-    */
+   * Validates the user option map and parses read config
+   *
+   * @return Either [[ReadConfig]] or sequence of [[ConnectorError]]
+   */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[ReadConfig] = {
     val sessionId = sessionIdInterface.getId
 
@@ -550,7 +592,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getMaxRowGroupSize(config),
       DSConfigSetupUtils.getMaxFileSize(config),
       DSConfigSetupUtils.getTimeOperations(config)
-    ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
+      ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 
       // Then, retrieve metadata
@@ -587,7 +629,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    * @param config Configuration data for the read operation. Contains the metadata required for returning the table schema.
    * @return The table schema or an error that occured trying to retrieve it
    */
-  override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
+  override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] = {
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _) =>
         verticaMetadata match {
@@ -599,16 +641,16 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 }
 
 /**
-  * Implementation for parsing user option map and getting write config
-  */
+ * Implementation for parsing user option map and getting write config
+ */
 class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
   private val logger: Logger = LogProvider.getLogger(classOf[DSWriteConfigSetup])
 
   /**
-    * Validates the user option map and parses read config
-    *
-    * @return Either [[WriteConfig]] or [[ConnectorError]]
-    */
+   * Validates the user option map and parses read config
+   *
+   * @return Either [[WriteConfig]] or [[ConnectorError]]
+   */
   override def validateAndGetConfig(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[WriteConfig] = {
     val sessionId = sessionIdInterface.getId
 
@@ -631,7 +673,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getMergeKey(config),
           DSConfigSetupUtils.getTimeOperations(config),
           DSConfigSetupUtils.getArrayLength(config)
-        ).mapN(DistributedFilesystemWriteConfig)
+          ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec
     }
