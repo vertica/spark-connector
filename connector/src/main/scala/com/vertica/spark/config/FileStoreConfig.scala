@@ -46,6 +46,10 @@ case class AWSOptions(
                        enableSSL: Option[AWSArg[String]],
                        enablePathStyle: Option[AWSArg[String]])
 
+case class VerticaGCSAuth(accessKeyId: AWSArg[String], accessKeySecret: AWSArg[String], gcsKeyFile: AWSArg[String])
+
+case class GCSOptions(gcsAuth: Option[VerticaGCSAuth])
+
 /**
  * Represents configuration for a filestore used by the connector.
  *
@@ -53,9 +57,10 @@ case class AWSOptions(
  * @param baseAddress Address to use in the intermediate filesystem
  * @param sessionId Unique id for a given connector operation
  * @param preventCleanup A boolean that prevents cleanup if specified to true
- * @param AWSOptions Options that specify AWS credentials for using S3 storage
+ * @param awsOptions Options for configuring AWS S3 storage
+ * @param gcsOptions Options for configuring Google Cloud Storage
  */
-final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions) {
+final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions, gcsOptions: GCSOptions) {
   val defaultFS =
     if(baseAddress.startsWith("/")) {
       SparkSession.getActiveSession match {

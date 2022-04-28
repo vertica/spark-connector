@@ -25,6 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+import com.vertica.spark.datasource.fs.GCSSparkConfOptions
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
 
@@ -236,6 +237,35 @@ object DSConfigSetupUtils {
       case (None, None) => None.validNec
       case (Some(_), None) => MissingAWSAccessKeyId().invalidNec
       case (None, Some(_)) => MissingAWSSecretAccessKey().invalidNec
+    }
+  }
+
+  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
+    val visibility = Secret
+    val gcsKeyFile = getAWSArg(visibility)(
+      config,
+      "gcs_key_file",
+      GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE,
+      "GOOGLE_APPLICATION_CREDENTIALS"
+    ).sequence
+
+    val accessKeyIdOpt = getAWSArg(visibility)(
+      config,
+      "vertica_gcs_key",
+      "",
+      "").sequence
+
+    val secretAccessKeyOpt = getAWSArg(visibility)(
+      config,
+      "vertica_gcs_secret",
+      "",
+      "").sequence
+
+    (accessKeyIdOpt, secretAccessKeyOpt, gcsKeyFile) match {
+      case (Some(accessKeyId), Some(secretAccessKey), Some(keyFile)) => (accessKeyId, secretAccessKey, keyFile).mapN(VerticaGCSAuth).map(Some(_))
+      case (None, None, None) => None.validNec
+      // Todo: Error handling
+      case _ => MissingAWSSecretAccessKey().invalidNec
     }
   }
 
@@ -494,7 +524,9 @@ object DSConfigSetupUtils {
         DSConfigSetupUtils.getAWSEndpoint(config),
         DSConfigSetupUtils.getAWSSSLEnabled(config),
         DSConfigSetupUtils.getAWSPathStyleEnabled(config)
-        ).mapN(AWSOptions)
+        ).mapN(AWSOptions),
+      DSConfigSetupUtils.getVerticaGCSAuth(config)
+        .map(gcsAuth => GCSOptions(gcsAuth))
       ).mapN(FileStoreConfig)
   }
 
