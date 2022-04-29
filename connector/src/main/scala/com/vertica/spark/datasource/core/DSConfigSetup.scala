@@ -267,8 +267,8 @@ object DSConfigSetupUtils {
     (accessKeyIdOpt, secretAccessKeyOpt) match {
       case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(VerticaGCSAuth).map(Some(_))
       case (None, None) => None.validNec
-      case (None, _) => MissingVerticaGCSKey().invalidNec
-      case (_, None) => MissingVerticaGCSSecret().invalidNec
+      case (None, _) => MissingGoogleCloudStorageHMACKey().invalidNec
+      case (_, None) => MissingGoogleCloudStorageHMACSecret().invalidNec
     }
   }
 

@@ -495,7 +495,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get Vertica GCS auth from connector options" in {
+  it should "get GCS HMAC key from connector options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
       "port" -> "1234",
@@ -504,8 +504,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       "password" -> "password",
       "table" -> "tbl",
       "staging_fs_url" -> "gs://test:8020/tmp/test",
-      "vertica_gcs_key" -> "key",
-      "vertica_gcs_secret" -> "secret",
+      "gcs_hmac_key_id" -> "key",
+      "gcs_hmac_key_secret" -> "secret",
     )
 
     // Set mock pipe
@@ -524,6 +524,50 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
+  it should "error on missing GCS HMAC key secret" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "gs://test:8020/tmp/test",
+      "gcs_hmac_key_id" -> "key",
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
+    assert(errors.length == 1)
+    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACSecret])
+  }
+
+  it should "error on missing GCS HMAC key id" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "gs://test:8020/tmp/test",
+      "gcs_hmac_key_secret" -> "secret",
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
+    assert(errors.length == 1)
+    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKey])
+  }
+
   it should "get GCS keyfile options from connector options" in {
     val opts = Map(
       "host" -> "1.1.1.1",
@@ -533,7 +577,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       "password" -> "password",
       "table" -> "tbl",
       "staging_fs_url" -> "gs://test:8020/tmp/test",
-      "gcs_key_file" -> "keyfile",
+      "gcs_keyfile" -> "keyfile",
     )
 
     // Set mock pipe
