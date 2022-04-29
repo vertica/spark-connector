@@ -92,10 +92,12 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         var sparkNewerThan31 = true
         try {
           val versionList = SparkSession.getActiveSession.get.version.split("\\.")
-          val major = versionList(0).toInt
-          val minor = versionList(1).toInt
-          if(versionList.length >= 2 && major == 3 && minor < 2) {
-            sparkNewerThan31 = false
+          if (versionList.length >= 2) {
+            val major = versionList(0).toInt
+            val minor = versionList(1).toInt
+            if (major == 3 && minor < 2) {
+              sparkNewerThan31 = false
+            }
           }
         }
         catch { // Couldn't recgonize version string, assume newer version
