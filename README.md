@@ -26,7 +26,7 @@ The connector relies on a distributed filesystem, such as HDFS, to act as a brid
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - A Vertica installation
 - Spark 3.0.0 or higher
-- An HDFS cluster or S3 bucket, for use as an intermediary between Spark and Vertica
+- An HDFS cluster or HDFS compatible (S3, Google Cloud Storage, etc.), for use as an intermediary between Spark and Vertica
 - A spark application, either running locally for quick testing, or running on a spark cluster. If using S3, Spark must be using hadoop 3.3
 
 For an easier quick test of the connector using a dockerized environment, see [this guide for running our examples.](examples/README.md)
@@ -68,9 +68,12 @@ Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 For the Spark connector, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
 
-### AWS S3
+##Intermediary Storage
 
-Follow our [S3 user manual](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md) to learn how to use the connector with S3.
+The connector requires HDFS, or an HDFS compatible storage system for use when accessing Vertica tables.
+
+ * [Amazon S3 Instructions](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md)
+ * [Google Cloud Storage Instructions]()
 
 ## Connector Usage
 

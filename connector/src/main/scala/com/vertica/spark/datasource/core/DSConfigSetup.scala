@@ -244,7 +244,7 @@ object DSConfigSetupUtils {
     val visibility = Secret
     getAWSArg(visibility)(
       config,
-      "gcs_key_file",
+      "gcs_keyfile",
       GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE,
       "GOOGLE_APPLICATION_CREDENTIALS"
     )
@@ -254,13 +254,13 @@ object DSConfigSetupUtils {
     val visibility = Secret
     val accessKeyIdOpt = getAWSArg(visibility)(
       config,
-      "vertica_gcs_key",
+      "gcs_hmac_key_id",
       "",
       "VERTICA_GCS_KEY").sequence
 
     val secretAccessKeyOpt = getAWSArg(visibility)(
       config,
-      "vertica_gcs_secret",
+      "gcs_hmac_key_secret",
       "",
       "VERTICA_GCS_SECRET").sequence
 
