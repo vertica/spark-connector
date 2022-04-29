@@ -30,7 +30,7 @@ jobs:
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Print Vertica version
-        run: docker exec docker_vertica_1 vsql -c "select version();"
+        run: sleep 5s && docker exec docker_vertica_1 vsql -c "select version();"
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
