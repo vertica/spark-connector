@@ -254,6 +254,15 @@ case class TLSModeParseError() extends ConnectorError {
 case class MissingAWSSecretAccessKey() extends ConnectorError {
   override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
 }
+case class MissingGCSKeyFile() extends ConnectorError {
+  override def getFullContext: String = "GCS authentication options were specified, but 'gcs_key_file' is missing."
+}
+case class MissingVerticaGCSKey() extends ConnectorError {
+  override def getFullContext: String = "Option 'vertica_gcs_secret' was specified, but 'vertica_gcs_key' is missing."
+}
+case class MissingVerticaGCSSecret() extends ConnectorError {
+  override def getFullContext: String = "Option 'vertica_gcs_key' was specified, but 'vertica_gcs_secret' is missing."
+}
 case class MissingAWSAccessKeyId() extends ConnectorError {
   override def getFullContext: String = "The 'aws_secret_access_key' param was specified, but 'aws_access_key_id' is not specified."
 }

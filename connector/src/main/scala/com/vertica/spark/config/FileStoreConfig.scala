@@ -46,9 +46,9 @@ case class AWSOptions(
                        enableSSL: Option[AWSArg[String]],
                        enablePathStyle: Option[AWSArg[String]])
 
-case class VerticaGCSAuth(accessKeyId: AWSArg[String], accessKeySecret: AWSArg[String], gcsKeyFile: AWSArg[String])
+case class VerticaGCSAuth(accessKeyId: AWSArg[String], accessKeySecret: AWSArg[String])
 
-case class GCSOptions(gcsAuth: Option[VerticaGCSAuth])
+case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[AWSArg[String]])
 
 /**
  * Represents configuration for a filestore used by the connector.

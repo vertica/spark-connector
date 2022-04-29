@@ -881,7 +881,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "prevent cleanup of parquet files when prevent_cleanup set to true" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None, None))
     val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
@@ -910,7 +910,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "prevent cleanup if startPartitionWrite returns an error" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None, None))
     val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
     val uniqueId = "unique-id"
     val jdbcLayerInterface = mock[JdbcLayerInterface]

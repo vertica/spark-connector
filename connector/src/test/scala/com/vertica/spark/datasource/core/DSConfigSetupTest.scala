@@ -46,8 +46,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
   def parseCorrectInitConfig(opts : Map[String, String], dsWriteConfigSetup: DSWriteConfigSetup) : WriteConfig = {
     val writeConfig : WriteConfig = dsWriteConfigSetup.validateAndGetConfig(opts) match {
-      case Invalid(_) =>
-        fail
+      case Invalid(error) =>
+        fail(error.toString)
         mock[WriteConfig]
       case Valid(config) =>
         config
@@ -492,6 +492,98 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
             }
           case None => fail("Failed to get AWS credentials provider from the connector options")
         }
+    }
+  }
+
+  it should "get Vertica GCS auth from connector options" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "gs://test:8020/tmp/test",
+      "vertica_gcs_key" -> "key",
+      "vertica_gcs_secret" -> "secret",
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case conf: DistributedFilesystemWriteConfig =>
+        conf.fileStoreConfig.gcsOptions.gcsAuth match {
+          case Some(gcsAuth) =>
+            assert(gcsAuth.accessKeyId.arg == "key")
+            assert(gcsAuth.accessKeySecret.arg == "secret")
+          case None => fail("Expected GCS parameters")
+        }
+    }
+  }
+
+  it should "get GCS keyfile options from connector options" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "gs://test:8020/tmp/test",
+      "gcs_key_file" -> "keyfile",
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case conf: DistributedFilesystemWriteConfig =>
+        conf.fileStoreConfig.gcsOptions.gcsKeyFile match {
+          case Some(keyfile) =>
+            assert(keyfile.arg == "keyfile")
+          case None => fail("Expected GCS keyfile")
+        }
+    }
+  }
+
+  it should "get GCS keyfile parameters from spark options" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("fs.gs.auth.service.account.json.keyfile", "keyfile")
+      .getOrCreate()
+
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsKeyFile match {
+            case Some(keyfile) =>
+              assert(keyfile.arg == "keyfile")
+            case None => fail("Expected GCS keyfile")
+          }
+      }
+    } finally {
+      spark.close()
     }
   }
 }

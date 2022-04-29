@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
-import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.{ConnectorError, _}
 import org.apache.spark.sql.types.StructType
 import com.vertica.spark.config._
 
@@ -240,32 +240,35 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
+  def getGCSKeyFile(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
     val visibility = Secret
-    val gcsKeyFile = getAWSArg(visibility)(
+    getAWSArg(visibility)(
       config,
       "gcs_key_file",
       GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE,
       "GOOGLE_APPLICATION_CREDENTIALS"
-    ).sequence
+    )
+  }
 
+  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
+    val visibility = Secret
     val accessKeyIdOpt = getAWSArg(visibility)(
       config,
       "vertica_gcs_key",
       "",
-      "").sequence
+      "VERTICA_GCS_KEY").sequence
 
     val secretAccessKeyOpt = getAWSArg(visibility)(
       config,
       "vertica_gcs_secret",
       "",
-      "").sequence
+      "VERTICA_GCS_SECRET").sequence
 
-    (accessKeyIdOpt, secretAccessKeyOpt, gcsKeyFile) match {
-      case (Some(accessKeyId), Some(secretAccessKey), Some(keyFile)) => (accessKeyId, secretAccessKey, keyFile).mapN(VerticaGCSAuth).map(Some(_))
-      case (None, None, None) => None.validNec
-      // Todo: Error handling
-      case _ => MissingAWSSecretAccessKey().invalidNec
+    (accessKeyIdOpt, secretAccessKeyOpt) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(VerticaGCSAuth).map(Some(_))
+      case (None, None) => None.validNec
+      case (None, _) => MissingVerticaGCSKey().invalidNec
+      case (_, None) => MissingVerticaGCSSecret().invalidNec
     }
   }
 
@@ -514,19 +517,24 @@ object DSConfigSetupUtils {
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+    val awsOptions = (DSConfigSetupUtils.getAWSAuth(config),
+      DSConfigSetupUtils.getAWSRegion(config),
+      DSConfigSetupUtils.getAWSSessionToken(config),
+      DSConfigSetupUtils.getAWSCredentialsProvider(config),
+      DSConfigSetupUtils.getAWSEndpoint(config),
+      DSConfigSetupUtils.getAWSSSLEnabled(config),
+      DSConfigSetupUtils.getAWSPathStyleEnabled(config)
+      ).mapN(AWSOptions)
+
+    val gcsOptions = (DSConfigSetupUtils.getVerticaGCSAuth(config),
+      DSConfigSetupUtils.getGCSKeyFile(config))
+      .mapN(GCSOptions)
+
     (DSConfigSetupUtils.getStagingFsUrl(config),
       sessionId.validNec,
       DSConfigSetupUtils.getPreventCleanup(config),
-      (DSConfigSetupUtils.getAWSAuth(config),
-        DSConfigSetupUtils.getAWSRegion(config),
-        DSConfigSetupUtils.getAWSSessionToken(config),
-        DSConfigSetupUtils.getAWSCredentialsProvider(config),
-        DSConfigSetupUtils.getAWSEndpoint(config),
-        DSConfigSetupUtils.getAWSSSLEnabled(config),
-        DSConfigSetupUtils.getAWSPathStyleEnabled(config)
-        ).mapN(AWSOptions),
-      DSConfigSetupUtils.getVerticaGCSAuth(config)
-        .map(gcsAuth => GCSOptions(gcsAuth))
+      awsOptions,
+      gcsOptions
       ).mapN(FileStoreConfig)
   }
 

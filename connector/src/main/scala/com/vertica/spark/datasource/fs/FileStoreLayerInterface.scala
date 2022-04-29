@@ -220,11 +220,11 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   }
 
   private val gcsOptions = fileStoreConfig.gcsOptions
-  gcsOptions.gcsAuth match {
+  gcsOptions.gcsKeyFile match {
     case Some(auth) =>
-      hdfsConfig.set(GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE, auth.gcsKeyFile.arg)
-      logger.info(s"Loaded ${GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE} from ${auth.gcsKeyFile.origin}")
-    case None => logger.debug("Did not load")
+      hdfsConfig.set(GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE, auth.arg)
+      logger.info(s"Loaded ${GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE} from ${auth.origin}")
+    case None => logger.debug("Did not load GCS key file")
   }
 
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
