@@ -383,16 +383,16 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         .mode(mode)
         .save()
 
-      // val rs = conn.createStatement().executeQuery("select \"col2\" from dftest;")
-      // rs.next()
-      // assert(rs.getInt(1) == 55)
+      val stmt = conn.createStatement
+      val query = "select \"col2\" from dftest;"
+      val rs = stmt.executeQuery(query)
+      assert(rs.next)
+      assert(rs.getInt(1) == 55)
     }
 
     TestUtils.dropTable(conn, tableName)
     // Since we are writing external table, data will persist
-    fsLayer.removeDir(fsConfig.address)
-    fsLayer.createDir(fsConfig.address, "777")
-
+    TestUtils.fsCleanup(fsLayer, fsConfig.address)
     result match {
       case Success(_) => succeed
       case Failure(exp) => fail("Expected to succeed", exp)
