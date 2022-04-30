@@ -267,7 +267,8 @@ object Main extends App {
 
   def executeTests(options: Options): Unit = {
     val suitesForExecution = buildTestSuitesForExecution(options)
-    val testName = getTestName(options)
+    // val testName = getTestName(options)
+    val testName = Some("should write external table with Vertica map")
 
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
 
@@ -303,6 +304,7 @@ object Main extends App {
 
     testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
 
+    return Seq(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
     if(options.suite.isBlank) {
       testSuites
     } else {
