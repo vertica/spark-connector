@@ -13,7 +13,7 @@
 
 package com.vertica.spark.functests.endtoend
 
-import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
+import com.vertica.spark.config.{FileStoreConfig, GCSOptions, JDBCConfig}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
@@ -39,7 +39,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   protected val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
-  protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions)
+  protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions, GCSOptions(None, None))
   protected val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
   protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
@@ -3471,10 +3471,12 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       writeOpts + ("table" -> tableName, "staging_fs_url" -> filePath, "create_external_table" -> "new-data")
     ).mode(mode).save()
 
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      .options(readOpts + ("table" -> tableName))
+      .load()
 
     val dec2 = readDf.head().getDecimal(0)
-    assert( dec.subtract(dec2).abs().compareTo(new java.math.BigDecimal(0.001)) < 0)
+    assert(dec.subtract(dec2).abs().compareTo(new java.math.BigDecimal(0.001)) < 0)
 
     TestUtils.dropTable(conn, tableName)
 

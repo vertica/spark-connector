@@ -127,7 +127,7 @@ object Main extends App {
 
   val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
     case (Some(accessKeyId), Some(secretAccessKey)) => {
-      Some(AWSAuth(AWSArg(Visible, EnvVar, accessKeyId), AWSArg(Secret, EnvVar, secretAccessKey)))
+      Some(AWSAuth(SensitiveArg(Visible, EnvVar, accessKeyId), SensitiveArg(Secret, EnvVar, secretAccessKey)))
     }
     case (None, None) =>
       for {
@@ -137,90 +137,92 @@ object Main extends App {
         secretAccessKey <- Try {
           conf.getString("functional-tests.aws_secret_access_key")
         }.toOption
-      } yield AWSAuth(AWSArg(Visible, ConnectorOption, accessKeyId), AWSArg(Secret, ConnectorOption, secretAccessKey))
+      } yield AWSAuth(SensitiveArg(Visible, ConnectorOption, accessKeyId), SensitiveArg(Secret, ConnectorOption, secretAccessKey))
     case _ => None
   }
 
   val awsRegion = sys.env.get("AWS_DEFAULT_REGION") match {
-    case Some(region) => Some(AWSArg(Visible, EnvVar, region))
+    case Some(region) => Some(SensitiveArg(Visible, EnvVar, region))
     case None => {
       Try {
         conf.getString("functional-tests.aws_region")
       }.toOption match {
-        case Some(region) => Some(AWSArg(Visible, ConnectorOption, region))
+        case Some(region) => Some(SensitiveArg(Visible, ConnectorOption, region))
         case None => None
       }
     }
   }
 
   val awsSessionToken = sys.env.get("AWS_SESSION_TOKEN") match {
-    case Some(token) => Some(AWSArg(Visible, EnvVar, token))
+    case Some(token) => Some(SensitiveArg(Visible, EnvVar, token))
     case None => {
       Try {
         conf.getString("functional-tests.aws_session_token")
       }.toOption match {
-        case Some(token) => Some(AWSArg(Visible, ConnectorOption, token))
+        case Some(token) => Some(SensitiveArg(Visible, ConnectorOption, token))
         case None => None
       }
     }
   }
 
   val awsCredentialsProvider = sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
-    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
     case None => {
       Try {
         conf.getString("functional-tests.aws_credentials_provider")
       }.toOption match {
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
         case None => None
       }
     }
   }
 
   val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
-    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
     case None => {
       Try {
         conf.getString("functional-tests.aws_enable_ssl")
       }.toOption match {
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
         case None => None
       }
     }
   }
 
   val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
-    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
     case None => {
       Try {
         conf.getString("functional-tests.aws_endpoint")
       }.toOption match {
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
         case None => None
       }
     }
   }
 
   val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
-    case Some(provider) => Some(AWSArg(Visible, EnvVar, provider))
+    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
     case None => {
       Try {
         conf.getString("functional-tests.aws_enable_path_style")
       }.toOption match {
-        case Some(provider) => Some(AWSArg(Visible, ConnectorOption, provider))
+        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
         case None => None
       }
     }
   }
 
-  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, AWSOptions(awsAuth,
+  val awsOptions = AWSOptions(awsAuth,
     awsRegion,
     awsSessionToken,
     awsCredentialsProvider,
     awsEndpoint,
     awsEnableSsl,
     awsEnablePathStyle
-  ))
+  )
+
+  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, awsOptions, GCSOptions(None, None))
 
   val writeOpts = readOpts
 
