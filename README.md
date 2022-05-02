@@ -68,12 +68,12 @@ Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 For the Spark connector, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
 
-##Intermediary Storage
+###Intermediary Storage
 
 The connector requires HDFS, or an HDFS compatible storage system for use when accessing Vertica tables.
 
  * [Amazon S3 Instructions](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md)
- * [Google Cloud Storage Instructions]()
+ * [Google Cloud Storage Instructions](https://github.com/vertica/spark-connector/blob/main/GCSUserManual.md)
 
 ## Connector Usage
 
