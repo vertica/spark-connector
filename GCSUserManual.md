@@ -12,3 +12,4 @@ With the credential specified, you can now configure the connector option `stagi
 
 ###Additional Resources
  * [Google Hadoop Connector GitHub](https://github.com/GoogleCloudDataproc/hadoop-connectors)
+ * [Using Google Hadoop Connector](https://cloud.google.com/dataproc/docs/concepts/connectors/cloud-storage)

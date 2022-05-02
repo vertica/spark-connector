@@ -70,7 +70,7 @@ For the Spark connector, Spark 3.0.0 and above use Scala 2.12. You will need to 
 
 ###Intermediary Storage
 
-The connector requires HDFS, or an HDFS compatible storage system for use when accessing Vertica tables.
+The connector requires HDFS, or any file systems that implements [Hadoop File Systems API](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/filesystem/filesystem.html), for use when accessing Vertica tables.
 
  * [Amazon S3 Instructions](https://github.com/vertica/spark-connector/blob/main/S3UserManual.md)
  * [Google Cloud Storage Instructions](https://github.com/vertica/spark-connector/blob/main/GCSUserManual.md)
