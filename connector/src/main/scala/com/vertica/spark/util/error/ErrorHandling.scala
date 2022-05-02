@@ -254,10 +254,10 @@ case class TLSModeParseError() extends ConnectorError {
 case class MissingAWSSecretAccessKey() extends ConnectorError {
   override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
 }
-case class MissingGoogleCloudStorageHMACKey() extends ConnectorError {
+case class MissingGoogleCloudStorageHMACKeyId() extends ConnectorError {
   override def getFullContext: String = "Option 'gcs_hmac_key_secret' was specified, but 'gcs_hmac_key_id' is missing."
 }
-case class MissingGoogleCloudStorageHMACSecret() extends ConnectorError {
+case class MissingGoogleCloudStorageHMACKeySecret() extends ConnectorError {
   override def getFullContext: String = "Option 'gcs_hmac_key_id' was specified, but 'gcs_hmac_key_secret' is missing."
 }
 case class MissingAWSAccessKeyId() extends ConnectorError {
