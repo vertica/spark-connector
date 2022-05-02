@@ -222,12 +222,12 @@ object DSConfigSetupUtils {
 
   def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
     val visibility = Secret
-    val accessKeyIdOpt = getOption(visibility)(
+    val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
       "aws_access_key_id",
       "spark.hadoop.fs.s3a.access.key",
       "AWS_ACCESS_KEY_ID").sequence
-    val secretAccessKeyOpt = getOption(visibility)(
+    val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
       "aws_secret_access_key",
       "spark.hadoop.fs.s3a.secret.key",
@@ -242,7 +242,7 @@ object DSConfigSetupUtils {
 
   def getGCSKeyFile(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Secret
-    getOption(visibility)(
+    getSensitiveOption(visibility)(
       config,
       "gcs_keyfile",
       GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE,
@@ -252,13 +252,13 @@ object DSConfigSetupUtils {
 
   def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
     val visibility = Secret
-    val accessKeyIdOpt = getOption(visibility)(
+    val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
       "gcs_hmac_key_id",
       "",
       "VERTICA_GCS_KEY").sequence
 
-    val secretAccessKeyOpt = getOption(visibility)(
+    val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
       "gcs_hmac_key_secret",
       "",
@@ -281,7 +281,7 @@ object DSConfigSetupUtils {
   }
 
   def getAWSSessionToken(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
-    getOption(Secret)(
+    getSensitiveOption(Secret)(
       config,
       "aws_session_token",
       "spark.hadoop.fs.s3a.session.token",
@@ -331,7 +331,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  private def getOption(visibility: Visibility)(
+  private def getSensitiveOption(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
                  sparkConfigOption: String,
