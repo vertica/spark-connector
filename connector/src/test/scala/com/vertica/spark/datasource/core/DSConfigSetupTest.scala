@@ -361,19 +361,19 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(EnvVar, *****)")
+              assert(auth.accessKeyId.toString == "SensitiveArg(EnvVar, *****)")
               assert(auth.accessKeyId.arg == "test")
-              assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, *****)")
+              assert(auth.secretAccessKey.toString == "SensitiveArg(EnvVar, *****)")
               assert(auth.secretAccessKey.arg == "foo")
               awsOptions.awsSessionToken match {
                 case Some(token) =>
-                  assert(token.toString == "AWSArg(EnvVar, *****)")
+                  assert(token.toString == "SensitiveArg(EnvVar, *****)")
                   assert(token.arg == "testsessiontoken")
                 case None => fail("Failed to get AWS session token from the environment variables")
               }
               awsOptions.awsRegion match {
                 case Some(region) =>
-                  assert(region.toString == "AWSArg(EnvVar, us-west-1)")
+                  assert(region.toString == "SensitiveArg(EnvVar, us-west-1)")
                   assert(region.arg == "us-west-1")
                 case None => fail("Failed to get AWS region from the environment variables")
               }
@@ -416,22 +416,22 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(SparkConf, *****)")
+              assert(auth.accessKeyId.toString == "SensitiveArg(SparkConf, *****)")
               assert(auth.accessKeyId.arg == "moo")
-              assert(auth.secretAccessKey.toString == "AWSArg(SparkConf, *****)")
+              assert(auth.secretAccessKey.toString == "SensitiveArg(SparkConf, *****)")
               assert(auth.secretAccessKey.arg == "cow")
             case None => fail("Failed to get AWS Auth from the Spark configuration")
           }
           awsOptions.awsSessionToken match {
             case Some(token) =>
-              assert(token.toString == "AWSArg(SparkConf, *****)")
+              assert(token.toString == "SensitiveArg(SparkConf, *****)")
               assert(token.arg == "asessiontoken")
             case None => fail("Failed to get AWS session token from the Spark configuration")
           }
           awsOptions.awsCredentialsProvider match {
             case Some(credentialsProvider) =>
               assert(credentialsProvider.toString ==
-                "AWSArg(SparkConf, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+                "SensitiveArg(SparkConf, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
               assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
             case None => fail("Failed to get AWS credentials provider from the Spark configuration")
           }
@@ -467,26 +467,26 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         val awsOptions = config.fileStoreConfig.awsOptions
         awsOptions.awsAuth match {
           case Some(auth) =>
-            assert(auth.accessKeyId.toString == "AWSArg(ConnectorOption, *****)")
+            assert(auth.accessKeyId.toString == "SensitiveArg(ConnectorOption, *****)")
             assert(auth.accessKeyId.arg == "meow")
-            assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, *****)")
+            assert(auth.secretAccessKey.toString == "SensitiveArg(ConnectorOption, *****)")
             assert(auth.secretAccessKey.arg == "woof")
             awsOptions.awsRegion match {
               case Some(region) =>
-                assert(region.toString == "AWSArg(ConnectorOption, us-east-1)")
+                assert(region.toString == "SensitiveArg(ConnectorOption, us-east-1)")
                 assert(region.arg == "us-east-1")
               case None => fail("Failed to get AWS region from the connector options")
             }
             awsOptions.awsSessionToken match {
               case Some(token) =>
-                assert(token.toString == "AWSArg(ConnectorOption, *****)")
+                assert(token.toString == "SensitiveArg(ConnectorOption, *****)")
                 assert(token.arg == "mysessiontoken")
               case None => fail("Failed to get AWS session token from the connector options")
             }
             awsOptions.awsCredentialsProvider match {
               case Some(credentialsProvider) =>
                 assert(credentialsProvider.toString ==
-                  "AWSArg(ConnectorOption, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+                  "SensitiveArg(ConnectorOption, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
                 assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
               case None => fail("Failed to get AWS credentials provider from the connector options")
             }
@@ -543,7 +543,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
     assert(errors.length == 1)
-    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACSecret])
+    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKeySecret])
   }
 
   it should "error on missing GCS HMAC key id" in {
@@ -565,7 +565,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
     assert(errors.length == 1)
-    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKey])
+    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKeyId])
   }
 
   it should "get GCS keyfile options from connector options" in {

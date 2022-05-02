@@ -28,27 +28,27 @@ sealed trait Visibility
 case object Secret extends Visibility
 case object Visible extends Visibility
 
-case class AWSArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
+case class SensitiveArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
   override def toString: String = this.visibility match {
-    case Secret => s"AWSArg(${origin.toString}, *****)"
-    case Visible => s"AWSArg(${origin.toString}, ${arg.toString})"
+    case Secret => s"SensitiveArg(${origin.toString}, *****)"
+    case Visible => s"SensitiveArg(${origin.toString}, ${arg.toString})"
   }
 }
 
-case class AWSAuth(accessKeyId: AWSArg[String], secretAccessKey: AWSArg[String])
+case class AWSAuth(accessKeyId: SensitiveArg[String], secretAccessKey: SensitiveArg[String])
 
 case class AWSOptions(
                        awsAuth: Option[AWSAuth],
-                       awsRegion: Option[AWSArg[String]],
-                       awsSessionToken: Option[AWSArg[String]],
-                       awsCredentialsProvider: Option[AWSArg[String]],
-                       awsEndpoint: Option[AWSArg[String]],
-                       enableSSL: Option[AWSArg[String]],
-                       enablePathStyle: Option[AWSArg[String]])
+                       awsRegion: Option[SensitiveArg[String]],
+                       awsSessionToken: Option[SensitiveArg[String]],
+                       awsCredentialsProvider: Option[SensitiveArg[String]],
+                       awsEndpoint: Option[SensitiveArg[String]],
+                       enableSSL: Option[SensitiveArg[String]],
+                       enablePathStyle: Option[SensitiveArg[String]])
 
-case class VerticaGCSAuth(accessKeyId: AWSArg[String], accessKeySecret: AWSArg[String])
+case class VerticaGCSAuth(accessKeyId: SensitiveArg[String], accessKeySecret: SensitiveArg[String])
 
-case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[AWSArg[String]])
+case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[SensitiveArg[String]])
 
 /**
  * Represents configuration for a filestore used by the connector.
