@@ -255,13 +255,13 @@ object DSConfigSetupUtils {
     val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
       "gcs_hmac_key_id",
-      "",
+      "gcs_hmac_key_id",
       "VERTICA_GCS_KEY").sequence
 
     val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
       "gcs_hmac_key_secret",
-      "",
+      "gcs_hmac_key_secret",
       "VERTICA_GCS_SECRET").sequence
 
     (accessKeyIdOpt, secretAccessKeyOpt) match {

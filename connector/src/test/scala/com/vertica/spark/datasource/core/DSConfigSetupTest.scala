@@ -630,4 +630,52 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       spark.close()
     }
   }
+
+  it should "get GCS HMAC key from Spark confutation options" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "gs://test:8020/tmp/test",
+    )
+
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("gcs_hmac_key_id", "key_id")
+      .config("gcs_hmac_key_secret", "key_secret")
+      .getOrCreate()
+
+    try {
+      val opts = Map(
+        "host" -> "1.1.1.1",
+        "port" -> "1234",
+        "db" -> "testdb",
+        "user" -> "user",
+        "password" -> "password",
+        "table" -> "tbl",
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+      )
+
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId.arg == "key_id")
+              assert(auth.accessKeySecret.arg == "key_secret")
+            case None => fail("Expected GCS HMAC Key ID from Spark conf")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
 }
