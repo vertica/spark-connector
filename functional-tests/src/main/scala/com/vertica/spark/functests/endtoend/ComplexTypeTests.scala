@@ -366,16 +366,21 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
   }
 
   it should "write external table with Vertica map" in {
-    val tableName = "dftest"
+    val tableName = "dftest-map"
     val schema = new StructType(Array(
       StructField("col1", MapType(IntegerType, IntegerType)),
       StructField("col2", IntegerType)
     ))
-    val data = Seq(Row(Map()+(77 -> 88), 55))
+    val data = Seq(
+      Row(
+        Map(77 -> 88),
+        55)
+    )
 
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     val mode = SaveMode.Overwrite
-    val options = writeOpts + ("table" -> tableName, "create_external_table" -> "true", "staging_fs_url" -> (fsConfig.address +"dftest"))
+    val externalDataPath = fsConfig.address + tableName
+    val options = writeOpts + ("table" -> tableName, "create_external_table" -> "true", "staging_fs_url" -> externalDataPath)
 
     val result = Try {
       df.write.format(VERTICA_SOURCE)
@@ -383,9 +388,13 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         .mode(mode)
         .save()
 
-      val rs = conn.createStatement().executeQuery("select \"col2\" from dftest;")
-      rs.next()
-      assert(rs.getInt(1) == 55)
+      val stmt = conn.createStatement()
+      val rs = stmt.executeQuery(s"select * from tables where table_name='$tableName' and table_schema='public'")
+      assert(rs.next)
+      val tableDefinition = rs.getString("table_definition")
+      val expected = s"COPY FROM '$externalDataPath/*.parquet' PARQUET"
+      assert(tableDefinition.trim() == expected)
+      assert(!rs.next)
     }
 
     TestUtils.dropTable(conn, tableName)
