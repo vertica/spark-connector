@@ -18,23 +18,30 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
+import scala.util.{Failure, Success, Try}
+
 object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
+
     // Configuration options for the connector
-    val options = Map(
+    var options = Map(
       "host" -> conf.getString("app.host"),
       "db" -> conf.getString("app.db"),
       "user" -> conf.getString("app.db_user"),
       "password" -> conf.getString("app.db_password"),
-      // Path to your service account keyfile
-      "gcs_keyfile" -> conf.getString("app.keyfile_path"),
-      // Your service account HMAC key
+      // Loading service account HMAC key. Required for GCS access
       "gcs_hmac_key_id" -> conf.getString("app.hmac_key_id"),
       "gcs_hmac_key_secret" -> conf.getString("app.hmac_key_secret"),
       // Your GCS bucket address
       "staging_fs_url" -> conf.getString("app.gcs_bucket"),
     )
+
+    // Loading keyfile path. Only required if running outside of GCP cluster.
+    Try{conf.getString("app.keyfile_path")} match {
+      case Success(path) => options = options + ("gcs_keyfile" -> path)
+      case Failure(_) => ()
+    }
 
     // Initialize Spark
     val spark = SparkSession.builder()
