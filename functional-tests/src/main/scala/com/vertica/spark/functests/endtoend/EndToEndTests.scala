@@ -18,7 +18,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
 import org.apache.log4j.Logger
-import org.apache.spark.SparkException
+import org.apache.spark.{SparkConf, SparkException}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.functions._
@@ -39,15 +39,30 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
 
   protected val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
-  protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions, GCSOptions(None, None))
+  protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions, fileStoreConfig.gcsOptions)
   protected val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
   protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
+  private val sparkConf = new SparkConf()
+    .setMaster("local[*]")
+    .setAppName("Vertica Connector Functional Test Suites")
+    .set("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+
+  fileStoreConfig.gcsOptions.gcsKeyFile match {
+    case None => ()
+    case Some(keyfile) => sparkConf.set("fs.gs.auth.service.account.json.keyfile", keyfile.arg)
+  }
+
+  fileStoreConfig.gcsOptions.gcsAuth match {
+    case None => ()
+    case Some(auth) =>
+      sparkConf.set("gcs_hmac_key_id", auth.accessKeyId.arg)
+      sparkConf.set("gcs_hmac_key_secret", auth.accessKeySecret.arg)
+  }
+
   protected lazy val spark: SparkSession = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+    .config(sparkConf)
     .getOrCreate()
 
   override def afterEach(): Unit ={

@@ -222,7 +222,32 @@ object Main extends App {
     awsEnablePathStyle
   )
 
-  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, awsOptions, GCSOptions(None, None))
+  def getConfiguration(envVar: String, configOption: String): Option[SensitiveArg[String]] = {
+    sys.env.get(envVar) match {
+      case Some(value) => Some(SensitiveArg(Visible, EnvVar, value))
+      case None =>
+        Try{conf.getString(configOption)}.toOption match {
+          case Some(value) => Some(SensitiveArg(Visible, ConnectorOption, value))
+          case None => None
+        }
+    }
+  }
+
+  val verticaGCSAuth = getConfiguration("VERTICA_GCS_KEY_ID", "functional-tests.gcs_hmac_key_id") match {
+    case None => None
+    case Some(hmacKeyId) =>
+      getConfiguration("VERTICA_GCS_KEY_SECRET", "functional-tests.gcs_hmac_key_secret") match {
+        case None => None
+        case Some(hmacKeySecret) =>
+          Some(VerticaGCSAuth(hmacKeyId, hmacKeySecret))
+      }
+  }
+
+  val gcsKeyfile = getConfiguration("GOOGLE_APPLICATION_CREDENTIALS", "functional-tests.gcs_keyfile")
+
+  val gcsOptions = GCSOptions(verticaGCSAuth, gcsKeyfile)
+
+  val fileStoreConfig = FileStoreConfig(filename, "filestoretest", false, awsOptions, gcsOptions)
 
   val writeOpts = readOpts
 

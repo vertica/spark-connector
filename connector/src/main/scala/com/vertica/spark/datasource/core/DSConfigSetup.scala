@@ -256,13 +256,13 @@ object DSConfigSetupUtils {
       config,
       "gcs_hmac_key_id",
       "gcs_hmac_key_id",
-      "VERTICA_GCS_KEY").sequence
+      "VERTICA_GCS_KEY_ID").sequence
 
     val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
       "gcs_hmac_key_secret",
       "gcs_hmac_key_secret",
-      "VERTICA_GCS_SECRET").sequence
+      "VERTICA_GCS_KEY_SECRET").sequence
 
     (accessKeyIdOpt, secretAccessKeyOpt) match {
       case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(VerticaGCSAuth).map(Some(_))
