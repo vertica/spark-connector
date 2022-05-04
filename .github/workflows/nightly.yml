@@ -19,7 +19,7 @@ jobs:
         uses: actions/upload-artifact@v1
         with:
           name: build-jar-file
-          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.2.0.jar
+          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-3.2.1.jar
   slack-workflow-status:
     name: Post Workflow Status To Slack
     needs: [build]
