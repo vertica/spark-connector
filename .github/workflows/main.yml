@@ -54,8 +54,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Run docker compose
         run: cd docker && docker-compose up -d
-      - name: print Vertica version
-        run: docker exec docker_vertica_1 vsql -c "select version();"
+#      - name: print Vertica version
+#        run: docker exec docker_vertica_1 vsql -c "select version();"
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
