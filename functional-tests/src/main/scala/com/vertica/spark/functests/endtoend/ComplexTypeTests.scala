@@ -1,6 +1,7 @@
 package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
+import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, InternalMapNotSupported}
 import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
@@ -375,7 +376,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
 
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
     val mode = SaveMode.Overwrite
-    val options = writeOpts + ("table" -> tableName, "create_external_table" -> "true", "staging_fs_url" -> (fsConfig.address +"dftest"))
+    val options = writeOpts + ("table" -> tableName, "create_external_table" -> "true", "staging_fs_url" -> (fsConfig.address +"dftest-map"))
 
     val result = Try {
       df.write.format(VERTICA_SOURCE)
@@ -383,9 +384,14 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         .mode(mode)
         .save()
 
-      val rs = conn.createStatement().executeQuery("select \"col2\" from dftest;")
-      rs.next()
-      assert(rs.getInt(1) == 55)
+      val jdbcLayer = new VerticaJdbcLayer(jdbcConfig)
+      jdbcLayer.configureSession(fsLayer)
+      jdbcLayer.query("select \"col2\" from dftest;") match {
+        case Left(err) => fail("Expected to succeed: " + err.getFullContext)
+        case Right(rs) =>
+          rs.next()
+          assert(rs.getInt(1) == 55)
+      }
     }
 
     TestUtils.dropTable(conn, tableName)

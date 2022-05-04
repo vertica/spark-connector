@@ -118,110 +118,9 @@ object Main extends App {
 
   val tlsConfig = JDBCTLSConfig(tlsMode = Disable, None, None, None, None)
 
-  val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
-    port = conf.getInt("functional-tests.port"),
-    db = conf.getString("functional-tests.db"),
-    auth = auth,
-    tlsConfig = tlsConfig)
-  val filename = conf.getString("functional-tests.filepath")
-
-  val awsAuth = (sys.env.get("AWS_ACCESS_KEY_ID"), sys.env.get("AWS_SECRET_ACCESS_KEY")) match {
-    case (Some(accessKeyId), Some(secretAccessKey)) => {
-      Some(AWSAuth(SensitiveArg(Visible, EnvVar, accessKeyId), SensitiveArg(Secret, EnvVar, secretAccessKey)))
-    }
-    case (None, None) =>
-      for {
-        accessKeyId <- Try {
-          conf.getString("functional-tests.aws_access_key_id")
-        }.toOption
-        secretAccessKey <- Try {
-          conf.getString("functional-tests.aws_secret_access_key")
-        }.toOption
-      } yield AWSAuth(SensitiveArg(Visible, ConnectorOption, accessKeyId), SensitiveArg(Secret, ConnectorOption, secretAccessKey))
-    case _ => None
-  }
-
-  val awsRegion = sys.env.get("AWS_DEFAULT_REGION") match {
-    case Some(region) => Some(SensitiveArg(Visible, EnvVar, region))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_region")
-      }.toOption match {
-        case Some(region) => Some(SensitiveArg(Visible, ConnectorOption, region))
-        case None => None
-      }
-    }
-  }
-
-  val awsSessionToken = sys.env.get("AWS_SESSION_TOKEN") match {
-    case Some(token) => Some(SensitiveArg(Visible, EnvVar, token))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_session_token")
-      }.toOption match {
-        case Some(token) => Some(SensitiveArg(Visible, ConnectorOption, token))
-        case None => None
-      }
-    }
-  }
-
-  val awsCredentialsProvider = sys.env.get("AWS_CREDENTIALS_PROVIDER") match {
-    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_credentials_provider")
-      }.toOption match {
-        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
-        case None => None
-      }
-    }
-  }
-
-  val awsEnableSsl = sys.env.get("AWS_ENABLE_SSL") match {
-    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_enable_ssl")
-      }.toOption match {
-        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
-        case None => None
-      }
-    }
-  }
-
-  val awsEndpoint = sys.env.get("AWS_ENDPOINT") match {
-    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_endpoint")
-      }.toOption match {
-        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
-        case None => None
-      }
-    }
-  }
-
-  val awsEnablePathStyle = sys.env.get("AWS_ENABLE_PATH_STYLE") match {
-    case Some(provider) => Some(SensitiveArg(Visible, EnvVar, provider))
-    case None => {
-      Try {
-        conf.getString("functional-tests.aws_enable_path_style")
-      }.toOption match {
-        case Some(provider) => Some(SensitiveArg(Visible, ConnectorOption, provider))
-        case None => None
-      }
-    }
-  }
-
-  val awsOptions = AWSOptions(awsAuth,
-    awsRegion,
-    awsSessionToken,
-    awsCredentialsProvider,
-    awsEndpoint,
-    awsEnableSsl,
-    awsEnablePathStyle
-  )
-
+  /**
+   * Get configuration from env var. If fails, defaults to conf file.
+   * */
   def getConfiguration(envVar: String, configOption: String): Option[SensitiveArg[String]] = {
     sys.env.get(envVar) match {
       case Some(value) => Some(SensitiveArg(Visible, EnvVar, value))
@@ -232,6 +131,37 @@ object Main extends App {
         }
     }
   }
+
+  val jdbcConfig = JDBCConfig(host = conf.getString("functional-tests.host"),
+    port = conf.getInt("functional-tests.port"),
+    db = conf.getString("functional-tests.db"),
+    auth = auth,
+    tlsConfig = tlsConfig)
+  val filename = conf.getString("functional-tests.filepath")
+
+  val awsAccessKeyId = getConfiguration("AWS_ACCESS_KEY_ID", "functional-tests.aws_access_key_id")
+  val awsAccessKeySecret = getConfiguration("AWS_SECRET_ACCESS_KEY", "functional-tests.aws_secret_access_key")
+  val awsAuth = (awsAccessKeyId, awsAccessKeySecret) match {
+    case (Some(accessKeyId), Some(secretAccessKey)) =>
+      Some(AWSAuth(SensitiveArg(Visible, ConnectorOption, accessKeyId.arg), SensitiveArg(Secret, ConnectorOption, secretAccessKey.arg)))
+    case (None, _) => None
+    case (_, None) => None
+  }
+  val awsRegion = getConfiguration("AWS_DEFAULT_REGION", "functional-tests.aws_region")
+  val awsSessionToken = getConfiguration("AWS_SESSION_TOKEN", "functional-tests.aws_session_token")
+  val awsCredentialsProvider = getConfiguration("AWS_CREDENTIALS_PROVIDER", "functional-tests.aws_credentials_provider")
+  val awsEnableSsl = getConfiguration("AWS_ENABLE_SSL", "functional-tests.aws_enable_ssl")
+  val awsEndpoint =  getConfiguration("AWS_ENDPOINT", "functional-tests.aws_endpoint")
+  val awsEnablePathStyle =  getConfiguration("AWS_ENABLE_PATH_STYLE", "functional-tests.aws_enable_path_style")
+
+  val awsOptions = AWSOptions(awsAuth,
+    awsRegion,
+    awsSessionToken,
+    awsCredentialsProvider,
+    awsEndpoint,
+    awsEnableSsl,
+    awsEnablePathStyle
+  )
 
   val verticaGCSAuth = getConfiguration("VERTICA_GCS_KEY_ID", "functional-tests.gcs_hmac_key_id") match {
     case None => None
