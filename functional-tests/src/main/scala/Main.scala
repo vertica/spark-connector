@@ -53,10 +53,15 @@ case class TestSuiteFailed(tests: List[TestFailed] = List(), failedCount: Int, t
 object Main extends App {
   def runSuite(suite: TestSuite, testName: Option[String] = None): VReporter = {
     val reporter = VReporter(suite.suiteName)
-    val result = suite.run(testName, Args(reporter))
-    val status = if (result.succeeds()) "passed" else "failed"
-    println(suite.suiteName + "-- Test run "+ status +": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
-    reporter
+    try {
+      val result = suite.run(testName, Args(reporter))
+      val status = if (result.succeeds()) "passed" else "failed"
+      println(suite.suiteName + "-- Test run " + status + ": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+      reporter
+    } finally {
+      println("IRELIA")
+      sys.exit(1)
+    }
   }
 
   val conf: Config = ConfigFactory.load()
