@@ -12,6 +12,7 @@
 // limitations under the License.
 
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
@@ -59,8 +60,10 @@ object Main extends App {
       println(suite.suiteName + "-- Test run " + status + ": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
       reporter
     } catch {
-      // Got an unexpected exception thrown from tests
-      case _: Throwable =>  sys.exit(1)
+      case e: Throwable =>
+        Logger(Main.getClass).error("Uncaught exception from tests: " + e.getMessage)
+        e.printStackTrace()
+        sys.exit(1)
     }
   }
 
