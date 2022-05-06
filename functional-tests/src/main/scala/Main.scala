@@ -58,9 +58,10 @@ object Main extends App {
       val status = if (result.succeeds()) "passed" else "failed"
       println(suite.suiteName + "-- Test run " + status + ": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
       reporter
-    } finally {
-      println("IRELIA")
-      sys.exit(1)
+    } catch {
+      case th: Throwable =>
+        println("IRELIA")
+        sys.exit(1)
     }
   }
 
