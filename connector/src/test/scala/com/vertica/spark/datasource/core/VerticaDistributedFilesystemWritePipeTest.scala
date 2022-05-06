@@ -664,6 +664,68 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "create an external table with existing data" in {
+    val tableName = "testtable"
+    val tname = TableName(tableName, None)
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
+      fileStoreConfig = fileStoreConfig.copy(s"hdfs://example-hdfs:8020/tmp/$tableName.parquet"),
+      tablename = TableName(tableName, None), schema = new StructType())
+    val url = s"hdfs://example-hdfs:8020/tmp/$tableName.parquet/*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Right(Array[String]("example.parquet")))
+    val inferStmt = s"SELECT INFER_TABLE_DDL('$url' USING PARAMETERS format = 'parquet', table_name = '$tableName', table_type = 'external');"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(inferStmt,*).returning(Right(getStringResultSet))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val createExternalTableStmt = "create external table " + tableName + "(\"col1\" int) as copy from '" + url + "' parquet"
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "create an external table with existing data and update job status table" in {
+    val tableName = "testtable"
+    val tname = TableName(tableName, None)
+    val config = createWriteConfig()
+      .copy(createExternalTable = Some(ExistingData),
+        fileStoreConfig = fileStoreConfig.copy(s"hdfs://example-hdfs:8020/tmp/$tableName.parquet"),
+        tablename = TableName(tableName, None), schema = new StructType(),
+        saveJobStatusTable = true
+      )
+    val url = s"hdfs://example-hdfs:8020/tmp/$tableName.parquet/*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Right(Array[String]("example.parquet")))
+    val inferStmt = s"SELECT INFER_TABLE_DDL('$url' USING PARAMETERS format = 'parquet', table_name = '$tableName', table_type = 'external');"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects(inferStmt,*).returning(Right(getStringResultSet))
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val createExternalTableStmt = "create external table " + tableName + "(\"col1\" int) as copy from '" + url + "' parquet"
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
+    (tableUtils.updateJobStatusTable _).expects(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    checkResult(pipe.commit())
+  }
+
+  it should "create an external table with old write pipe" in {
     val tname = TableName("testtable", None)
     val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
       fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
@@ -687,44 +749,10 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+    val pipe = new VerticaDistributedFilesystemWritePipeOld(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     checkResult(pipe.commit())
   }
-
-  it should "create an external table with existing data and update job status table" in {
-    val tname = TableName("testtable", None)
-    val config = createWriteConfig()
-      .copy(createExternalTable = Some(ExistingData),
-        fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
-        tablename = TableName("testtable", None), schema = new StructType(),
-        saveJobStatusTable = true
-      )
-    val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Right(Array[String]("example.parquet")))
-    val inferStmt = s"SELECT INFER_EXTERNAL_TABLE_DDL(\'$url\',\'testtable\')"
-    val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.query _).expects(inferStmt,*).returning(Right(getStringResultSet))
-    (jdbcLayerInterface.commit _).expects().returning(Right(()))
-    (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
-
-    val schemaToolsInterface = mock[SchemaToolsInterface]
-    val createExternalTableStmt = "create external table testtable(\"col1\" int) " +
-      "as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet"
-
-    val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
-    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
-    (tableUtils.updateJobStatusTable _).expects(config.tablename, config.jdbcConfig.auth.user, 0.0, config.sessionId, true).returning(Right())
-
-    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
-
-    checkResult(pipe.commit())
-  }
-
 
   it should "handle failure creating external table" in {
     val tname = TableName("testtable", None)

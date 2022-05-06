@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
-import com.vertica.spark.datasource.core.factory.VerticaPipeFactory.readLayer
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.Timer
@@ -24,9 +23,8 @@ import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
-import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
 
 import scala.util.Try
