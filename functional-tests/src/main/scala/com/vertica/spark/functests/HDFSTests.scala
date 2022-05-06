@@ -14,7 +14,6 @@
 package com.vertica.spark.functests
 
 import java.sql.Connection
-
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
@@ -28,6 +27,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
 import org.scalatest.BeforeAndAfterAll
 
+import java.lang.Thread.UncaughtExceptionHandler
+
 /**
  * Tests basic functionality of the VerticaHDFSLayer
  *
@@ -35,6 +36,11 @@ import org.scalatest.BeforeAndAfterAll
  */
 
 class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+
+  Thread.currentThread().setUncaughtExceptionHandler((t: Thread, th: Throwable) => {
+    println("BRUHHHH")
+    sys.exit(1)
+  })
 
   private lazy val (spark, fsLayer, dirTestCfg, df) = {
     val spark = SparkSession.builder()
