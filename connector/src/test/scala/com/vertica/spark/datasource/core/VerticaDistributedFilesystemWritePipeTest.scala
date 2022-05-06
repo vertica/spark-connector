@@ -781,6 +781,35 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     }
   }
 
+  it should "error when get glob status glob failed" in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = Some(ExistingData),
+      fileStoreConfig = fileStoreConfig.copy("hdfs://example-hdfs:8020/tmp/testtable.parquet"),
+      tablename = TableName("testtable", None), schema = new StructType())
+    val url = "hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+    val error = mock[ConnectorError]
+    (error.getFullContext _).expects.returns("")
+    (fileStoreLayerInterface.getGlobStatus _).expects(url).returning(Left(error))
+    val inferStmt = s"SELECT INFER_EXTERNAL_TABLE_DDL(\'$url\',\'testtable\')"
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.query _).expects("",*).returning(Left(mock[ConnectorError]))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+    val createExternalTableStmt = "create external table testtable(\"col1\" int) " +
+      "as copy from \'hdfs://example-hdfs:8020/tmp/testtable.parquet/*.parquet\' parquet"
+
+    val tableUtils = mock[TableUtilsInterface]
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+
+    pipe.inferExternalTableSchema() match {
+      case Right(_) => fail()
+      case Left(_) => succeed
+    }
+  }
+
   it should "Create temp table for merge" in {
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val config = createWriteConfig().copy(
@@ -935,5 +964,30 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
         case _ => false
       })
     }
+  }
+
+  it should "error " in {
+    val tname = TableName("testtable", None)
+    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
+
+    val expectedUrl = config.fileStoreConfig.externalTableAddress + "*.parquet"
+
+    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.commit _).expects().returning(Right(()))
+    (jdbcLayerInterface.close _).expects().returning(Right(()))
+    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val tableUtils = mock[TableUtilsInterface]
+    (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl, 0).returning(Right(()))
+    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
+
+    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+    val inferStmt = pipe.inferExternalTableSchema()
+
+    checkResult(pipe.commit())
   }
 }
