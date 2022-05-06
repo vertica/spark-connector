@@ -262,19 +262,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     val tableName = config.tablename.getFullTableName.replaceAll("\"","")
 
     val inferStatement =
-    fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
-      case Right(list) =>
-        val url: String =
-          if(list.nonEmpty) {
-            EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+      fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
+        case Right(list) =>
+          val url: String = {
+            if (list.nonEmpty) {
+              EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
+            }
+            else {
+              EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
+            }
           }
-          else {
-            EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
-          }
-        "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+          buildInferStatement(url, tableName)
 
-      case Left(err) => err.getFullContext
-    }
+        case Left(err) => err.getFullContext
+      }
 
     logger.debug("The infer statement is: " + inferStatement)
     jdbcLayer.query(inferStatement) match {
@@ -305,6 +306,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
     }
   }
+
+  protected def buildInferStatement(url: String, tableName: String): String =
+    s"SELECT INFER_TABLE_DDL('$url' USING PARAMETERS format = 'parquet', table_name = '$tableName', table_type = 'external');"
 
   /**
    * Function to get column list to use for the operation
@@ -572,4 +576,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     jdbcLayer.close()
     result
   }
+}
+
+/**
+ * With changes made in Vertica 11.1, this class contains old implmentation to support previous Vertica versions.
+ *
+ * */
+class VerticaDistributedFilesystemWritePipeOld(override val config: DistributedFilesystemWriteConfig,
+                                               override val fileStoreLayer: FileStoreLayerInterface,
+                                               override val jdbcLayer: JdbcLayerInterface,
+                                               override val schemaTools: SchemaToolsInterface,
+                                               override val tableUtils: TableUtilsInterface,
+                                               override val dataSize: Int = 1)
+  extends VerticaDistributedFilesystemWritePipe(config, fileStoreLayer, jdbcLayer, schemaTools, tableUtils, dataSize){
+
+  override protected def buildInferStatement(url: String, tableName: String): String =
+    "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
 }
