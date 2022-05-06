@@ -277,6 +277,11 @@ object Main extends App {
     sys.exit(exitCode)
   }
 
+  Thread.currentThread().setUncaughtExceptionHandler((t: Thread, th: Throwable) => {
+    println("BRUHHHH")
+    sys.exit(1)
+  })
+
   private def getTestName(options: Options): Option[String] = {
     if (options.testName.isBlank) {
       None
