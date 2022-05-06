@@ -96,6 +96,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
         val verticaVersion = VerticaVersionUtils.getVersion(writeLayerJdbc.get)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
+        //scalastyle:off
         if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
