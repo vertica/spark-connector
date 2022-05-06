@@ -12,6 +12,7 @@
 // limitations under the License.
 
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
@@ -53,10 +54,17 @@ case class TestSuiteFailed(tests: List[TestFailed] = List(), failedCount: Int, t
 object Main extends App {
   def runSuite(suite: TestSuite, testName: Option[String] = None): VReporter = {
     val reporter = VReporter(suite.suiteName)
-    val result = suite.run(testName, Args(reporter))
-    val status = if (result.succeeds()) "passed" else "failed"
-    println(suite.suiteName + "-- Test run "+ status +": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
-    reporter
+    try {
+      val result = suite.run(testName, Args(reporter))
+      val status = if (result.succeeds()) "passed" else "failed"
+      println(suite.suiteName + "-- Test run " + status + ": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
+      reporter
+    } catch {
+      case e: Throwable =>
+        Logger(Main.getClass).error("Uncaught exception from tests: " + e.getMessage)
+        e.printStackTrace()
+        sys.exit(1)
+    }
   }
 
   val conf: Config = ConfigFactory.load()

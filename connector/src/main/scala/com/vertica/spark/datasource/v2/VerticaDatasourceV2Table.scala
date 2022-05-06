@@ -88,13 +88,16 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         }
         logger.debug("Config loaded")
 
-        // Pushdown of aggregates added in spark 3.2, detect spark version so we return class with right feature support
+        // Aggregates push down were added in spark 3.2. We detect spark version here to return the compatible class
         var sparkNewerThan31 = true
         try {
-          val sparkVersion = SparkSession.getActiveSession.get.version
-          val versionList = sparkVersion.split("\\.").map(_.toInt)
-          if(versionList.length >= 2 && versionList(0) == 3 && versionList(1) < 2) {
-            sparkNewerThan31 = false
+          val versionList = SparkSession.getActiveSession.get.version.split("\\.")
+          if (versionList.length >= 2) {
+            val major = versionList(0).toInt
+            val minor = versionList(1).toInt
+            if (major == 3 && minor < 2) {
+              sparkNewerThan31 = false
+            }
           }
         }
         catch { // Couldn't recgonize version string, assume newer version

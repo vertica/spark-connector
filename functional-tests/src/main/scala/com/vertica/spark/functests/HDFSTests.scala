@@ -14,7 +14,6 @@
 package com.vertica.spark.functests
 
 import java.sql.Connection
-
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
