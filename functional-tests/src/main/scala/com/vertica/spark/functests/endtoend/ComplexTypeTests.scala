@@ -1,6 +1,7 @@
 package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
+import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, InternalMapNotSupported}
 import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
@@ -388,13 +389,15 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         .mode(mode)
         .save()
 
-      val stmt = conn.createStatement()
-      val rs = stmt.executeQuery(s"select * from tables where table_name='$tableName' and table_schema='public'")
-      assert(rs.next)
-      val tableDefinition = rs.getString("table_definition")
-      val expected = s"COPY FROM '$externalDataPath/*.parquet' PARQUET"
-      assert(tableDefinition.trim() == expected)
-      assert(!rs.next)
+      val jdbcLayer = new VerticaJdbcLayer(jdbcConfig)
+      jdbcLayer.query(s"""select col2 from "$tableName";""") match {
+        case Left(err) =>
+          fail(err.getUnderlyingError.getFullContext)
+        case Right(rs) =>
+          assert(rs.next)
+          assert(rs.getInt(1) == 55)
+          assert(!rs.next)
+      }
     }
 
     TestUtils.dropTable(conn, tableName)
