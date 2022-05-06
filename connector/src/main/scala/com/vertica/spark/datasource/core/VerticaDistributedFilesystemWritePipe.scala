@@ -280,8 +280,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(InferExternalTableSchemaError(err))
       case Right(resultSet) =>
         try {
-          val iterate = resultSet.next
-          val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
+          resultSet.next
+          val createExternalTableStatement = resultSet.getString(1)
           val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
 
           if(!isPartitioned && !createExternalTableStatement.contains("varchar") && !createExternalTableStatement.contains("varbinary")) {
