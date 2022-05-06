@@ -965,29 +965,4 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       })
     }
   }
-
-  it should "error " in {
-    val tname = TableName("testtable", None)
-    val config = createWriteConfig().copy(createExternalTable = Some(NewData), tablename = tname)
-
-    val expectedUrl = config.fileStoreConfig.externalTableAddress + "*.parquet"
-
-    val fileStoreLayerInterface = mock[FileStoreLayerInterface]
-
-    val jdbcLayerInterface = mock[JdbcLayerInterface]
-    (jdbcLayerInterface.commit _).expects().returning(Right(()))
-    (jdbcLayerInterface.close _).expects().returning(Right(()))
-    (jdbcLayerInterface.configureSession _).expects(fileStoreLayerInterface).returning(Right(()))
-
-    val schemaToolsInterface = mock[SchemaToolsInterface]
-
-    val tableUtils = mock[TableUtilsInterface]
-    (tableUtils.createExternalTable _).expects(tname, config.targetTableSql, config.schema, config.strlen, expectedUrl, 0).returning(Right(()))
-    (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
-
-    val pipe = new VerticaDistributedFilesystemWritePipe(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
-    val inferStmt = pipe.inferExternalTableSchema()
-
-    checkResult(pipe.commit())
-  }
 }
