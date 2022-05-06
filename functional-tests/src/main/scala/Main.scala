@@ -59,9 +59,8 @@ object Main extends App {
       println(suite.suiteName + "-- Test run " + status + ": " + reporter.errCount + " error(s) out of " + reporter.testCount + " test cases.")
       reporter
     } catch {
-      case th: Throwable =>
-        println("IRELIA")
-        sys.exit(1)
+      // Got an unexpected exception thrown from tests
+      case _: Throwable =>  sys.exit(1)
     }
   }
 

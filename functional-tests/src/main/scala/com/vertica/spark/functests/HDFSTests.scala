@@ -37,11 +37,6 @@ import java.lang.Thread.UncaughtExceptionHandler
 
 class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
 
-  Thread.currentThread().setUncaughtExceptionHandler((t: Thread, th: Throwable) => {
-    println("BRUHHHH")
-    sys.exit(1)
-  })
-
   private lazy val (spark, fsLayer, dirTestCfg, df) = {
     val spark = SparkSession.builder()
       .master("local[*]")
