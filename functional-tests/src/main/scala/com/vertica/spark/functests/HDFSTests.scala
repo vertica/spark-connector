@@ -27,8 +27,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
 import org.scalatest.BeforeAndAfterAll
 
-import java.lang.Thread.UncaughtExceptionHandler
-
 /**
  * Tests basic functionality of the VerticaHDFSLayer
  *
