@@ -186,12 +186,14 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
 class VerticaVersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
+  //scalastyle:off
   it should "compare to bigger Vertica version" in {
     assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(10,4,7,5)))
   }
 
+  //scalastyle:off
   it should "compare to smaller Vertica version" in {
-    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(12,0,2,1)))
+    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(12,0,2,1)))
   }
 }
 
