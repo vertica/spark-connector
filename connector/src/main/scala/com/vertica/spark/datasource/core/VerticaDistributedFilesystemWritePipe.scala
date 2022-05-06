@@ -258,6 +258,7 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   }
 
+
   def inferExternalTableSchema(): ConnectorResult[String] = {
     val tableName = config.tablename.getFullTableName.replaceAll("\"","")
 
