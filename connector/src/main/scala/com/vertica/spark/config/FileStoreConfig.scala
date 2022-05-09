@@ -48,7 +48,9 @@ case class AWSOptions(
 
 case class VerticaGCSAuth(accessKeyId: SensitiveArg[String], accessKeySecret: SensitiveArg[String])
 
-case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[SensitiveArg[String]])
+case class GCSServiceAccountAuth(serviceAccKeyId: SensitiveArg[String], serviceAccKeySecret: SensitiveArg[String], serviceAccEmail: SensitiveArg[String])
+
+case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[SensitiveArg[String]], gcsServiceAccount: Option[GCSServiceAccountAuth])
 
 /**
  * Represents configuration for a filestore used by the connector.

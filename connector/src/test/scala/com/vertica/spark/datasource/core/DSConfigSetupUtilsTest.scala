@@ -17,8 +17,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data.{NonEmptyChain, ValidatedNec}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.config.{JdbcAuth, KerberosAuth}
-import com.vertica.spark.config.{TableName, TableQuery, TableSource, ValidColumnList, ValidFilePermissions}
+import com.vertica.spark.config.{GCSServiceAccountAuth, JdbcAuth, KerberosAuth, TableName, TableQuery, TableSource, ValidColumnList, ValidFilePermissions}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import org.scalactic.{Equality, TolerantNumerics}
@@ -448,5 +447,14 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val opts = Map[String, String]("save_job_status_table" -> "asdf")
     val error = getErrorOrAssert[ConnectorError](DSConfigSetupUtils.getSaveJobStatusTable(opts))
     assert(error.toNonEmptyList.head.isInstanceOf[InvalidSaveJobStatusTableOption])
+  }
+
+  it should "parse gcs service account authentications" in {
+    val opts = Map[String, String](
+      "gcs_service_account_key_id" -> "id",
+      "gcs_service_account_key_secret" -> "secret",
+      "gcs_service_account_email" -> "email",
+    )
+    getResultOrAssert[Option[GCSServiceAccountAuth]](DSConfigSetupUtils.getGCSServiceAccountAuth(opts))
   }
 }

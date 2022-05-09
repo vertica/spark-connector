@@ -70,6 +70,16 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
+  val options =  Map(
+    "host" -> "1.1.1.1",
+    "port" -> "1234",
+    "db" -> "testdb",
+    "user" -> "user",
+    "password" -> "password",
+    "table" -> "tbl",
+    "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+  )
+
 
   it should "parse a valid read config" in {
     val spark = SparkSession.builder()
@@ -496,14 +506,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "get GCS HMAC key from connector options" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "gs://test:8020/tmp/test",
+    val opts = options + (
       "gcs_hmac_key_id" -> "key",
       "gcs_hmac_key_secret" -> "secret",
     )
@@ -525,16 +528,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "error on missing GCS HMAC key secret" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "gs://test:8020/tmp/test",
-      "gcs_hmac_key_id" -> "key",
-    )
+    val opts = options + ("gcs_hmac_key_id" -> "key")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -547,16 +541,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "error on missing GCS HMAC key id" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "gs://test:8020/tmp/test",
-      "gcs_hmac_key_secret" -> "secret",
-    )
+    val opts = options + ("gcs_hmac_key_secret" -> "secret")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -569,16 +554,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "get GCS keyfile options from connector options" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "gs://test:8020/tmp/test",
-      "gcs_keyfile" -> "keyfile",
-    )
+    val opts = options + ("gcs_keyfile" -> "keyfile")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -603,22 +579,12 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       .getOrCreate()
 
     try {
-      val opts = Map(
-        "host" -> "1.1.1.1",
-        "port" -> "1234",
-        "db" -> "testdb",
-        "user" -> "user",
-        "password" -> "password",
-        "table" -> "tbl",
-        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-      )
-
       // Set mock pipe
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
 
       val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
 
-      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
           conf.fileStoreConfig.gcsOptions.gcsKeyFile match {
             case Some(keyfile) =>
@@ -632,16 +598,6 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "get GCS HMAC key from Spark confutation options" in {
-    val opts = Map(
-      "host" -> "1.1.1.1",
-      "port" -> "1234",
-      "db" -> "testdb",
-      "user" -> "user",
-      "password" -> "password",
-      "table" -> "tbl",
-      "staging_fs_url" -> "gs://test:8020/tmp/test",
-    )
-
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
@@ -650,28 +606,104 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       .getOrCreate()
 
     try {
-      val opts = Map(
-        "host" -> "1.1.1.1",
-        "port" -> "1234",
-        "db" -> "testdb",
-        "user" -> "user",
-        "password" -> "password",
-        "table" -> "tbl",
-        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
-      )
-
       // Set mock pipe
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
 
       val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
 
-      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
           conf.fileStoreConfig.gcsOptions.gcsAuth match {
             case Some(auth) =>
               assert(auth.accessKeyId.arg == "key_id")
               assert(auth.accessKeySecret.arg == "key_secret")
             case None => fail("Expected GCS HMAC Key ID from Spark conf")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS service account authentication" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+    try {
+      val opts = options + (
+        "gcs_service_account_key_id" -> "id",
+        "gcs_service_account_key_secret" -> "secret",
+        "gcs_service_account_email" -> "email",
+      )
+
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+            case Some(auth) =>
+              assert(auth.serviceAccKeyId.arg == "id")
+              assert(auth.serviceAccKeySecret.arg == "secret")
+              assert(auth.serviceAccEmail.arg == "email")
+            case None => fail("Expected GCS service account auth")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS service account authentication from Spark configurations" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("fs.gs.auth.service.account.private.key.id", "id")
+      .config("fs.gs.auth.service.account.private.key.secret", "secret")
+      .config("fs.gs.auth.service.account.email", "email")
+      .getOrCreate()
+
+    try {
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+            case Some(auth) =>
+              assert(auth.serviceAccKeyId.arg == "id")
+              assert(auth.serviceAccKeySecret.arg == "secret")
+              assert(auth.serviceAccEmail.arg == "email")
+            case None => fail("Expected GCS service account auth")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS service account authentication from env vars" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    try {
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+            case Some(auth) =>
+              assert(auth.serviceAccKeyId.arg == "id")
+              assert(auth.serviceAccKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceAccKeySecret.arg == "secret")
+              assert(auth.serviceAccKeySecret.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceAccEmail.arg == "email")
+              assert(auth.serviceAccEmail.toString == SensitiveArg(Secret, EnvVar, "").toString)
+            case None => fail("Expected GCS service account auth")
           }
       }
     } finally {

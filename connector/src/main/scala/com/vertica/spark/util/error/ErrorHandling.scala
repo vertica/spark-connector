@@ -260,6 +260,11 @@ case class MissingGoogleCloudStorageHMACKeyId() extends ConnectorError {
 case class MissingGoogleCloudStorageHMACKeySecret() extends ConnectorError {
   override def getFullContext: String = "Option 'gcs_hmac_key_id' was specified, but 'gcs_hmac_key_secret' is missing."
 }
+case class MissingGCSServiceAccountAuthentications(found: Seq[String], missing: Seq[String]) extends ConnectorError {
+  private val foundStr = found.map(str => s"`$str`").mkString(", ")
+  private val missingStr = missing.map(str => s"`$str`").mkString(", ")
+  override def getFullContext: String = s"Google Cloud Storage service account authentication found $foundStr but $missingStr were not specified"
+}
 case class MissingAWSAccessKeyId() extends ConnectorError {
   override def getFullContext: String = "The 'aws_secret_access_key' param was specified, but 'aws_access_key_id' is not specified."
 }

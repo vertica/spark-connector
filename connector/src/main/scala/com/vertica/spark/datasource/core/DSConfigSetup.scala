@@ -25,7 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
-import com.vertica.spark.datasource.fs.GCSSparkConfOptions
+import com.vertica.spark.datasource.fs.{GCSConnectorOptions, GCSSparkConfOptions}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
 
@@ -250,6 +250,42 @@ object DSConfigSetupUtils {
     )
   }
 
+  def getGCSServiceAccountAuth(config: Map[String, String]): ValidationResult[Option[GCSServiceAccountAuth]] = {
+    val visibility = Secret
+
+    val keyIdFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_ACC_KEY_ID,
+      GCSSparkConfOptions.SERVICE_ACC_KEY_ID,
+      "GOOGLE_APPLICATION_SERVICE_ACC_KEY_ID"
+    )
+
+    val keySecretFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_ACC_KEY_SECRET,
+      GCSSparkConfOptions.SERVICE_ACC_KEY_SECRET,
+      "GOOGLE_APPLICATION_SERVICE_ACC_KEY_SECRET"
+    )
+
+    val emailFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_ACC_EMAIL,
+      GCSSparkConfOptions.SERVICE_ACC_EMAIL,
+      "GOOGLE_APPLICATION_SERVICE_ACC_EMAIL"
+    )
+
+    val results = List(keyIdFound, keySecretFound, emailFound)
+    val invalids = results.filter(_.option.isInvalid)
+    if(invalids.isEmpty){
+      (keyIdFound.option.toOption.get, keySecretFound.option.toOption.get, emailFound.option.toOption.get)
+        .mapN(GCSServiceAccountAuth).validNec
+    } else {
+      val found = results.filter(_.option.isValid).map(_.optionName)
+      val missing = invalids.map(_.optionName)
+      MissingGCSServiceAccountAuthentications(found, missing).invalidNec
+    }
+  }
+
   def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
     val visibility = Secret
     val accessKeyIdOpt = getSensitiveOption(visibility)(
@@ -343,6 +379,23 @@ object DSConfigSetupUtils {
         _ => getFromSparkConfigOptions(visibility)(
           sparkConfigOption,
           _ => getFromEnvVar(visibility)(envVar)))
+  }
+
+  case class SensitiveOptionFound(option: ValidationResult[Option[SensitiveArg[String]]], optionName: String)
+
+  /**
+   * Get the option and the its connector option name.
+   * */
+  private def getSensitiveOptionWithName(visibility: Visibility)(
+    config: Map[String, String],
+    connectorOption: String,
+    sparkConfigOption: String,
+    envVar: String
+  ): SensitiveOptionFound = {
+    SensitiveOptionFound(
+      getSensitiveOption(visibility)(config, connectorOption, sparkConfigOption, envVar),
+      connectorOption
+    )
   }
 
   private def getFromConnectorOptions(visibility: Visibility)(
@@ -527,7 +580,8 @@ object DSConfigSetupUtils {
       ).mapN(AWSOptions)
 
     val gcsOptions = (DSConfigSetupUtils.getVerticaGCSAuth(config),
-      DSConfigSetupUtils.getGCSKeyFile(config))
+      DSConfigSetupUtils.getGCSKeyFile(config),
+      DSConfigSetupUtils.getGCSServiceAccountAuth(config))
       .mapN(GCSOptions)
 
     (DSConfigSetupUtils.getStagingFsUrl(config),
