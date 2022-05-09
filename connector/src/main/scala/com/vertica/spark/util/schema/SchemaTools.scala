@@ -20,6 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.query.ColumnsTable
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
@@ -297,7 +298,13 @@ class SchemaTools extends SchemaToolsInterface {
                 val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
                 val colType = rsmd.getColumnType(idx)
                 val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-                checkForComplexType(colDef, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer)
+                colDef.colType match {
+                  case java.sql.Types.ARRAY |
+                       java.sql.Types.STRUCT =>
+                    getComplexColDef(colDef, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer)
+                  case _ => Right(colDef)
+                }
+                // checkForComplexType(colDef, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer)
               }).toList
           colDefsOrErrors
             .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
@@ -314,11 +321,22 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  private def checkForComplexType(colDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    colDef.colType match {
-      case java.sql.Types.ARRAY |
-           java.sql.Types.STRUCT => queryColumnDef(colDef, tableName, dbSchema, jdbcLayer)
-      case _ => Right(colDef)
+  /**
+   * For complex types, JDBC metadata does not contains information about their elements but they are available in
+   * Vertica systems tables. This function takes a ColumnDef of a complex type and injects it corresponding element
+   * ColumnDefs through a series of JDBC queries to Vertica system tables.
+   * */
+  private def getComplexColDef(colDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val columnsTable = new ColumnsTable(jdbcLayer)
+    columnsTable.getColumnType(colDef.label, tableName, dbSchema) match {
+      case Right(metadata) =>
+        colDef.colType match {
+          case java.sql.Types.ARRAY => makeArrayColumnDef(colDef, metadata.dataTypeId, jdbcLayer)
+          // Todo: implement Row support for reading.
+          case java.sql.Types.STRUCT => Right(colDef)
+          case _ => Left(MissingSqlConversionError(colDef.colType.toString, metadata.dataType))
+        }
+      case Left(err) => Left(err)
     }
   }
 

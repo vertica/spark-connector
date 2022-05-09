@@ -482,6 +482,12 @@ case class GenericError(cause: Throwable) extends JdbcError {
 case class ParamsNotSupported(operation: String) extends JdbcError {
   def getFullContext: String = "Params not supported for operation: " + operation
 }
+case class ResultSetError(cause: Throwable) extends JdbcError {
+  private val message = "Error getting JDBC result set data"
+
+  override def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = s"$message:${cause.toString}"
+}
 
 /**
   * Enumeration of the list of possible schema errors.
@@ -563,4 +569,8 @@ case class HDFSConfigError() extends ConnectorError {
 case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
+case class VerticaColumnNotFound(colName: String, tableName: String, schema: String) extends ConnectorError {
+  def getFullContext: String = s"Column $colName (table $tableName, schema $schema) does not exist in Vertica's columns table"
+}
+
 
