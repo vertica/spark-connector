@@ -452,7 +452,7 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "parse gcs service account authentications" in {
     val opts = Map[String, String](
       "gcs_service_account_key_id" -> "id",
-      "gcs_service_account_key_secret" -> "secret",
+      "gcs_service_account_key" -> "secret",
       "gcs_service_account_email" -> "email",
     )
     getResultOrAssert[Option[GCSServiceAccountAuth]](DSConfigSetupUtils.getGCSServiceAccountAuth(opts))

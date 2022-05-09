@@ -146,14 +146,14 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 object GCSSparkConfOptions {
   val GCS_SERVICE_ACC_JSON_KEY_FILE = "fs.gs.auth.service.account.json.keyfile"
   val SERVICE_ACC_KEY_ID = "fs.gs.auth.service.account.private.key.id"
-  val SERVICE_ACC_KEY_SECRET = "fs.gs.auth.service.account.private.key.secret"
+  val SERVICE_ACC_KEY = "fs.gs.auth.service.account.private.key"
   val SERVICE_ACC_EMAIL = "fs.gs.auth.service.account.email"
 }
 
 object GCSConnectorOptions {
   val GCS_SERVICE_ACC_JSON_KEY_FILE = "gcs_service_account_keyfile"
   val SERVICE_ACC_KEY_ID = "gcs_service_account_key_id"
-  val SERVICE_ACC_KEY_SECRET = "gcs_service_account_key_secret"
+  val SERVICE_ACC_KEY = "gcs_service_account_key"
   val SERVICE_ACC_EMAIL = "gcs_service_account_email"
 }
 
@@ -240,7 +240,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   gcsOptions.gcsServiceAccount match {
     case Some(auth) =>
       hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_KEY_ID, auth.serviceAccKeyId.arg)
-      hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_KEY_SECRET, auth.serviceAccKeySecret.arg)
+      hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_KEY, auth.serviceAccKeySecret.arg)
       hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_EMAIL, auth.serviceAccEmail.arg)
       logger.info(s"Loaded Google Cloud Storage service account key id from ${auth.serviceAccKeyId.origin}")
       logger.info(s"Loaded Google Cloud Storage service account key secret from ${auth.serviceAccKeySecret.origin}")

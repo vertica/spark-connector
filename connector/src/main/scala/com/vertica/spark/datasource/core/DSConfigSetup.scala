@@ -257,21 +257,21 @@ object DSConfigSetupUtils {
       config,
       GCSConnectorOptions.SERVICE_ACC_KEY_ID,
       GCSSparkConfOptions.SERVICE_ACC_KEY_ID,
-      "GOOGLE_APPLICATION_SERVICE_ACC_KEY_ID"
+      "GOOGLE_APPLICATION_SERVICE_KEY_ID"
     )
 
     val keySecretFound = getSensitiveOptionWithName(visibility)(
       config,
-      GCSConnectorOptions.SERVICE_ACC_KEY_SECRET,
-      GCSSparkConfOptions.SERVICE_ACC_KEY_SECRET,
-      "GOOGLE_APPLICATION_SERVICE_ACC_KEY_SECRET"
+      GCSConnectorOptions.SERVICE_ACC_KEY,
+      GCSSparkConfOptions.SERVICE_ACC_KEY,
+      "GOOGLE_APPLICATION_SERVICE_KEY"
     )
 
     val emailFound = getSensitiveOptionWithName(visibility)(
       config,
       GCSConnectorOptions.SERVICE_ACC_EMAIL,
       GCSSparkConfOptions.SERVICE_ACC_EMAIL,
-      "GOOGLE_APPLICATION_SERVICE_ACC_EMAIL"
+      "GOOGLE_APPLICATION_SERVICE_EMAIL"
     )
 
     val results = List(keyIdFound, keySecretFound, emailFound)
@@ -290,15 +290,15 @@ object DSConfigSetupUtils {
     val visibility = Secret
     val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
-      "gcs_hmac_key_id",
-      "gcs_hmac_key_id",
-      "VERTICA_GCS_KEY_ID").sequence
+      "gcs_vertica_key_id",
+      "gcs_vertica_key_id",
+      "GCS_VERTICA_KEY_ID").sequence
 
     val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
-      "gcs_hmac_key_secret",
-      "gcs_hmac_key_secret",
-      "VERTICA_GCS_KEY_SECRET").sequence
+      "gcs_vertica_key_secret",
+      "gcs_vertica_key_secret",
+      "GCS_VERTICA_KEY_SECRET").sequence
 
     (accessKeyIdOpt, secretAccessKeyOpt) match {
       case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(VerticaGCSAuth).map(Some(_))

@@ -91,9 +91,9 @@ Test / envVars := Map(
   "AWS_SESSION_TOKEN" -> "testsessiontoken",
   "AWS_DEFAULT_REGION" -> "us-west-1",
   "AWS_CREDENTIALS_PROVIDER" -> "test-provider",
-  "GOOGLE_APPLICATION_SERVICE_ACC_KEY_ID" -> "id",
-  "GOOGLE_APPLICATION_SERVICE_ACC_KEY_SECRET" -> "secret",
-  "GOOGLE_APPLICATION_SERVICE_ACC_EMAIL" -> "email",
+  "GOOGLE_APPLICATION_SERVICE_KEY_ID" -> "id",
+  "GOOGLE_APPLICATION_SERVICE_KEY" -> "secret",
+  "GOOGLE_APPLICATION_SERVICE_EMAIL" -> "email",
 )
 
 lazy val root = (project in file(".")).

@@ -507,8 +507,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   it should "get GCS HMAC key from connector options" in {
     val opts = options + (
-      "gcs_hmac_key_id" -> "key",
-      "gcs_hmac_key_secret" -> "secret",
+      "gcs_vertica_key_id" -> "key",
+      "gcs_vertica_key_secret" -> "secret",
     )
 
     // Set mock pipe
@@ -528,7 +528,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "error on missing GCS HMAC key secret" in {
-    val opts = options + ("gcs_hmac_key_id" -> "key")
+    val opts = options + ("gcs_vertica_key_id" -> "id")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -541,7 +541,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
 
   it should "error on missing GCS HMAC key id" in {
-    val opts = options + ("gcs_hmac_key_secret" -> "secret")
+    val opts = options + ("gcs_vertica_key_secret" -> "secret")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -601,8 +601,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
-      .config("gcs_hmac_key_id", "key_id")
-      .config("gcs_hmac_key_secret", "key_secret")
+      .config("gcs_vertica_key_id", "key_id")
+      .config("gcs_vertica_key_secret", "key_secret")
       .getOrCreate()
 
     try {
@@ -633,7 +633,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     try {
       val opts = options + (
         "gcs_service_account_key_id" -> "id",
-        "gcs_service_account_key_secret" -> "secret",
+        "gcs_service_account_key" -> "secret",
         "gcs_service_account_email" -> "email",
       )
 
@@ -660,7 +660,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
       .config("fs.gs.auth.service.account.private.key.id", "id")
-      .config("fs.gs.auth.service.account.private.key.secret", "secret")
+      .config("fs.gs.auth.service.account.private.key", "secret")
       .config("fs.gs.auth.service.account.email", "email")
       .getOrCreate()
 
@@ -683,10 +683,10 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "parse GCS service account authentication from env vars" in {
+  it should "parse GCS service account authentication from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")
-      .appName("Vertica Connector Test Prototype")
+      .appName("Vertica Connector Unit Test")
       .getOrCreate()
 
     try {
