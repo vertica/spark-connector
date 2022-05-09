@@ -23,8 +23,6 @@ object RowExample {
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 
-    val conn: Connection = TestUtils.getJDBCConnection(options("host"), db = options("db"), user = options("user"), password = options("password"))
-
     val tableName = "dftest"
     val schema = new StructType(Array(
       StructField("col1", IntegerType),
