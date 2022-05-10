@@ -57,8 +57,8 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   fileStoreConfig.gcsOptions.gcsAuth match {
     case None => ()
     case Some(auth) =>
-      sparkConf.set("gcs_hmac_key_id", auth.accessKeyId.arg)
-      sparkConf.set("gcs_hmac_key_secret", auth.accessKeySecret.arg)
+      sparkConf.set("gcs_vertica_key_id", auth.accessKeyId.arg)
+      sparkConf.set("gcs_vertica_key_secret", auth.accessKeySecret.arg)
   }
 
   protected lazy val spark: SparkSession = SparkSession.builder()
