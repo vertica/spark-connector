@@ -188,12 +188,6 @@ jobs:
     needs: build
     env:
       VERTICA_VERSION: 11.0.2-0
-      GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
-      GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
-      GCS_VERTICA_KEY_SECRET: ${{secrets.GCS_VERTICA_KEY_SECRET}}
-      GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
-      GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
-      GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
@@ -237,7 +231,6 @@ jobs:
       - name: Run the integration tests against GCS
         run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "export GCS_VERTICA_KEY_ID=$GCS_VERTICA_KEY_ID; export GCS_VERTICA_KEY_SECRET=$GCS_VERTICA_KEY_SECRET; export GCS_SERVICE_KEY_ID=$GCS_SERVICE_KEY_ID; export GCS_SERVICE_KEY=$GCS_SERVICE_KEY; export GCS_SERVICE_EMAIL=$GCS_SERVICE_EMAIL; sbt run -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1""
         env:
-          VERTICA_VERSION: 11.0.2-0
           GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
           GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
           GCS_VERTICA_KEY_SECRET: ${{secrets.GCS_VERTICA_KEY_SECRET}}
