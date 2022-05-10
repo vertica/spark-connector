@@ -143,18 +143,31 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
   }
 }
 
-object GCSSparkConfOptions {
-  val GCS_SERVICE_ACC_JSON_KEY_FILE = "fs.gs.auth.service.account.json.keyfile"
+object GCSSparkOptions {
+  val GCS_VERTICA_KEY_ID = "fs.gs.vertica.key.id"
+  val GCS_VERTICA_KEY_SECRET = "fs.gs.vertica.key.secret"
+  val SERVICE_JSON_KEYFILE = "fs.gs.auth.service.account.json.keyfile"
   val SERVICE_ACC_KEY_ID = "fs.gs.auth.service.account.private.key.id"
   val SERVICE_ACC_KEY = "fs.gs.auth.service.account.private.key"
   val SERVICE_ACC_EMAIL = "fs.gs.auth.service.account.email"
 }
 
 object GCSConnectorOptions {
-  val GCS_SERVICE_ACC_JSON_KEY_FILE = "gcs_service_account_keyfile"
-  val SERVICE_ACC_KEY_ID = "gcs_service_account_key_id"
-  val SERVICE_ACC_KEY = "gcs_service_account_key"
-  val SERVICE_ACC_EMAIL = "gcs_service_account_email"
+  val GCS_VERTICA_KEY_ID = "gcs_vertica_key_id"
+  val GCS_VERTICA_KEY_SECRET = "gcs_vertica_key_secret"
+  val SERVICE_JSON_KEYFILE = "gcs_service_keyfile"
+  val SERVICE_KEY_ID = "gcs_service_key_id"
+  val SERVICE_KEY = "gcs_service_key"
+  val SERVICE_EMAIL = "gcs_service_email"
+}
+
+object GCSEnvVars {
+  val GCS_VERTICA_KEY_ID = "GCS_VERTICA_KEY_ID"
+  val GCS_VERTICA_KEY_SECRET = "GCS_VERTICA_KEY_SECRET"
+  val SERVICE_JSON_KEYFILE = "GOOGLE_APPLICATION_CREDENTIALS"
+  val SERVICE_KEY_ID = "GCS_SERVICE_KEY_ID"
+  val SERVICE_KEY = "GCS_SERVICE_KEY"
+  val SERVICE_EMAIL = "GCS_SERVICE_EMAIL"
 }
 
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
@@ -230,21 +243,21 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   }
 
   private val gcsOptions = fileStoreConfig.gcsOptions
-  gcsOptions.gcsKeyFile match {
+  gcsOptions.gcsServiceKeyFile match {
     case Some(auth) =>
-      hdfsConfig.set(GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE, auth.arg)
-      logger.info(s"Loaded ${GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE} from ${auth.origin}")
+      hdfsConfig.set(GCSSparkOptions.SERVICE_JSON_KEYFILE, auth.arg)
+      logger.info(s"Loaded ${GCSSparkOptions.SERVICE_JSON_KEYFILE} from ${auth.origin}")
     case None => logger.debug("Did not load GCS key file")
   }
 
-  gcsOptions.gcsServiceAccount match {
+  gcsOptions.gcsServiceAuth match {
     case Some(auth) =>
-      hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_KEY_ID, auth.serviceAccKeyId.arg)
-      hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_KEY, auth.serviceAccKeySecret.arg)
-      hdfsConfig.set(GCSSparkConfOptions.SERVICE_ACC_EMAIL, auth.serviceAccEmail.arg)
-      logger.info(s"Loaded Google Cloud Storage service account key id from ${auth.serviceAccKeyId.origin}")
-      logger.info(s"Loaded Google Cloud Storage service account key secret from ${auth.serviceAccKeySecret.origin}")
-      logger.info(s"Loaded Google Cloud Storage service account key email from ${auth.serviceAccEmail.origin}")
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_KEY_ID, auth.serviceKeyId.arg)
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_KEY, auth.serviceKeySecret.arg)
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_EMAIL, auth.serviceEmail.arg)
+      logger.info(s"Loaded Google Cloud Storage service account key id from ${auth.serviceKeyId.origin}")
+      logger.info(s"Loaded Google Cloud Storage service account key secret from ${auth.serviceKeySecret.origin}")
+      logger.info(s"Loaded Google Cloud Storage service account key email from ${auth.serviceEmail.origin}")
     case None => logger.info("Did not load Google Cloud Storage service account authentications")
   }
 

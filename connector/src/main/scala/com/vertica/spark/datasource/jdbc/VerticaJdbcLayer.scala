@@ -441,7 +441,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private def configureGCSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     val gcsOptions = fileStoreLayer.getGCSOptions
     for {
-      _ <- gcsOptions.gcsAuth match {
+      _ <- gcsOptions.gcsVerticaAuth match {
         case Some(gcsAuth) =>
           val keyId = gcsAuth.accessKeyId
           val keySecret = gcsAuth.accessKeySecret

@@ -25,7 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
-import com.vertica.spark.datasource.fs.{GCSConnectorOptions, GCSSparkConfOptions}
+import com.vertica.spark.datasource.fs.{GCSConnectorOptions, GCSSparkOptions, GCSEnvVars}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
 
@@ -244,41 +244,41 @@ object DSConfigSetupUtils {
     val visibility = Secret
     getSensitiveOption(visibility)(
       config,
-      "gcs_keyfile",
-      GCSSparkConfOptions.GCS_SERVICE_ACC_JSON_KEY_FILE,
-      "GOOGLE_APPLICATION_CREDENTIALS"
+      GCSConnectorOptions.SERVICE_JSON_KEYFILE,
+      GCSSparkOptions.SERVICE_JSON_KEYFILE,
+      GCSEnvVars.SERVICE_JSON_KEYFILE
     )
   }
 
-  def getGCSServiceAccountAuth(config: Map[String, String]): ValidationResult[Option[GCSServiceAccountAuth]] = {
+  def getGCSServiceAccountAuth(config: Map[String, String]): ValidationResult[Option[GCSServiceAuth]] = {
     val visibility = Secret
 
     val keyIdFound = getSensitiveOptionWithName(visibility)(
       config,
-      GCSConnectorOptions.SERVICE_ACC_KEY_ID,
-      GCSSparkConfOptions.SERVICE_ACC_KEY_ID,
-      "GOOGLE_APPLICATION_SERVICE_KEY_ID"
+      GCSConnectorOptions.SERVICE_KEY_ID,
+      GCSSparkOptions.SERVICE_ACC_KEY_ID,
+      GCSEnvVars.SERVICE_KEY_ID
     )
 
     val keySecretFound = getSensitiveOptionWithName(visibility)(
       config,
-      GCSConnectorOptions.SERVICE_ACC_KEY,
-      GCSSparkConfOptions.SERVICE_ACC_KEY,
-      "GOOGLE_APPLICATION_SERVICE_KEY"
+      GCSConnectorOptions.SERVICE_KEY,
+      GCSSparkOptions.SERVICE_ACC_KEY,
+      GCSEnvVars.SERVICE_KEY
     )
 
     val emailFound = getSensitiveOptionWithName(visibility)(
       config,
-      GCSConnectorOptions.SERVICE_ACC_EMAIL,
-      GCSSparkConfOptions.SERVICE_ACC_EMAIL,
-      "GOOGLE_APPLICATION_SERVICE_EMAIL"
+      GCSConnectorOptions.SERVICE_EMAIL,
+      GCSSparkOptions.SERVICE_ACC_EMAIL,
+      GCSEnvVars.SERVICE_EMAIL
     )
 
     val results = List(keyIdFound, keySecretFound, emailFound)
     val invalids = results.filter(_.option.isInvalid)
     if(invalids.isEmpty){
       (keyIdFound.option.toOption.get, keySecretFound.option.toOption.get, emailFound.option.toOption.get)
-        .mapN(GCSServiceAccountAuth).validNec
+        .mapN(GCSServiceAuth).validNec
     } else {
       val found = results.filter(_.option.isValid).map(_.optionName)
       val missing = invalids.map(_.optionName)
@@ -286,25 +286,25 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[VerticaGCSAuth]] = {
+  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[GCSVerticaAuth]] = {
     val visibility = Secret
     val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
-      "gcs_vertica_key_id",
-      "gcs_vertica_key_id",
-      "GCS_VERTICA_KEY_ID").sequence
+      GCSConnectorOptions.GCS_VERTICA_KEY_ID,
+      GCSSparkOptions.GCS_VERTICA_KEY_ID,
+      GCSEnvVars.GCS_VERTICA_KEY_ID).sequence
 
     val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
-      "gcs_vertica_key_secret",
-      "gcs_vertica_key_secret",
-      "GCS_VERTICA_KEY_SECRET").sequence
+      GCSConnectorOptions.GCS_VERTICA_KEY_SECRET,
+      GCSSparkOptions.GCS_VERTICA_KEY_SECRET,
+      GCSEnvVars.GCS_VERTICA_KEY_SECRET).sequence
 
     (accessKeyIdOpt, secretAccessKeyOpt) match {
-      case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(VerticaGCSAuth).map(Some(_))
+      case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(GCSVerticaAuth).map(Some(_))
       case (None, None) => None.validNec
-      case (None, _) => MissingGoogleCloudStorageHMACKeyId().invalidNec
-      case (_, None) => MissingGoogleCloudStorageHMACKeySecret().invalidNec
+      case (None, _) => MissingGCSVerticaKeyId().invalidNec
+      case (_, None) => MissingGCSVerticaKeySecret().invalidNec
     }
   }
 

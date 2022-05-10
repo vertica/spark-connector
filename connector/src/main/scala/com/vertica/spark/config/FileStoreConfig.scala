@@ -46,11 +46,11 @@ case class AWSOptions(
                        enableSSL: Option[SensitiveArg[String]],
                        enablePathStyle: Option[SensitiveArg[String]])
 
-case class VerticaGCSAuth(accessKeyId: SensitiveArg[String], accessKeySecret: SensitiveArg[String])
+case class GCSVerticaAuth(accessKeyId: SensitiveArg[String], accessKeySecret: SensitiveArg[String])
 
-case class GCSServiceAccountAuth(serviceAccKeyId: SensitiveArg[String], serviceAccKeySecret: SensitiveArg[String], serviceAccEmail: SensitiveArg[String])
+case class GCSServiceAuth(serviceKeyId: SensitiveArg[String], serviceKeySecret: SensitiveArg[String], serviceEmail: SensitiveArg[String])
 
-case class GCSOptions(gcsAuth: Option[VerticaGCSAuth], gcsKeyFile: Option[SensitiveArg[String]], gcsServiceAccount: Option[GCSServiceAccountAuth])
+case class GCSOptions(gcsVerticaAuth: Option[GCSVerticaAuth], gcsServiceKeyFile: Option[SensitiveArg[String]], gcsServiceAuth: Option[GCSServiceAuth])
 
 /**
  * Represents configuration for a filestore used by the connector.

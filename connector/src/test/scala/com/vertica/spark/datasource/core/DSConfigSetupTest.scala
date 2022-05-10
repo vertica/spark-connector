@@ -518,7 +518,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
       case conf: DistributedFilesystemWriteConfig =>
-        conf.fileStoreConfig.gcsOptions.gcsAuth match {
+        conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
           case Some(gcsAuth) =>
             assert(gcsAuth.accessKeyId.arg == "key")
             assert(gcsAuth.accessKeySecret.arg == "secret")
@@ -527,34 +527,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "error on missing GCS HMAC key secret" in {
-    val opts = options + ("gcs_vertica_key_id" -> "id")
-
-    // Set mock pipe
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-
-    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
-
-    val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
-    assert(errors.length == 1)
-    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKeySecret])
-  }
-
-  it should "error on missing GCS HMAC key id" in {
-    val opts = options + ("gcs_vertica_key_secret" -> "secret")
-
-    // Set mock pipe
-    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-
-    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
-
-    val errors = parseErrorInitConfig(opts, dsWriteConfigSetup)
-    assert(errors.length == 1)
-    assert(errors.head.isInstanceOf[MissingGoogleCloudStorageHMACKeyId])
-  }
-
   it should "get GCS keyfile options from connector options" in {
-    val opts = options + ("gcs_keyfile" -> "keyfile")
+    val opts = options + ("gcs_service_keyfile" -> "keyfile")
 
     // Set mock pipe
     val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -563,7 +537,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
     parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
       case conf: DistributedFilesystemWriteConfig =>
-        conf.fileStoreConfig.gcsOptions.gcsKeyFile match {
+        conf.fileStoreConfig.gcsOptions.gcsServiceKeyFile match {
           case Some(keyfile) =>
             assert(keyfile.arg == "keyfile")
           case None => fail("Expected GCS keyfile")
@@ -586,7 +560,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
-          conf.fileStoreConfig.gcsOptions.gcsKeyFile match {
+          conf.fileStoreConfig.gcsOptions.gcsServiceKeyFile match {
             case Some(keyfile) =>
               assert(keyfile.arg == "keyfile")
             case None => fail("Expected GCS keyfile")
@@ -597,12 +571,12 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get GCS HMAC key from Spark confutation options" in {
+  it should "get GCS Vertica auth from Spark confutation options" in {
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
-      .config("gcs_vertica_key_id", "key_id")
-      .config("gcs_vertica_key_secret", "key_secret")
+      .config("fs.gs.vertica.key.id", "key_id")
+      .config("fs.gs.vertica.key.secret", "key_secret")
       .getOrCreate()
 
     try {
@@ -613,7 +587,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
-          conf.fileStoreConfig.gcsOptions.gcsAuth match {
+          conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
             case Some(auth) =>
               assert(auth.accessKeyId.arg == "key_id")
               assert(auth.accessKeySecret.arg == "key_secret")
@@ -632,9 +606,9 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       .getOrCreate()
     try {
       val opts = options + (
-        "gcs_service_account_key_id" -> "id",
-        "gcs_service_account_key" -> "secret",
-        "gcs_service_account_email" -> "email",
+        "gcs_service_key_id" -> "id",
+        "gcs_service_key" -> "secret",
+        "gcs_service_email" -> "email",
       )
 
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
@@ -642,11 +616,11 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
-          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
             case Some(auth) =>
-              assert(auth.serviceAccKeyId.arg == "id")
-              assert(auth.serviceAccKeySecret.arg == "secret")
-              assert(auth.serviceAccEmail.arg == "email")
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceEmail.arg == "email")
             case None => fail("Expected GCS service account auth")
           }
       }
@@ -670,11 +644,11 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
-          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
             case Some(auth) =>
-              assert(auth.serviceAccKeyId.arg == "id")
-              assert(auth.serviceAccKeySecret.arg == "secret")
-              assert(auth.serviceAccEmail.arg == "email")
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceEmail.arg == "email")
             case None => fail("Expected GCS service account auth")
           }
       }
@@ -683,7 +657,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "parse GCS service account authentication from environment variables" in {
+  it should "parse GCS authentications parameters from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Unit Test")
@@ -695,15 +669,24 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       parseCorrectInitConfig(options, dsWriteConfigSetup) match {
         case conf: DistributedFilesystemWriteConfig =>
-          conf.fileStoreConfig.gcsOptions.gcsServiceAccount match {
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
             case Some(auth) =>
-              assert(auth.serviceAccKeyId.arg == "id")
-              assert(auth.serviceAccKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
-              assert(auth.serviceAccKeySecret.arg == "secret")
-              assert(auth.serviceAccKeySecret.toString == SensitiveArg(Secret, EnvVar, "").toString)
-              assert(auth.serviceAccEmail.arg == "email")
-              assert(auth.serviceAccEmail.toString == SensitiveArg(Secret, EnvVar, "").toString)
-            case None => fail("Expected GCS service account auth")
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceKeySecret.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceEmail.arg == "email")
+              assert(auth.serviceEmail.toString == SensitiveArg(Secret, EnvVar, "").toString)
+            case None => fail("Expected GCS service account credentials")
+          }
+
+          conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId.arg == "id")
+              assert(auth.accessKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.accessKeySecret.arg == "secret")
+              assert(auth.accessKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+            case None => fail("Expected GCS Vertica credentials")
           }
       }
     } finally {

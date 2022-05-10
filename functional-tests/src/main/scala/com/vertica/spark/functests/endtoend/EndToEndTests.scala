@@ -14,7 +14,7 @@
 package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, GCSOptions, JDBCConfig}
-import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.datasource.fs.{GCSSparkOptions, HadoopFileStoreLayer}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
 import org.apache.log4j.Logger
@@ -44,21 +44,21 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
   private val sparkConf = new SparkConf()
-    .setMaster("local[*]")
+    .setMaster("local[4]")
     .setAppName("Vertica Connector Functional Test Suites")
     .set("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
 
-  fileStoreConfig.gcsOptions.gcsKeyFile match {
+  fileStoreConfig.gcsOptions.gcsServiceKeyFile match {
     case None => ()
-    case Some(keyfile) => sparkConf.set("fs.gs.auth.service.account.json.keyfile", keyfile.arg)
+    case Some(keyfile) => sparkConf.set(GCSSparkOptions.SERVICE_JSON_KEYFILE, keyfile.arg)
   }
 
-  fileStoreConfig.gcsOptions.gcsAuth match {
+  fileStoreConfig.gcsOptions.gcsVerticaAuth match {
     case None => ()
     case Some(auth) =>
-      sparkConf.set("gcs_vertica_key_id", auth.accessKeyId.arg)
-      sparkConf.set("gcs_vertica_key_secret", auth.accessKeySecret.arg)
+      sparkConf.set(GCSSparkOptions.GCS_VERTICA_KEY_ID, auth.accessKeyId.arg)
+      sparkConf.set(GCSSparkOptions.GCS_VERTICA_KEY_SECRET, auth.accessKeySecret.arg)
   }
 
   protected lazy val spark: SparkSession = SparkSession.builder()

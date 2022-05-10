@@ -19,6 +19,7 @@ package com.vertica.spark.util.error
 
 import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
+import com.vertica.spark.datasource.fs.GCSConnectorOptions
 import com.vertica.spark.util.error.ErrorHandling.invariantViolation
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.types.{DataType, StructField}
@@ -254,11 +255,11 @@ case class TLSModeParseError() extends ConnectorError {
 case class MissingAWSSecretAccessKey() extends ConnectorError {
   override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
 }
-case class MissingGoogleCloudStorageHMACKeyId() extends ConnectorError {
-  override def getFullContext: String = "Option 'gcs_hmac_key_secret' was specified, but 'gcs_hmac_key_id' is missing."
+case class MissingGCSVerticaKeyId() extends ConnectorError {
+  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_VERTICA_KEY_SECRET} was specified, but ${GCSConnectorOptions.GCS_VERTICA_KEY_ID} is missing."
 }
-case class MissingGoogleCloudStorageHMACKeySecret() extends ConnectorError {
-  override def getFullContext: String = "Option 'gcs_hmac_key_id' was specified, but 'gcs_hmac_key_secret' is missing."
+case class MissingGCSVerticaKeySecret() extends ConnectorError {
+  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_VERTICA_KEY_ID} was specified, but ${GCSConnectorOptions.GCS_VERTICA_KEY_SECRET} is missing."
 }
 case class MissingGCSServiceAccountAuthentications(found: Seq[String], missing: Seq[String]) extends ConnectorError {
   private val foundStr = found.map(str => s"`$str`").mkString(", ")

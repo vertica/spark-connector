@@ -178,17 +178,17 @@ object Main extends App {
       getSensitiveConfiguration("GCS_VERTICA_KEY_SECRET", "functional-tests.gcs_vertica_key_secret") match {
         case None => None
         case Some(hmacKeySecret) =>
-          Some(VerticaGCSAuth(hmacKeyId, hmacKeySecret))
+          Some(GCSVerticaAuth(hmacKeyId, hmacKeySecret))
       }
   }
 
-  val gcsServiceKeyId = getSensitiveConfiguration("GOOGLE_APPLICATION_SERVICE_KEY_ID", "functional-tests.gcs_service_account_key_id")
-  val gcsServiceKey = getSensitiveConfiguration("GOOGLE_APPLICATION_SERVICE_KEY", "functional-tests.gcs_service_account_key")
-  val gcsServiceEmail = getSensitiveConfiguration("GOOGLE_APPLICATION_SERVICE_EMAIL", "functional-tests.gcs_service_account_email")
+  val gcsServiceKeyId = getSensitiveConfiguration("GCS_SERVICE_KEY_ID", "functional-tests.gcs_service_account_key_id")
+  val gcsServiceKey = getSensitiveConfiguration("GCS_SERVICE_KEY", "functional-tests.gcs_service_account_key")
+  val gcsServiceEmail = getSensitiveConfiguration("GCS_SERVICE_EMAIL", "functional-tests.gcs_service_account_email")
   val serviceAuthMissing = List(gcsServiceKey, gcsServiceKeyId, gcsServiceEmail).exists(_.isEmpty)
-  val gcsServiceAuth = if(serviceAuthMissing) None else Some(GCSServiceAccountAuth(gcsServiceKeyId.get, gcsServiceKey.get, gcsServiceEmail.get))
+  val gcsServiceAuth = if(serviceAuthMissing) None else Some(GCSServiceAuth(gcsServiceKeyId.get, gcsServiceKey.get, gcsServiceEmail.get))
 
-  val gcsKeyfile = getSensitiveConfiguration("GOOGLE_APPLICATION_CREDENTIALS", "functional-tests.gcs_keyfile")
+  val gcsKeyfile = getSensitiveConfiguration("GOOGLE_APPLICATION_CREDENTIALS", "functional-tests.gcs_service_keyfile")
 
   val gcsOptions = GCSOptions(gcsVerticaAuth, gcsKeyfile, gcsServiceAuth)
 
