@@ -31,15 +31,15 @@ object Main {
       "user" -> conf.getString("app.db_user"),
       "password" -> conf.getString("app.db_password"),
       // Loading service account HMAC key. Required for GCS access
-      "gcs_hmac_key_id" -> conf.getString("app.hmac_key_id"),
-      "gcs_hmac_key_secret" -> conf.getString("app.hmac_key_secret"),
+      "gcs_vertica_key_id" -> conf.getString("app.gcs_vertica_key_id"),
+      "gcs_hmac_key_secret" -> conf.getString("app.gcs_vertica_key_secret"),
       // Your GCS bucket address
-      "staging_fs_url" -> conf.getString("app.gcs_bucket"),
+      "staging_fs_url" -> conf.getString("app.gcs_path"),
     )
 
     // Loading keyfile path. Only required if running outside of GCP cluster.
-    Try{conf.getString("app.keyfile_path")} match {
-      case Success(path) => options = options + ("gcs_keyfile" -> path)
+    Try{conf.getString("app.gcs_service_keyfile")} match {
+      case Success(path) => options = options + ("gcs_service_keyfile" -> path)
       case Failure(_) => ()
     }
 
