@@ -577,15 +577,15 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 }
 
 /**
- * With changes made in Vertica 11.1, this class contains old implmentation to support previous Vertica versions.
+ * With changes made in Vertica 11.1, this class contains implmentation to support previous Vertica versions.
  *
  * */
-class VerticaDistributedFilesystemWritePipeOld(override val config: DistributedFilesystemWriteConfig,
-                                               override val fileStoreLayer: FileStoreLayerInterface,
-                                               override val jdbcLayer: JdbcLayerInterface,
-                                               override val schemaTools: SchemaToolsInterface,
-                                               override val tableUtils: TableUtilsInterface,
-                                               override val dataSize: Int = 1)
+class VerticaDistributedFilesystemWritePipeLegacy(override val config: DistributedFilesystemWriteConfig,
+                                                  override val fileStoreLayer: FileStoreLayerInterface,
+                                                  override val jdbcLayer: JdbcLayerInterface,
+                                                  override val schemaTools: SchemaToolsInterface,
+                                                  override val tableUtils: TableUtilsInterface,
+                                                  override val dataSize: Int = 1)
   extends VerticaDistributedFilesystemWritePipe(config, fileStoreLayer, jdbcLayer, schemaTools, tableUtils, dataSize){
 
   override protected def buildInferStatement(url: String, tableName: String): String =

@@ -105,7 +105,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
             new TableUtils(schemaTools, writeLayerJdbc.get)
           )
         } else {
-          new VerticaDistributedFilesystemWritePipeOld(cfg,
+          new VerticaDistributedFilesystemWritePipeLegacy(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
             writeLayerJdbc.get,
             schemaTools,

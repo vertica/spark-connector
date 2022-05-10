@@ -752,7 +752,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
     (tableUtils.createExternalTable _).expects(tname, Some(createExternalTableStmt), config.schema, config.strlen, url, 0).returning(Right(()))
     (tableUtils.validateExternalTable _).expects(tname, config.schema).returning(Right(()))
 
-    val pipe = new VerticaDistributedFilesystemWritePipeOld(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
+    val pipe = new VerticaDistributedFilesystemWritePipeLegacy(config, fileStoreLayerInterface, jdbcLayerInterface, schemaToolsInterface, tableUtils)
 
     checkResult(pipe.commit())
   }
