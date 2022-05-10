@@ -10,6 +10,6 @@ Finally, ensure that you include the [Google Hadoop Connector](https://mvnreposi
 
 With the credential specified, you can now configure the connector option `staging_fs_url` to use GCS paths `gs://<bucket-id>/path/to/data`.
 
-###Additional Resources
+### Additional Resources
  * [Google Hadoop Connector GitHub](https://github.com/GoogleCloudDataproc/hadoop-connectors)
  * [Using Google Hadoop Connector](https://cloud.google.com/dataproc/docs/concepts/connectors/cloud-storage)
