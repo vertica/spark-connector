@@ -446,8 +446,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           val keyId = gcsAuth.accessKeyId
           val keySecret = gcsAuth.accessKeySecret
           val query = s"ALTER SESSION SET GCSAuth='${keyId.arg}:${keySecret.arg}'"
-          logger.info(s"Loaded GCS access key ID from ${gcsAuth.accessKeyId.origin}")
-          logger.info(s"Loaded GCS access key secret from ${gcsAuth.accessKeySecret.origin}")
+          logger.info(s"Loaded Google Cloud Storage - Vertica access key ID from ${gcsAuth.accessKeyId.origin}")
+          logger.info(s"Loaded Google Cloud Storage - Vertica access key secret from ${gcsAuth.accessKeySecret.origin}")
           this.execute(query)
         case None =>
           logger.info("Did not setup GCS authentications")
