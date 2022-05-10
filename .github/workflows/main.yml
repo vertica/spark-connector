@@ -234,6 +234,6 @@ jobs:
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests against GCS
         #        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="3.3.1"
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="3.3.1""
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "sbt run -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1""
       - name: Remove docker containers
         run: cd docker && docker-compose down
