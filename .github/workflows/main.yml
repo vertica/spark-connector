@@ -237,6 +237,6 @@ jobs:
       - name: Set env vars
         run: docker exec docker_client_1 /bin/bash -c ""
       - name: Run the integration tests against GCS
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1" "run -s HDFSTests"
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1"
       - name: Remove docker containers
         run: cd docker && docker-compose down
