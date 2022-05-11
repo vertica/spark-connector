@@ -9,18 +9,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the project
-        uses: actions/checkout@v2
-      - name: Build the project
-        run: cd connector && sbt package
-      - name: Upload the build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: build-jar-file
-          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
+#  build:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout the project
+#        uses: actions/checkout@v2
+#      - name: Build the project
+#        run: cd connector && sbt package
+#      - name: Upload the build artifact
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: build-jar-file
+#          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
+
+
 #  run-analysis:
 #    runs-on: ubuntu-latest
 #    needs: build
@@ -185,12 +187,12 @@ jobs:
 #        run: cd docker && docker-compose down
   run-integration-tests_gcs:
     runs-on: ubuntu-latest
-    needs: build
+#    needs: build
     env:
       VERTICA_VERSION: 11.0.2-0
     steps:
       - name: print vars
-        run: echo $GCS_FILEPATH; echo GCS_VERTICA_KEY_ID; echo GCS_VERTICA_KEY_SECRET; echo GCS_SERVICE_KEY_ID; echo GCS_SERVICE_KEY; echo GCS_SERVICE_EMAIL;
+        run: echo $GCS_FILEPATH; echo $GCS_VERTICA_KEY_ID; echo $GCS_VERTICA_KEY_SECRET; echo $GCS_SERVICE_KEY_ID; echo $GCS_SERVICE_KEY; echo $GCS_SERVICE_EMAIL;
         env:
           GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
           GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
