@@ -9,6 +9,13 @@ services:
     stdin_open: true
     ports:
       - "5005:5005"
+    environment:
+      - GCS_FILEPATH
+      - GCS_VERTICA_KEY_ID
+      - GCS_VERTICA_KEY_SECRET
+      - GCS_SERVICE_KEY_ID
+      - GCS_SERVICE_KEY
+      - GCS_SERVICE_EMAIL
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1
