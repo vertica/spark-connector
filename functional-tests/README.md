@@ -29,13 +29,13 @@ cd spark-connector/functional-tests
 
 To execute the default functional tests, use `sbt run` from the command line.
 
-By default, a set of functional test suites will be executed, but you can specify arguments to modify you test run. For example, `sbt run -l` will add LargeDataTests to the test suites for execution. For more detail, use `sbt run -h`.
+By default, a set of functional test suites will be executed, but you can specify arguments to modify you test run. For more details, use `sbt run -h`.
 
 As an example, to include large data tests into the run, use `sbt run -l`.
 
-Using `sbt -s ComplexTypeTests` will only execute ComplexTypeTests. 
+Using `sbt -s ComplexTypeTests` will only execute ComplexTypeTests.
 
-To run a specific test in a suite, use option `-t` to specify a test name. For example `sbt -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used in conjunction with `-s`.
+To run a specific test in a suite, use option `-t` to specify a test name. For example `sbt -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
 
 ### Using S3:
 Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
@@ -65,3 +65,15 @@ In the sandbox environment, change your working directory to functional-tests an
 cd spark-connector/functional-tests
 ./s3-functional-tests.sh
 ```
+
+### Using GCS:
+Currently, we do not have a solution for emulating GCS. Thus, you will need to obtain access to your own GCS bucket for testing.
+Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to the project's configuration file:
+```
+gcs_vertica_key_id
+gcs_vertica_key_secret
+gcs_service_key_id
+gcs_service_key
+gcs_service_email
+```
+Make sure your update the option `filepath` to your gcs bucket as well. Then start the test with `sbt run`.
