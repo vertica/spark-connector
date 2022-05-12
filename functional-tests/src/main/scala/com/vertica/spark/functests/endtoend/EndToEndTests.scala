@@ -45,8 +45,6 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
 
   private val sparkConf = new SparkConf()
     .setMaster("local[*]")
-    .set("spark.executor.memory", "4g")
-    .set("spark.driver.memory", "4g")
     .setAppName("Vertica Connector Functional Test Suites")
     .set("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
