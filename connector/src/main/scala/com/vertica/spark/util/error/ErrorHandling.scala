@@ -256,10 +256,10 @@ case class MissingAWSSecretAccessKey() extends ConnectorError {
   override def getFullContext: String = "The 'aws_access_key_id' param was specified, but param 'aws_secret_access_key' is not specified."
 }
 case class MissingGCSVerticaKeyId() extends ConnectorError {
-  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_VERTICA_KEY_SECRET} was specified, but ${GCSConnectorOptions.GCS_VERTICA_KEY_ID} is missing."
+  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_HMAC_KEY_SECRET} was specified, but ${GCSConnectorOptions.GCS_HMAC_KEY_ID} is missing."
 }
 case class MissingGCSVerticaKeySecret() extends ConnectorError {
-  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_VERTICA_KEY_ID} was specified, but ${GCSConnectorOptions.GCS_VERTICA_KEY_SECRET} is missing."
+  override def getFullContext: String = s"Option ${GCSConnectorOptions.GCS_HMAC_KEY_ID} was specified, but ${GCSConnectorOptions.GCS_HMAC_KEY_SECRET} is missing."
 }
 case class MissingGCSServiceAccountAuthentications(found: Seq[String], missing: Seq[String]) extends ConnectorError {
   private val foundStr = found.map(str => s"`$str`").mkString(", ")

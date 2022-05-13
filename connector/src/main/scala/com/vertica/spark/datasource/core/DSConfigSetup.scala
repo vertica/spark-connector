@@ -290,15 +290,15 @@ object DSConfigSetupUtils {
     val visibility = Secret
     val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
-      GCSConnectorOptions.GCS_VERTICA_KEY_ID,
-      GCSSparkOptions.GCS_VERTICA_KEY_ID,
-      GCSEnvVars.GCS_VERTICA_KEY_ID).sequence
+      GCSConnectorOptions.GCS_HMAC_KEY_ID,
+      GCSSparkOptions.GCS_HMAC_KEY_ID,
+      GCSEnvVars.GCS_HMAC_KEY_ID).sequence
 
     val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
-      GCSConnectorOptions.GCS_VERTICA_KEY_SECRET,
-      GCSSparkOptions.GCS_VERTICA_KEY_SECRET,
-      GCSEnvVars.GCS_VERTICA_KEY_SECRET).sequence
+      GCSConnectorOptions.GCS_HMAC_KEY_SECRET,
+      GCSSparkOptions.GCS_HMAC_KEY_SECRET,
+      GCSEnvVars.GCS_HMAC_KEY_SECRET).sequence
 
     (accessKeyIdOpt, secretAccessKeyOpt) match {
       case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(GCSVerticaAuth).map(Some(_))

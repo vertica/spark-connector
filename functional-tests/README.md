@@ -70,8 +70,8 @@ cd spark-connector/functional-tests
 Currently, we do not have a solution for emulating GCS. Thus, you will need to obtain access to your own GCS bucket for testing.
 Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to the project's configuration file:
 ```
-gcs_vertica_key_id
-gcs_vertica_key_secret
+gcs_hmac_key_id
+gcs_hmac_key_secret
 gcs_service_key_id
 gcs_service_key
 gcs_service_email

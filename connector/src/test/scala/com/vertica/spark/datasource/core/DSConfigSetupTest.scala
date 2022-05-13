@@ -507,8 +507,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
   it should "get GCS HMAC key from connector options" in {
     val opts = options + (
-      "gcs_vertica_key_id" -> "key",
-      "gcs_vertica_key_secret" -> "secret",
+      "gcs_hmac_key_id" -> "key",
+      "gcs_hmac_key_secret" -> "secret",
     )
 
     // Set mock pipe
@@ -575,8 +575,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
-      .config("fs.gs.vertica.key.id", "key_id")
-      .config("fs.gs.vertica.key.secret", "key_secret")
+      .config("fs.gs.hmac.key.id", "key_id")
+      .config("fs.gs.hmac.key.secret", "key_secret")
       .getOrCreate()
 
     try {

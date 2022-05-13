@@ -17,7 +17,7 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
 import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests}
-import org.apache.spark.sql.SparkSession
+import com.vertica.spark.datasource.fs.GCSEnvVars
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
@@ -97,8 +97,8 @@ object Main extends App {
   setConnectorOption("functional-tests.aws_enable_path_style", "aws_enable_path_style")
 
   // Load GCS options from conf file
-  setConnectorOption("functional-tests.gcs_vertica_key_id", "gcs_vertica_key_id")
-  setConnectorOption("functional-tests.gcs_vertica_key_secret", "gcs_vertica_key_secret")
+  setConnectorOption("functional-tests.gcs_hmac_key_id", "gcs_hmac_key_id")
+  setConnectorOption("functional-tests.gcs_hmac_key_secret", "gcs_hmac_key_secret")
   setConnectorOption("functional-tests.gcs_service_key_id", "gcs_service_key_id")
   setConnectorOption("functional-tests.gcs_service_key", "gcs_service_key")
   setConnectorOption("functional-tests.gcs_service_email", "gcs_service_email")
@@ -172,23 +172,23 @@ object Main extends App {
     awsEnablePathStyle
   )
 
-  val gcsVerticaAuth = getSensitiveConfiguration("GCS_VERTICA_KEY_ID", "functional-tests.gcs_vertica_key_id") match {
+  val gcsVerticaAuth = getSensitiveConfiguration(GCSEnvVars.GCS_HMAC_KEY_ID, "functional-tests.gcs_hmac_key_id") match {
     case None => None
     case Some(hmacKeyId) =>
-      getSensitiveConfiguration("GCS_VERTICA_KEY_SECRET", "functional-tests.gcs_vertica_key_secret") match {
+      getSensitiveConfiguration(GCSEnvVars.GCS_HMAC_KEY_SECRET, "functional-tests.gcs_hmac_key_secret") match {
         case None => None
         case Some(hmacKeySecret) =>
           Some(GCSVerticaAuth(hmacKeyId, hmacKeySecret))
       }
   }
 
-  val gcsServiceKeyId = getSensitiveConfiguration("GCS_SERVICE_KEY_ID", "functional-tests.gcs_service_account_key_id")
-  val gcsServiceKey = getSensitiveConfiguration("GCS_SERVICE_KEY", "functional-tests.gcs_service_account_key")
-  val gcsServiceEmail = getSensitiveConfiguration("GCS_SERVICE_EMAIL", "functional-tests.gcs_service_account_email")
+  val gcsServiceKeyId = getSensitiveConfiguration(GCSEnvVars.SERVICE_KEY_ID, "functional-tests.gcs_service_account_key_id")
+  val gcsServiceKey = getSensitiveConfiguration(GCSEnvVars.SERVICE_KEY, "functional-tests.gcs_service_account_key")
+  val gcsServiceEmail = getSensitiveConfiguration(GCSEnvVars.SERVICE_EMAIL, "functional-tests.gcs_service_account_email")
   val serviceAuthMissing = List(gcsServiceKey, gcsServiceKeyId, gcsServiceEmail).exists(_.isEmpty)
   val gcsServiceAuth = if(serviceAuthMissing) None else Some(GCSServiceAuth(gcsServiceKeyId.get, gcsServiceKey.get, gcsServiceEmail.get))
 
-  val gcsKeyfile = getSensitiveConfiguration("GOOGLE_APPLICATION_CREDENTIALS", "functional-tests.gcs_service_keyfile")
+  val gcsKeyfile = getSensitiveConfiguration(GCSEnvVars.SERVICE_JSON_KEYFILE, "functional-tests.gcs_service_keyfile")
 
   val gcsOptions = GCSOptions(gcsVerticaAuth, gcsKeyfile, gcsServiceAuth)
 

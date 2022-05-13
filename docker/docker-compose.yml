@@ -11,8 +11,8 @@ services:
       - "5005:5005"
     environment:
       - GCS_FILEPATH
-      - GCS_VERTICA_KEY_ID
-      - GCS_VERTICA_KEY_SECRET
+      - GCS_HMAC_KEY_ID
+      - GCS_HMAC_KEY_SECRET
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL

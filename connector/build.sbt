@@ -92,8 +92,8 @@ Test / envVars := Map(
   "AWS_DEFAULT_REGION" -> "us-west-1",
   "AWS_CREDENTIALS_PROVIDER" -> "test-provider",
 
-  "GCS_VERTICA_KEY_ID" -> "id",
-  "GCS_VERTICA_KEY_SECRET" -> "secret",
+  "GCS_HMAC_KEY_ID" -> "id",
+  "GCS_HMAC_KEY_SECRET" -> "secret",
 
   "GCS_SERVICE_KEY_ID" -> "id",
   "GCS_SERVICE_KEY" -> "secret",

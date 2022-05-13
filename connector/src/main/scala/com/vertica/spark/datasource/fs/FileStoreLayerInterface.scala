@@ -144,8 +144,8 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
 }
 
 object GCSSparkOptions {
-  val GCS_VERTICA_KEY_ID = "fs.gs.vertica.key.id"
-  val GCS_VERTICA_KEY_SECRET = "fs.gs.vertica.key.secret"
+  val GCS_HMAC_KEY_ID = "fs.gs.hmac.key.id"
+  val GCS_HMAC_KEY_SECRET = "fs.gs.hmac.key.secret"
   val SERVICE_JSON_KEYFILE = "fs.gs.auth.service.account.json.keyfile"
   val SERVICE_ACC_KEY_ID = "fs.gs.auth.service.account.private.key.id"
   val SERVICE_ACC_KEY = "fs.gs.auth.service.account.private.key"
@@ -153,8 +153,8 @@ object GCSSparkOptions {
 }
 
 object GCSConnectorOptions {
-  val GCS_VERTICA_KEY_ID = "gcs_vertica_key_id"
-  val GCS_VERTICA_KEY_SECRET = "gcs_vertica_key_secret"
+  val GCS_HMAC_KEY_ID = "gcs_hmac_key_id"
+  val GCS_HMAC_KEY_SECRET = "gcs_hmac_key_secret"
   val SERVICE_JSON_KEYFILE = "gcs_service_keyfile"
   val SERVICE_KEY_ID = "gcs_service_key_id"
   val SERVICE_KEY = "gcs_service_key"
@@ -162,8 +162,8 @@ object GCSConnectorOptions {
 }
 
 object GCSEnvVars {
-  val GCS_VERTICA_KEY_ID = "GCS_VERTICA_KEY_ID"
-  val GCS_VERTICA_KEY_SECRET = "GCS_VERTICA_KEY_SECRET"
+  val GCS_HMAC_KEY_ID = "GCS_HMAC_KEY_ID"
+  val GCS_HMAC_KEY_SECRET = "GCS_HMAC_KEY_SECRET"
   val SERVICE_JSON_KEYFILE = "GOOGLE_APPLICATION_CREDENTIALS"
   val SERVICE_KEY_ID = "GCS_SERVICE_KEY_ID"
   val SERVICE_KEY = "GCS_SERVICE_KEY"

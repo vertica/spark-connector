@@ -95,8 +95,8 @@ jobs:
         run: cd docker && docker-compose up -d
         env:
           VERTICA_VERSION: 11.0.2-0
-          GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
-          GCS_VERTICA_KEY_SECRET: ${{secrets.GCS_VERTICA_KEY_SECRET}}
+          GCS_HMAC_KEY_ID: ${{secrets.GCS_HMAC_KEY_ID}}
+          GCS_HMAC_KEY_SECRET: ${{secrets.GCS_HMAC_KEY_SECRET}}
           GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
           GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
           GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
