@@ -27,15 +27,11 @@ cd spark-connector/functional-tests
 
 ### Starting Functional Tests
 
-To execute the default functional tests, use `sbt run` from the command line.
+To execute the default functional tests, start the `sbt` server from the command line. Enter `run` to execute the default test suites. You can specify arguments to modify you test run. For more details, use `run -h`.
 
-By default, a set of functional test suites will be executed, but you can specify arguments to modify you test run. For more details, use `sbt run -h`.
+As an example, to include large data tests into the run, use `run -l`. Using `run -s ComplexTypeTests` will only execute ComplexTypeTests.
 
-As an example, to include large data tests into the run, use `sbt run -l`.
-
-Using `sbt -s ComplexTypeTests` will only execute ComplexTypeTests.
-
-To run a specific test in a suite, use option `-t` to specify a test name. For example `sbt -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
+To run a specific test in a suite, use option `-t` to specify a test name. For example `run -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
 
 ### Using S3:
 Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
