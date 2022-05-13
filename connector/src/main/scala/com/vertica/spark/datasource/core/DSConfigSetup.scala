@@ -310,10 +310,10 @@ object DSConfigSetupUtils {
 
   def getAWSRegion(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getFromConnectorOptions(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_region",
-      _ => getFromEnvVar(visibility)("AWS_DEFAULT_REGION"))
+      _ => getSensitiveArgFromEnvVar(visibility)("AWS_DEFAULT_REGION"))
   }
 
   def getAWSSessionToken(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
@@ -326,37 +326,37 @@ object DSConfigSetupUtils {
 
   def getAWSCredentialsProvider(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getFromConnectorOptions(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_credentials_provider",
-      _ => getFromSparkConfigOptions(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "spark.hadoop.fs.s3a.aws.credentials.provider", _ => None.validNec))
   }
 
   def getAWSEndpoint(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getFromConnectorOptions(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_endpoint",
-      _ => getFromSparkConfigOptions(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "spark.hadoop.fs.s3a.endpoint", _ => None.validNec))
   }
 
   def getAWSSSLEnabled(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getFromConnectorOptions(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_enable_ssl",
-      _ => getFromSparkConfigOptions(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "fs.s3a.connection.ssl.enabled", _ => None.validNec))
   }
 
   def getAWSPathStyleEnabled(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getFromConnectorOptions(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_enable_path_style",
-      _ => getFromSparkConfigOptions(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "fs.s3a.path.style.access", _ => None.validNec))
   }
 
@@ -373,12 +373,12 @@ object DSConfigSetupUtils {
                  sparkConfigOption: String,
                  envVar: String
                ): ValidationResult[Option[SensitiveArg[String]]] = {
-      getFromConnectorOptions(visibility)(
+      getSensitiveArgFromConnectorOptions(visibility)(
         config,
         connectorOption,
-        _ => getFromSparkConfigOptions(visibility)(
+        _ => getSensitiveArgFromSparkConfigOptions(visibility)(
           sparkConfigOption,
-          _ => getFromEnvVar(visibility)(envVar)))
+          _ => getSensitiveArgFromEnvVar(visibility)(envVar)))
   }
 
   case class SensitiveOptionFound(option: ValidationResult[Option[SensitiveArg[String]]], optionName: String)
@@ -398,7 +398,7 @@ object DSConfigSetupUtils {
     )
   }
 
-  private def getFromConnectorOptions(visibility: Visibility)(
+  private def getSensitiveArgFromConnectorOptions(visibility: Visibility)(
     config: Map[String, String],
     connectorOption: String,
     next: Unit => ValidationResult[Option[SensitiveArg[String]]]): ValidationResult[Option[SensitiveArg[String]]] = {
@@ -408,7 +408,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  private def getFromSparkConfigOptions(visibility: Visibility)(
+  private def getSensitiveArgFromSparkConfigOptions(visibility: Visibility)(
     sparkConfigOption: String,
     next: Unit => ValidationResult[Option[SensitiveArg[String]]]): ValidationResult[Option[SensitiveArg[String]]] = {
     SparkSession.getActiveSession match {
@@ -422,7 +422,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  private def getFromEnvVar(visibility: Visibility)(envVar: String):  ValidationResult[Option[SensitiveArg[String]]] = {
+  private def getSensitiveArgFromEnvVar(visibility: Visibility)(envVar: String):  ValidationResult[Option[SensitiveArg[String]]] = {
     sys.env.get(envVar).map(token => SensitiveArg(visibility, EnvVar, token)).validNec
   }
 
