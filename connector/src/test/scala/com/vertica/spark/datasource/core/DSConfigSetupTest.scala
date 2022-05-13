@@ -571,7 +571,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
-  it should "get GCS Vertica auth from Spark confutation options" in {
+  it should "get GCS Vertica auth from Spark configuration options" in {
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
