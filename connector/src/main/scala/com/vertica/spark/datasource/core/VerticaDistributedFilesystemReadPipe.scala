@@ -119,57 +119,58 @@ class VerticaDistributedFilesystemReadPipe(
     map(filename) - 1
   }
 
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
+  /**
+   * The function partition the data. It does so by distributing the row groups of each parquet to partitions.
+   * A partition may contains row groups from multiple files.
+   * */
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partition: Int): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
     // If no data, return empty partition list
     if(totalRowGroups == 0) {
       logger.info("No data. Returning empty partition list.")
       PartitionInfo(Array[InputPartition]())
-    }
-    else {
-      val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-      val rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
+    } else {
+      val extraSpace = if(totalRowGroups % partition == 0) 0 else 1
+      val maxPartitionRowGroupCount = (totalRowGroups / partition) + extraSpace
 
       // Now, create partitions splitting up files roughly evenly
-      var i = 0
       var partitions = List[VerticaDistributedFilesystemPartition]()
       var curFileRanges = List[ParquetFileRange]()
       val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
       logger.info("Creating partitions.")
+      var currPartitionRowGroupCount = 0
       for(m <- fileMetadata) {
-        val size = m.rowGroupCount
-        logger.debug("Splitting file " + m.filename + " with row group count " + size)
-        var j = 0
-        var low = 0
-        while(j < size){
-          if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
+        val fileRowGroupCount = m.rowGroupCount
+        logger.debug("Splitting file " + m.filename + " with row group count " + fileRowGroupCount)
+        var currFileRowGroup = 0
+        var currMinRowGroup = 0
+        // For each row group
+        while(currFileRowGroup < fileRowGroupCount){
+          if(currPartitionRowGroupCount == maxPartitionRowGroupCount - 1) { // Reached end of partition, cut off here
             val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+            val frange = ParquetFileRange(m.filename, currMinRowGroup, currFileRowGroup, Some(rangeIdx))
 
             curFileRanges = curFileRanges :+ frange
             val partition = VerticaDistributedFilesystemPartition(curFileRanges)
             partitions = partitions :+ partition
             curFileRanges = List[ParquetFileRange]()
             logger.debug("Reached partition with file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i = 0
-            low = j + 1
+              currMinRowGroup + " , range high: " + currFileRowGroup + " , idx: " + rangeIdx)
+            currPartitionRowGroupCount = 0
+            currMinRowGroup = currFileRowGroup + 1
           }
-          else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
+          else if(currFileRowGroup == fileRowGroupCount - 1){ // Reached end of file's row groups, add to file ranges
             val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+            val frange = ParquetFileRange(m.filename, currMinRowGroup, currFileRowGroup, Some(rangeIdx))
             curFileRanges = curFileRanges :+ frange
             logger.debug("Reached end of file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i += 1
-          }
-          else {
-            i += 1
-          }
-          j += 1
+              currMinRowGroup + " , range high: " + currFileRowGroup + " , idx: " + rangeIdx)
+            currPartitionRowGroupCount += 1
+          } else currPartitionRowGroupCount += 1
+          currFileRowGroup += 1
         }
       }
 
