@@ -75,14 +75,6 @@ jobs:
   run-integration-tests_gcs:
     runs-on: ubuntu-latest
     needs: build
-    env:
-      VERTICA_VERSION: 11.0.2-0
-      GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
-      GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
-      GCS_VERTICA_KEY_SECRET: ${{secrets.GCS_VERTICA_KEY_SECRET}}
-      GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
-      GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
-      GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
@@ -93,12 +85,21 @@ jobs:
           path: ./functional-tests/lib/
       - name: Add config options to application.conf
         run: cd functional-tests/src/main/resources && echo -e 'functional-tests={ \n\thost="'"vertica"'" \n\tport="'"5433"'" \n\tdb="'"docker"'" \n\tuser="'"dbadmin"'" \n\tpassword="'""'" \n\tlog='true' \n\tfilepath="'"$GCS_FILEPATH"'" \n\ttlsmode="'"disable"'" \n\ttruststorepath="'"/truststore.jks"'" \n\ttruststorepassword="'"dbadmin"'" \n}\n' > application.conf
+        env:
+          GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
       - name: Build the functional-tests project
         run: cd functional-tests && sbt assembly
       - name: Build client image
         run: docker build -t client ./docker
       - name: Run docker compose
         run: cd docker && docker-compose up -d
+        env:
+          VERTICA_VERSION: 11.0.2-0
+          GCS_VERTICA_KEY_ID: ${{secrets.GCS_VERTICA_KEY_ID}}
+          GCS_VERTICA_KEY_SECRET: ${{secrets.GCS_VERTICA_KEY_SECRET}}
+          GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
+          GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
+          GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
@@ -121,8 +122,6 @@ jobs:
           max_attempts: 10
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Set env vars
-        run: docker exec docker_client_1 /bin/bash -c ""
       - name: Run the integration tests against GCS
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1"
       - name: Remove docker containers
