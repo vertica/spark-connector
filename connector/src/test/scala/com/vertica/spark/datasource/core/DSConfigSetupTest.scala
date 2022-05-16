@@ -46,8 +46,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   }
   def parseCorrectInitConfig(opts : Map[String, String], dsWriteConfigSetup: DSWriteConfigSetup) : WriteConfig = {
     val writeConfig : WriteConfig = dsWriteConfigSetup.validateAndGetConfig(opts) match {
-      case Invalid(_) =>
-        fail
+      case Invalid(error) =>
+        fail(error.toString)
         mock[WriteConfig]
       case Valid(config) =>
         config
@@ -69,6 +69,16 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       case Valid(_) => fail("The config was valid.")
     }
   }
+
+  val options =  Map(
+    "host" -> "1.1.1.1",
+    "port" -> "1234",
+    "db" -> "testdb",
+    "user" -> "user",
+    "password" -> "password",
+    "table" -> "tbl",
+    "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+  )
 
 
   it should "parse a valid read config" in {
@@ -361,19 +371,19 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(EnvVar, *****)")
+              assert(auth.accessKeyId.toString == "SensitiveArg(EnvVar, *****)")
               assert(auth.accessKeyId.arg == "test")
-              assert(auth.secretAccessKey.toString == "AWSArg(EnvVar, *****)")
+              assert(auth.secretAccessKey.toString == "SensitiveArg(EnvVar, *****)")
               assert(auth.secretAccessKey.arg == "foo")
               awsOptions.awsSessionToken match {
                 case Some(token) =>
-                  assert(token.toString == "AWSArg(EnvVar, *****)")
+                  assert(token.toString == "SensitiveArg(EnvVar, *****)")
                   assert(token.arg == "testsessiontoken")
                 case None => fail("Failed to get AWS session token from the environment variables")
               }
               awsOptions.awsRegion match {
                 case Some(region) =>
-                  assert(region.toString == "AWSArg(EnvVar, us-west-1)")
+                  assert(region.toString == "SensitiveArg(EnvVar, us-west-1)")
                   assert(region.arg == "us-west-1")
                 case None => fail("Failed to get AWS region from the environment variables")
               }
@@ -416,22 +426,22 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           val awsOptions = config.fileStoreConfig.awsOptions
           awsOptions.awsAuth match {
             case Some(auth) =>
-              assert(auth.accessKeyId.toString == "AWSArg(SparkConf, *****)")
+              assert(auth.accessKeyId.toString == "SensitiveArg(SparkConf, *****)")
               assert(auth.accessKeyId.arg == "moo")
-              assert(auth.secretAccessKey.toString == "AWSArg(SparkConf, *****)")
+              assert(auth.secretAccessKey.toString == "SensitiveArg(SparkConf, *****)")
               assert(auth.secretAccessKey.arg == "cow")
             case None => fail("Failed to get AWS Auth from the Spark configuration")
           }
           awsOptions.awsSessionToken match {
             case Some(token) =>
-              assert(token.toString == "AWSArg(SparkConf, *****)")
+              assert(token.toString == "SensitiveArg(SparkConf, *****)")
               assert(token.arg == "asessiontoken")
             case None => fail("Failed to get AWS session token from the Spark configuration")
           }
           awsOptions.awsCredentialsProvider match {
             case Some(credentialsProvider) =>
               assert(credentialsProvider.toString ==
-                "AWSArg(SparkConf, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+                "SensitiveArg(SparkConf, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
               assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
             case None => fail("Failed to get AWS credentials provider from the Spark configuration")
           }
@@ -467,31 +477,220 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         val awsOptions = config.fileStoreConfig.awsOptions
         awsOptions.awsAuth match {
           case Some(auth) =>
-            assert(auth.accessKeyId.toString == "AWSArg(ConnectorOption, *****)")
+            assert(auth.accessKeyId.toString == "SensitiveArg(ConnectorOption, *****)")
             assert(auth.accessKeyId.arg == "meow")
-            assert(auth.secretAccessKey.toString == "AWSArg(ConnectorOption, *****)")
+            assert(auth.secretAccessKey.toString == "SensitiveArg(ConnectorOption, *****)")
             assert(auth.secretAccessKey.arg == "woof")
             awsOptions.awsRegion match {
               case Some(region) =>
-                assert(region.toString == "AWSArg(ConnectorOption, us-east-1)")
+                assert(region.toString == "SensitiveArg(ConnectorOption, us-east-1)")
                 assert(region.arg == "us-east-1")
               case None => fail("Failed to get AWS region from the connector options")
             }
             awsOptions.awsSessionToken match {
               case Some(token) =>
-                assert(token.toString == "AWSArg(ConnectorOption, *****)")
+                assert(token.toString == "SensitiveArg(ConnectorOption, *****)")
                 assert(token.arg == "mysessiontoken")
               case None => fail("Failed to get AWS session token from the connector options")
             }
             awsOptions.awsCredentialsProvider match {
               case Some(credentialsProvider) =>
                 assert(credentialsProvider.toString ==
-                  "AWSArg(ConnectorOption, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
+                  "SensitiveArg(ConnectorOption, org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider)")
                 assert(credentialsProvider.arg == "org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider")
               case None => fail("Failed to get AWS credentials provider from the connector options")
             }
           case None => fail("Failed to get AWS credentials provider from the connector options")
         }
+    }
+  }
+
+  it should "get GCS HMAC key from connector options" in {
+    val opts = options + (
+      "gcs_hmac_key_id" -> "key",
+      "gcs_hmac_key_secret" -> "secret",
+    )
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case conf: DistributedFilesystemWriteConfig =>
+        conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
+          case Some(gcsAuth) =>
+            assert(gcsAuth.accessKeyId.arg == "key")
+            assert(gcsAuth.accessKeySecret.arg == "secret")
+          case None => fail("Expected GCS parameters")
+        }
+    }
+  }
+
+  it should "get GCS keyfile options from connector options" in {
+    val opts = options + ("gcs_service_keyfile" -> "keyfile")
+
+    // Set mock pipe
+    val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+    val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+    parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+      case conf: DistributedFilesystemWriteConfig =>
+        conf.fileStoreConfig.gcsOptions.gcsServiceKeyFile match {
+          case Some(keyfile) =>
+            assert(keyfile.arg == "keyfile")
+          case None => fail("Expected GCS keyfile")
+        }
+    }
+  }
+
+  it should "get GCS keyfile parameters from spark options" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("fs.gs.auth.service.account.json.keyfile", "keyfile")
+      .getOrCreate()
+
+    try {
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceKeyFile match {
+            case Some(keyfile) =>
+              assert(keyfile.arg == "keyfile")
+            case None => fail("Expected GCS keyfile")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "get GCS Vertica auth from Spark configuration options" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("fs.gs.hmac.key.id", "key_id")
+      .config("fs.gs.hmac.key.secret", "key_secret")
+      .getOrCreate()
+
+    try {
+      // Set mock pipe
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId.arg == "key_id")
+              assert(auth.accessKeySecret.arg == "key_secret")
+            case None => fail("Expected GCS HMAC Key ID from Spark conf")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS service account authentication" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+    try {
+      val opts = options + (
+        "gcs_service_key_id" -> "id",
+        "gcs_service_key" -> "secret",
+        "gcs_service_email" -> "email",
+      )
+
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
+            case Some(auth) =>
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceEmail.arg == "email")
+            case None => fail("Expected GCS service account auth")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS service account authentication from Spark configurations" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .config("fs.gs.auth.service.account.private.key.id", "id")
+      .config("fs.gs.auth.service.account.private.key", "secret")
+      .config("fs.gs.auth.service.account.email", "email")
+      .getOrCreate()
+
+    try {
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
+            case Some(auth) =>
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceEmail.arg == "email")
+            case None => fail("Expected GCS service account auth")
+          }
+      }
+    } finally {
+      spark.close()
+    }
+  }
+
+  it should "parse GCS authentications parameters from environment variables" in {
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Unit Test")
+      .getOrCreate()
+
+    try {
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      parseCorrectInitConfig(options, dsWriteConfigSetup) match {
+        case conf: DistributedFilesystemWriteConfig =>
+          conf.fileStoreConfig.gcsOptions.gcsServiceAuth match {
+            case Some(auth) =>
+              assert(auth.serviceKeyId.arg == "id")
+              assert(auth.serviceKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceKeySecret.arg == "secret")
+              assert(auth.serviceKeySecret.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.serviceEmail.arg == "email")
+              assert(auth.serviceEmail.toString == SensitiveArg(Secret, EnvVar, "").toString)
+            case None => fail("Expected GCS service account credentials")
+          }
+
+          conf.fileStoreConfig.gcsOptions.gcsVerticaAuth match {
+            case Some(auth) =>
+              assert(auth.accessKeyId.arg == "id")
+              assert(auth.accessKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+              assert(auth.accessKeySecret.arg == "secret")
+              assert(auth.accessKeyId.toString == SensitiveArg(Secret, EnvVar, "").toString)
+            case None => fail("Expected GCS Vertica credentials")
+          }
+      }
+    } finally {
+      spark.close()
     }
   }
 }

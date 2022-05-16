@@ -46,6 +46,8 @@ libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"
 libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
+libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
+
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
