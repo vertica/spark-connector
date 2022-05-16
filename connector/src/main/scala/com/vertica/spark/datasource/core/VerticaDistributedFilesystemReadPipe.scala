@@ -120,10 +120,16 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   /**
-   * The function partition the data. It does so by distributing the row groups of each parquet to partitions.
-   * A partition may contains row groups from multiple files.
+   * The function partition the parquet data for Spark to work on concurrently. It does so by distributing the row
+   * groups of each parquet into partitions. A partition may contains row groups from multiple files.
+   *
+   * The number of partitions = total parquet row groups / partitionCount.
+   *
+   * @param fileMetadata A list of parquet metadata
+   *
+   * @param partitionCount the number of partition to create
    * */
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partition: Int): PartitionInfo = {
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
     // If no data, return empty partition list
@@ -131,8 +137,8 @@ class VerticaDistributedFilesystemReadPipe(
       logger.info("No data. Returning empty partition list.")
       PartitionInfo(Array[InputPartition]())
     } else {
-      val extraSpace = if(totalRowGroups % partition == 0) 0 else 1
-      val maxPartitionRowGroupCount = (totalRowGroups / partition) + extraSpace
+      val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
+      val rowGroupsPerPartition = (totalRowGroups / partitionCount) + extraSpace
 
       // Now, create partitions splitting up files roughly evenly
       var partitions = List[VerticaDistributedFilesystemPartition]()
@@ -141,14 +147,20 @@ class VerticaDistributedFilesystemReadPipe(
 
       logger.info("Creating partitions.")
       var currPartitionRowGroupCount = 0
+      // To create spark partitions, we loop over the metadata of exported parquets and record row groups for each partitions
       for(m <- fileMetadata) {
         val fileRowGroupCount = m.rowGroupCount
         logger.debug("Splitting file " + m.filename + " with row group count " + fileRowGroupCount)
         var currFileRowGroup = 0
         var currMinRowGroup = 0
-        // For each row group
+        /**
+         * For each parquet metadata, we step through the row groups until:
+         * - rowGroupsPerPartition is reached, then our partition is full. We record the file range to the partition and
+         * start a new partition
+         * - fileRowGroupCount is reached, then we record the row group range into the partition and move to the next parquet metadata
+         * */
         while(currFileRowGroup < fileRowGroupCount){
-          if(currPartitionRowGroupCount == maxPartitionRowGroupCount - 1) { // Reached end of partition, cut off here
+          if(currPartitionRowGroupCount == rowGroupsPerPartition - 1) { // Reached end of partition, cut off here
             val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
             val frange = ParquetFileRange(m.filename, currMinRowGroup, currFileRowGroup, Some(rangeIdx))
