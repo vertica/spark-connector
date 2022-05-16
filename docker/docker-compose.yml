@@ -10,12 +10,16 @@ services:
     ports:
       - "5005:5005"
     environment:
+      - HADOOP_VERSION
+      - SPARK_VERSION
       - GCS_FILEPATH
       - GCS_HMAC_KEY_ID
       - GCS_HMAC_KEY_SECRET
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1
