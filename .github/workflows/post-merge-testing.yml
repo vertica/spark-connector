@@ -64,11 +64,11 @@ jobs:
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; export hadoopVersion=$HADOOP_VERSION; sparkVersion=$SPARK_VERSION; ./s3-functional-tests.sh"
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID; export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY; export hadoopVersion=$HADOOP_VERSION; sparkVersion=$SPARK_VERSION; ./submit-functional-tests.sh"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          hadoopVersion: "3.3.1"
+          HADOOP_VERSION: "3.3.1"
           SPARK_VERSION: "3.2.0"
       - name: Remove docker containers
         run: cd docker && docker-compose down
