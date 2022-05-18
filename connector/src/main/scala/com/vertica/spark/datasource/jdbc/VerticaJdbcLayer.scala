@@ -200,7 +200,10 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case BasicJdbcAuth(_, _) => "-p"
       case KerberosAuth(_, _, _, _) => "-k"
     }
-    val sparkVersion = SparkSession.active.sparkContext.version
+    val sparkVersion = SparkSession.getActiveSession match {
+      case Some(session) => session.sparkContext.version
+      case None => "0.no-active-session"
+    }
     "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion
   }
 
