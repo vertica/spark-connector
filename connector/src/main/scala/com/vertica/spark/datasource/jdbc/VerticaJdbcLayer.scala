@@ -360,10 +360,12 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   def isClosed(): Boolean = {
     logger.debug(thread + "Check connection closed")
     try {
-      this.connection.fold(err => {
-        logger.error(thread + err.getFullContext)
-        true
-      }, conn => conn.isClosed())
+      if (lazyInitialized) {
+        this.connection.fold(err => {
+          logger.error(thread + err.getFullContext)
+          true
+        }, conn => conn.isClosed())
+      } else false
     } catch {
       case _ : Throwable => true
     }
