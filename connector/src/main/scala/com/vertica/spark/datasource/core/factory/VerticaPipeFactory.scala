@@ -22,6 +22,7 @@ import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsV10}
 import com.vertica.spark.util.table.TableUtils
 import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
+import org.apache.log4j.LogManager
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
@@ -42,16 +43,29 @@ trait VerticaPipeFactoryInterface {
  * Implementation of the vertica pipe factory
  */
 object VerticaPipeFactory extends VerticaPipeFactoryInterface {
+  val log = LogManager.getLogger("VerticaPipeFactory")
 
   // Maintain a single copy of the read and write JDBC layers
   private var readLayerJdbc: Option[VerticaJdbcLayer] = None
   private var writeLayerJdbc: Option[VerticaJdbcLayer] = None
 
   private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
+    val thread = Thread.currentThread().getName + ": "
+    log.debug(thread + "Getting JDBC layer.")
     jdbcLayer match {
-      case Some(layer) => if (layer.isClosed()) Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
-      case None => Some(new VerticaJdbcLayer(jdbcConfig))
+      case Some(layer) =>
+        if (layer.isClosed()){
+          log.debug(thread + "JDBC layer is closed. Opening new JDBC layer")
+          Some(new VerticaJdbcLayer(jdbcConfig))
+        } else {
+          log.debug(thread + "Returning JDBC layer")
+          jdbcLayer
+        }
+      case None =>
+        log.debug(thread + "New JDBC layer")
+        Some(new VerticaJdbcLayer(jdbcConfig))
     }
+    // log.info(thread + "checkJdbcLayer exiting: connection closed is" + conn.get.isClosed())
   }
 
   private def closeJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer]): Unit = {
@@ -91,35 +105,39 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
+    val thread = Thread.currentThread().getName + ": "
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
+        log.debug(thread+ "Getting JDBC layers for writing")
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
-        val verticaVersion = VerticaVersionUtils.getVersion(writeLayerJdbc.get)
+        val jdbcLayer = writeLayerJdbc.orNull
+        // val verticaVersion = VerticaVersionUtils.getVersion(writeLayerJdbc.get)
+        val verticaVersion = VerticaVersion(11,1)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         //scalastyle:off
         if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
-            writeLayerJdbc.get,
+            jdbcLayer,
             schemaTools,
-            new TableUtils(schemaTools, writeLayerJdbc.get)
+            new TableUtils(schemaTools, jdbcLayer)
           )
         } else {
           new VerticaDistributedFilesystemWritePipeLegacy(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
-            writeLayerJdbc.get,
+            jdbcLayer,
             schemaTools,
-            new TableUtils(schemaTools, writeLayerJdbc.get)
+            new TableUtils(schemaTools, jdbcLayer)
           )
-        }
+        } //scalastyle:on
     }
   }
 
   override def closeJdbcLayers(): Unit = {
+    log.info("Closing JDBC both layers")
     closeJdbcLayer(readLayerJdbc)
     closeJdbcLayer(writeLayerJdbc)
   }
-
 }
 
 

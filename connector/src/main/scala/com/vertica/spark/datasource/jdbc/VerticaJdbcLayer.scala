@@ -153,7 +153,7 @@ object JdbcUtils {
   */
 class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val logger = LogProvider.getLogger(classOf[VerticaJdbcLayer])
-
+  private val thread = Thread.currentThread().getName + ": "
   private val prop = new util.Properties()
 
   cfg.auth match {
@@ -179,16 +179,20 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
+  private var lazyInitialized = false
   private lazy val connection: ConnectorResult[Connection] = {
     Try { DriverManager.getConnection(jdbcURI, prop) }
       .toEither.left.map(handleConnectionException)
-      .flatMap(conn =>
+      .flatMap(conn => {
+        lazyInitialized = true
+        logger.debug(thread + "Connection lazy initialized")
         this.useConnection(conn, c => {
           c.setClientInfo("APPLICATIONNAME", this.createClientLabel)
           c.setAutoCommit(false)
-          logger.info("Successfully connected to Vertica.")
+          logger.info(thread + "Successfully connected to Vertica.")
           c
-        }, handleConnectionException).left.map(_.context("Initial connection was not valid.")))
+        }, handleConnectionException).left.map(_.context("Initial connection was not valid."))
+      })
   }
 
   private def createClientLabel: String = {
@@ -351,9 +355,12 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   def isClosed(): Boolean = {
-    logger.debug("Checking if connection is closed.")
+    logger.debug(thread + "Check connection closed")
     try {
-      this.connection.fold(_ => true, conn => conn.isClosed())
+      this.connection.fold(err => {
+        logger.error(thread + err.getFullContext)
+        true
+      }, conn => conn.isClosed())
     } catch {
       case _ : Throwable => true
     }
