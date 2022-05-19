@@ -61,7 +61,7 @@ jobs:
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
       - name: Run the integration tests on Spark 3.0 with Vertica 10 complex type tests
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="2.4.0 -v"
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="3.1.0"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   slack-workflow-status:
