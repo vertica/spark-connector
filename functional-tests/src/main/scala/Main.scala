@@ -16,7 +16,7 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
-import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests}
+import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests, RemoteTests}
 import com.vertica.spark.datasource.fs.GCSEnvVars
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -208,7 +208,7 @@ object Main extends App {
     result + "\n"
   }
 
-  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "")
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "", remote: Boolean = false)
   val builder = OParser.builder[Options]
   val optParser = {
     import builder._
@@ -222,6 +222,9 @@ object Main extends App {
       opt[Unit]('v', "v10")
         .action((_, options: Options) => options.copy(v10 = true))
         .text("Replace ComplexDataTypeTests with ComplexDataTypeTestsV10 for Vertica 10.x."),
+      opt[Unit]('r', "remote")
+        .action((_, options: Options) => options.copy(remote = true))
+        .text("Add remote tests"),
       opt[String]('s', "suite")
         .action((value: String, options: Options) => options.copy(suite = value))
         .text("Specify a specific test suite name to run."),
@@ -275,6 +278,8 @@ object Main extends App {
     else testSuites :+ new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
     testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
+
+    testSuites = if (options.remote) testSuites :+ new RemoteTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
 
     if(options.suite.isBlank) {
       testSuites
