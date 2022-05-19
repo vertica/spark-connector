@@ -93,7 +93,13 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
     val fs = p.getFileSystem(new Configuration())
 
     val perms = fs.getFileStatus(p).getPermission
-    assert(perms.equals(new FsPermission("777")))
+
+    // Google Cloud Storage does not support file/dir permissions. Thus the GCS connector will always report
+    // permission as 700
+    if(path.startsWith("gs"))
+      assert(perms.equals(new FsPermission("700")))
+    else
+      assert(perms.equals(new FsPermission("777")))
   }
 
   it should "correctly read data from HDFS" in {
