@@ -296,8 +296,7 @@ object Main extends App {
     println(s"${result.suiteName} $status")
     if (testFailed) {
       result.testsFailed.foreach(failedTest => {
-        println(s" - FAILED: ${failedTest.testName}, message:")
-        println(s"  ${failedTest.message}")
+        println(s" - FAILED: ${failedTest.testName}")
       })
     }
     result.errCount

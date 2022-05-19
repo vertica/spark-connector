@@ -51,7 +51,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 
   private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
     jdbcLayer match {
-      case Some(layer) => if (layer.isClosed())Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
+      case Some(layer) => if (layer.isClosed()) Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
       case None => Some(new VerticaJdbcLayer(jdbcConfig))
     }
   }
