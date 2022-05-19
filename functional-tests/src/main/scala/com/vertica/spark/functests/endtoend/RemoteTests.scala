@@ -10,8 +10,8 @@ import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
 
-  // The super reference set master url to local, which takes highest precedence.
-  // Thus, we this suite unset it so the tests in here will be submitted to a driver.
+  // The super reference set master url to local, which forces them to run against a local instance.
+  // This suite uses a spark session without a master specified, giving control to the submitter.
   override lazy val spark: SparkSession = SparkSession.builder()
     .appName("Vertica Connector Test Prototype")
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")

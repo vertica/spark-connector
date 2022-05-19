@@ -51,10 +51,8 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 
   private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
     jdbcLayer match {
-      case Some(layer) =>
-        if (layer.isClosed())Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
-      case None =>
-        Some(new VerticaJdbcLayer(jdbcConfig))
+      case Some(layer) => if (layer.isClosed())Some(new VerticaJdbcLayer(jdbcConfig)) else jdbcLayer
+      case None => Some(new VerticaJdbcLayer(jdbcConfig))
     }
   }
 
@@ -103,7 +101,6 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
       case cfg: DistributedFilesystemWriteConfig =>
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
         val jdbcLayer = writeLayerJdbc.orNull
-        // val verticaVersion = VerticaVersionUtils.getVersion(writeLayerJdbc.get)
         val verticaVersion = VerticaVersion(11,1)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         //scalastyle:off
