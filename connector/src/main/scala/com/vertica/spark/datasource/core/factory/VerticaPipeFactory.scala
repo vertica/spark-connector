@@ -94,6 +94,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     }
   }
 
+  //scalastyle:off
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
     val thread = Thread.currentThread.getName + ": "
     logger.debug(thread + "Getting write pipe")
@@ -103,7 +104,6 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
         val jdbcLayer = writeLayerJdbc.orNull
         val verticaVersion = VerticaVersion(11,1)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
-        //scalastyle:off
         if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
@@ -118,9 +118,10 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
             schemaTools,
             new TableUtils(schemaTools, jdbcLayer)
           )
-        } //scalastyle:on
+        }
     }
   }
+  //scalastyle:on
 
   override def closeJdbcLayers(): Unit = {
     closeJdbcLayer(readLayerJdbc)

@@ -55,7 +55,7 @@ trait DSWriterInterface {
  */
 class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, jdbc: Boolean = false) extends DSWriterInterface {
   private val logger: Logger = LogProvider.getLogger(classOf[DSWriter])
-  private val thread = Thread.currentThread().getName +": "
+  private val thread = Thread.currentThread().getName + ": "
   logger.debug(thread + "Initializing writer")
 
   private val pipe = pipeFactory.getWritePipe(config)

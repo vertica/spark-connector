@@ -112,7 +112,7 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   */
 class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaWriterFactory])
-  private val thread = Thread.currentThread.getName +": "
+  private val thread = Thread.currentThread.getName + ": "
 /**
   * Called from the worker node to get the writer for that node
   *

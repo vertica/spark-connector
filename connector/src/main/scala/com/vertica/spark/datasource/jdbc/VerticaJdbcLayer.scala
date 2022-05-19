@@ -365,7 +365,9 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           logger.error(thread + err.getFullContext)
           true
         }, conn => conn.isClosed())
-      } else false
+      } else {
+        false
+      }
     } catch {
       case _ : Throwable => true
     }
