@@ -101,7 +101,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
-        val jdbcLayer = writeLayerJdbc.orNull
+        val jdbcLayer = writeLayerJdbc.get
         val verticaVersion = VerticaVersion(11,1)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
