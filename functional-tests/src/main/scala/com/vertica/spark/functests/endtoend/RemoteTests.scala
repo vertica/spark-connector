@@ -5,7 +5,7 @@ import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
 /**
- * Test suites for submitting to a remote driver.
+ * Test suites for submitting to a remote driver. This suite is meant to be configured with a master node when submitting.
  * */
 class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
