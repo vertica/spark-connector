@@ -51,6 +51,10 @@ trait ReadConfig {
   def setGroupBy(groupBy: Array[StructField]): Unit
 
   def setPushdownAgg(pushdownAgg: Boolean) : Unit
+
+  def setUseJson(use: Boolean): Unit
+
+  def useJson: Boolean
 }
 
 
@@ -109,6 +113,7 @@ final case class DistributedFilesystemReadConfig(
   private var groupBy: Array[StructField] = Array()
   private var aggPushedDown: Boolean = false
   private var requiredSchema: StructType = StructType(Nil)
+  private var useJsonForExport: Boolean = false
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
     this.pushdownFilters = pushdownFilters
@@ -125,6 +130,12 @@ final case class DistributedFilesystemReadConfig(
   override def setPushdownAgg(pushdownAgg: Boolean): Unit = {
     this.aggPushedDown = pushdownAgg
   }
+
+  override def setUseJson(use: Boolean): Unit = {
+    this.useJsonForExport = use
+  }
+
+  override def useJson: Boolean = this.useJsonForExport
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema

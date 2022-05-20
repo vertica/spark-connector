@@ -17,14 +17,15 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
-import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonScanNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
+import org.apache.spark.sql.execution.datasources.v2.json.JsonScan
 import org.apache.spark.sql.sources.Filter
+
+import java.util
 
 trait PushdownFilter {
   def getFilterString: String
@@ -74,7 +75,13 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
+    cfg.setUseJson(useJson(this.requiredSchema))
     new VerticaScan(cfg, readConfigSetup)
+  }
+
+  private def useJson(schema: StructType): Boolean = {
+    // Todo: parse required schema and return true if found complex type.
+    false
   }
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
@@ -163,6 +170,8 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
 
   def getConfig: ReadConfig = config
 
+  private var jsonScan: Option[JsonScan] = None
+
   /**
   * Schema of scan (can be different than full table schema)
   */
@@ -188,7 +197,15 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
-        case Some(partitionInfo) => partitionInfo.partitionSeq
+        case Some(partitionInfo) =>
+          if(config.useJson) {
+            // Todo: Initialize Spark data source v2 for json here
+            this.jsonScan = None
+            // Todo: return json partition
+            partitionInfo.partitionSeq
+          }  else {
+            partitionInfo.partitionSeq
+          }
       }
     }
   }
@@ -200,7 +217,14 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   * @return [[VerticaReaderFactory]]
   */
   override def createReaderFactory(): PartitionReaderFactory = {
-    new VerticaReaderFactory(config)
+    if(config.useJson){
+      jsonScan match {
+        case Some(scan) => scan.createReaderFactory()
+        case None => ErrorHandling.logAndThrowError(logger, JsonScanNotFound())
+      }
+    } else {
+      new VerticaReaderFactory(config)
+    }
   }
 }
 

@@ -12,7 +12,6 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
-import cats.data.NonEmptyList
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.complex.ComplexTypeUtils
@@ -20,7 +19,6 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, InternalMapNotSupported, NativeArrayReadNotSupported, NativeArrayWriteNotSupported, NoResultError}
 import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
 
-import java.util
 import scala.util.Try
 
 
@@ -88,12 +86,14 @@ object VerticaVersionUtils {
       else if (nativeArrayCols.nonEmpty)
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
       else Right()
-    } else {
+    } else if (version.lessThan(VerticaVersion(11))){
       // As of Vertica 11.x the EXPORT function does not support exporting complex types to parquet.
       if (complexTypeCols.nonEmpty)
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       else
         Right()
+    } else {
+      Right()
     }
   }
 }
@@ -103,6 +103,8 @@ case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotf
   def largerOrEqual(version: VerticaVersion): Boolean = this.compare(version) >= 0
 
   def lesserOrEqual(version: VerticaVersion): Boolean = this.compare(version) <= 0
+
+  def lessThan(version: VerticaVersion): Boolean = this.compare(version) < 0
 
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 
