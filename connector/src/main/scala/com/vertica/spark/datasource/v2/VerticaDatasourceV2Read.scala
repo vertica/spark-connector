@@ -21,9 +21,17 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonScanNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.catalyst.json.JSONOptionsInRead
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.connector.expressions.aggregate._
-import org.apache.spark.sql.execution.datasources.v2.json.JsonScan
+import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
+import org.apache.spark.sql.execution.datasources.v2.json.{JsonPartitionReaderFactory, JsonScan, JsonTable}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import org.apache.spark.util.SerializableConfiguration
 
 import java.util
 
@@ -75,8 +83,10 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    cfg.setUseJson(useJson(this.requiredSchema))
-    new VerticaScan(cfg, readConfigSetup)
+    if(config.useJson)
+      new VerticaJsonScan(cfg, readConfigSetup)
+    else
+      new VerticaScan(cfg, readConfigSetup)
   }
 
   private def useJson(schema: StructType): Boolean = {
@@ -170,8 +180,6 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
 
   def getConfig: ReadConfig = config
 
-  private var jsonScan: Option[JsonScan] = None
-
   /**
   * Schema of scan (can be different than full table schema)
   */
@@ -197,15 +205,7 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
-        case Some(partitionInfo) =>
-          if(config.useJson) {
-            // Todo: Initialize Spark data source v2 for json here
-            this.jsonScan = None
-            // Todo: return json partition
-            partitionInfo.partitionSeq
-          }  else {
-            partitionInfo.partitionSeq
-          }
+        case Some(partitionInfo) => partitionInfo.partitionSeq
       }
     }
   }
@@ -217,14 +217,7 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   * @return [[VerticaReaderFactory]]
   */
   override def createReaderFactory(): PartitionReaderFactory = {
-    if(config.useJson){
-      jsonScan match {
-        case Some(scan) => scan.createReaderFactory()
-        case None => ErrorHandling.logAndThrowError(logger, JsonScanNotFound())
-      }
-    } else {
       new VerticaReaderFactory(config)
-    }
   }
 }
 
@@ -296,3 +289,53 @@ class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends 
     }
   }
 }
+
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
+  private val logger = LogProvider.getLogger(classOf[VerticaScan])
+
+  private var jsonBatch: Option[Batch] = None
+
+  override def readSchema(): StructType = (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
+    case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) {
+      requiredSchema
+    } else {
+      schema
+    }
+    case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
+  }
+
+  override def planInputPartitions(): Array[InputPartition] = {
+    readConfigSetup
+      .performInitialSetup(config) match {
+      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
+      case Right(opt) => opt match {
+        case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
+        case Some(partitionInfo) =>
+          val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
+          val paths = List(partitionInfo.path)
+          val options = CaseInsensitiveStringMap.empty()
+          val schema = Some(config.getRequiredSchema)
+          val fallback = classOf[JsonFileFormat]
+          val jsonTable = JsonTable("Vertica Table", sparkSession, options , paths, schema, fallback)
+          val batch = jsonTable.newScanBuilder(options).build().toBatch
+          jsonBatch = Some(batch)
+          batch.planInputPartitions()
+      }
+    }
+  }
+
+  override def createReaderFactory(): PartitionReaderFactory = {
+    jsonBatch match {
+      case Some(batch) => batch.createReaderFactory()
+      //Todo: Error
+      case None => ErrorHandling.logAndThrowError(logger, null)
+    }
+  }
+
+  /**
+   * Returns this object as an instance of the Batch interface
+   */
+  override def toBatch: Batch = this
+
+}
+

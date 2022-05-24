@@ -446,6 +446,15 @@ object DSConfigSetupUtils {
     }
   }
 
+  def getJsonOption(config: Map[String, String]) : ValidationResult[Boolean] = {
+    Try {
+      config.getOrElse("json", "false").toBoolean
+    } match {
+      case Failure(_) => false.validNec
+      case Success(value) => value.validNec
+    }
+  }
+
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
     val user = DSConfigSetupUtils.getUser(config)
     val password = DSConfigSetupUtils.getPassword(config)
@@ -549,7 +558,8 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getFilePermissions(config),
       DSConfigSetupUtils.getMaxRowGroupSize(config),
       DSConfigSetupUtils.getMaxFileSize(config),
-      DSConfigSetupUtils.getTimeOperations(config)
+      DSConfigSetupUtils.getTimeOperations(config),
+      DSConfigSetupUtils.getJsonOption(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
       val pipe = pipeFactory.getReadPipe(initialConfig)
 

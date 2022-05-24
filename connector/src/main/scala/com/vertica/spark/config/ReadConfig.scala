@@ -107,13 +107,14 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = true
+                                                  timeOperations : Boolean = true,
+                                                  json: Boolean = false
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var groupBy: Array[StructField] = Array()
   private var aggPushedDown: Boolean = false
   private var requiredSchema: StructType = StructType(Nil)
-  private var useJsonForExport: Boolean = false
+  private var jsonRead: Boolean = false
 
   def setPushdownFilters(pushdownFilters: List[PushdownFilter]): Unit = {
     this.pushdownFilters = pushdownFilters
@@ -132,10 +133,10 @@ final case class DistributedFilesystemReadConfig(
   }
 
   override def setUseJson(use: Boolean): Unit = {
-    this.useJsonForExport = use
+    this.jsonRead = use
   }
 
-  override def useJson: Boolean = this.useJsonForExport
+  override def useJson: Boolean = this.jsonRead
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema
