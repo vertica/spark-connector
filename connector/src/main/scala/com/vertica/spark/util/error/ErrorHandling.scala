@@ -421,8 +421,8 @@ case class VerticaComplexTypeNotFound(typeId: Long) extends ConnectorError {
 case class VerticaNativeTypeNotFound(verticaId: Long) extends ConnectorError {
   override def getFullContext: String = s"Vertica type $verticaId not found in vertica types table."
 }
-case class JsonScanNotFound() extends ConnectorError {
-  override def getFullContext: String = s"Json scan was not created."
+case class JsonReaderNotFound() extends ConnectorError {
+  override def getFullContext: String = s"Json reader class has not been created."
 }
 
 case class EmptySchemaError() extends SchemaError {

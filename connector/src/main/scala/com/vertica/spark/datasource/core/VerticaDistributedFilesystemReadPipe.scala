@@ -129,7 +129,7 @@ class VerticaDistributedFilesystemReadPipe(
    *
    * @param partitionCount the number of partition to create
    * */
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int, path: String): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
     // If no data, return empty partition list
@@ -195,7 +195,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Add range count map info to partition
       partitions = partitions.map(part => part.copy(rangeCountMap = Some(rangeCountMap.toMap)))
 
-      PartitionInfo(partitions.toArray)
+      PartitionInfo(partitions.toArray, path)
     }
   }
 
@@ -239,7 +239,7 @@ class VerticaDistributedFilesystemReadPipe(
 
     def makeExportStatement(filePermissions: ValidFilePermissions, selectClause: String, groupbyClause: String, pushdownFilters: String, exportSource: String, exportToJson: Boolean) = {
       val typeString = if(exportToJson) "JSON" else "PARQUET"
-      "EXPORT TO " + typeString + " (" +
+      "EXPORT TO " + typeString + "(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
@@ -350,7 +350,7 @@ class VerticaDistributedFilesystemReadPipe(
           requestedPartitionCount
         }
 
-        partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
+        partitionInfo = getPartitionInfo(fileMetadata, partitionCount, hdfsPath)
 
         _ = partitionTimer.endTime()
 
@@ -371,16 +371,14 @@ class VerticaDistributedFilesystemReadPipe(
         cleanup
         Left(error)
       case Right(_) =>
-        if (config.useJson) {
+        if (config.json) {
           Right(PartitionInfo(Array.empty, hdfsPath))
-        }
-        else {
+        } else {
           partitionData
             .map(partitionInfo => {
               logger.info("Reading data from Parquet file.")
               partitionInfo
-            })
-            .left.map(error => {
+            }).left.map(error => {
             cleanup
             error
           })

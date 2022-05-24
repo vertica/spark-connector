@@ -86,7 +86,7 @@ object VerticaVersionUtils {
       else if (nativeArrayCols.nonEmpty)
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
       else Right()
-    } else if (version.lessThan(VerticaVersion(11))){
+    } else if (version.lessThan(VerticaVersion(11, 1))){
       // As of Vertica 11.x the EXPORT function does not support exporting complex types to parquet.
       if (complexTypeCols.nonEmpty)
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))

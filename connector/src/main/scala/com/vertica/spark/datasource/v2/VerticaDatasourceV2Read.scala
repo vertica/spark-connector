@@ -19,7 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonScanNotFound}
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonReaderNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.SparkSession
@@ -327,8 +327,7 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
   override def createReaderFactory(): PartitionReaderFactory = {
     jsonBatch match {
       case Some(batch) => batch.createReaderFactory()
-      //Todo: Error
-      case None => ErrorHandling.logAndThrowError(logger, null)
+      case None => ErrorHandling.logAndThrowError(logger, JsonReaderNotFound())
     }
   }
 

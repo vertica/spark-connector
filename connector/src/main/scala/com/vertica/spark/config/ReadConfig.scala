@@ -136,7 +136,7 @@ final case class DistributedFilesystemReadConfig(
     this.jsonRead = use
   }
 
-  override def useJson: Boolean = this.jsonRead
+  override def useJson: Boolean = this.json
 
   def getPushdownFilters: List[PushdownFilter] = this.pushdownFilters
   def getRequiredSchema: StructType = this.requiredSchema

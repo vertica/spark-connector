@@ -166,14 +166,12 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Error on reading arrays and rows" in {
-    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesReadSupport(rowsAndArraysSchema, VerticaVersion(i)) match {
+      VerticaVersionUtils.checkSchemaTypesReadSupport(rowsAndArraysSchema, VerticaVersion(11)) match {
         case Right(_) => fail
         case Left(err) =>
           assert(err.isInstanceOf[ComplexTypeReadNotSupported])
           assert(err.asInstanceOf[ComplexTypeReadNotSupported].colList.length == 2)
       }
-    })
   }
 
   it should "Allow reading native array on Vertica 11" in {
