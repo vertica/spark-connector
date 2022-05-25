@@ -16,7 +16,6 @@ package com.vertica.spark.datasource.fs
 import java.net.URI
 import java.util
 import java.util.Collections
-
 import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
 import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
@@ -28,10 +27,9 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{AWSAuth, AWSOptions, FileStoreConfig, LogProvider}
+import com.vertica.spark.config.{AWSOptions, FileStoreConfig, GCSOptions, LogProvider}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.hdfs.DistributedFileSystem
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.parquet.filter2.compat.FilterCompat
@@ -79,6 +77,7 @@ trait FileStoreLayerInterface {
 
   def getImpersonationToken(user: String) : ConnectorResult[String]
   def getAWSOptions: AWSOptions
+  def getGCSOptions: GCSOptions
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
@@ -142,6 +141,33 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
       .toEither
       .left.map(exception => CloseReadError(exception).context("Error closing read of parquet file from HDFS."))
   }
+}
+
+object GCSSparkOptions {
+  val GCS_HMAC_KEY_ID = "fs.gs.hmac.key.id"
+  val GCS_HMAC_KEY_SECRET = "fs.gs.hmac.key.secret"
+  val SERVICE_JSON_KEYFILE = "fs.gs.auth.service.account.json.keyfile"
+  val SERVICE_ACC_KEY_ID = "fs.gs.auth.service.account.private.key.id"
+  val SERVICE_ACC_KEY = "fs.gs.auth.service.account.private.key"
+  val SERVICE_ACC_EMAIL = "fs.gs.auth.service.account.email"
+}
+
+object GCSConnectorOptions {
+  val GCS_HMAC_KEY_ID = "gcs_hmac_key_id"
+  val GCS_HMAC_KEY_SECRET = "gcs_hmac_key_secret"
+  val SERVICE_JSON_KEYFILE = "gcs_service_keyfile"
+  val SERVICE_KEY_ID = "gcs_service_key_id"
+  val SERVICE_KEY = "gcs_service_key"
+  val SERVICE_EMAIL = "gcs_service_email"
+}
+
+object GCSEnvVars {
+  val GCS_HMAC_KEY_ID = "GCS_HMAC_KEY_ID"
+  val GCS_HMAC_KEY_SECRET = "GCS_HMAC_KEY_SECRET"
+  val SERVICE_JSON_KEYFILE = "GOOGLE_APPLICATION_CREDENTIALS"
+  val SERVICE_KEY_ID = "GCS_SERVICE_KEY_ID"
+  val SERVICE_KEY = "GCS_SERVICE_KEY"
+  val SERVICE_EMAIL = "GCS_SERVICE_EMAIL"
 }
 
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
@@ -214,6 +240,25 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
       hdfsConfig.set(S3_ENABLE_PATH_STYLE, enable.arg)
       logger.info(s"Loaded $S3_ENABLE_PATH_STYLE from ${enable.origin}")
     case None => logger.debug("Did not set AWS path style enabled flag, using default of false.")
+  }
+
+  private val gcsOptions = fileStoreConfig.gcsOptions
+  gcsOptions.gcsServiceKeyFile match {
+    case Some(auth) =>
+      hdfsConfig.set(GCSSparkOptions.SERVICE_JSON_KEYFILE, auth.arg)
+      logger.info(s"Loaded ${GCSSparkOptions.SERVICE_JSON_KEYFILE} from ${auth.origin}")
+    case None => logger.debug("Did not load GCS key file")
+  }
+
+  gcsOptions.gcsServiceAuth match {
+    case Some(auth) =>
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_KEY_ID, auth.serviceKeyId.arg)
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_KEY, auth.serviceKeySecret.arg)
+      hdfsConfig.set(GCSSparkOptions.SERVICE_ACC_EMAIL, auth.serviceEmail.arg)
+      logger.info(s"Loaded Google Cloud Storage service account key id from ${auth.serviceKeyId.origin}")
+      logger.info(s"Loaded Google Cloud Storage service account key secret from ${auth.serviceKeySecret.origin}")
+      logger.info(s"Loaded Google Cloud Storage service account key email from ${auth.serviceEmail.origin}")
+    case None => logger.info("Did not load Google Cloud Storage service account authentications")
   }
 
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
@@ -492,6 +537,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   override def getAWSOptions: AWSOptions = {
     this.fileStoreConfig.awsOptions
   }
+
+  override def getGCSOptions: GCSOptions = this.fileStoreConfig.gcsOptions
 
   private def useFileSystem[T](filename: String,
                                fsAction: (FileSystem, Path) => ConnectorResult[T]): ConnectorResult[T] = {

@@ -28,23 +28,29 @@ sealed trait Visibility
 case object Secret extends Visibility
 case object Visible extends Visibility
 
-case class AWSArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
+case class SensitiveArg[+T](visibility: Visibility, origin: ArgOrigin, arg: T) {
   override def toString: String = this.visibility match {
-    case Secret => s"AWSArg(${origin.toString}, *****)"
-    case Visible => s"AWSArg(${origin.toString}, ${arg.toString})"
+    case Secret => s"SensitiveArg(${origin.toString}, *****)"
+    case Visible => s"SensitiveArg(${origin.toString}, ${arg.toString})"
   }
 }
 
-case class AWSAuth(accessKeyId: AWSArg[String], secretAccessKey: AWSArg[String])
+case class AWSAuth(accessKeyId: SensitiveArg[String], secretAccessKey: SensitiveArg[String])
 
 case class AWSOptions(
                        awsAuth: Option[AWSAuth],
-                       awsRegion: Option[AWSArg[String]],
-                       awsSessionToken: Option[AWSArg[String]],
-                       awsCredentialsProvider: Option[AWSArg[String]],
-                       awsEndpoint: Option[AWSArg[String]],
-                       enableSSL: Option[AWSArg[String]],
-                       enablePathStyle: Option[AWSArg[String]])
+                       awsRegion: Option[SensitiveArg[String]],
+                       awsSessionToken: Option[SensitiveArg[String]],
+                       awsCredentialsProvider: Option[SensitiveArg[String]],
+                       awsEndpoint: Option[SensitiveArg[String]],
+                       enableSSL: Option[SensitiveArg[String]],
+                       enablePathStyle: Option[SensitiveArg[String]])
+
+case class GCSVerticaAuth(accessKeyId: SensitiveArg[String], accessKeySecret: SensitiveArg[String])
+
+case class GCSServiceAuth(serviceKeyId: SensitiveArg[String], serviceKeySecret: SensitiveArg[String], serviceEmail: SensitiveArg[String])
+
+case class GCSOptions(gcsVerticaAuth: Option[GCSVerticaAuth], gcsServiceKeyFile: Option[SensitiveArg[String]], gcsServiceAuth: Option[GCSServiceAuth])
 
 /**
  * Represents configuration for a filestore used by the connector.
@@ -53,9 +59,10 @@ case class AWSOptions(
  * @param baseAddress Address to use in the intermediate filesystem
  * @param sessionId Unique id for a given connector operation
  * @param preventCleanup A boolean that prevents cleanup if specified to true
- * @param AWSOptions Options that specify AWS credentials for using S3 storage
+ * @param awsOptions Options for configuring AWS S3 storage
+ * @param gcsOptions Options for configuring Google Cloud Storage
  */
-final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions) {
+final case class FileStoreConfig(baseAddress: String, sessionId: String, preventCleanup: Boolean, awsOptions: AWSOptions, gcsOptions: GCSOptions) {
   val defaultFS =
     if(baseAddress.startsWith("/")) {
       SparkSession.getActiveSession match {

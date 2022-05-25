@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -53,6 +54,9 @@ trait DSWriterInterface {
  * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for write.
  */
 class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSWriterInterface {
+  private val logger: Logger = LogProvider.getLogger(classOf[DSWriter])
+  private val thread = Thread.currentThread().getName + ": "
+  logger.debug(thread + "Initializing writer")
 
   private val pipe = pipeFactory.getWritePipe(config)
   private var blockSize = 0L

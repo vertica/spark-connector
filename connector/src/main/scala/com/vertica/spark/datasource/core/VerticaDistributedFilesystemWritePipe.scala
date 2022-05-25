@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.core
 
 import com.vertica.spark.config._
-import com.vertica.spark.datasource.core.factory.VerticaPipeFactory.readLayer
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.Timer
@@ -24,9 +23,8 @@ import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
-import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.StructType
 
 import scala.util.Try
@@ -258,21 +256,22 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
 
   }
 
-
   def inferExternalTableSchema(): ConnectorResult[String] = {
     val tableName = config.tablename.getFullTableName.replaceAll("\"","")
 
     val inferStatement =
       fileStoreLayer.getGlobStatus(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")) match {
         case Right(list) =>
-          val url: String =
+          val url: String = {
             if (list.nonEmpty) {
               EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/*.parquet")
             }
             else {
               EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet")
             }
-          "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
+          }
+          buildInferStatement(url, tableName)
+
         case Left(err) => err.getFullContext
       }
 
@@ -281,8 +280,8 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       case Left(err) => Left(InferExternalTableSchemaError(err))
       case Right(resultSet) =>
         try {
-          val iterate = resultSet.next
-          val createExternalTableStatement = resultSet.getString("INFER_EXTERNAL_TABLE_DDL")
+          resultSet.next
+          val createExternalTableStatement = resultSet.getString(1)
           val isPartitioned = inferStatement.contains(EscapeUtils.sqlEscape(s"${config.fileStoreConfig.externalTableAddress.stripSuffix("/")}/**/*.parquet"))
 
           if(!isPartitioned && !createExternalTableStatement.contains("varchar") && !createExternalTableStatement.contains("varbinary")) {
@@ -305,6 +304,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
         }
     }
   }
+
+  protected def buildInferStatement(url: String, tableName: String): String =
+    s"SELECT INFER_TABLE_DDL('$url' USING PARAMETERS format = 'parquet', table_name = '$tableName', table_type = 'external');"
 
   /**
    * Function to get column list to use for the operation
@@ -572,4 +574,20 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
     jdbcLayer.close()
     result
   }
+}
+
+/**
+ * With changes made in Vertica 11.1, this class contains implmentation to support previous Vertica versions.
+ *
+ * */
+class VerticaDistributedFilesystemWritePipeLegacy(override val config: DistributedFilesystemWriteConfig,
+                                                  override val fileStoreLayer: FileStoreLayerInterface,
+                                                  override val jdbcLayer: JdbcLayerInterface,
+                                                  override val schemaTools: SchemaToolsInterface,
+                                                  override val tableUtils: TableUtilsInterface,
+                                                  override val dataSize: Int = 1)
+  extends VerticaDistributedFilesystemWritePipe(config, fileStoreLayer, jdbcLayer, schemaTools, tableUtils, dataSize){
+
+  override protected def buildInferStatement(url: String, tableName: String): String =
+    "SELECT INFER_EXTERNAL_TABLE_DDL(" + "\'" + url + "\',\'" + tableName + "\')"
 }

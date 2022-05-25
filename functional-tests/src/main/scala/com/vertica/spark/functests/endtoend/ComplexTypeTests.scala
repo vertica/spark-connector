@@ -390,6 +390,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         .save()
 
       val jdbcLayer = new VerticaJdbcLayer(jdbcConfig)
+      jdbcLayer.configureSession(fsLayer)
       jdbcLayer.query(s"""select col2 from "$tableName";""") match {
         case Left(err) =>
           fail(err.getUnderlyingError.getFullContext)

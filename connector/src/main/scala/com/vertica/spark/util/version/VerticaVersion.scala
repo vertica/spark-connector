@@ -99,6 +99,11 @@ object VerticaVersionUtils {
 }
 
 case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
+
+  def largerOrEqual(version: VerticaVersion): Boolean = this.compare(version) >= 0
+
+  def lesserOrEqual(version: VerticaVersion): Boolean = this.compare(version) <= 0
+
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 
   override def compare(that: VerticaVersion): Int =

@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core.factory
 
+import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
@@ -21,7 +22,8 @@ import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsV10}
 import com.vertica.spark.util.table.TableUtils
-import com.vertica.spark.util.version.VerticaVersionUtils
+import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
+import org.apache.log4j.LogManager
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
@@ -42,10 +44,10 @@ trait VerticaPipeFactoryInterface {
  * Implementation of the vertica pipe factory
  */
 object VerticaPipeFactory extends VerticaPipeFactoryInterface {
-
+  private val logger = Logger(VerticaPipeFactory.getClass.getName)
   // Maintain a single copy of the read and write JDBC layers
-  private var readLayer: Option[VerticaJdbcLayer] = None
-  private var writeLayer: Option[VerticaJdbcLayer] = None
+  private var readLayerJdbc: Option[VerticaJdbcLayer] = None
+  private var writeLayerJdbc: Option[VerticaJdbcLayer] = None
 
   private def checkJdbcLayer(jdbcLayer: Option[VerticaJdbcLayer], jdbcConfig: JDBCConfig): Option[VerticaJdbcLayer] = {
     jdbcLayer match {
@@ -62,6 +64,8 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
+    val thread = Thread.currentThread.getName + ": "
+    logger.debug(thread + "Getting read pipe")
     config match {
       case cfg: DistributedFilesystemReadConfig =>
         val hadoopFileStoreLayer = new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
@@ -72,17 +76,17 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           }
           case _ => None
         })
-        readLayer = checkJdbcLayer(readLayer, cfg.jdbcConfig)
+        readLayerJdbc = checkJdbcLayer(readLayerJdbc, cfg.jdbcConfig)
         val sparkContext: Option[SparkContext] = SparkSession.getActiveSession match {
           case None => None
           case Some(session) => Some(session.sparkContext)
         }
 
-        val verticaVersion = VerticaVersionUtils.getVersion(readLayer.get)
+        val verticaVersion = VerticaVersionUtils.getVersion(readLayerJdbc.get)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
 
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
-          readLayer.get,
+          readLayerJdbc.get,
           schemaTools,
           new CleanupUtils,
           sparkContext = SparkContextWrapper(sparkContext)
@@ -90,26 +94,39 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     }
   }
 
+  //scalastyle:off
   override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
+    val thread = Thread.currentThread.getName + ": "
+    logger.debug(thread + "Getting write pipe")
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
-        writeLayer = checkJdbcLayer(writeLayer, cfg.jdbcConfig)
-        val verticaVersion = VerticaVersionUtils.getVersion(writeLayer.get)
+        writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
+        val jdbcLayer = writeLayerJdbc.get
+        val verticaVersion = VerticaVersion(11,1)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
-        new VerticaDistributedFilesystemWritePipe(cfg,
-          new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
-          writeLayer.get,
-          schemaTools,
-          new TableUtils(schemaTools, writeLayer.get)
-        )
+        if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
+          new VerticaDistributedFilesystemWritePipe(cfg,
+            new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
+            jdbcLayer,
+            schemaTools,
+            new TableUtils(schemaTools, jdbcLayer)
+          )
+        } else {
+          new VerticaDistributedFilesystemWritePipeLegacy(cfg,
+            new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
+            jdbcLayer,
+            schemaTools,
+            new TableUtils(schemaTools, jdbcLayer)
+          )
+        }
     }
   }
+  //scalastyle:on
 
   override def closeJdbcLayers(): Unit = {
-    closeJdbcLayer(readLayer)
-    closeJdbcLayer(writeLayer)
+    closeJdbcLayer(readLayerJdbc)
+    closeJdbcLayer(writeLayerJdbc)
   }
-
 }
 
 
