@@ -111,7 +111,8 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * This class is seriazlized and sent to each worker node. On the worker, createWriter will be called with a given unique id for the partition being written.
   */
 class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
-
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaWriterFactory])
+  private val thread = Thread.currentThread.getName + ": "
 /**
   * Called from the worker node to get the writer for that node
   *
@@ -122,6 +123,7 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
     val uniqueId : String = partitionId + "-" + taskId
     val writer = new DSWriter(config, uniqueId)
+    logger.debug(thread + "Creating writer")
     new VerticaBatchWriter(config, writer)
   }
 }
