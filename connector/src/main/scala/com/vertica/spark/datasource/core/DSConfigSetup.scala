@@ -25,6 +25,7 @@ import cats.data.Validated._
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPipeFactoryInterface}
+import com.vertica.spark.datasource.fs.{GCSConnectorOptions, GCSSparkOptions, GCSEnvVars}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
 
@@ -221,12 +222,12 @@ object DSConfigSetupUtils {
 
   def getAWSAuth(config: Map[String, String]): ValidationResult[Option[AWSAuth]] = {
     val visibility = Secret
-    val accessKeyIdOpt = getAWSArg(visibility)(
+    val accessKeyIdOpt = getSensitiveOption(visibility)(
       config,
       "aws_access_key_id",
       "spark.hadoop.fs.s3a.access.key",
       "AWS_ACCESS_KEY_ID").sequence
-    val secretAccessKeyOpt = getAWSArg(visibility)(
+    val secretAccessKeyOpt = getSensitiveOption(visibility)(
       config,
       "aws_secret_access_key",
       "spark.hadoop.fs.s3a.secret.key",
@@ -239,55 +240,123 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
-    val visibility = Visible
-    getAWSArgFromConnectorOption(visibility)(
+  def getGCSKeyFile(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
+    val visibility = Secret
+    getSensitiveOption(visibility)(
       config,
-      "aws_region",
-      _ => getAWSArgFromEnvVar(visibility)("AWS_DEFAULT_REGION"))
+      GCSConnectorOptions.SERVICE_JSON_KEYFILE,
+      GCSSparkOptions.SERVICE_JSON_KEYFILE,
+      GCSEnvVars.SERVICE_JSON_KEYFILE
+    )
   }
 
-  def getAWSSessionToken(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
-    getAWSArg(Secret)(
+  def getGCSServiceAccountAuth(config: Map[String, String]): ValidationResult[Option[GCSServiceAuth]] = {
+    val visibility = Secret
+
+    val keyIdFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_KEY_ID,
+      GCSSparkOptions.SERVICE_ACC_KEY_ID,
+      GCSEnvVars.SERVICE_KEY_ID
+    )
+
+    val keySecretFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_KEY,
+      GCSSparkOptions.SERVICE_ACC_KEY,
+      GCSEnvVars.SERVICE_KEY
+    )
+
+    val emailFound = getSensitiveOptionWithName(visibility)(
+      config,
+      GCSConnectorOptions.SERVICE_EMAIL,
+      GCSSparkOptions.SERVICE_ACC_EMAIL,
+      GCSEnvVars.SERVICE_EMAIL
+    )
+
+    val results = List(keyIdFound, keySecretFound, emailFound)
+    val invalids = results.filter(_.option.isInvalid)
+    if(invalids.isEmpty){
+      (keyIdFound.option.toOption.get, keySecretFound.option.toOption.get, emailFound.option.toOption.get)
+        .mapN(GCSServiceAuth).validNec
+    } else {
+      val found = results.filter(_.option.isValid).map(_.optionName)
+      val missing = invalids.map(_.optionName)
+      MissingGCSServiceAccountAuthentications(found, missing).invalidNec
+    }
+  }
+
+  def getVerticaGCSAuth(config: Map[String, String]): ValidationResult[Option[GCSVerticaAuth]] = {
+    val visibility = Secret
+    val accessKeyIdOpt = getSensitiveOption(visibility)(
+      config,
+      GCSConnectorOptions.GCS_HMAC_KEY_ID,
+      GCSSparkOptions.GCS_HMAC_KEY_ID,
+      GCSEnvVars.GCS_HMAC_KEY_ID).sequence
+
+    val secretAccessKeyOpt = getSensitiveOption(visibility)(
+      config,
+      GCSConnectorOptions.GCS_HMAC_KEY_SECRET,
+      GCSSparkOptions.GCS_HMAC_KEY_SECRET,
+      GCSEnvVars.GCS_HMAC_KEY_SECRET).sequence
+
+    (accessKeyIdOpt, secretAccessKeyOpt) match {
+      case (Some(accessKeyId), Some(secretAccessKey)) => (accessKeyId, secretAccessKey).mapN(GCSVerticaAuth).map(Some(_))
+      case (None, None) => None.validNec
+      case (None, _) => MissingGCSVerticaKeyId().invalidNec
+      case (_, None) => MissingGCSVerticaKeySecret().invalidNec
+    }
+  }
+
+  def getAWSRegion(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
+    val visibility = Visible
+    getSensitiveArgFromConnectorOptions(visibility)(
+      config,
+      "aws_region",
+      _ => getSensitiveArgFromEnvVar(visibility)("AWS_DEFAULT_REGION"))
+  }
+
+  def getAWSSessionToken(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
+    getSensitiveOption(Secret)(
       config,
       "aws_session_token",
       "spark.hadoop.fs.s3a.session.token",
       "AWS_SESSION_TOKEN")
   }
 
-  def getAWSCredentialsProvider(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+  def getAWSCredentialsProvider(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getAWSArgFromConnectorOption(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_credentials_provider",
-      _ => getAWSArgFromSparkConfig(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "spark.hadoop.fs.s3a.aws.credentials.provider", _ => None.validNec))
   }
 
-  def getAWSEndpoint(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+  def getAWSEndpoint(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getAWSArgFromConnectorOption(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_endpoint",
-      _ => getAWSArgFromSparkConfig(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "spark.hadoop.fs.s3a.endpoint", _ => None.validNec))
   }
 
-  def getAWSSSLEnabled(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+  def getAWSSSLEnabled(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getAWSArgFromConnectorOption(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_enable_ssl",
-      _ => getAWSArgFromSparkConfig(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "fs.s3a.connection.ssl.enabled", _ => None.validNec))
   }
 
-  def getAWSPathStyleEnabled(config: Map[String, String]): ValidationResult[Option[AWSArg[String]]] = {
+  def getAWSPathStyleEnabled(config: Map[String, String]): ValidationResult[Option[SensitiveArg[String]]] = {
     val visibility = Visible
-    getAWSArgFromConnectorOption(visibility)(
+    getSensitiveArgFromConnectorOptions(visibility)(
       config,
       "aws_enable_path_style",
-      _ => getAWSArgFromSparkConfig(visibility)(
+      _ => getSensitiveArgFromSparkConfigOptions(visibility)(
         "fs.s3a.path.style.access", _ => None.validNec))
   }
 
@@ -298,46 +367,63 @@ object DSConfigSetupUtils {
     }
   }
 
-  private def getAWSArg(visibility: Visibility)(
+  private def getSensitiveOption(visibility: Visibility)(
                  config: Map[String, String],
                  connectorOption: String,
                  sparkConfigOption: String,
                  envVar: String
-               ): ValidationResult[Option[AWSArg[String]]] = {
-      getAWSArgFromConnectorOption(visibility)(
+               ): ValidationResult[Option[SensitiveArg[String]]] = {
+      getSensitiveArgFromConnectorOptions(visibility)(
         config,
         connectorOption,
-        _ => getAWSArgFromSparkConfig(visibility)(
+        _ => getSensitiveArgFromSparkConfigOptions(visibility)(
           sparkConfigOption,
-          _ => getAWSArgFromEnvVar(visibility)(envVar)))
+          _ => getSensitiveArgFromEnvVar(visibility)(envVar)))
   }
 
-  private def getAWSArgFromConnectorOption(visibility: Visibility)(
+  case class SensitiveOptionFound(option: ValidationResult[Option[SensitiveArg[String]]], optionName: String)
+
+  /**
+   * Get the option and the its connector option name.
+   * */
+  private def getSensitiveOptionWithName(visibility: Visibility)(
     config: Map[String, String],
     connectorOption: String,
-    next: Unit => ValidationResult[Option[AWSArg[String]]]): ValidationResult[Option[AWSArg[String]]] = {
+    sparkConfigOption: String,
+    envVar: String
+  ): SensitiveOptionFound = {
+    SensitiveOptionFound(
+      getSensitiveOption(visibility)(config, connectorOption, sparkConfigOption, envVar),
+      connectorOption
+    )
+  }
+
+  private def getSensitiveArgFromConnectorOptions(visibility: Visibility)(
+    config: Map[String, String],
+    connectorOption: String,
+    next: Unit => ValidationResult[Option[SensitiveArg[String]]]): ValidationResult[Option[SensitiveArg[String]]] = {
     config.get(connectorOption) match {
-      case Some(token) => Some(AWSArg(visibility, ConnectorOption, token)).validNec
+      case Some(token) => Some(SensitiveArg(visibility, ConnectorOption, token)).validNec
       case None => next(())
     }
   }
 
-  private def getAWSArgFromSparkConfig(visibility: Visibility)(
+  private def getSensitiveArgFromSparkConfigOptions(visibility: Visibility)(
     sparkConfigOption: String,
-    next: Unit => ValidationResult[Option[AWSArg[String]]]): ValidationResult[Option[AWSArg[String]]] = {
+    next: Unit => ValidationResult[Option[SensitiveArg[String]]]): ValidationResult[Option[SensitiveArg[String]]] = {
     SparkSession.getActiveSession match {
       case Some(session) =>
         val sparkConf = session.sparkContext.getConf
         Try(sparkConf.get(sparkConfigOption)).toOption match {
-          case Some(token) => Some(AWSArg(visibility, SparkConf, token)).validNec
+          case Some(token) => Some(SensitiveArg(visibility, SparkConf, token)).validNec
           case None => next(())
         }
       case None => LoadConfigMissingSparkSessionError().invalidNec
     }
   }
 
-  private def getAWSArgFromEnvVar(visibility: Visibility)(envVar: String):  ValidationResult[Option[AWSArg[String]]] = {
-    sys.env.get(envVar).map(token => AWSArg(visibility, EnvVar, token)).validNec
+  private def getSensitiveArgFromEnvVar(visibility: Visibility)(envVar: String):  ValidationResult[Option[SensitiveArg[String]]] = {
+    sys.env.get(envVar).map(token => SensitiveArg(visibility, EnvVar, token)).validNec
   }
 
   def getKeyStorePath(config: Map[String, String]): ValidationResult[Option[String]] = {
@@ -484,17 +570,25 @@ object DSConfigSetupUtils {
   }
 
   def validateAndGetFilestoreConfig(config: Map[String, String], sessionId: String): DSConfigSetupUtils.ValidationResult[FileStoreConfig] = {
+    val awsOptions = (DSConfigSetupUtils.getAWSAuth(config),
+      DSConfigSetupUtils.getAWSRegion(config),
+      DSConfigSetupUtils.getAWSSessionToken(config),
+      DSConfigSetupUtils.getAWSCredentialsProvider(config),
+      DSConfigSetupUtils.getAWSEndpoint(config),
+      DSConfigSetupUtils.getAWSSSLEnabled(config),
+      DSConfigSetupUtils.getAWSPathStyleEnabled(config)
+      ).mapN(AWSOptions)
+
+    val gcsOptions = (DSConfigSetupUtils.getVerticaGCSAuth(config),
+      DSConfigSetupUtils.getGCSKeyFile(config),
+      DSConfigSetupUtils.getGCSServiceAccountAuth(config))
+      .mapN(GCSOptions)
+
     (DSConfigSetupUtils.getStagingFsUrl(config),
       sessionId.validNec,
       DSConfigSetupUtils.getPreventCleanup(config),
-      (DSConfigSetupUtils.getAWSAuth(config),
-        DSConfigSetupUtils.getAWSRegion(config),
-        DSConfigSetupUtils.getAWSSessionToken(config),
-        DSConfigSetupUtils.getAWSCredentialsProvider(config),
-        DSConfigSetupUtils.getAWSEndpoint(config),
-        DSConfigSetupUtils.getAWSSSLEnabled(config),
-        DSConfigSetupUtils.getAWSPathStyleEnabled(config)
-        ).mapN(AWSOptions)
+      awsOptions,
+      gcsOptions
       ).mapN(FileStoreConfig)
   }
 

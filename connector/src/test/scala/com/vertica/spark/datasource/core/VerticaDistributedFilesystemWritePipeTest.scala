@@ -15,7 +15,7 @@ package com.vertica.spark.datasource.core
 
 import java.sql.ResultSet
 import com.vertica.spark.common.TestObjects
-import com.vertica.spark.config.{AWSOptions, BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, TableName, ValidColumnList, ValidFilePermissions}
+import com.vertica.spark.config.{AWSOptions, BasicJdbcAuth, DistributedFilesystemWriteConfig, FileStoreConfig, GCSOptions, JDBCConfig, JDBCTLSConfig, TableName, ValidColumnList, ValidFilePermissions}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
@@ -941,7 +941,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "prevent cleanup of parquet files when prevent_cleanup set to true" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None, None, None))
     val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
 
     val expected = "COPY \"dummy\"  FROM 'hdfs://example-hdfs:8020/tmp/test/*.parquet' ON ANY NODE parquet REJECTED DATA AS TABLE \"dummy_id_COMMITS\" NO COMMIT"
@@ -970,7 +970,7 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
   }
 
   it should "prevent cleanup if startPartitionWrite returns an error" in {
-    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None))
+    val fsConfig: FileStoreConfig = FileStoreConfig("hdfs://example-hdfs:8020/tmp/", "test", true, AWSOptions(None, None, None, None, None, None, None), GCSOptions(None, None, None))
     val config = createWriteConfig().copy(fileStoreConfig = fsConfig)
     val uniqueId = "unique-id"
     val jdbcLayerInterface = mock[JdbcLayerInterface]

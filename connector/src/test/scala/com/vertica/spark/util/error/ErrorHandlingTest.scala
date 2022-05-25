@@ -362,4 +362,9 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       colList.map(_.name).mkString(", ")
     assert(NativeArrayReadNotSupported(colList, "1.2.3").getFullContext == expected5)
   }
+
+  it should "print GCS error message" in {
+    assert(MissingGCSServiceAccountAuthentications(List("1"), List("2","3")).getFullContext ==
+      s"Google Cloud Storage service account authentication found `1` but `2`, `3` were not specified")
+  }
 }
