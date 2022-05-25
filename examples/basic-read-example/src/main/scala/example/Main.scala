@@ -16,6 +16,16 @@ package example
 import java.sql.Connection
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.Config
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.mapred.FileSplit
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.json.JacksonParser
+import org.apache.spark.sql.connector.read.Batch
+import org.apache.spark.sql.execution.datasources.PartitionedFile
+import org.apache.spark.sql.execution.datasources.json.{JsonFileFormat, TextInputJsonDataSource}
+import org.apache.spark.sql.execution.datasources.v2.json.JsonTable
+import org.apache.spark.sql.types.{ArrayType, DoubleType, IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object Main {
@@ -35,6 +45,7 @@ object Main {
     // Entry-point to all functionality in Spark
     val spark = SparkSession.builder()
       .master("local[*]")
+      .config("spark.sql.sources.useV1SourceList", "")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 
@@ -43,15 +54,19 @@ object Main {
       val stmt = conn.createStatement
       val n = 20
       // Creates a table called dftest with an integer attribute
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
-      val insert = "insert into " + tableName + " values(2)"
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b array[array[int]], c row(float))")
+      val insert = "insert into " + tableName + " values(2, array[array[1,2], array[7,3]], row(4.2))"
       // Inserts 20 rows of the value '2' into dftest
       TestUtils.populateTableBySQL(stmt, insert, n)
       // Read dftest into a dataframe
+
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-        .options(readOpts + ("table" -> tableName))
+        .options(readOpts + ("table" -> tableName) + ("json" -> "true") + ("prevent_cleanup" -> "true"))
         .load()
       df.show()
+
+      // println(spark.read.json("webhdfs://hdfs:50070/data/59a43f7a_fca1_4b7f_9ca7_8e183ec9ea6a/dftest/").show)
+
     } finally {
       spark.close()
       conn.close()
