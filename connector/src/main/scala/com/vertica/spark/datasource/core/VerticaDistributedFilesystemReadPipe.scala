@@ -245,7 +245,9 @@ class VerticaDistributedFilesystemReadPipe(
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+        "') AS SELECT " + {
+        if (exportToJson) "*" else selectClause
+      } + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
     }
 
     def exportData: Either[ConnectorError, Unit] = {

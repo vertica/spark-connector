@@ -17,7 +17,7 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, JDBCConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonReaderNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
@@ -34,6 +34,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.util.SerializableConfiguration
 
 import java.util
+import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 trait PushdownFilter {
   def getFilterString: String
@@ -217,7 +218,7 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   * @return [[VerticaReaderFactory]]
   */
   override def createReaderFactory(): PartitionReaderFactory = {
-      new VerticaReaderFactory(config)
+    new VerticaReaderFactory(config)
   }
 }
 
@@ -295,14 +296,14 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
 
   private var jsonBatch: Option[Batch] = None
 
-  override def readSchema(): StructType = (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-    case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) {
-      requiredSchema
-    } else {
-      schema
-    }
-    case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
-  }
+  private val testSchema = StructType(Array(
+    StructField("a", LongType),
+    StructField("b", ArrayType(ArrayType(LongType))),
+    StructField("c", StructType(Array(StructField("f0", DoubleType))),
+    )))
+
+  //Todo: need to infer complex type schema from Vertica tables.
+  override def readSchema(): StructType = this.testSchema
 
   override def planInputPartitions(): Array[InputPartition] = {
     readConfigSetup
@@ -314,10 +315,12 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
           val paths = List(partitionInfo.path)
           val options = CaseInsensitiveStringMap.empty()
-          val schema = Some(config.getRequiredSchema)
+          val schema = Some(readSchema())
           val fallback = classOf[JsonFileFormat]
           val jsonTable = JsonTable("Vertica Table", sparkSession, options , paths, schema, fallback)
-          val batch = jsonTable.newScanBuilder(options).build().toBatch
+
+          val builderOpts = new CaseInsensitiveStringMap(Map(("path" -> partitionInfo.path)).asJava)
+          val batch = jsonTable.newScanBuilder(builderOpts).build().toBatch
           jsonBatch = Some(batch)
           batch.planInputPartitions()
       }
