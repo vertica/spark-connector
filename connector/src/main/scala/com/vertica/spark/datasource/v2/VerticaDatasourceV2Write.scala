@@ -87,7 +87,7 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    val writer = new DSWriter(config, "")
+    val writer = new DSWriter(config, "", isOnDriver = true)
     writer.commitRows() match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
@@ -122,7 +122,7 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   */
   override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
     val uniqueId : String = partitionId + "-" + taskId
-    val writer = new DSWriter(config, uniqueId)
+    val writer = new DSWriter(config, uniqueId, isOnDriver = false)
     logger.debug(thread + "Creating writer")
     new VerticaBatchWriter(config, writer)
   }

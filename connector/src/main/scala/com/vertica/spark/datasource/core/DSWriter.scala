@@ -52,13 +52,14 @@ trait DSWriterInterface {
  * @param config Configuration data definining the write operation.
  * @param uniqueId Unique identifier for this specific writer. The writer for each partition should have a different ID.
  * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for write.
+ * @param isOnDriver true if the writer will be executed by a driver.
  */
-class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSWriterInterface {
+class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, isOnDriver: Boolean) extends DSWriterInterface {
   private val logger: Logger = LogProvider.getLogger(classOf[DSWriter])
   private val thread = Thread.currentThread().getName + ": "
   logger.debug(thread + "Initializing writer")
 
-  private val pipe = pipeFactory.getWritePipe(config, false)
+  private val pipe = pipeFactory.getWritePipe(config, isOnDriver)
   private var blockSize = 0L
 
   private var data = List[InternalRow]()

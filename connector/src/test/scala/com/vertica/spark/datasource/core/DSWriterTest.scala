@@ -69,7 +69,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
 
     checkResult(writer.openWrite())
 
@@ -94,7 +94,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
 
     checkResult(writer.openWrite())
 
@@ -120,7 +120,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
 
     checkResult(writer.openWrite())
 
@@ -138,7 +138,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipeFactory = mock[VerticaPipeFactoryInterface]
     (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
 
     writer.openWrite() match {
       case Right(_) => fail
@@ -153,7 +153,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
     (pipeFactory.closeJdbcLayers _).expects().returning(())
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
     checkResult(writer.commitRows())
   }
 }
