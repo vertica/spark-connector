@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.query.ColumnsTable
+import com.vertica.spark.util.query.{ColumnsTable, ComplexTypesTable}
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
@@ -395,7 +395,7 @@ class SchemaTools extends SchemaToolsInterface {
     val elementId = if (isSet) verticaTypeId - VERTICA_SET_BASE_ID else id
     val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
     val elementDef = if (isNativeArray) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
-    else getNestedArrayElementDef(verticaTypeId, jdbcLayer)
+    else f1(verticaTypeId, jdbcLayer)
     fillArrayColumnDef(arrayColDef, elementDef, isSet)
   }
 
@@ -446,6 +446,26 @@ class SchemaTools extends SchemaToolsInterface {
     }
 
     getNestedElementDef(verticaType, jdbcLayer, 0)
+  }
+
+  private def f1(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val complexTypeTable = new ComplexTypesTable(jdbcLayer)
+
+    @tailrec
+    def recursion(verticaType: Long, depth: Int): ConnectorResult[ColumnDef] = {
+      complexTypeTable.findComplexType(verticaType) match {
+        case Left(value) => Left(value)
+        case Right(result) =>
+          if (result.fieldTypeName.startsWith("_ct_")) {
+            recursion(result.fieldId, depth + 1)
+          } else {
+            // Once the element type is found, query from types table
+            queryVerticaPrimitiveDef(result.fieldId, depth, jdbcLayer)
+          }
+      }
+    }
+
+    recursion(verticaType, 0)
   }
 
   private def queryVerticaPrimitiveDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
