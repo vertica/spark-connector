@@ -67,7 +67,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
     val writer = new DSWriter(config, "unique-id", pipeFactory)
 
@@ -92,7 +92,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
     val writer = new DSWriter(config, "unique-id", pipeFactory)
 
@@ -118,7 +118,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (pipe.writeData _).expects(dataBlock2).returning(Right(()))
     (pipe.endPartitionWrite _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
     val writer = new DSWriter(config, "unique-id", pipeFactory)
 
@@ -136,7 +136,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipe = mock[DummyWritePipe]
     (pipe.getDataBlockSize _).expects().returning(Left(MissingSchemaError()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
 
     val writer = new DSWriter(config, "unique-id", pipeFactory)
 
@@ -150,7 +150,7 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipe = mock[DummyWritePipe]
     (pipe.commit _).expects().returning(Right())
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
     (pipeFactory.closeJdbcLayers _).expects().returning(())
 
     val writer = new DSWriter(config, "unique-id", pipeFactory)

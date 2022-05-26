@@ -58,7 +58,7 @@ class DSWriter(config: WriteConfig, uniqueId: String, pipeFactory: VerticaPipeFa
   private val thread = Thread.currentThread().getName + ": "
   logger.debug(thread + "Initializing writer")
 
-  private val pipe = pipeFactory.getWritePipe(config)
+  private val pipe = pipeFactory.getWritePipe(config, false)
   private var blockSize = 0L
 
   private var data = List[InternalRow]()

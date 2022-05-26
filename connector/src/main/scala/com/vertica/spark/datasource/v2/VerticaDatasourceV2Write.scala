@@ -81,7 +81,7 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory(config)
 
 /**
-  * Responsible for commiting the write operation.
+  * Responsible for committing the write operation.
   *
   * @param writerCommitMessages list of commit messages returned from each worker node
   * Called after all worker nodes report that they have succesfully completed their operations.
