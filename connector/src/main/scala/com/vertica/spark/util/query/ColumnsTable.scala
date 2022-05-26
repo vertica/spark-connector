@@ -6,16 +6,16 @@ import com.vertica.spark.util.error.VerticaColumnNotFound
 
 import java.sql.ResultSet
 
-case class ColumnsTableRow(dataTypeId: Long, dataType: String)
+case class ColumnInfo(dataTypeId: Long, dataType: String)
 
-class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnsTableRow](jdbc = jdbcLayer) {
+class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInfo](jdbc = jdbcLayer) {
 
   override def tableName: String = "columns"
 
   override def columns: Seq[String] = List("data_type_id", "data_type")
 
-  override def buildRow(resultSet: ResultSet): ColumnsTableRow = {
-    ColumnsTableRow(
+  override def buildRow(resultSet: ResultSet): ColumnInfo = {
+    ColumnInfo(
       resultSet.getLong(1),
       getTypeName(resultSet.getString(2)),
     )
@@ -33,7 +33,7 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnsTa
       .head
   }
 
-  def getColumnType(columnName: String, tableName: String, schema: String): ConnectorResult[ColumnsTableRow] = {
+  def getColumnType(columnName: String, tableName: String, schema: String): ConnectorResult[ColumnInfo] = {
     val schemaCond = if(schema.nonEmpty) s" AND table_schema='$schema'" else ""
     val conditions = s"table_name='$tableName'$schemaCond AND column_name='$columnName'"
     selectWhere(conditions) match {
@@ -46,7 +46,7 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnsTa
     }
   }
 
-  def find(columnName: String, tableName: String): ConnectorResult[ColumnsTableRow] = {
+  def find(columnName: String, tableName: String): ConnectorResult[ColumnInfo] = {
     getColumnType(columnName, tableName, "")
   }
 }

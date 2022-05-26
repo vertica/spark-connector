@@ -6,18 +6,18 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import java.sql.ResultSet
 
-case class ComplexTypesTableRow(fieldTypeName: String, typeId: Long, fieldId: Long, numericScale: String)
+case class ComplexTypeInfo(fieldTypeName: String, typeId: Long, fieldId: Long, numericScale: String)
 
-class ComplexTypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ComplexTypesTableRow](jdbc = jdbcLayer){
+class ComplexTypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ComplexTypeInfo](jdbc = jdbcLayer){
 
   override protected def tableName: String = "complex_types"
 
   override protected def columns: Seq[String] = List("field_type_name", "type_id", "field_id", "numeric_scale")
 
-  override protected def buildRow(rs: ResultSet): ComplexTypesTableRow =
-    ComplexTypesTableRow(rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getString(4))
+  override protected def buildRow(rs: ResultSet): ComplexTypeInfo =
+    ComplexTypeInfo(rs.getString(1), rs.getLong(2), rs.getLong(3), rs.getString(4))
 
-  def findComplexType(verticaTypeId: Long): ConnectorResult[ComplexTypesTableRow] = {
+  def findComplexTypeInfo(verticaTypeId: Long): ConnectorResult[ComplexTypeInfo] = {
     val conditions = s"type_id=$verticaTypeId"
     selectWhere(conditions) match {
       case Left(error) => Left(error)

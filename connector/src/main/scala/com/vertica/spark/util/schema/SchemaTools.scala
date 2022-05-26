@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.query.{ColumnsTable, ComplexTypesTable}
+import com.vertica.spark.util.query.{ColumnsTable, ComplexTypesTable, TypesTable}
 import com.vertica.spark.util.schema.SchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_PRIMITIVES_MAX_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
@@ -394,7 +394,7 @@ class SchemaTools extends SchemaToolsInterface {
     // Set id = 2700 + primitive type id
     val elementId = if (isSet) verticaTypeId - VERTICA_SET_BASE_ID else id
     val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
-    val elementDef = if (isNativeArray) queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
+    val elementDef = if (isNativeArray) function2(elementId, 0, jdbcLayer)
     else f1(verticaTypeId, jdbcLayer)
     fillArrayColumnDef(arrayColDef, elementDef, isSet)
   }
@@ -453,14 +453,14 @@ class SchemaTools extends SchemaToolsInterface {
 
     @tailrec
     def recursion(verticaType: Long, depth: Int): ConnectorResult[ColumnDef] = {
-      complexTypeTable.findComplexType(verticaType) match {
+      complexTypeTable.findComplexTypeInfo(verticaType) match {
         case Left(value) => Left(value)
         case Right(result) =>
           if (result.fieldTypeName.startsWith("_ct_")) {
             recursion(result.fieldId, depth + 1)
           } else {
             // Once the element type is found, query from types table
-            queryVerticaPrimitiveDef(result.fieldId, depth, jdbcLayer)
+            function2(result.fieldId, depth, jdbcLayer)
           }
       }
     }
@@ -477,6 +477,14 @@ class SchemaTools extends SchemaToolsInterface {
         Right(makeArrayElementDef(jdbcType, typeName, depth))
       },
       (_) => Left(VerticaNativeTypeNotFound(verticaType)))
+  }
+
+  private def function2(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    new TypesTable(jdbcLayer).getVerticaTypeInfo(verticaType) match {
+      case Left(error) => Left(error)
+      case Right(typeInfo) =>
+        Right(makeArrayElementDef(typeInfo.jdbcType.toInt, typeInfo.typeName, depth))
+    }
   }
 
   protected def makeArrayElementDef(jdbcType: Int, typeName: String, depth: Int): ColumnDef = {

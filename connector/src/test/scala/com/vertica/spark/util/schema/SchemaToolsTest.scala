@@ -22,6 +22,7 @@ import com.vertica.spark.config.{TableName, TableQuery}
 import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.query.VerticaTableTests.mockGetColumnInfo
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -67,7 +68,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     (rsmd.isNullable _).expects(col.index).returning(if(col.nullable) ResultSetMetaData.columnNullable else ResultSetMetaData.columnNoNulls)
   }
 
-  private[schema] def mockColumnCount(rsmd: ResultSetMetaData, count: Int) = {
+  private[schema] def mockColumnCount(rsmd: ResultSetMetaData, count: Int): Unit = {
     (rsmd.getColumnCount _).expects().returning(count)
   }
 
@@ -407,14 +408,16 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef)
-
-    val verticaArrayType = 1506
-    val tableName = tablename.getFullTableName.replace("\"", "")
-    mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
-    val mockRs1 = mockQueryTypes(verticaArrayType, hasData = true,jdbcLayer)
-    (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
-    (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
     mockColumnCount(rsmd, 1)
+
+    val verticaType = 1506
+    val tableName = tablename.getFullTableName.replace("\"", "")
+    val (jdbc, rs) = mockGetColumnInfo(testColDef.name, tableName, "",verticaType, testColDef.colTypeName, jdbcLayer)
+
+    // mockQueryColumns(tableName, testColDef.name,verticaArrayType, jdbcLayer)
+    // val mockRs1 = mockQueryTypes(verticaArrayType, hasData = true,jdbcLayer)
+    // (mockRs1.getLong: (String) => Long).expects("jdbc_type").returns(java.sql.Types.BIGINT)
+    // (mockRs1.getString: (String)=>String).expects("type_name").returns("Integer")
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(error) =>  fail(error.getFullContext)
