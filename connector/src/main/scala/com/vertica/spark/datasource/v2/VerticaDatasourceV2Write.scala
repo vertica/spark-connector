@@ -48,7 +48,7 @@ class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigS
   * @return [[VerticaBatchWrite]]
   */
   override def buildForBatch(): BatchWrite = {
-    new VerticaBatchWrite(config, writeSetupInterface)
+    new VerticaBatchWrite(config, writeSetupInterface, new DSWriter(config, "", isOnDriver = true))
   }
 
   def truncate: WriteBuilder = {
@@ -63,7 +63,7 @@ class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigS
   *
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
-class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends BatchWrite {
+class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig], driverWriter: DSWriterInterface) extends BatchWrite {
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
@@ -85,11 +85,11 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * Responsible for committing the write operation.
   *
   * @param writerCommitMessages list of commit messages returned from each worker node
-  * Called after all worker nodes report that they have succesfully completed their operations.
+  * Called after all worker nodes report that they have successfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    val writer = new DSWriter(config, "", VerticaPipeFactory, isOnDriver = true)
-    writer.commitRows() match {
+//    val writer = new DSWriter(config, "", VerticaPipeFactory, isOnDriver = true)
+    driverWriter.commitRows() match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
     }
