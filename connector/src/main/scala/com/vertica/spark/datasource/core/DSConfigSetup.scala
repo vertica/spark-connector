@@ -740,7 +740,7 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
    * @return None, partitioning info not needed for write operation.
    */
   override def performInitialSetup(config: WriteConfig): ConnectorResult[Option[PartitionInfo]] = {
-    val pipe = pipeFactory.getWritePipe(config)
+    val pipe = pipeFactory.getWritePipe(config, true)
     pipe.doPreWriteSteps() match {
       case Left(err) => Left(err)
       case Right(_) => Right(None)

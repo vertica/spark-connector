@@ -14,6 +14,7 @@
 package com.vertica.spark.datasource.core
 
 import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.common.TestObjects
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
@@ -21,6 +22,7 @@ import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 
@@ -31,6 +33,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   override def afterAll(): Unit = {
   }
 
+  val writeConfig: DistributedFilesystemWriteConfig = TestObjects.writeConfig
 
   // Parses config expecting success
   // Calling test with fail if an error is returned
@@ -691,6 +694,62 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       }
     } finally {
       spark.close()
+    }
+  }
+
+  /**
+   * Dummy class to instantiate mock object
+   * */
+  class TestWritePipe extends VerticaPipeWriteInterface with VerticaPipeInterface {
+    /**
+     * Initial setup for the whole write operation. Called by driver.
+     */
+    override def doPreWriteSteps(): ConnectorResult[Unit] = ???
+
+    /**
+     * Initial setup for the write of an individual partition. Called by executor.
+     *
+     * @param uniqueId Unique identifier for the partition being written
+     */
+    override def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = ???
+
+    /**
+     * Write a block of data to the underlying source. Called by executor.
+     */
+    override def writeData(data: DataBlock): ConnectorResult[Unit] = ???
+
+    /**
+     * Ends the write, doing any necessary cleanup. Called by executor once writing of the given partition is done.
+     */
+    override def endPartitionWrite(): ConnectorResult[Unit] = ???
+
+    /**
+     * Commits the data being written. Called by the driver once all executors have succeeded writing.
+     */
+    override def commit(): ConnectorResult[Unit] = ???
+
+    /**
+     * Retrieve any needed metadata for a table needed to inform the configuration of the operation.
+     *
+     * Can include schema and things like node information / segmentation -- should have caching mechanism
+     */
+    override def getMetadata: ConnectorResult[VerticaMetadata] = ???
+
+    /**
+     * Returns the default number of rows to read/write from this pipe at a time.
+     */
+    override def getDataBlockSize: ConnectorResult[Long] = ???
+  }
+
+  it should "perform initial setup" in {
+    val pipeFactoryMock = mock[VerticaPipeFactoryInterface]
+    val writePipeMock = mock[TestWritePipe]
+    (pipeFactoryMock.getWritePipe _).expects(writeConfig, true).returning(writePipeMock)
+    (writePipeMock.doPreWriteSteps _).expects().returning(Right())
+    new DSWriteConfigSetup(Some(new StructType), pipeFactoryMock).performInitialSetup(writeConfig) match {
+      case Left(value) => fail("Expected to succeed: " + value.getFullContext)
+      case Right(result) =>
+        assert(result == None)
     }
   }
 }

@@ -35,7 +35,7 @@ import org.apache.spark.sql.SparkSession
 trait VerticaPipeFactoryInterface {
   def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
 
-  def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface
+  def getWritePipe(config: WriteConfig, getVersion: Boolean): VerticaPipeInterface with VerticaPipeWriteInterface
 
   def closeJdbcLayers(): Unit
 }
@@ -95,14 +95,15 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
   }
 
   //scalastyle:off
-  override def getWritePipe(config: WriteConfig): VerticaPipeInterface with VerticaPipeWriteInterface = {
+  override def getWritePipe(config: WriteConfig, getVersion: Boolean): VerticaPipeInterface with VerticaPipeWriteInterface = {
     val thread = Thread.currentThread.getName + ": "
     logger.debug(thread + "Getting write pipe")
     config match {
       case cfg: DistributedFilesystemWriteConfig =>
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
         val jdbcLayer = writeLayerJdbc.get
-        val verticaVersion = VerticaVersion(11,1)
+//        This check is done so that executor won't create a jdbc connection through lazy init.
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(jdbcLayer) else VerticaVersion(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
