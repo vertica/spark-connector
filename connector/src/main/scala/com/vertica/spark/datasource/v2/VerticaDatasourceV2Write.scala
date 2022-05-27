@@ -15,10 +15,11 @@ package com.vertica.spark.datasource.v2
 
 import cats.data.Validated.{Invalid, Valid}
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{LogProvider, WriteConfig, DistributedFilesystemWriteConfig}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, LogProvider, WriteConfig}
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactory
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface, ExistingData, NewData}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
-import com.vertica.spark.util.error.{NonEmptyDataFrameError, JobAbortedError}
+import com.vertica.spark.util.error.{JobAbortedError, NonEmptyDataFrameError}
 import com.vertica.spark.util.general.Utils
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -87,7 +88,7 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * Called after all worker nodes report that they have succesfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    val writer = new DSWriter(config, "", isOnDriver = true)
+    val writer = new DSWriter(config, "", VerticaPipeFactory, isOnDriver = true)
     writer.commitRows() match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
