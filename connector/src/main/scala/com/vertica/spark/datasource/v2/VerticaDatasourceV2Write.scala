@@ -88,7 +88,6 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * Called after all worker nodes report that they have successfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-//    val writer = new DSWriter(config, "", VerticaPipeFactory, isOnDriver = true)
     driverWriter.commitRows() match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
