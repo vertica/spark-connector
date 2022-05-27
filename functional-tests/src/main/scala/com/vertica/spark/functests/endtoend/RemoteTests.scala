@@ -14,6 +14,7 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
   // This suite uses a spark session without a master specified, giving control to the submitter.
   override lazy val spark: SparkSession = SparkSession.builder()
     .appName("Vertica Connector Test Prototype")
+    .master("local[4]")
     .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .getOrCreate()
@@ -68,6 +69,7 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
     } finally {
       stmt.close()
     }
+    stmt.execute("drop table dftest;")
   }
 
 }
