@@ -150,10 +150,10 @@ class DSWriterTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val pipe = mock[DummyWritePipe]
     (pipe.commit _).expects().returning(Right())
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getWritePipe _).expects(*, false).returning(pipe)
+    (pipeFactory.getWritePipe _).expects(*, true).returning(pipe)
     (pipeFactory.closeJdbcLayers _).expects().returning(())
 
-    val writer = new DSWriter(config, "unique-id", pipeFactory, false)
+    val writer = new DSWriter(config, "unique-id", pipeFactory, true)
     checkResult(writer.commitRows())
   }
 }
