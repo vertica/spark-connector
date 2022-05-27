@@ -104,7 +104,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
@@ -173,7 +173,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
@@ -337,7 +337,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 

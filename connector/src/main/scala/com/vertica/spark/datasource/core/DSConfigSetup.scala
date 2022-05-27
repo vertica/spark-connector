@@ -645,7 +645,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
       DSConfigSetupUtils.getMaxFileSize(config),
       DSConfigSetupUtils.getTimeOperations(config)
     ).mapN(DistributedFilesystemReadConfig).andThen { initialConfig =>
-      val pipe = pipeFactory.getReadPipe(initialConfig)
+      val pipe = pipeFactory.getReadPipe(initialConfig, true)
 
       // Then, retrieve metadata
       val metadata = pipe.getMetadata
@@ -669,7 +669,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    * @return List of partitioning information for the operation to pass down to readers, or error that occured in setup.
    */
   override def performInitialSetup(config: ReadConfig): ConnectorResult[Option[PartitionInfo]] = {
-    pipeFactory.getReadPipe(config).doPreReadSteps() match {
+    pipeFactory.getReadPipe(config, true).doPreReadSteps() match {
       case Right(partitionInfo) => Right(Some(partitionInfo))
       case Left(err) => Left(err)
     }
