@@ -86,7 +86,7 @@ jobs:
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c './submit-functional-tests.sh '-r -s RemoteTests'
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c './submit-functional-tests.sh "-r -s RemoteTests"'
         env:
           HADOOP_VERSION: "3.3.0"
           SPARK_VERSION: "3.2.1"
