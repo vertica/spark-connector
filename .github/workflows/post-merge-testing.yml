@@ -89,6 +89,11 @@ jobs:
         run: docker build -t client ./docker
       - name: Run docker compose
         run: cd docker && docker-compose up -d
+        env:
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          HADOOP_VERSION: "3.3.1"
+          SPARK_VERSION: "3.2.0"
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
@@ -113,11 +118,6 @@ jobs:
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
         run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c "./submit-functional-tests.sh"
-        env:
-          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-          HADOOP_VERSION: "3.3.1"
-          SPARK_VERSION: "3.2.0"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-integration-tests_gcs:
