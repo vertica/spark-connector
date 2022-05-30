@@ -297,7 +297,6 @@ class SchemaTools extends SchemaToolsInterface {
                       case java.sql.Types.ARRAY | java.sql.Types.STRUCT => Left(QueryReturnsComplexTypes(columnLabel, typeName, query.query))
                       case _ => Right(colDef)
                     }
-                  case _ => Right(colDef)
                 }
               }).toList
           colDefsOrErrors
@@ -801,7 +800,7 @@ class SchemaToolsV10 extends SchemaTools {
               val unQuotedName = tb.getTableName.replaceAll("\"", "")
               val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
               checkForComplexType(col, unQuotedName, unQuotedDbSchema, jdbcLayer)
-            case _ => Right(col)
+            case TableQuery(_,_) => Right(col)
           }
         )
           .toList
