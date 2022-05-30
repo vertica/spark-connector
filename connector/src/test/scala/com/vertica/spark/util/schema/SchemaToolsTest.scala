@@ -108,6 +108,26 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
+  it should "fail when query's schema contains complex types" in {
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
+    val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
+
+    // Schema
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.STRUCT, "STRUCT", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 3)
+
+    (new SchemaTools).readSchema(jdbcLayer, query) match {
+      case Left(err) =>
+        assert(err.isInstanceOf[ErrorList])
+        assert(err.asInstanceOf[ErrorList].errors.length == 2)
+        err.asInstanceOf[ErrorList].errors.map(err => assert(err.isInstanceOf[QueryReturnsComplexTypes]))
+        succeed
+      case Right(schema) => fail("Expected to fail")
+    }
+  }
+
   it should "parse a multi-column schema" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
 
