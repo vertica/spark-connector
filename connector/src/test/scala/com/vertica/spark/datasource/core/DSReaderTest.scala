@@ -63,7 +63,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, false).returning(mockPipe)
 
 
     val reader = new DSReader(config, partition, pipeFactory)
@@ -126,7 +126,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     (mockPipe.readData _).expects().returning(Left(DoneReading()))
     (mockPipe.endPartitionRead _).expects().returning(Right(()))
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, false).returning(mockPipe)
 
 
     val reader = new DSReader(config, partition, pipeFactory)
@@ -181,7 +181,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
     val mockPipe = mock[DummyReadPipe]
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, false).returning(mockPipe)
 
     val reader = new DSReader(config, partition, pipeFactory)
 
@@ -196,7 +196,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
     val mockPipe = mock[DummyReadPipe]
 
     val pipeFactory = mock[VerticaPipeFactoryInterface]
-    (pipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+    (pipeFactory.getReadPipe _).expects(*, false).returning(mockPipe)
 
     val reader = new DSReader(config, partition, pipeFactory)
     (mockPipe.startPartitionRead _).expects(partition).returning(Left(InitialSetupPartitioningError()))
