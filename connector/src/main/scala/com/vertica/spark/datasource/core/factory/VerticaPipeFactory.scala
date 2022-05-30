@@ -105,7 +105,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
 //        This check is done so that executor won't create a jdbc connection through lazy init.
         val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(jdbcLayer) else VerticaVersion(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
-        if(verticaVersion.largerOrEqual(VerticaVersion(11,1))){
+        if(verticaVersion.largerOrEqual(VerticaVersion(11,1,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
             jdbcLayer,
