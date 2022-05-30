@@ -68,9 +68,9 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
     } catch {
       case exception: Exception => fail("Unexpected exception", exception)
     } finally {
+      stmt.execute("drop table dftest;")
       stmt.close()
     }
-    stmt.execute("drop table dftest;")
   }
 
 }
