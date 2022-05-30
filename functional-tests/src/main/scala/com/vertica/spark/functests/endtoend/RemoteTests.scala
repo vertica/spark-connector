@@ -46,7 +46,7 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
       rs = stmt.executeQuery(query)
       assert(rs.next)
       val sessionCountWrite = rs.getLong(1)
-      // We expect only 2 new jdbc connections made
+      // We expect only 2 new jdbc connections made on write
       assert(sessionCountWrite == initialJdbcSessionCount + 2)
 
       spark.read.format("com.vertica.spark.datasource.VerticaSource")
@@ -61,6 +61,8 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
       rs = stmt.executeQuery(query)
       assert(rs.next)
       val sessionCountRead = rs.getLong(1)
+      // We expect only 2 new jdbc connections made on read.
+      // + 4 since write was done before this.
       assert(sessionCountRead == initialJdbcSessionCount + 4)
 
     } catch {
