@@ -99,7 +99,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     (new SchemaTools).readSchema(jdbcLayer, query) match {
-      case Left(err) => fail(err.toString())
+      case Left(err) => fail(err.getFullContext)
       case Right(schema) =>
         val field = schema.fields(0)
         assert(field.name == "col1")

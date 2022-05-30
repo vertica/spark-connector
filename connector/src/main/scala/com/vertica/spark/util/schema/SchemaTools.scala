@@ -292,6 +292,11 @@ class SchemaTools extends SchemaToolsInterface {
                     val unQuotedName = tb.getTableName.replaceAll("\"", "")
                     val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
                     checkForComplexType(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
+                  case query: TableQuery =>
+                    colType match {
+                      case java.sql.Types.ARRAY | java.sql.Types.STRUCT => Left(QueryReturnsComplexTypes(columnLabel, typeName, query.query))
+                      case _ => Right(colDef)
+                    }
                   case _ => Right(colDef)
                 }
               }).toList
