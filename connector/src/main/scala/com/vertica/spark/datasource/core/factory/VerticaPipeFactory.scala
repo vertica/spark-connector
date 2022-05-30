@@ -33,7 +33,7 @@ import org.apache.spark.sql.SparkSession
  * Constructed based on the passed in configuration
  */
 trait VerticaPipeFactoryInterface {
-  def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface
+  def getReadPipe(config: ReadConfig, getVersion: Boolean): VerticaPipeInterface with VerticaPipeReadInterface
 
   def getWritePipe(config: WriteConfig, getVersion: Boolean): VerticaPipeInterface with VerticaPipeWriteInterface
 
@@ -63,7 +63,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     }
   }
 
-  override def getReadPipe(config: ReadConfig): VerticaPipeInterface with VerticaPipeReadInterface = {
+  override def getReadPipe(config: ReadConfig, getVersion: Boolean): VerticaPipeInterface with VerticaPipeReadInterface = {
     val thread = Thread.currentThread.getName + ": "
     logger.debug(thread + "Getting read pipe")
     config match {
@@ -82,7 +82,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case Some(session) => Some(session.sparkContext)
         }
 
-        val verticaVersion = VerticaVersionUtils.getVersion(readLayerJdbc.get)
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(readLayerJdbc.get) else VerticaVersion(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
 
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
