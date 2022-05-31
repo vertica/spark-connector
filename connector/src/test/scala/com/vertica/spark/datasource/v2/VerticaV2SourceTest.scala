@@ -438,7 +438,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Left(UserMissingError()))
 
-    Try { new VerticaBatchWrite(writeConfig, writeSetupInterface) } match {
+    Try { new VerticaBatchWrite(writeConfig, writeSetupInterface,  new DSWriter(writeConfig, "", isOnDriver = false)) } match {
       case Success(_) => fail
       case Failure(_) => ()
     }
@@ -449,7 +449,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
     val physicalInfo = mock[PhysicalWriteInfo]
 
-    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
+    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface, new DSWriter(writeConfig, "", isOnDriver = false))
 
     assert(batchWrite.createBatchWriterFactory(physicalInfo).isInstanceOf[VerticaWriterFactory])
   }
@@ -458,13 +458,28 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
 
-    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface)
+    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface,  new DSWriter(writeConfig, "", isOnDriver = false))
 
     Try {
       batchWrite.abort(Array())
     } match {
       case Success(_) => fail
       case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[JobAbortedError]
+    }
+  }
+
+  it should "commit data" in {
+    val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
+    (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
+    val mockDSWriter = mock[DSWriterInterface]
+    (mockDSWriter.commitRows _).expects().returning(Right())
+    val batchWrite = new VerticaBatchWrite(writeConfig, writeSetupInterface, mockDSWriter)
+
+    Try {
+      batchWrite.commit(Array.empty)
+    } match {
+      case Success(_) => ()
+      case Failure(e) => fail
     }
   }
 
