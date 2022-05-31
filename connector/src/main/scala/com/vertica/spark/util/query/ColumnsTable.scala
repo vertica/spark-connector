@@ -36,14 +36,7 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInf
   def getColumnType(columnName: String, tableName: String, schema: String): ConnectorResult[ColumnInfo] = {
     val schemaCond = if(schema.nonEmpty) s" AND table_schema='$schema'" else ""
     val conditions = s"table_name='$tableName'$schemaCond AND column_name='$columnName'"
-    selectWhere(conditions) match {
-      case Right(rows) =>
-        if(rows.isEmpty)
-          Left(VerticaColumnNotFound(columnName, tableName, schema))
-        else
-          Right(rows.head)
-      case Left(err) => Left(err)
-    }
+    super.selectWhereExpectOne(conditions)
   }
 
   def find(columnName: String, tableName: String): ConnectorResult[ColumnInfo] = {

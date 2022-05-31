@@ -19,13 +19,6 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[Comp
 
   def findComplexTypeInfo(verticaTypeId: Long): ConnectorResult[ComplexTypeInfo] = {
     val conditions = s"type_id=$verticaTypeId"
-    selectWhere(conditions) match {
-      case Left(error) => Left(error)
-      case Right(rows) =>
-        if(rows.isEmpty)
-          Left(VerticaComplexTypeNotFound(verticaTypeId))
-        else
-          Right(rows.head)
-    }
+    super.selectWhereExpectOne(conditions)
   }
 }

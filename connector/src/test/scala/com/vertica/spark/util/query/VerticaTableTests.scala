@@ -1,7 +1,8 @@
 package com.vertica.spark.util.query
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.query.VerticaTableTests.{mockComplexTypeInfoResult, mockGetColumnInfo, mockGetComplexTypeInfo, mockVerticaTableQuery}
+import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.query.VerticaTableTests.{mockComplexTypeInfoResult, mockGetColumnInfo, mockGetComplexTypeInfo, mockGetTypeInfo, mockTypeInfoResult, mockVerticaTableQuery}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -10,9 +11,10 @@ import java.sql.ResultSet
 object VerticaTableTests extends VerticaTableTests {
   def wrapQuotation(str: String): String = "\"" + str +"\""
 
-  def mockVerticaTableQuery(cols: Seq[String], tableName: String, where: String, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
+  def mockVerticaTableQuery(cols: Seq[String], tableName: String, conditions: String, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val rs = mock[ResultSet]
-    val query = s"SELECT ${cols.map(wrapQuotation).mkString(", ")} FROM ${wrapQuotation(tableName)} WHERE $where"
+    val where = if (conditions.isEmpty) "" else " WHERE " + conditions.trim
+    val query = s"SELECT ${cols.map(wrapQuotation).mkString(", ")} FROM ${wrapQuotation(tableName)}$where"
     (jdbcLayer.query _).expects(query, *).returning(Right(rs))
     (rs.close _).expects
     (jdbcLayer, rs)
@@ -34,11 +36,10 @@ object VerticaTableTests extends VerticaTableTests {
   def mockGetComplexTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val conditions = s"type_id=$verticaTypeId"
     val (jdbc, rs) = mockVerticaTableQuery(List("field_type_name", "type_id", "field_id", "numeric_scale"), "complex_types", conditions, jdbcLayer)
-    (rs.close _).expects
     (jdbc, rs)
   }
 
-  def mockComplexTypeInfoResult(fieldTypeName:String, typeId: Long, fieldId: Long, rs: ResultSet): Unit = {
+  def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet): Unit = {
     (rs.next _).expects().returning(true)
     (rs.getString: Int => String).expects(1).returning(fieldTypeName)
     (rs.getLong: Int => Long).expects(2).returning(typeId)
@@ -47,12 +48,62 @@ object VerticaTableTests extends VerticaTableTests {
     (rs.getString: Int => String).expects(4).returning(numericScale)
   }
 
+  def mockGetTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
+    val conditions = s"type_id=$verticaTypeId"
+    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "jdbc_type", "type_name"), "types", conditions, jdbcLayer)
+    (jdbc, rs)
+  }
+
+  def mockTypeInfoResult(typeId: Long, typeName: String, jdbcType: Long, rs: ResultSet): Unit = {
+    (rs.next _).expects().returning(true)
+    (rs.getLong: Int => Long).expects(1).returning(typeId)
+    (rs.getLong: Int => Long).expects(2).returning(jdbcType)
+    (rs.getString: Int => String).expects(3).returning(typeName)
+  }
+
 }
 
 class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.OneInstancePerTest {
   val colName = "col1"
   val tableName = "table1"
   val schemaName = "schema1"
+
+  class TestVerticaTable(jdbc: JdbcLayerInterface) extends VerticaTable[Unit](jdbc) {
+    override def tableName: String = "testTable"
+
+    override def columns: Seq[String] = List("col1", "col2", "col3")
+
+    override protected def buildRow(rs: ResultSet): Unit = ()
+
+    def testSelectWhereExpectOne(): Either[ConnectorError, Unit] = super.selectWhereExpectOne("")
+  }
+
+  it should "error on empty result" in {
+    val jdbc = mock[JdbcLayerInterface]
+    val testTable = (new TestVerticaTable(jdbc))
+    val (_, rs) = mockVerticaTableQuery(testTable.columns, testTable.tableName, "", jdbc)
+    (rs.next _).expects().returning(false)
+
+    testTable.testSelectWhereExpectOne() match {
+      case Left(value) => assert(value.isInstanceOf[IntrospectionResultEmpty])
+      case Right(value) => fail("expected to fail")
+    }
+  }
+
+  it should "error on multiple results" in {
+    val jdbc = mock[JdbcLayerInterface]
+    val testTable = (new TestVerticaTable(jdbc))
+    val (_, rs) = mockVerticaTableQuery(testTable.columns, testTable.tableName, "", jdbc)
+    (rs.next _).expects().returning(true)
+    (rs.next _).expects().returning(true)
+    (rs.next _).expects().returning(false)
+
+    testTable.testSelectWhereExpectOne() match {
+      case Left(value) => assert(value.isInstanceOf[MultipleIntrospectionResult])
+        println(value.getFullContext)
+      case Right(value) => fail("expected to fail")
+    }
+  }
 
   it should "find column info" in {
     val typeId = 1
@@ -97,6 +148,23 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
         assert(row.fieldId == fieldId)
         assert(row.typeId == typeId)
         assert(row.fieldTypeName == fieldTypeName)
+    }
+  }
+
+  it should "get types info" in {
+    val verticaType = 100
+    val typeName = "typeName"
+    val jdbcType = 200
+    val (jdbc, rs) = mockGetTypeInfo(verticaType, mock[JdbcLayerInterface])
+    mockTypeInfoResult(verticaType, typeName, jdbcType, rs)
+    (rs.next _).expects().returning(false)
+
+    new TypesTable(jdbc).getVerticaTypeInfo(verticaType) match {
+      case Left(_) => fail("Expected to succeed")
+      case Right(typeInfo: TypeInfo) =>
+        assert(typeInfo.typeName == typeName)
+        assert(typeInfo.jdbcType == jdbcType)
+        assert(typeInfo.typeId == verticaType)
     }
   }
 }

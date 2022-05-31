@@ -18,13 +18,6 @@ class TypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[TypeInfo](j
 
   def getVerticaTypeInfo(verticaType: Long): ConnectorResult[TypeInfo] = {
     val conditions = s"type_id=$verticaType"
-    selectWhere(conditions) match {
-      case Left(error) => Left(error)
-      case Right(typeInfoList) =>
-        if(typeInfoList.isEmpty)
-          Left(VerticaNativeTypeNotFound(verticaType))
-        else
-          Right(typeInfoList.head)
-    }
+    super.selectWhereExpectOne(conditions)
   }
 }
