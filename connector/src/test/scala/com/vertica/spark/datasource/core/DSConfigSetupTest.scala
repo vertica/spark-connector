@@ -14,6 +14,8 @@
 package com.vertica.spark.datasource.core
 
 import cats.data.Validated.{Invalid, Valid}
+import com.vertica.spark.common.TestObjects
+import com.vertica.spark.common.TestObjects.{TestReadPipe, TestWritePipe}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
@@ -31,6 +33,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
   override def afterAll(): Unit = {
   }
 
+  val writeConfig: DistributedFilesystemWriteConfig = TestObjects.writeConfig
+  val readConfig: DistributedFilesystemReadConfig = TestObjects.readConfig
 
   // Parses config expecting success
   // Calling test with fail if an error is returned
@@ -101,7 +105,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
@@ -170,7 +174,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
@@ -334,7 +338,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       val mockPipe = mock[DummyReadPipe]
       (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
-      (mockPipeFactory.getReadPipe _).expects(*).returning(mockPipe)
+      (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
       val dsReadConfigSetup = new DSReadConfigSetup(mockPipeFactory)
 
@@ -697,6 +701,30 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       }
     } finally {
       spark.close()
+    }
+  }
+
+  it should "perform initial setup in write setup" in {
+    val pipeFactoryMock = mock[VerticaPipeFactoryInterface]
+    val writePipeMock = mock[TestWritePipe]
+    (pipeFactoryMock.getWritePipe _).expects(writeConfig, true).returning(writePipeMock)
+    (writePipeMock.doPreWriteSteps _).expects().returning(Right())
+    new DSWriteConfigSetup(Some(new StructType), pipeFactoryMock).performInitialSetup(writeConfig) match {
+      case Left(value) => fail("Expected to succeed: " + value.getFullContext)
+      case Right(result) =>
+        assert(result == None)
+    }
+  }
+
+  it should "perform initial setup in read setup" in {
+    val pipeFactoryMock = mock[VerticaPipeFactoryInterface]
+    val readPipeMock = mock[TestReadPipe]
+    (pipeFactoryMock.getReadPipe _).expects(readConfig, true).returning(readPipeMock)
+    (readPipeMock.doPreReadSteps _).expects().returning(Right(PartitionInfo(Array.empty)))
+    new DSReadConfigSetup(pipeFactoryMock).performInitialSetup(readConfig) match {
+      case Left(value) => fail("Expected to succeed: " + value.getFullContext)
+      case Right(result) =>
+        assert(result.nonEmpty)
     }
   }
 }

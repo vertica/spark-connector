@@ -54,7 +54,7 @@ trait DSReaderInterface {
  * @param pipeFactory Factory returning the underlying implementation of a pipe between us and Vertica, to use for read.
  */
 class DSReader(config: ReadConfig, partition: InputPartition, pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory) extends DSReaderInterface {
-  private val pipe = pipeFactory.getReadPipe(config)
+  private val pipe = pipeFactory.getReadPipe(config, false)
 
   private var block: Option[DataBlock] = None
   private var i: Int = 0
