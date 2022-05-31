@@ -13,15 +13,14 @@
 
 package com.vertica.spark.util.schema
 
-import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.JdbcSchemaError
 import com.vertica.spark.util.schema.SchemaToolsTests.{mockColumnCount, mockColumnMetadata, mockJdbcDeps, tablename}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.sql.{ResultSet, ResultSetMetaData}
+import java.sql.ResultSet
 
 class SchemaToolsV10Test extends AnyFlatSpec with MockFactory with org.scalatest.OneInstancePerTest {
+
   it should "detects complex types in Vertica 10" in {
     val tableName = tablename.getFullTableName.replace("\"", "")
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)

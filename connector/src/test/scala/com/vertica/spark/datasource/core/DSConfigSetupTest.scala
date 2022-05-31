@@ -344,6 +344,9 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
+  /**
+   * May fail if environment variable is not set
+   * */
   it should "get the AWS access key id, secret access key, session token, and region from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")
@@ -657,6 +660,9 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
     }
   }
 
+  /**
+   * May fail if environment variable is not set
+   * */
   it should "parse GCS authentications parameters from environment variables" in {
     val spark = SparkSession.builder()
       .master("local[*]")

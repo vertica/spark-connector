@@ -585,4 +585,14 @@ case class VerticaColumnNotFound(colName: String, tableName: String, schema: Str
   def getFullContext: String = s"Column $colName (table $tableName, schema $schema) does not exist in Vertica's columns table"
 }
 
+trait TableIntrospectionError extends ConnectorError
+
+case class IntrospectionResultEmpty(table: String, query: String) extends TableIntrospectionError {
+  override def getFullContext: String = s"Query to system table $table returned nothing.\nQUERY: $query"
+}
+
+case class MultipleIntrospectionResult(table: String, query: String) extends TableIntrospectionError {
+  override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
+}
+
 

@@ -20,7 +20,7 @@ import java.sql.ResultSet
 import scala.util.Try
 import cats.implicits._
 import cats.data.NonEmptyList
-import com.vertica.spark.util.error.{ConnectorError, ErrorList, ResultSetError, SchemaError, VerticaColumnNotFound}
+import com.vertica.spark.util.error.{ConnectorError, ErrorList, IntrospectionResultEmpty, MultipleIntrospectionResult, ResultSetError}
 
 abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
 
@@ -70,14 +70,4 @@ abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
 
   private def wrapQuotation(str: String): String = "\"" + str +"\""
 
-}
-
-sealed trait TableIntrospectionError extends ConnectorError
-
-case class IntrospectionResultEmpty(table: String, query: String) extends TableIntrospectionError {
-  override def getFullContext: String = s"Query to system table $table returned nothing.\nQUERY: $query"
-}
-
-case class MultipleIntrospectionResult(table: String, query: String) extends TableIntrospectionError {
-  override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
 }

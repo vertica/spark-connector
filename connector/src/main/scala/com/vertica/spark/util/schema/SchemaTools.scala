@@ -341,44 +341,6 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   /**
-   * For complex types, JDBC metadata does not contains information about their elements, but they are available in
-   * Vertica systems tables. This function takes a ColumnDef of a complex type and injects it corresponding element
-   * ColumnDefs through a series of JDBC queries to Vertica system tables.
-   * */
-  private def queryColumnDef(complexTypeColDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    /**
-     * Type name report by Vertica could be INTEGER or ARRAY[...] or ROW(...)
-     * and we want to extract just the type identifier
-     * */
-    def getTypeName(dataType:String) : String = {
-      dataType
-        .replaceFirst("\\[",",")
-        .replaceFirst("\\(",",")
-        .split(',')
-        .head
-    }
-
-    def handleColumnExist(rs: ResultSet): ConnectorResult[ColumnDef] = {
-      // Note that data_type_id is Vertica's internal type id, not JDBC.
-      val verticaType = rs.getLong("data_type_id")
-      val typeName = getTypeName(rs.getString("data_type"))
-      complexTypeColDef.colType match {
-        case java.sql.Types.ARRAY => makeArrayColumnDef(complexTypeColDef, verticaType, jdbcLayer)
-        // Todo: implement Row support for reading.
-        case java.sql.Types.STRUCT => Right(complexTypeColDef)
-        case _ => Left(MissingSqlConversionError(complexTypeColDef.colType.toString, typeName))
-      }
-    }
-    // We query from Vertica for the column's Vertica type.
-    val colName = complexTypeColDef.label
-    val schemaCond = if(dbSchema.nonEmpty) s" AND table_schema='$dbSchema'" else ""
-    val queryColType = s"SELECT data_type_id, data_type FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='$colName'"
-    JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleColumnExist)
-  }
-
-
-
-  /**
    * Query Vertica system tables to fill in an array ColumnDefs with it's elements.
    * */
   private def makeArrayColumnDef(arrayColDef: ColumnDef, verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
@@ -394,8 +356,11 @@ class SchemaTools extends SchemaToolsInterface {
     // Set id = 2700 + primitive type id
     val elementId = if (isSet) verticaTypeId - VERTICA_SET_BASE_ID else id
     val isNativeArray = elementId < VERTICA_PRIMITIVES_MAX_ID
-    val elementDef = if (isNativeArray) function2(elementId, 0, jdbcLayer)
-    else f1(verticaTypeId, jdbcLayer)
+    val elementDef = if (isNativeArray) {
+      queryVerticaPrimitiveDef(elementId, 0, jdbcLayer)
+    } else {
+      getNestedArrayElementDef(verticaTypeId, jdbcLayer)
+    }
     fillArrayColumnDef(arrayColDef, elementDef, isSet)
   }
 
@@ -420,37 +385,8 @@ class SchemaTools extends SchemaToolsInterface {
      * The recursion below will start from the top complex type and follow the field_id to locate the element type
      * of a nested array.
      */
-    @tailrec
-    def getNestedElementDef(verticaType: Long, jdbcLayer: JdbcLayerInterface, depth: Int): ConnectorResult[ColumnDef] = {
-      val queryComplexType = s"SELECT field_type_name, type_id ,field_id, numeric_scale FROM complex_types WHERE type_id='$verticaType'"
-      jdbcLayer.query(queryComplexType) match {
-        // Because this is a tailrec, we can't use finally block
-        case Right(rs) =>
-          if (rs.next()) {
-            val fieldTypeName = rs.getString("field_type_name")
-            val verticaType = rs.getLong("field_id")
-            rs.close()
-            // complex type name starts with _ct_
-            if (fieldTypeName.startsWith("_ct_")) {
-              getNestedElementDef(verticaType, jdbcLayer, depth + 1)
-            } else {
-              // Once the element type is found, query from types table
-              queryVerticaPrimitiveDef(verticaType, depth, jdbcLayer)
-            }
-          } else {
-            rs.close()
-            Left(VerticaComplexTypeNotFound(verticaType))
-          }
-        case Left(error) => Left(error)
-      }
-    }
 
-    getNestedElementDef(verticaType, jdbcLayer, 0)
-  }
-
-  private def f1(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val complexTypeTable = new ComplexTypesTable(jdbcLayer)
-
     @tailrec
     def recursion(verticaType: Long, depth: Int): ConnectorResult[ColumnDef] = {
       complexTypeTable.findComplexTypeInfo(verticaType) match {
@@ -460,7 +396,7 @@ class SchemaTools extends SchemaToolsInterface {
             recursion(result.fieldId, depth + 1)
           } else {
             // Once the element type is found, query from types table
-            function2(result.fieldId, depth, jdbcLayer)
+            queryVerticaPrimitiveDef(result.fieldId, depth, jdbcLayer)
           }
       }
     }
@@ -469,17 +405,6 @@ class SchemaTools extends SchemaToolsInterface {
   }
 
   private def queryVerticaPrimitiveDef(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    val queryNativeTypes = s"SELECT type_id, jdbc_type, type_name FROM types WHERE type_id=$verticaType"
-    JdbcUtils.queryAndNext(queryNativeTypes, jdbcLayer,
-      (rs) => {
-        val jdbcType = rs.getLong("jdbc_type").toInt
-        val typeName = rs.getString("type_name")
-        Right(makeArrayElementDef(jdbcType, typeName, depth))
-      },
-      (_) => Left(VerticaNativeTypeNotFound(verticaType)))
-  }
-
-  private def function2(verticaType: Long, depth: Int, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new TypesTable(jdbcLayer).getVerticaTypeInfo(verticaType) match {
       case Left(error) => Left(error)
       case Right(typeInfo) =>

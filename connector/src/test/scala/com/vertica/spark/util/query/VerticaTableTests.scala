@@ -1,7 +1,7 @@
 package com.vertica.spark.util.query
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ConnectorError
+import com.vertica.spark.util.error.{ConnectorError, IntrospectionResultEmpty, MultipleIntrospectionResult}
 import com.vertica.spark.util.query.VerticaTableTests.{mockComplexTypeInfoResult, mockGetColumnInfo, mockGetComplexTypeInfo, mockGetTypeInfo, mockTypeInfoResult, mockVerticaTableQuery}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -139,7 +139,7 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     val typeId = 1000000
     val fieldId = 2000000
     val (jdbc, rs) = mockGetComplexTypeInfo(verticaTypeId, mock[JdbcLayerInterface])
-    mockComplexTypeInfoResult(fieldTypeName, typeId, fieldId, rs)
+    mockComplexTypeInfoResult(fieldTypeName, fieldId, typeId, rs)
     (rs.next _).expects().returning(false)
 
     new ComplexTypesTable(jdbc).findComplexTypeInfo(verticaTypeId) match {
