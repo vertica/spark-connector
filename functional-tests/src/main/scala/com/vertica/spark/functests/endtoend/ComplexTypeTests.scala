@@ -323,7 +323,8 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "write a table with column type Array[Row]" in {
+  // Currently Row type is not supported
+  ignore should "write a table with column type Array[Row]" in {
     val tableName = "dftest"
     val colName = "col1"
     val arrayRow = StructField(colName, ArrayType(
