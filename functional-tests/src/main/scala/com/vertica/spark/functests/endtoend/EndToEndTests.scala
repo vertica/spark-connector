@@ -65,7 +65,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
     .config(sparkConf)
     .getOrCreate()
 
-  override def afterEach(): Unit ={
+  override def afterEach(): Unit = {
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     anyFiles match {
       case Right(files) =>

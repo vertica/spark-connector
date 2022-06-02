@@ -15,10 +15,11 @@ package com.vertica.spark.datasource.v2
 
 import cats.data.Validated.{Invalid, Valid}
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{LogProvider, WriteConfig, DistributedFilesystemWriteConfig}
+import com.vertica.spark.config.{DistributedFilesystemWriteConfig, LogProvider, WriteConfig}
+import com.vertica.spark.datasource.core.factory.VerticaPipeFactory
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSWriter, DSWriterInterface, ExistingData, NewData}
 import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, ErrorList}
-import com.vertica.spark.util.error.{NonEmptyDataFrameError, JobAbortedError}
+import com.vertica.spark.util.error.{JobAbortedError, NonEmptyDataFrameError}
 import com.vertica.spark.util.general.Utils
 import org.apache.spark.sql.connector.write._
 import org.apache.spark.sql.catalyst.InternalRow
@@ -47,7 +48,7 @@ class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigS
   * @return [[VerticaBatchWrite]]
   */
   override def buildForBatch(): BatchWrite = {
-    new VerticaBatchWrite(config, writeSetupInterface)
+    new VerticaBatchWrite(config, writeSetupInterface, new DSWriter(config, "", isOnDriver = true))
   }
 
   def truncate: WriteBuilder = {
@@ -62,7 +63,7 @@ class VerticaWriteBuilder(info: LogicalWriteInfo, writeSetupInterface: DSConfigS
   *
   * Extends mixin class to represent type of write. Options are Batch or Stream, we are doing a batch write.
   */
-class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig]) extends BatchWrite {
+class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupInterface[WriteConfig], driverWriter: DSWriterInterface) extends BatchWrite {
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaBatchReader])
 
   // Perform initial setup for the write operation
@@ -81,14 +82,13 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   override def createBatchWriterFactory(physicalWriteInfo: PhysicalWriteInfo): DataWriterFactory = new VerticaWriterFactory(config)
 
 /**
-  * Responsible for commiting the write operation.
+  * Responsible for committing the write operation.
   *
   * @param writerCommitMessages list of commit messages returned from each worker node
-  * Called after all worker nodes report that they have succesfully completed their operations.
+  * Called after all worker nodes report that they have successfully completed their operations.
   */
   override def commit(writerCommitMessages: Array[WriterCommitMessage]): Unit = {
-    val writer = new DSWriter(config, "")
-    writer.commitRows() match {
+    driverWriter.commitRows() match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(_) => ()
     }
@@ -111,7 +111,8 @@ class VerticaBatchWrite(config: WriteConfig, writeSetupInterface: DSConfigSetupI
   * This class is seriazlized and sent to each worker node. On the worker, createWriter will be called with a given unique id for the partition being written.
   */
 class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
-
+  private val logger: Logger = LogProvider.getLogger(classOf[VerticaWriterFactory])
+  private val thread = Thread.currentThread.getName + ": "
 /**
   * Called from the worker node to get the writer for that node
   *
@@ -121,7 +122,8 @@ class VerticaWriterFactory(config: WriteConfig) extends DataWriterFactory {
   */
   override def createWriter(partitionId: Int, taskId: Long): DataWriter[InternalRow] = {
     val uniqueId : String = partitionId + "-" + taskId
-    val writer = new DSWriter(config, uniqueId)
+    val writer = new DSWriter(config, uniqueId, isOnDriver = false)
+    logger.debug(thread + "Creating writer")
     new VerticaBatchWriter(config, writer)
   }
 }
