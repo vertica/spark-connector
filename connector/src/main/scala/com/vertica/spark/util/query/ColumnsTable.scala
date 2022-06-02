@@ -6,13 +6,13 @@ import com.vertica.spark.util.error.VerticaColumnNotFound
 
 import java.sql.ResultSet
 
-case class ColumnInfo(dataTypeId: Long, dataType: String)
+case class ColumnInfo(verticaType: Long, dataTypeName: String)
 
 class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInfo](jdbc = jdbcLayer) {
 
   override def tableName: String = "columns"
 
-  override def columns: Seq[String] = List("data_type_id", "data_type")
+  override def columns: Seq[String] = List("data_type_id", "data_type", "data_type_length", "numeric_scale", "is_nullable")
 
   override def buildRow(resultSet: ResultSet): ColumnInfo = {
     ColumnInfo(
@@ -33,13 +33,13 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInf
       .head
   }
 
-  def getColumnType(columnName: String, tableName: String, schema: String): ConnectorResult[ColumnInfo] = {
+  def getColumnInfo(columnName: String, tableName: String, schema: String): ConnectorResult[ColumnInfo] = {
     val schemaCond = if(schema.nonEmpty) s" AND table_schema='$schema'" else ""
     val conditions = s"table_name='$tableName'$schemaCond AND column_name='$columnName'"
     super.selectWhereExpectOne(conditions)
   }
 
   def find(columnName: String, tableName: String): ConnectorResult[ColumnInfo] = {
-    getColumnType(columnName, tableName, "")
+    getColumnInfo(columnName, tableName, "")
   }
 }

@@ -111,11 +111,11 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     val (jdbcLayer, _) = mockGetColumnInfo(colName, tableName, "", typeId, typeName, mock[JdbcLayerInterface])
 
     new ColumnsTable(jdbcLayer)
-      .getColumnType(colName, tableName, "") match {
+      .getColumnInfo(colName, tableName, "") match {
       case Left(_) => fail("Expected to succeed")
       case Right(colInfo) =>
-        assert(colInfo.dataType == typeName)
-        assert(colInfo.dataTypeId == typeId)
+        assert(colInfo.dataTypeName == typeName)
+        assert(colInfo.verticaType == typeId)
     }
   }
 
@@ -125,11 +125,11 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     val (jdbcLayer, _) = mockGetColumnInfo(colName, tableName, schemaName, typeId, typeName, mock[JdbcLayerInterface])
 
     new ColumnsTable(jdbcLayer)
-      .getColumnType(colName, tableName, schemaName) match {
+      .getColumnInfo(colName, tableName, schemaName) match {
       case Left(_) => fail("Expected to succeed")
       case Right(colInfo) =>
-        assert(colInfo.dataType == typeName)
-        assert(colInfo.dataTypeId == typeId)
+        assert(colInfo.dataTypeName == typeName)
+        assert(colInfo.verticaType == typeId)
     }
   }
 

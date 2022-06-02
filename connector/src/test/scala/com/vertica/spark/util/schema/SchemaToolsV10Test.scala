@@ -77,14 +77,14 @@ class SchemaToolsV10Test extends AnyFlatSpec with MockFactory with org.scalatest
       case Right(cols) =>
         assert(cols.length == 3)
         assert(cols.head.label == arrayTestColDef.name)
-        assert(cols.head.colType == java.sql.Types.ARRAY)
+        assert(cols.head.jdbcType == java.sql.Types.ARRAY)
         // Since v10 only need to return some complex type for error handling later on,
         // we do not care if it actually mark the array as a set or returns a correct
         // struct.
         assert(cols(1).label == setTestColDef.name)
-        assert(cols(1).colType == java.sql.Types.ARRAY)
+        assert(cols(1).jdbcType == java.sql.Types.ARRAY)
         assert(cols(2).label == ctTestColDef.name)
-        assert(cols(2).colType == java.sql.Types.STRUCT)
+        assert(cols(2).jdbcType == java.sql.Types.STRUCT)
       case Left(error) => fail(error.getFullContext)
     }
   }
