@@ -21,19 +21,13 @@ import com.vertica.spark.config.{DistributedFilesystemReadConfig, JDBCConfig, Lo
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonReaderNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
-import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.json.JSONOptionsInRead
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
 import org.apache.spark.sql.execution.datasources.v2.json.{JsonPartitionReaderFactory, JsonScan, JsonTable}
-import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import org.apache.spark.util.SerializableConfiguration
 
-import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 trait PushdownFilter {
@@ -295,6 +289,10 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
   private var jsonBatch: Option[Batch] = None
+
+  val option = new org.apache.spark.sql.catalyst.json.JSONOptionsInRead(Map[String, String](), "", "")
+
+  val fact = org.apache.spark.sql.execution.datasources.v2.json.vertica.JsonPartitionReaderFactory(_, _, _, _, _, option, _)
 
   private val testSchema = StructType(Array(
     StructField("a", LongType),
