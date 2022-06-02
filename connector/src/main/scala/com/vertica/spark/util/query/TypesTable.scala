@@ -22,9 +22,28 @@ class TypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[TypeInfo](j
     super.selectWhereExpectOne(conditions)
   }
 
+  private val signedList = List(
+    java.sql.Types.DOUBLE,
+    java.sql.Types.FLOAT,
+    java.sql.Types.REAL,
+    java.sql.Types.INTEGER,
+    java.sql.Types.BIGINT,
+    java.sql.Types.TINYINT,
+    java.sql.Types.SMALLINT,
+  )
+
+  def isSigned(jdbcType: Long): Boolean = signedList.contains(jdbcType)
+
   def getColumnDef(verticaType: Long): ConnectorResult[ColumnDef] = {
     getVerticaTypeInfo(verticaType)
       .map(typeInfo =>
-        ColumnDef("", typeInfo.jdbcType.toInt, typeInfo.typeName, DecimalType.MAX_PRECISION, typeInfo.maxScale.toInt, true, false, Metadata.empty))
+        ColumnDef("",
+          typeInfo.jdbcType.toInt,
+          typeInfo.typeName,
+          DecimalType.MAX_PRECISION,
+          typeInfo.maxScale.toInt,
+          signed = isSigned(typeInfo.jdbcType),
+          nullable = false,
+          Metadata.empty))
   }
 }
