@@ -16,12 +16,12 @@ import java.util.Properties
 val props = settingKey[Properties]("Connector version properties")
 props := {
   val prop = new Properties()
-  IO.load(prop, new File("../../../version.properties"))
+  IO.load(prop, new File("../../version.properties"))
   prop
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-array-example"
+name := "spark-vertica-connector-complex-type-examples"
 organization := "com.vertica"
 version := props.value.getProperty("connector-version")
 

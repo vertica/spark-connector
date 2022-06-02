@@ -12,17 +12,18 @@
 // limitations under the License.
 import java.util.Properties
 
-val props = settingKey[Properties]("Connector version properties")
-props := {
+// Retrieving the connector version number from a common file.
+val versionProps = settingKey[Properties]("Connector version properties")
+versionProps := {
   val prop = new Properties()
-  IO.load(prop, new File("../../../version.properties"))
+  IO.load(prop, new File("../../version.properties"))
   prop
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-set-example"
+name := "spark-vertica-google-cloud-storage-example"
 organization := "com.vertica"
-version := props.value.getProperty("connector-version")
+version := versionProps.value.getProperty("connector-version")
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
@@ -31,7 +32,8 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
   "org.apache.spark" %% "spark-core" % "3.2.0",
   "org.apache.spark" %% "spark-sql" % "3.2.0",
-  "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"
+  "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim",
+  "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
 )
 
 assembly / assemblyMergeStrategy := {
