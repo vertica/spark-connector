@@ -129,9 +129,9 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b varchar)")
 
-    val insert = "insert into "+ tableName1 + " values(2)"
+    val insert = "insert into "+ tableName1 + " values(2, 'hello')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     val query = "select * from " + tableName1

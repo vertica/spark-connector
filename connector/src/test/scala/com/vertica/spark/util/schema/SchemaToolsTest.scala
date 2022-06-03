@@ -99,12 +99,32 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     (new SchemaTools).readSchema(jdbcLayer, query) match {
-      case Left(err) => fail(err.toString())
+      case Left(err) => fail(err.getFullContext)
       case Right(schema) =>
         val field = schema.fields(0)
         assert(field.name == "col1")
         assert(field.nullable)
         assert(field.dataType == DoubleType)
+    }
+  }
+
+  it should "fail when query's schema contains complex types" in {
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
+    val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
+
+    // Schema
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.REAL, "REAL", 32, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true))
+    mockColumnMetadata(rsmd, TestColumnDef(3, "col3", java.sql.Types.STRUCT, "STRUCT", 0, signed = false, nullable = true))
+    mockColumnCount(rsmd, 3)
+
+    (new SchemaTools).readSchema(jdbcLayer, query) match {
+      case Left(err) =>
+        assert(err.isInstanceOf[ErrorList])
+        assert(err.asInstanceOf[ErrorList].errors.length == 2)
+        err.asInstanceOf[ErrorList].errors.map(err => assert(err.isInstanceOf[QueryReturnsComplexTypes]))
+        succeed
+      case Right(schema) => fail("Expected to fail")
     }
   }
 
