@@ -12,7 +12,7 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInf
 
   override def tableName: String = "columns"
 
-  override def columns: Seq[String] = List("data_type_id", "data_type", "data_type_length", "numeric_scale", "is_nullable")
+  override def columns: Seq[String] = List("data_type_id", "data_type")
 
   override def buildRow(resultSet: ResultSet): ColumnInfo = {
     ColumnInfo(

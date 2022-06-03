@@ -35,22 +35,23 @@ object VerticaTableTests extends VerticaTableTests {
 
   def mockGetComplexTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val conditions = s"type_id=$verticaTypeId"
-    val (jdbc, rs) = mockVerticaTableQuery(List("field_type_name", "type_id", "field_id", "numeric_scale"), "complex_types", conditions, jdbcLayer)
+    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind"), "complex_types", conditions, jdbcLayer)
     (jdbc, rs)
   }
 
-  def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet): Unit = {
+  def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet, typeKind: String = "", typeName: String = ""): Unit = {
     (rs.next _).expects().returning(true)
-    (rs.getString: Int => String).expects(1).returning(fieldTypeName)
-    (rs.getLong: Int => Long).expects(2).returning(typeId)
+    (rs.getLong: Int => Long).expects(1).returning(typeId)
+    (rs.getString: Int => String).expects(2).returning(typeName)
     (rs.getLong: Int => Long).expects(3).returning(fieldId)
-    val numericScale = ""
-    (rs.getString: Int => String).expects(4).returning(numericScale)
+    (rs.getString: Int => String).expects(4).returning(fieldTypeName)
+    (rs.getLong: Int => Long).expects(5).returning(0)
+    (rs.getString: Int => String).expects(6).returning(typeKind)
   }
 
   def mockGetTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val conditions = s"type_id=$verticaTypeId"
-    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "jdbc_type", "type_name"), "types", conditions, jdbcLayer)
+    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "jdbc_type", "type_name", "max_scale"), "types", conditions, jdbcLayer)
     (jdbc, rs)
   }
 
@@ -59,6 +60,7 @@ object VerticaTableTests extends VerticaTableTests {
     (rs.getLong: Int => Long).expects(1).returning(typeId)
     (rs.getLong: Int => Long).expects(2).returning(jdbcType)
     (rs.getString: Int => String).expects(3).returning(typeName)
+    (rs.getLong: Int => Long).expects(4).returning(0)
   }
 
 }
