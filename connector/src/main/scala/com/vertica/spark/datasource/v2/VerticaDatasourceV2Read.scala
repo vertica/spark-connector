@@ -286,23 +286,19 @@ class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends 
   }
 }
 
-class VerticaJsonScan2(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
   private var jsonBatch: Option[Batch] = None
 
-  // val option = new org.apache.spark.sql.catalyst.json.JSONOptionsInRead(Map[String, String](), "", "")
-
-  // val fact = org.apache.spark.sql.execution.datasources.v2.json.vertica.JsonPartitionReaderFactory(_, _, _, _, _, option, _)
-
-  private val testSchema = StructType(Array(
-    StructField("a", LongType),
-    StructField("b", ArrayType(ArrayType(LongType))),
-    StructField("c", StructType(Array(StructField("f0", DoubleType))),
-    )))
-
   //Todo: need to infer complex type schema from Vertica tables.
-  override def readSchema(): StructType = this.testSchema
+  override def readSchema(): StructType =
+    StructType(Array(
+      StructField("col1", ArrayType(LongType)),
+      // StructField("a", LongType),
+      // StructField("b", ArrayType(ArrayType(LongType))),
+      // StructField("c", StructType(Array(StructField("f0", DoubleType))))
+    ))
 
   override def planInputPartitions(): Array[InputPartition] = {
     readConfigSetup
@@ -318,8 +314,7 @@ class VerticaJsonScan2(config: ReadConfig, readConfigSetup: DSConfigSetupInterfa
           val fallback = classOf[JsonFileFormat]
           val jsonTable = JsonTable("Vertica Table", sparkSession, options , paths, schema, fallback)
           val verticaJsonTable = new VerticaJsonTable(jsonTable)
-
-          val builderOpts = new CaseInsensitiveStringMap(Map(("path" -> partitionInfo.path)).asJava)
+          val builderOpts = new CaseInsensitiveStringMap(Map[String, String]().asJava)
           val batch = verticaJsonTable.newScanBuilder(builderOpts).build().toBatch
           jsonBatch = Some(batch)
           batch.planInputPartitions()

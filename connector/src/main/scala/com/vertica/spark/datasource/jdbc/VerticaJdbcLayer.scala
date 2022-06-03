@@ -153,7 +153,7 @@ object JdbcUtils {
   */
 class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val logger = LogProvider.getLogger(classOf[VerticaJdbcLayer])
-
+  private val thread = Thread.currentThread().getName + ": "
   private val prop = new util.Properties()
 
   cfg.auth match {
@@ -179,16 +179,20 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
+  private var lazyInitialized = false
   private lazy val connection: ConnectorResult[Connection] = {
     Try { DriverManager.getConnection(jdbcURI, prop) }
       .toEither.left.map(handleConnectionException)
-      .flatMap(conn =>
+      .flatMap(conn => {
+        lazyInitialized = true
+        logger.debug(thread + "Connection lazy initialized")
         this.useConnection(conn, c => {
           c.setClientInfo("APPLICATIONNAME", this.createClientLabel)
           c.setAutoCommit(false)
-          logger.info("Successfully connected to Vertica.")
+          logger.info(thread + "Successfully connected to Vertica.")
           c
-        }, handleConnectionException).left.map(_.context("Initial connection was not valid.")))
+        }, handleConnectionException).left.map(_.context("Initial connection was not valid."))
+      })
   }
 
   private def createClientLabel: String = {
@@ -196,7 +200,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
       case BasicJdbcAuth(_, _) => "-p"
       case KerberosAuth(_, _, _, _) => "-k"
     }
-    val sparkVersion = SparkSession.active.sparkContext.version
+    // On remote executors, there are no spark sessions
+    val sparkVersion = SparkSession.getActiveSession match {
+      case Some(session) => session.sparkContext.version
+      case None => "0.0"
+    }
     "vspark" + "-vs" + BuildInfo.version + authMethod + "-sp" + sparkVersion
   }
 
@@ -351,9 +359,16 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   }
 
   def isClosed(): Boolean = {
-    logger.debug("Checking if connection is closed.")
+    logger.debug(thread + "Check connection closed")
     try {
-      this.connection.fold(_ => true, conn => conn.isClosed())
+      if (lazyInitialized) {
+        this.connection.fold(err => {
+          logger.error(thread + err.getFullContext)
+          true
+        }, conn => conn.isClosed())
+      } else {
+        true
+      }
     } catch {
       case _ : Throwable => true
     }
@@ -363,6 +378,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
     for {
       _ <- this.configureKerberosToFilestore(fileStoreLayer)
       _ <- this.configureAWSParameters(fileStoreLayer)
+      _ <- this.configureGCSParameters(fileStoreLayer)
     } yield ()
   }
 
@@ -432,6 +448,24 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
           this.execute(sql)
         case None =>
           logger.info("Did not set S3EnableVirtualAddressing")
+          Right(())
+      }
+    } yield ()
+  }
+
+  private def configureGCSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
+    val gcsOptions = fileStoreLayer.getGCSOptions
+    for {
+      _ <- gcsOptions.gcsVerticaAuth match {
+        case Some(gcsAuth) =>
+          val keyId = gcsAuth.accessKeyId
+          val keySecret = gcsAuth.accessKeySecret
+          val query = s"ALTER SESSION SET GCSAuth='${keyId.arg}:${keySecret.arg}'"
+          logger.info(s"Loaded Google Cloud Storage - Vertica access key ID from ${gcsAuth.accessKeyId.origin}")
+          logger.info(s"Loaded Google Cloud Storage - Vertica access key secret from ${gcsAuth.accessKeySecret.origin}")
+          this.execute(query)
+        case None =>
+          logger.info("Did not setup GCS authentications")
           Right(())
       }
     } yield ()

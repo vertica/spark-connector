@@ -18,9 +18,7 @@ import com.vertica.spark.util.schema.MetadataKey
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
-import java.sql.Connection
-
-object Main {
+object SetExample {
 
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()

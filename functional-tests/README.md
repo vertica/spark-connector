@@ -8,7 +8,7 @@ Configuration is specified with application.conf (HOCON format)
 From the functional-tests directory, run the following commands:
 ```
 mkdir lib
-cd ../connector && sbt assembly && cp target/scala-2.12/spark-vertica-connector-assembly-3.2.1.jar ../functional-tests/lib && cd ../functional-tests
+cd ../connector && sbt assembly && cp target/scala-2.12/spark-vertica-connector-assembly-3.2.2.jar ../functional-tests/lib && cd ../functional-tests
 ```
 This will create a lib folder and then build and copy the connector JAR file to it.
 
@@ -20,24 +20,25 @@ cd ../docker
 ```
 This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
+### Starting Functional Testing
+
 In the sandbox environment, change your working directory to functional-tests
 ```
 cd spark-connector/functional-tests
 ```
 
-### Starting Functional Tests
+Use `sbt` to start the sbt server from the command line. Enter `run` to execute the default test suites. You can specify arguments to modify you test run. For more details, use `run -h`.
 
-To execute the default functional tests, use `sbt run` from the command line.
+As an example, to include large data tests into the run, use `run -l`. Using `run -s ComplexTypeTests` will only execute ComplexTypeTests.
 
-By default, a set of functional test suites will be executed, but you can specify arguments to modify you test run. For example, `sbt run -l` will add LargeDataTests to the test suites for execution. For more detail, use `sbt run -h`.
+To run a specific test in a suite, use option `-t` to specify a test name. For example `run -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
 
-As an example, to include large data tests into the run, use `sbt run -l`.
+### Submitting Functional Test
 
-Using `sbt -s ComplexTypeTests` will only execute ComplexTypeTests. 
-
-To run a specific test in a suite, use option `-t` to specify a test name. For example `sbt -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used in conjunction with `-s`.
+Assemble the functional test into a fat jar with `sbt assembly`. Assuming you are in the sandbox environment, navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`. This will start a stand-alone cluster and submit our assembled test application to it.
 
 ### Using S3:
+
 Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
 * aws_access_key_id
 * aws_secret_access_key
@@ -48,20 +49,15 @@ Set the appropriate S3-credentials in the application.conf file. Refer to the fo
 * aws_enable_ssl
 * aws_enable_path_style
 
-From the functional-tests directory, build the JAR file for the functional tests:
-```
-sbt assembly
-```
+Make sure your update the option `filepath` to your S3 bucket as well.
 
-From the project's docker directory:
+### Using GCS:
+Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to the project's configuration file:
 ```
-cd ../docker
-./sandbox-clientenv.sh
+gcs_hmac_key_id
+gcs_hmac_key_secret
+gcs_service_key_id
+gcs_service_key
+gcs_service_email
 ```
-This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
-
-In the sandbox environment, change your working directory to functional-tests and run s3-functional-tests.sh
-```
-cd spark-connector/functional-tests
-./s3-functional-tests.sh
-```
+Make sure your update the option `filepath` to your GCS bucket as well. 

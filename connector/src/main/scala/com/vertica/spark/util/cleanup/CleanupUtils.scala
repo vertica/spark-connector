@@ -95,7 +95,8 @@ class CleanupUtils extends CleanupUtilsInterface {
       // Delete all portions
       _ <- (0 until fileCleanupInfo.fileRangeCount).map(idx => {
         logger.debug("Removing: " + recordFileName(filename, idx))
-        fileStoreLayer.removeFile(recordFileName(filename, idx))}).toList.sequence
+        fileStoreLayer.removeFile(recordFileName(filename, idx))}
+      ).toList.sequence
 
       // Delete the original file
       _ = logger.debug("Removing parquet: " + filename)
