@@ -19,6 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, JDBCConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
+import com.vertica.spark.json.VerticaJsonTable
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonReaderNotFound}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.SparkSession
@@ -79,7 +80,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
     if(config.useJson)
-      new VerticaJsonScan(cfg, readConfigSetup)
+      new VerticaJsonScan2(cfg, readConfigSetup)
     else
       new VerticaScan(cfg, readConfigSetup)
   }
@@ -285,14 +286,14 @@ class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends 
   }
 }
 
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
+class VerticaJsonScan2(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
   private var jsonBatch: Option[Batch] = None
 
-  val option = new org.apache.spark.sql.catalyst.json.JSONOptionsInRead(Map[String, String](), "", "")
+  // val option = new org.apache.spark.sql.catalyst.json.JSONOptionsInRead(Map[String, String](), "", "")
 
-  val fact = org.apache.spark.sql.execution.datasources.v2.json.vertica.JsonPartitionReaderFactory(_, _, _, _, _, option, _)
+  // val fact = org.apache.spark.sql.execution.datasources.v2.json.vertica.JsonPartitionReaderFactory(_, _, _, _, _, option, _)
 
   private val testSchema = StructType(Array(
     StructField("a", LongType),
@@ -316,9 +317,10 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
           val schema = Some(readSchema())
           val fallback = classOf[JsonFileFormat]
           val jsonTable = JsonTable("Vertica Table", sparkSession, options , paths, schema, fallback)
+          val verticaJsonTable = new VerticaJsonTable(jsonTable)
 
           val builderOpts = new CaseInsensitiveStringMap(Map(("path" -> partitionInfo.path)).asJava)
-          val batch = jsonTable.newScanBuilder(builderOpts).build().toBatch
+          val batch = verticaJsonTable.newScanBuilder(builderOpts).build().toBatch
           jsonBatch = Some(batch)
           batch.planInputPartitions()
       }
