@@ -322,7 +322,7 @@ class VerticaDistributedFilesystemReadPipe(
     /**
      * Parse the list of files Vertica exported, and create a list of PartitionInfo representing how the files are split up
      * */
-    def partition: Either[ConnectorError, PartitionInfo] = {
+    def partitionData: Either[ConnectorError, PartitionInfo] = {
       for {
         // Retrieve all parquet files created by Vertica
         dirExists <- fileStoreLayer.fileExists(hdfsPath)
@@ -361,12 +361,7 @@ class VerticaDistributedFilesystemReadPipe(
           requestedPartitionCount
         }
 
-        /*
-        * Depending on export configuration options, Vertica may export multiple Parquet files. For Spark to read these files
-        * concurrently, we need to partition them and return the information to Spark, who will schedule workers accordingly
-        * and send them the partition information to read.
-        * */
-        partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
+        partitionInfo = getPartitionInfo(fileMetadata, partitionCount, hdfsPath)
 
         _ = partitionTimer.endTime()
 
@@ -390,7 +385,8 @@ class VerticaDistributedFilesystemReadPipe(
         if (config.json) {
           Right(PartitionInfo(Array.empty, hdfsPath))
         } else {
-          partition.map(partitionInfo => {
+          partitionData
+            .map(partitionInfo => {
               logger.info("Reading data from Parquet file.")
               partitionInfo
             }).left.map(error => {
