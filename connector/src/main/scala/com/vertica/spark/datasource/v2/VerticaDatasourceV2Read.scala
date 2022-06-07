@@ -17,19 +17,13 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, JDBCConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.json.VerticaJsonTable
-import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError, JsonReaderNotFound}
+import com.vertica.spark.json.VerticaJsonScan
+import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.expressions.aggregate._
-import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
-import org.apache.spark.sql.execution.datasources.v2.json.{JsonPartitionReaderFactory, JsonScan, JsonTable}
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.util.CaseInsensitiveStringMap
-
-import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 trait PushdownFilter {
   def getFilterString: String
@@ -80,7 +74,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
     if(config.useJson)
-      new VerticaJsonScan2(cfg, readConfigSetup)
+      new VerticaJsonScan(cfg, readConfigSetup)
     else
       new VerticaScan(cfg, readConfigSetup)
   }
@@ -284,55 +278,5 @@ class VerticaBatchReader(config: ReadConfig, reader: DSReaderInterface) extends 
       case Left(e) => ErrorHandling.logAndThrowError(logger, e)
     }
   }
-}
-
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
-  private val logger = LogProvider.getLogger(classOf[VerticaScan])
-
-  private var jsonBatch: Option[Batch] = None
-
-  //Todo: need to infer complex type schema from Vertica tables.
-  override def readSchema(): StructType =
-    StructType(Array(
-      StructField("col1", ArrayType(LongType)),
-      // StructField("a", LongType),
-      // StructField("b", ArrayType(ArrayType(LongType))),
-      // StructField("c", StructType(Array(StructField("f0", DoubleType))))
-    ))
-
-  override def planInputPartitions(): Array[InputPartition] = {
-    readConfigSetup
-      .performInitialSetup(config) match {
-      case Left(err) => ErrorHandling.logAndThrowError(logger, err)
-      case Right(opt) => opt match {
-        case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
-        case Some(partitionInfo) =>
-          val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          val paths = List(partitionInfo.path)
-          val options = CaseInsensitiveStringMap.empty()
-          val schema = Some(readSchema())
-          val fallback = classOf[JsonFileFormat]
-          val jsonTable = JsonTable("Vertica Table", sparkSession, options , paths, schema, fallback)
-          val verticaJsonTable = new VerticaJsonTable(jsonTable)
-          val builderOpts = new CaseInsensitiveStringMap(Map[String, String]().asJava)
-          val batch = verticaJsonTable.newScanBuilder(builderOpts).build().toBatch
-          jsonBatch = Some(batch)
-          batch.planInputPartitions()
-      }
-    }
-  }
-
-  override def createReaderFactory(): PartitionReaderFactory = {
-    jsonBatch match {
-      case Some(batch) => batch.createReaderFactory()
-      case None => ErrorHandling.logAndThrowError(logger, JsonReaderNotFound())
-    }
-  }
-
-  /**
-   * Returns this object as an instance of the Batch interface
-   */
-  override def toBatch: Batch = this
-
 }
 
