@@ -31,7 +31,7 @@ class VerticaPartition extends InputPartition
  * Partitioning information.
  * @param partitionSeq Sequence of InputPartitions, where each InputPartition contains info for reading one partition of the data.
  */
-final case class PartitionInfo(partitionSeq: Array[InputPartition])
+final case class PartitionInfo(partitionSeq: Array[InputPartition], rootPath: String = "")
 
 /**
   * Interface for the pipe that connects us to Vertica. Agnostic to the method used to transfer the data.
