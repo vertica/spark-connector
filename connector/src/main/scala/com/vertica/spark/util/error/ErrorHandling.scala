@@ -560,6 +560,11 @@ case class JdbcSchemaError(error: ConnectorError) extends SchemaError {
 case class TableNotEnoughRowsError() extends SchemaError {
   def getFullContext: String = "Attempting to write to a table with less columns than the spark schema."
 }
+case class QueryReturnsComplexTypes(colName: String, typeName: String, query: String) extends SchemaError{
+  override def getFullContext: String = s"Complex types are not supported when reading using a query. Column `$colName` has complex types $typeName. \n" +
+  s"QUERY: $query"
+}
+
 case class NonEmptyDataFrameError() extends ConnectorError {
   override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
 }

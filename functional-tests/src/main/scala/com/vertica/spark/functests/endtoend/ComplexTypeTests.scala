@@ -1,9 +1,10 @@
 package com.vertica.spark.functests.endtoend
 
+import cats.data.NonEmptyList
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, InternalMapNotSupported}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorError, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
 import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
@@ -437,5 +438,34 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         case _ => fail("Unexpected exception", exp)
       }
     }
+  }
+
+  it should "error when reading Vertica query with complex type columns" in {
+    val tableName1 = "dftest1"
+    val stmt = conn.createStatement
+    val n = 1
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b array[int], c row(int))")
+
+    val insert = "insert into "+ tableName1 + " values(2, array[4,5], row(7))"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    val query = "select * from " + tableName1
+
+    val result = Try{spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("query" -> query)).load().show()}
+    result match {
+      case Failure(exception) => exception match {
+        case ConnectorException(error) =>
+          assert(error.isInstanceOf[ErrorList])
+          assert(error.asInstanceOf[ErrorList].errors.head.isInstanceOf[ErrorList])
+          val errorsFound = error.asInstanceOf[ErrorList].errors.head.getUnderlyingError.asInstanceOf[ErrorList]
+          assert(errorsFound.errors.length == 2)
+          errorsFound.errors.map(e => assert(e.isInstanceOf[QueryReturnsComplexTypes]))
+          // error.asInstanceOf[ErrorList].errors.map(err => assert(err.isInstanceOf[QueryReturnsComplexTypes]))
+        case _ => fail("Expected connector exception")
+      }
+      case Success(_) =>
+        fail("Expected to fail")
+    }
+    TestUtils.dropTable(conn, tableName1)
   }
 }
