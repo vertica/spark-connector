@@ -119,57 +119,73 @@ class VerticaDistributedFilesystemReadPipe(
     map(filename) - 1
   }
 
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
+  /**
+   * Depending on export configuration options, Vertica may export multiple Parquet files. For Spark to read these files
+   * concurrently, we need to partition them and return this information to Spark, who will schedule workers accordingly
+   * and send them the partition information.
+   *
+   * We splitup
+   *
+   * The number of partitions = total parquet row groups / partitionCount.
+   *
+   * @param fileMetadata A list of parquet metadata
+   *
+   * @param partitionCount the number of partition to create
+   * */
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int, rootPath: String): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
     // If no data, return empty partition list
     if(totalRowGroups == 0) {
       logger.info("No data. Returning empty partition list.")
-      PartitionInfo(Array[InputPartition]())
-    }
-    else {
+      PartitionInfo(Array[InputPartition](), rootPath)
+    } else {
       val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-      val rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
+      val rowGroupsPerPartition = (totalRowGroups / partitionCount) + extraSpace
 
       // Now, create partitions splitting up files roughly evenly
-      var i = 0
       var partitions = List[VerticaDistributedFilesystemPartition]()
       var curFileRanges = List[ParquetFileRange]()
       val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
       logger.info("Creating partitions.")
+      var currPartitionRowGroupCount = 0
+      // To create spark partitions, we loop over the metadata of exported parquets and record row groups for each partitions
       for(m <- fileMetadata) {
-        val size = m.rowGroupCount
-        logger.debug("Splitting file " + m.filename + " with row group count " + size)
-        var j = 0
-        var low = 0
-        while(j < size){
-          if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
+        val fileRowGroupCount = m.rowGroupCount
+        logger.debug("Splitting file " + m.filename + " with row group count " + fileRowGroupCount)
+        var currFileRowGroup = 0
+        var currMinRowGroup = 0
+        /**
+         * For each parquet metadata, we step through the row groups until:
+         * - rowGroupsPerPartition is reached, then our partition is full. We record the file range to the partition and
+         * start a new partition
+         * - fileRowGroupCount is reached, then we record the row group range into the partition and move to the next parquet metadata
+         * */
+        while(currFileRowGroup < fileRowGroupCount){
+          if(currPartitionRowGroupCount == rowGroupsPerPartition - 1) { // Reached end of partition, cut off here
             val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+            val frange = ParquetFileRange(m.filename, currMinRowGroup, currFileRowGroup, Some(rangeIdx))
 
             curFileRanges = curFileRanges :+ frange
             val partition = VerticaDistributedFilesystemPartition(curFileRanges)
             partitions = partitions :+ partition
             curFileRanges = List[ParquetFileRange]()
             logger.debug("Reached partition with file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i = 0
-            low = j + 1
+              currMinRowGroup + " , range high: " + currFileRowGroup + " , idx: " + rangeIdx)
+            currPartitionRowGroupCount = 0
+            currMinRowGroup = currFileRowGroup + 1
           }
-          else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
+          else if(currFileRowGroup == fileRowGroupCount - 1){ // Reached end of file's row groups, add to file ranges
             val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+            val frange = ParquetFileRange(m.filename, currMinRowGroup, currFileRowGroup, Some(rangeIdx))
             curFileRanges = curFileRanges :+ frange
             logger.debug("Reached end of file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i += 1
-          }
-          else {
-            i += 1
-          }
-          j += 1
+              currMinRowGroup + " , range high: " + currFileRowGroup + " , idx: " + rangeIdx)
+            currPartitionRowGroupCount += 1
+          } else currPartitionRowGroupCount += 1
+          currFileRowGroup += 1
         }
       }
 
@@ -182,7 +198,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Add range count map info to partition
       partitions = partitions.map(part => part.copy(rangeCountMap = Some(rangeCountMap.toMap)))
 
-      PartitionInfo(partitions.toArray)
+      PartitionInfo(partitions.toArray, rootPath)
     }
   }
 
@@ -224,129 +240,161 @@ class VerticaDistributedFilesystemReadPipe(
     val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + hdfsPath)
 
-    val ret: ConnectorResult[PartitionInfo] = for {
-      _ <- getMetadata
-
-      // Set Vertica to work with kerberos and HDFS/AWS
-      _ <- jdbcLayer.configureSession(fileStoreLayer)
-
-      _ <- checkSchemaTypesSupport(config, jdbcLayer)
-
-      // Create unique directory for session
-      perm = config.filePermissions
-
-      _ = logger.info("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
-
-      _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
-        case Left(err) =>
-          err.getUnderlyingError match {
-            case CreateDirectoryAlreadyExistsError(_) =>
-              logger.info("Directory already existed: " + fileStoreConfig.address)
-              Right(())
-            case _ => Left(err.context("Failed to create directory: " + fileStoreConfig.address))
-          }
-        case Right(_) => Right(())
-      }
-
-      // Check if export is already done (previous call of this function)
-      exportDone <- fileStoreLayer.fileExists(hdfsPath)
-
-      // File permissions.
-      filePermissions = config.filePermissions
-
-      selectClause <- this.getSelectClause
-      _ = logger.info("Select clause requested: " + selectClause)
-
-      groupbyClause = this.getGroupbyClause
-
-      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownFilters)
-
-      exportSource = config.tableSource match {
-        case tablename: TableName => tablename.getFullTableName
-        case TableQuery(query, _) => "(" + query + ") AS x"
-      }
-      _ = logger.info("Export Source: " + exportSource)
-
-      exportStatement = "EXPORT TO PARQUET(" +
+    def makeExportStatement(filePermissions: ValidFilePermissions, selectClause: String, groupbyClause: String, pushdownFilters: String, exportSource: String, exportToJson: Boolean) = {
+      val typeString = if(exportToJson) "JSON" else "PARQUET"
+      "EXPORT TO " + typeString + "(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
         ", fileMode = '" + filePermissions +
         "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
-
-      // Export if not already exported
-      _ <- if(exportDone) {
-        logger.info("Export already done, skipping export step.")
-        Right(())
-      } else {
-        logger.info("Exporting using statement: \n" + exportStatement)
-
-        val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
-        timer.startTime()
-        val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
-        sparkContext.addSparkListener(new ApplicationParquetCleaner(config))
-        timer.endTime()
-        res
-      }
-
-      // Retrieve all parquet files created by Vertica
-      dirExists <- fileStoreLayer.fileExists(hdfsPath)
-      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
-      parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
-      requestedPartitionCount = config.partitionCount match {
-          case Some(count) => count
-          case None => parquetFileList.size // Default to 1 partition / file
-      }
-
-      _ = logger.info("Requested partition count: " + requestedPartitionCount)
-      _ = logger.info("Parquet file list size: " + parquetFileList.size)
-
-      partitionTimer = new Timer(config.timeOperations, logger, "Reading Parquet Files Metadata and creating partitions")
-      _ = partitionTimer.startTime()
-
-      fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
-      totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
-
-      _ = logger.info("Total row groups: " + totalRowGroups)
-      // If table is empty, cleanup
-      _ =  if(totalRowGroups == 0) {
-        if(!config.fileStoreConfig.preventCleanup) {
-          logger.debug("Cleaning up empty directory in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
-        }
-        else {
-          Right()
-        }
-      }
-
-      partitionCount = if (totalRowGroups < requestedPartitionCount) {
-        logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)
-        totalRowGroups
-      } else {
-        requestedPartitionCount
-      }
-
-      partitionInfo = getPartitionInfo(fileMetadata, partitionCount)
-
-      _ = partitionTimer.endTime()
-
-      _ <- jdbcLayer.close()
-    } yield partitionInfo
-
-    // If there's an error, cleanup
-    ret match {
-      case Left(_) =>
-        if(!config.fileStoreConfig.preventCleanup) {
-          logger.info("Cleaning up all files in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
-        }
-        jdbcLayer.close()
-      case _ => logger.info("Reading data from Parquet file.")
+        "') AS SELECT " + {
+        if (exportToJson) "*" else selectClause
+      } + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
     }
 
-    ret
+    /**
+     * Create a unique directory then tell Vertica to export to a subdirectory there.
+     * */
+    def exportData: Either[ConnectorError, Unit] = {
+      for {
+        _ <- getMetadata
+
+        // Set Vertica to work with kerberos and HDFS/AWS
+        _ <- jdbcLayer.configureSession(fileStoreLayer)
+
+        _ <- checkSchemaTypesSupport(config, jdbcLayer)
+
+        // Create unique directory for session
+        perm = config.filePermissions
+
+        _ = logger.info("Creating unique directory: " + fileStoreConfig.address + " with permissions: " + perm)
+
+        _ <- fileStoreLayer.createDir(fileStoreConfig.address, perm.toString) match {
+          case Left(err) =>
+            err.getUnderlyingError match {
+              case CreateDirectoryAlreadyExistsError(_) =>
+                logger.info("Directory already existed: " + fileStoreConfig.address)
+                Right(())
+              case _ => Left(err.context("Failed to create directory: " + fileStoreConfig.address))
+            }
+          case Right(_) => Right(())
+        }
+
+        // Check if export is already done (previous call of this function)
+        exportDone <- fileStoreLayer.fileExists(hdfsPath)
+
+        // File permissions.
+        filePermissions = config.filePermissions
+
+        selectClause <- this.getSelectClause
+        _ = logger.info("Select clause requested: " + selectClause)
+
+        groupbyClause = this.getGroupbyClause
+
+        pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+        _ = logger.info("Pushdown filters: " + pushdownFilters)
+
+        exportSource = config.tableSource match {
+          case tablename: TableName => tablename.getFullTableName
+          case TableQuery(query, _) => "(" + query + ") AS x"
+        }
+        _ = logger.info("Export Source: " + exportSource)
+
+        exportStatement = makeExportStatement(filePermissions, selectClause, groupbyClause, pushdownFilters, exportSource, config.useJson)
+        // Export if not already exported
+        _ <- if (exportDone) {
+          logger.info("Export already done, skipping export step.")
+          Right(())
+        } else {
+          logger.info("Exporting using statement: \n" + exportStatement)
+
+          val timer = new Timer(config.timeOperations, logger, "Export To Parquet From Vertica")
+          timer.startTime()
+          val res = jdbcLayer.execute(exportStatement).leftMap(err => ExportFromVerticaError(err))
+          sparkContext.addSparkListener(new ApplicationParquetCleaner(config))
+          timer.endTime()
+          res
+        }
+      } yield ()
+    }
+
+    /**
+     * Parse the list of files Vertica exported, and create a list of PartitionInfo representing how the files are split up
+     * */
+    def partitionData: Either[ConnectorError, PartitionInfo] = {
+      for {
+        // Retrieve all parquet files created by Vertica
+        dirExists <- fileStoreLayer.fileExists(hdfsPath)
+        fullFileList <- if (!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
+        parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
+        requestedPartitionCount = config.partitionCount match {
+          case Some(count) => count
+          case None => parquetFileList.size // Default to 1 partition / file
+        }
+
+        _ = logger.info("Requested partition count: " + requestedPartitionCount)
+        _ = logger.info("Parquet file list size: " + parquetFileList.size)
+
+        partitionTimer = new Timer(config.timeOperations, logger, "Reading Parquet Files Metadata and creating partitions")
+        _ = partitionTimer.startTime()
+
+        fileMetadata <- parquetFileList.toList.traverse(filename => fileStoreLayer.getParquetFileMetadata(filename))
+        totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
+
+        _ = logger.info("Total row groups: " + totalRowGroups)
+        // If table is empty, cleanup
+        _ = if (totalRowGroups == 0) {
+          if (!config.fileStoreConfig.preventCleanup) {
+            logger.debug("Cleaning up empty directory in path: " + hdfsPath)
+            cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+          }
+          else {
+            Right()
+          }
+        }
+
+        partitionCount = if (totalRowGroups < requestedPartitionCount) {
+          logger.info("Less than " + requestedPartitionCount + " partitions required, only using " + totalRowGroups)
+          totalRowGroups
+        } else {
+          requestedPartitionCount
+        }
+
+        partitionInfo = getPartitionInfo(fileMetadata, partitionCount, hdfsPath)
+
+        _ = partitionTimer.endTime()
+
+        _ <- jdbcLayer.close()
+      } yield partitionInfo
+    }
+
+    def cleanup: ConnectorResult[Unit] = {
+      if (!config.fileStoreConfig.preventCleanup) {
+        logger.info("Cleaning up all files in path: " + hdfsPath)
+        cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+      }
+      jdbcLayer.close()
+    }
+
+    exportData match {
+      case Left(error) =>
+        cleanup
+        Left(error)
+      case Right(_) =>
+        if (config.json) {
+          Right(PartitionInfo(Array.empty, hdfsPath))
+        } else {
+          partitionData
+            .map(partitionInfo => {
+              logger.info("Reading data from Parquet file.")
+              partitionInfo
+            }).left.map(error => {
+            cleanup
+            error
+          })
+        }
+    }
   }
 
   private def checkSchemaTypesSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
@@ -368,9 +416,9 @@ class VerticaDistributedFilesystemReadPipe(
     logger.info("Starting partition read.")
     for {
       part <- verticaPartition match {
-          case p: VerticaDistributedFilesystemPartition => Right(p)
-          case _ => Left(InvalidPartition())
-        }
+        case p: VerticaDistributedFilesystemPartition => Right(p)
+        case _ => Left(InvalidPartition())
+      }
       _ = this.partition = Some(part)
       _ = this.fileIdx = 0
 

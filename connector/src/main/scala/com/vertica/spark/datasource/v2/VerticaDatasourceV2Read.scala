@@ -17,10 +17,9 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
+import com.vertica.spark.json.VerticaJsonScan
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -74,7 +73,15 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    new VerticaScan(cfg, readConfigSetup)
+    if(config.useJson)
+      new VerticaJsonScan(cfg, readConfigSetup)
+    else
+      new VerticaScan(cfg, readConfigSetup)
+  }
+
+  private def useJson(schema: StructType): Boolean = {
+    // Todo: parse required schema and return true if found complex type.
+    false
   }
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
