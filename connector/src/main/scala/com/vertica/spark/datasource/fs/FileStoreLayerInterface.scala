@@ -80,6 +80,9 @@ trait FileStoreLayerInterface {
   def getGCSOptions: GCSOptions
 }
 
+/**
+ * A Parquet reader that reads each row into a Spark [[InternalRow]]
+ * */
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
 
   private var curRowGroup = fileRange.minRowGroup
@@ -100,7 +103,7 @@ final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: Mess
           Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
         case None => None
       }
-    } else None
+    } else {None}
   }
 
   private def checkRowGroup(): Option[RecordReader[InternalRow]] = {
