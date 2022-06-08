@@ -259,23 +259,13 @@ class SchemaTools extends SchemaToolsInterface {
     }
   }
 
-  case class ColumnInfoQueryData(tableName: String, dbSchema: String, emptyQuery: String)
-  protected def getColumnInfoQueryData(tableSource: TableSource): ColumnInfoQueryData = tableSource match {
-    case tb: TableName =>
-      ColumnInfoQueryData(
-        tb.getTableName.replace("\"",""),
-        tb.getDbSchema.replace("\"",""),
-        // Query for an empty result set from Vertica.
-        // This is simply so we can load the metadata of the result set
-        // and use this to retrieve the name and type information of each column
-        "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0")
-    case TableQuery(query, _) =>
-      ColumnInfoQueryData("", "" , "SELECT * FROM (" + query + ") AS x WHERE 1=0")
-  }
-
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
-    val tableInfo = getColumnInfoQueryData(tableSource)
-    jdbcLayer.query(tableInfo.emptyQuery) match {
+    val emptyQuery = tableSource match {
+      case tb: TableName => "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0"
+      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+    }
+   // We query an empty result to get the table's metadata.
+    jdbcLayer.query(emptyQuery) match {
       case Left(err) => Left(JdbcSchemaError(err))
       case Right(rs) =>
         try {
@@ -292,10 +282,20 @@ class SchemaTools extends SchemaToolsInterface {
                 val metadata = new MetadataBuilder().putString(MetadataKey.NAME, columnLabel).build()
                 val colType = rsmd.getColumnType(idx)
                 val colDef = ColumnDef(columnLabel, colType, typeName, fieldSize, fieldScale, isSigned, nullable, metadata)
-                colDef.jdbcType match {
-                  case java.sql.Types.ARRAY |
-                       java.sql.Types.STRUCT => startQueryingVerticaComplexTypes(colDef, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer)
-                  case _ => Right(colDef)
+                tableSource match {
+                  case tb: TableName =>
+                    val unQuotedName = tb.getTableName.replaceAll("\"", "")
+                    val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
+                    colType match {
+                      case java.sql.Types.ARRAY | java.sql.Types.STRUCT =>
+                        startQueryingVerticaComplexTypes(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
+                      case _ => Right(colDef)
+                    }
+                  case query: TableQuery =>
+                    colType match {
+                      case java.sql.Types.ARRAY | java.sql.Types.STRUCT => Left(QueryReturnsComplexTypes(columnLabel, typeName, query.query))
+                      case _ => Right(colDef)
+                    }
                 }
               }).toList
           colDefsOrErrors
@@ -650,12 +650,18 @@ class SchemaTools extends SchemaToolsInterface {
 class SchemaToolsV10 extends SchemaTools {
 
   override def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
-    val tableInfo = getColumnInfoQueryData(tableSource)
-
     super.getColumnInfo(jdbcLayer, tableSource) match {
       case Left(err) => Left(err)
       case Right(colList) =>
-        colList.map(col => checkColumnIsComplexType(col, tableInfo.tableName, tableInfo.dbSchema, jdbcLayer))
+        colList.map(col =>
+          tableSource match {
+            case tb: TableName =>
+              val unQuotedName = tb.getTableName.replaceAll("\"", "")
+              val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
+              checkForComplexType(col, unQuotedName, unQuotedDbSchema, jdbcLayer)
+            case TableQuery(_,_) => Right(col)
+          }
+        )
           .toList
           .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated).toEither
           .map(list => list)
@@ -667,7 +673,7 @@ class SchemaToolsV10 extends SchemaTools {
    * Vertica 10 reports complex types as string type over JDBC. Thus, we need to check if the jdbc type is a Spark
    * string type, then we check if it is complex type.
    * */
-  private def checkColumnIsComplexType(col: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def checkForComplexType(col: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     super.getCatalystTypeFromJdbcType(col.jdbcType, 0, 0, false, "") match {
       case Right(dataType) => dataType match {
         case StringType => checkV10ComplexType(col, tableName, dbSchema, jdbcLayer)
