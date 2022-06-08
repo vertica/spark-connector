@@ -28,7 +28,8 @@ import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 object VerticaPartitionedFile {
-  def apply(file: PartitionedFile, partitionIndex: Int) = new VerticaPartitionedFile(file.partitionValues, file.filePath, file.start, file.length, partitionIndex)
+  def apply(file: PartitionedFile, partitionIndex: Int): VerticaPartitionedFile =
+    new VerticaPartitionedFile(file.partitionValues, file.filePath, file.start, file.length, partitionIndex)
 }
 
 /**

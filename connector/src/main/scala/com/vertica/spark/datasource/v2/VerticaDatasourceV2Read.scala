@@ -73,10 +73,11 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    if(config.useJson)
+    if(config.useJson) {
       new VerticaJsonScan(cfg, readConfigSetup)
-    else
+    } else {
       new VerticaScan(cfg, readConfigSetup)
+    }
   }
 
   private def useJson(schema: StructType): Boolean = {

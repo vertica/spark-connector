@@ -184,7 +184,9 @@ class VerticaDistributedFilesystemReadPipe(
             logger.debug("Reached end of file " + m.filename + " , range low: " +
               currMinRowGroup + " , range high: " + currFileRowGroup + " , idx: " + rangeIdx)
             currPartitionRowGroupCount += 1
-          } else currPartitionRowGroupCount += 1
+          } else {
+            currPartitionRowGroupCount += 1
+          }
           currFileRowGroup += 1
         }
       }
