@@ -120,12 +120,16 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   /**
-   * A partition contains a collection of Parquet row groups.
-   * The number of partitions = total parquet row groups / partitionCount.
+   * Function generate a list of [[VerticaDistributedFilesystemPartition]] by distributing the row groups of the exported
+   * parquets evenly amongst the requested number of partitions.
+   * If no partition number were specified, defaults to one row group per partition. Note that a partition can span
+   * multiple files.
    *
    * @param fileMetadata A list of parquet metadata
    *
    * @param requestedPartitionCount the number of partition to create
+   *
+   * @return An array of [[VerticaDistributedFilesystemPartition]]
    * */
   private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], requestedPartitionCount: Int): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
@@ -145,16 +149,16 @@ class VerticaDistributedFilesystemReadPipe(
       val maxSize = (totalRowGroups / requestedPartitionCount) + extraSpace
       // The row group count of a partition
       var partitionSize = 0
-      // Create partitions by splitting up files roughly evenly
-      fileMetadata.foreach(metadata => {
-        val fileRowGroupCount = metadata.rowGroupCount
+      // Create partitions by splitting up files by their row groups roughly evenly.
+      fileMetadata.foreach(file => {
+        val fileRowGroupCount = file.rowGroupCount
         var start = 0
 
         def addNewPartition(currRowGroup: Int): Unit = {
-          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, metadata.filename)
-          fileRanges = fileRanges :+ ParquetFileRange(metadata.filename, start, currRowGroup, Some(rangeIdx))
+          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
+          fileRanges = fileRanges :+ ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
           partitions = partitions :+ VerticaDistributedFilesystemPartition(fileRanges)
-          logger.debug("Reached partition with file " + metadata.filename + " , range low: " +
+          logger.debug("Reached partition with file " + file.filename + " , range low: " +
             start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
           partitionSize = 0
           start = currRowGroup + 1
@@ -162,10 +166,10 @@ class VerticaDistributedFilesystemReadPipe(
         }
 
         def addNewFileRange(currRowGroup: Int): Unit = {
-          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, metadata.filename)
-          val frange = ParquetFileRange(metadata.filename, start, currRowGroup, Some(rangeIdx))
+          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
+          val frange = ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
           fileRanges = fileRanges :+ frange
-          logger.debug("Reached end of file " + metadata.filename + " , range low: " +
+          logger.debug("Reached end of file " + file.filename + " , range low: " +
             start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
           partitionSize += 1
         }
