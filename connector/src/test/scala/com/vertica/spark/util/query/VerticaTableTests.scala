@@ -20,14 +20,16 @@ object VerticaTableTests extends VerticaTableTests {
     (jdbcLayer, rs)
   }
 
-  def mockGetColumnInfo(colName: String, tableName: String, schema: String, typeId: Long, typeName: String, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
+  def mockGetColumnInfo(colName: String, tableName: String, schema: String, typeId: Long, typeName: String, jdbcLayer: JdbcLayerInterface, precision: Long = 0, scale: Long = 0): (JdbcLayerInterface, ResultSet) = {
     val schemaCond = if(schema.nonEmpty) s" AND table_schema='$schema'" else ""
     val conditions = s"table_name='$tableName'$schemaCond AND column_name='$colName'"
-    val (jdbc, rs) = mockVerticaTableQuery(List("data_type_id" , "data_type"), "columns", conditions, jdbcLayer)
+    val (jdbc, rs) = mockVerticaTableQuery(List("data_type_id" , "data_type", "numeric_precision", "numeric_scale"), "columns", conditions, jdbcLayer)
 
     (rs.next _).expects().returning(true)
     (rs.getLong: Int => Long).expects(1).returning(typeId)
     (rs.getString: Int => String).expects(2).returning(typeName)
+    (rs.getLong: Int => Long).expects(3).returning(precision)
+    (rs.getLong: Int => Long).expects(4).returning(scale)
     (rs.next _).expects().returning(false)
 
     (jdbc, rs)
@@ -35,18 +37,19 @@ object VerticaTableTests extends VerticaTableTests {
 
   def mockGetComplexTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val conditions = s"type_id=$verticaTypeId"
-    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind"), "complex_types", conditions, jdbcLayer)
+    val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind", "numeric_precision"), "complex_types", conditions, jdbcLayer)
     (jdbc, rs)
   }
 
-  def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet, typeKind: String = "", typeName: String = ""): Unit = {
+  def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet, typeKind: String = "", typeName: String = "", precision: Long = 0, scale: Long = 0): Unit = {
     (rs.next _).expects().returning(true)
     (rs.getLong: Int => Long).expects(1).returning(typeId)
     (rs.getString: Int => String).expects(2).returning(typeName)
     (rs.getLong: Int => Long).expects(3).returning(fieldId)
     (rs.getString: Int => String).expects(4).returning(fieldTypeName)
-    (rs.getLong: Int => Long).expects(5).returning(0)
+    (rs.getLong: Int => Long).expects(5).returning(scale)
     (rs.getString: Int => String).expects(6).returning(typeKind)
+    (rs.getLong: Int => Long).expects(7).returning(precision)
   }
 
   def mockGetTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
@@ -110,7 +113,7 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
   it should "find column info" in {
     val typeId = 1
     val typeName = "typeName"
-    val (jdbcLayer, _) = mockGetColumnInfo(colName, tableName, "", typeId, typeName, mock[JdbcLayerInterface])
+    val (jdbcLayer, _) = mockGetColumnInfo(colName, tableName, "", typeId, typeName, mock[JdbcLayerInterface], 5, 2)
 
     new ColumnsTable(jdbcLayer)
       .getColumnInfo(colName, tableName, "") match {
@@ -118,6 +121,8 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
       case Right(colInfo) =>
         assert(colInfo.dataTypeName == typeName)
         assert(colInfo.verticaType == typeId)
+        assert(colInfo.precision == 5)
+        assert(colInfo.scale == 2)
     }
   }
 
@@ -140,8 +145,12 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     val fieldTypeName = "fieldTypeName"
     val typeId = 1000000
     val fieldId = 2000000
+    val typeKind = "typeKind"
+    val typeName = "typeName"
+    val scale = 2
+    val precision = 5
     val (jdbc, rs) = mockGetComplexTypeInfo(verticaTypeId, mock[JdbcLayerInterface])
-    mockComplexTypeInfoResult(fieldTypeName, fieldId, typeId, rs)
+    mockComplexTypeInfoResult(fieldTypeName, fieldId, typeId, rs, typeKind, typeName, precision, scale)
     (rs.next _).expects().returning(false)
 
     new ComplexTypesTable(jdbc).findComplexTypeInfo(verticaTypeId) match {
@@ -150,6 +159,10 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
         assert(row.fieldId == fieldId)
         assert(row.typeId == typeId)
         assert(row.fieldTypeName == fieldTypeName)
+        assert(row.typeKind == typeKind)
+        assert(row.typeName == typeName)
+        assert(row.numericScale == scale)
+        assert(row.numericPrecision == precision)
     }
   }
 

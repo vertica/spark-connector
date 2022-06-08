@@ -331,17 +331,17 @@ class SchemaTools extends SchemaToolsInterface {
   private def startQueryingVerticaComplexTypes(rootDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new ColumnsTable(jdbcLayer).getColumnInfo(rootDef.label, tableName, dbSchema) match {
       case Right(colInfo) =>
-        queryVerticaTypes(rootDef.jdbcType, colInfo.verticaType, jdbcLayer)
+        queryVerticaTypes(rootDef.jdbcType, colInfo.verticaType, colInfo.precision, colInfo.scale, jdbcLayer)
           .map(columnDef => rootDef.copy(metadata = columnDef.metadata, children = columnDef.children))
       case Left(err) => Left(err)
     }
   }
 
-  private def queryVerticaTypes(jdbcType: Int, verticaType: Long, jdbcLayer: JdbcLayerInterface) : ConnectorResult[ColumnDef] = {
+  private def queryVerticaTypes(jdbcType: Int, verticaType: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface) : ConnectorResult[ColumnDef] = {
     jdbcType match {
-      case java.sql.Types.ARRAY => queryVerticaArrayDef(verticaType, jdbcLayer)
+      case java.sql.Types.ARRAY => queryVerticaArrayDef(verticaType, precision, scale, jdbcLayer)
       case java.sql.Types.STRUCT => queryVerticaRowDef()
-      case _ => queryVerticaPrimitiveDef(verticaType, jdbcLayer)
+      case _ => queryVerticaPrimitiveDef(verticaType, precision, scale,jdbcLayer)
     }
   }
 
@@ -351,7 +351,7 @@ class SchemaTools extends SchemaToolsInterface {
   /**
    * Query Vertica system tables to find the array's depth and its element type.
    * */
-  private def queryVerticaArrayDef(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def queryVerticaArrayDef(verticaTypeId: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
      * A 1D primitive array is considered a native by Vertica and is tracked in types table.
      * Otherwise, nested arrays or arrays with complex elements are tracked in complex_types table.
@@ -365,17 +365,17 @@ class SchemaTools extends SchemaToolsInterface {
 
     val isNative = elementVerticaId < VERTICA_PRIMITIVES_MAX_ID
     if (isNative) {
-      queryVerticaNativeArray(elementVerticaId, isVerticaSet, jdbcLayer)
+      queryVerticaNativeArray(elementVerticaId, isVerticaSet, precision, scale, jdbcLayer)
     } else {
       queryVerticaComplexArray(verticaTypeId ,jdbcLayer)
     }
   }
 
-  private def queryVerticaNativeArray(elementVerticaTypeId: Long, isSet: Boolean, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def queryVerticaNativeArray(elementVerticaTypeId: Long, isSet: Boolean, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     val typesTable = new TypesTable(jdbcLayer)
     typesTable.getColumnDef(elementVerticaTypeId).map(result => {
       val elementDef: ColumnDef = makeArrayElementDef(result, 0)
-      makeArrayDef("", isSet, 0, elementDef)
+      makeArrayDef("", isSet, 0, elementDef.copy(scale = scale.toInt, size = precision.toInt))
     })
   }
 
@@ -404,10 +404,10 @@ class SchemaTools extends SchemaToolsInterface {
         case Left(value) => Left(value)
         case Right(result: ComplexTypeInfo) =>
           if (result.typeKind.toLowerCase == "row") {
-            queryVerticaTypes(java.sql.Types.STRUCT, result.typeId, jdbcLayer)
+            queryVerticaTypes(java.sql.Types.STRUCT, result.typeId, result.numericPrecision, result.numericScale, jdbcLayer)
               .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
           } else if (result.fieldId < VERTICA_PRIMITIVES_MAX_ID) {
-            queryVerticaTypes(-1, result.fieldId, jdbcLayer)
+            queryVerticaTypes(-1, result.fieldId, result.numericPrecision, result.numericScale, jdbcLayer)
               .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
           } else if (result.typeKind.toLowerCase == "array") {
             recursion(result.fieldId, depth + 1)
@@ -420,8 +420,9 @@ class SchemaTools extends SchemaToolsInterface {
     recursion(verticaTypeId, 0)
   }
 
-  private def queryVerticaPrimitiveDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+  private def queryVerticaPrimitiveDef(verticaType: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new TypesTable(jdbcLayer).getColumnDef(verticaType)
+      .map(result => result.copy(size = precision.toInt, scale = scale.toInt))
   }
 
   override def getVerticaTypeFromSparkType(sparkType: DataType, strlen: Long, arrayLength: Long, metadata: Metadata): SchemaResult[String] = {

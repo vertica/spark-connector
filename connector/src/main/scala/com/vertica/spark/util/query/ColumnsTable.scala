@@ -6,18 +6,20 @@ import com.vertica.spark.util.error.VerticaColumnNotFound
 
 import java.sql.ResultSet
 
-case class ColumnInfo(verticaType: Long, dataTypeName: String)
+case class ColumnInfo(verticaType: Long, dataTypeName: String, precision: Long, scale: Long)
 
 class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInfo](jdbc = jdbcLayer) {
 
   override def tableName: String = "columns"
 
-  override def columns: Seq[String] = List("data_type_id", "data_type")
+  override def columns: Seq[String] = List("data_type_id", "data_type", "numeric_precision", "numeric_scale")
 
   override def buildRow(resultSet: ResultSet): ColumnInfo = {
     ColumnInfo(
       resultSet.getLong(1),
       getTypeName(resultSet.getString(2)),
+      resultSet.getLong(3),
+      resultSet.getLong(4)
     )
   }
 

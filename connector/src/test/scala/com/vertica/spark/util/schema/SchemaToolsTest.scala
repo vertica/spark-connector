@@ -28,7 +28,7 @@ case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: St
 
 case class TestVerticaTableDef(name: String, schema: Option[String])
 
-case class TestVerticaTypeDef(verticaTypeId: Long, jdbcTypeId: Long, typeName: String, children: Seq[TestVerticaTypeDef] = List.empty)
+case class TestVerticaTypeDef(verticaTypeId: Long, jdbcTypeId: Long, typeName: String, size: Int, scale: Int, children: Seq[TestVerticaTypeDef] = List.empty)
 
 /**
  * Tests functionality of schema tools: converting schema between JDBC and Spark types.
@@ -409,17 +409,17 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
   it should "parse 1D arrays" in {
     val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
-    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0, signed = false, nullable = true)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0,signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef)
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName")
+    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.DECIMAL, "childTypeName", 0, 0)
     val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
 
     // Query column type info
-    VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
+    VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer, rootTypeDef.size, rootTypeDef.scale)
 
     // Query element type info
     val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
@@ -433,8 +433,10 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         assert(fields.length == 1)
         assert(fields(0).dataType.isInstanceOf[ArrayType])
         assert(fields(0).dataType.asInstanceOf[ArrayType]
-          .elementType.isInstanceOf[LongType])
+          .elementType.isInstanceOf[DecimalType])
         assert(!fields(0).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+        assert(fields(0).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 5)
+        assert(fields(0).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 2)
     }
   }
 
@@ -447,9 +449,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tableSource.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName")
+    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, schema, rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -478,9 +480,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName")
+    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = SchemaTools.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -509,7 +511,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val rootTypeDef = TestVerticaTypeDef(123456789L, java.sql.Types.STRUCT, "rootType", List())
+    val rootTypeDef = TestVerticaTypeDef(123456789L, java.sql.Types.STRUCT, "rootType", 0, 0, List())
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -532,9 +534,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName")
+    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -557,9 +559,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 2)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val leafType = TestVerticaTypeDef(3, java.sql.Types.BIGINT, "leafType")
-    val childArrayTypeDef = TestVerticaTypeDef(2000000L, java.sql.Types.ARRAY, "_ct_childType", List(leafType))
-    val nestedArrayTypeDef = TestVerticaTypeDef(1000000L, java.sql.Types.ARRAY, "_ct_rootType", List(childArrayTypeDef))
+    val leafType = TestVerticaTypeDef(3, java.sql.Types.DECIMAL, "leafType", 5, 2)
+    val childArrayTypeDef = TestVerticaTypeDef(2000000L, java.sql.Types.ARRAY, "_ct_childType", 0, 0, List(leafType))
+    val nestedArrayTypeDef = TestVerticaTypeDef(1000000L, java.sql.Types.ARRAY, "_ct_rootType", 0, 0, List(childArrayTypeDef))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(nestedArrayColDef.name, tbName, "", nestedArrayTypeDef.verticaTypeId, nestedArrayTypeDef.typeName, jdbcLayer)
@@ -571,7 +573,8 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     // Query child type info
     val (_, childRs) = VerticaTableTests.mockGetComplexTypeInfo(childArrayTypeDef.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockComplexTypeInfoResult(leafType.typeName, leafType.verticaTypeId, childArrayTypeDef.verticaTypeId, childRs, "Array")
+    VerticaTableTests.mockComplexTypeInfoResult(leafType.typeName, leafType.verticaTypeId, childArrayTypeDef.verticaTypeId,
+      childRs, "Array", "typeName", leafType.size, leafType.scale)
     (childRs.next _).expects().returning(false)
 
     // Query leaf type info
@@ -593,8 +596,10 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         val element1 = arrayDef.asInstanceOf[ArrayType].elementType
         assert(element1.isInstanceOf[ArrayType])
         val element2 = element1.asInstanceOf[ArrayType].elementType
-        assert(element2.isInstanceOf[LongType])
+        assert(element2.isInstanceOf[DecimalType])
         assert(!fields(1).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+        assert(element2.asInstanceOf[DecimalType].precision == 5)
+        assert(element2.asInstanceOf[DecimalType].scale == 2)
     }
   }
 

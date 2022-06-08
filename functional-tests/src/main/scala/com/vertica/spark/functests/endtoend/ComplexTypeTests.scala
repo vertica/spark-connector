@@ -38,6 +38,35 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read dataframe with 1D array with scale and precision" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a array[numeric(5,2)])")
+
+    val insert = "insert into "+ tableName1 + " values(array[2.5])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
+      val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
+      assert(dataType.elementType.isInstanceOf[DecimalType])
+      assert(dataType.elementType.asInstanceOf[DecimalType].scale == 2)
+      assert(dataType.elementType.asInstanceOf[DecimalType].precision == 5)
+      df.rdd.foreach(row => {
+        val firstRow = row.getAs[mutable.WrappedArray[java.math.BigDecimal]](0)
+        println(firstRow.head.compareTo(new java.math.BigDecimal(2.5)))
+      })
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
   it should "write 1D array" in {
     val tableName = "native_array_write_test"
     val colName = "col1"
