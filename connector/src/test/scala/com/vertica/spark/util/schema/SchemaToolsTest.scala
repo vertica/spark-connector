@@ -415,7 +415,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.DECIMAL, "childTypeName", 0, 0)
-    val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
 
     // Query column type info
@@ -450,7 +450,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tableSource.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
@@ -481,7 +481,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = SchemaTools.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
@@ -535,7 +535,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info

@@ -34,7 +34,7 @@ class SchemaToolsV10Test extends AnyFlatSpec with MockFactory with org.scalatest
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = SchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     def mockArrayQuerying(): Unit = {

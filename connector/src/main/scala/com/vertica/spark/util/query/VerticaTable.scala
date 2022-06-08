@@ -56,7 +56,7 @@ abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
   /**
    * Make a query using parameters from concrete classes.
    * */
-  private final def _selectWhere(conditions: String): (ConnectorResult[Seq[T]], String) = {
+  private final def querySelectWhere(conditions: String): (ConnectorResult[Seq[T]], String) = {
     val cols = columns.map(wrapQuotation).mkString(", ")
     val tableName = wrapQuotation(this.tableName)
     val where = if (conditions.isEmpty) "" else " WHERE " + conditions.trim
@@ -83,7 +83,7 @@ abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
    * @return Either a list of row data or error
    * */
   protected final def selectWhere(conditions: String): ConnectorResult[Seq[T]] = {
-    _selectWhere(conditions)._1
+    querySelectWhere(conditions)._1
   }
 
   /**
@@ -93,19 +93,20 @@ abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
    * @return Either a single row data or error
    * */
   protected final def selectWhereExpectOne(conditions: String): Either[ConnectorError, T] = {
-    val (result, query) = _selectWhere(conditions)
+    val (result, query) = querySelectWhere(conditions)
      result match {
       case Left(error) => Left(error)
       case Right(value) =>
-        if(value.isEmpty)
+        if(value.isEmpty) {
           Left(QueryResultEmpty(this.tableName, query))
-        else if (value.length > 1)
+        } else if (value.length > 1) {
           Left(MultipleQueryResult(this.tableName, query))
-        else
+        } else {
           Right(value.head)
-    }
+        }
+     }
   }
 
-  private def wrapQuotation(str: String): String = "\"" + str +"\""
+  private def wrapQuotation(str: String): String = "\"" + str + "\""
 
 }
