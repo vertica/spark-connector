@@ -326,7 +326,7 @@ class SchemaTools extends SchemaToolsInterface {
   /**
    * Vertica's JDBC does not expose information needed to construct complex type structure of a column.
    * Thus, we have to query Vertica's system tables for this information.
-   * Note that Vertica types has a different ID than that of JDBC.
+   * Note that Vertica types has a different ID than JDBC types.
    * */
   private def startQueryingVerticaComplexTypes(rootDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new ColumnsTable(jdbcLayer).getColumnInfo(rootDef.label, tableName, dbSchema) match {
@@ -349,22 +349,22 @@ class SchemaTools extends SchemaToolsInterface {
   private def queryVerticaRowDef(): ConnectorResult[ColumnDef] = Right(ColumnDef("", java.sql.Types.STRUCT, "Row", 0 ,0 ,false, false, Metadata.empty))
 
   /**
-   * Query Vertica system tables to fill in an array ColumnDefs with it's elements.
+   * Query Vertica system tables to find the array's depth and its element type.
    * */
   private def queryVerticaArrayDef(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     /**
-     * A 1D primitive array is considered a Native type by Vertica. Their type information is tracked in types table.
-     * Else, nested arrays or arrays with complex elements are tracked in complex_types table.
-     * We could infer from the vertica id if it is a native type or not.
+     * A 1D primitive array is considered a native by Vertica and is tracked in types table.
+     * Otherwise, nested arrays or arrays with complex elements are tracked in complex_types table.
+     * We could tell a column type is a native array by looking at it's ID.
      * */
-    // Native array id = 1500 + primitive type id
-    val id = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
-    // Sets are also tracked in types table
-    val isVerticaSet = id > VERTICA_PRIMITIVES_MAX_ID && id < VERTICA_SET_MAX_ID
-    // Set id = 2700 + primitive type id
-    val elementVerticaId = if (isVerticaSet) verticaTypeId - VERTICA_SET_BASE_ID else id
-    val isNativeArray = elementVerticaId < VERTICA_PRIMITIVES_MAX_ID
-    if (isNativeArray) {
+    // Native arrays id are smallest, started at 1500 + elementId
+    val elementId = verticaTypeId - VERTICA_NATIVE_ARRAY_BASE_ID
+    // Check if is Set, which starts at 2700 + elementId
+    val isVerticaSet = elementId > VERTICA_PRIMITIVES_MAX_ID && elementId < VERTICA_SET_MAX_ID
+    val elementVerticaId = if (isVerticaSet) verticaTypeId - VERTICA_SET_BASE_ID else elementId
+
+    val isNative = elementVerticaId < VERTICA_PRIMITIVES_MAX_ID
+    if (isNative) {
       queryVerticaNativeArray(elementVerticaId, isVerticaSet, jdbcLayer)
     } else {
       queryVerticaComplexArray(verticaTypeId ,jdbcLayer)
@@ -398,26 +398,26 @@ class SchemaTools extends SchemaToolsInterface {
     val complexTypeTable = new ComplexTypesTable(jdbcLayer)
 
     @tailrec
-    def recursion(verticaType: Long, depth: Int, baseArray: ColumnDef): ConnectorResult[ColumnDef] = {
+    def recursion(verticaType: Long, depth: Int): ConnectorResult[ColumnDef] = {
+      // Traverse the complex_types table to find our element type.
       complexTypeTable.findComplexTypeInfo(verticaType) match {
         case Left(value) => Left(value)
         case Right(result: ComplexTypeInfo) =>
-          if (result.fieldTypeName.startsWith("_ct_")) {
-            recursion(result.fieldId, depth + 1, baseArray)
-          } else if (result.typeKind == "Row") {
+          if (result.typeKind.toLowerCase == "row") {
             queryVerticaTypes(java.sql.Types.STRUCT, result.typeId, jdbcLayer)
-              .map(result => makeArrayDef("" ,isSet = false, depth, makeArrayElementDef(result, depth)))
-          } else {
+              .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
+          } else if (result.fieldId < VERTICA_PRIMITIVES_MAX_ID) {
             queryVerticaTypes(-1, result.fieldId, jdbcLayer)
               .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
+          } else if (result.typeKind.toLowerCase == "array") {
+            recursion(result.fieldId, depth + 1)
+          } else {
+            Left(UnsupportedVerticaType(result.typeKind))
           }
       }
     }
 
-    complexTypeTable.getColumnDef(verticaTypeId) match {
-      case Left(value) => Left(value)
-      case Right(baseArrayDef) => recursion(verticaTypeId, 0, baseArrayDef.copy(jdbcType = java.sql.Types.ARRAY))
-    }
+    recursion(verticaTypeId, 0)
   }
 
   private def queryVerticaPrimitiveDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {

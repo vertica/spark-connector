@@ -1,7 +1,7 @@
 package com.vertica.spark.util.query
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.{ConnectorError, IntrospectionResultEmpty, MultipleIntrospectionResult}
+import com.vertica.spark.util.error.{ConnectorError, QueryResultEmpty, MultipleQueryResult}
 import com.vertica.spark.util.query.VerticaTableTests.{mockComplexTypeInfoResult, mockGetColumnInfo, mockGetComplexTypeInfo, mockGetTypeInfo, mockTypeInfoResult, mockVerticaTableQuery}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -87,7 +87,7 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     (rs.next _).expects().returning(false)
 
     testTable.testSelectWhereExpectOne() match {
-      case Left(value) => assert(value.isInstanceOf[IntrospectionResultEmpty])
+      case Left(value) => assert(value.isInstanceOf[QueryResultEmpty])
       case Right(value) => fail("expected to fail")
     }
   }
@@ -101,7 +101,7 @@ class VerticaTableTests extends AnyFlatSpec with MockFactory with org.scalatest.
     (rs.next _).expects().returning(false)
 
     testTable.testSelectWhereExpectOne() match {
-      case Left(value) => assert(value.isInstanceOf[MultipleIntrospectionResult])
+      case Left(value) => assert(value.isInstanceOf[MultipleQueryResult])
         println(value.getFullContext)
       case Right(value) => fail("expected to fail")
     }

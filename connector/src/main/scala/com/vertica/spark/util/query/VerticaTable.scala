@@ -20,7 +20,7 @@ import java.sql.ResultSet
 import scala.util.Try
 import cats.implicits._
 import cats.data.NonEmptyList
-import com.vertica.spark.util.error.{ConnectorError, ErrorList, IntrospectionResultEmpty, MultipleIntrospectionResult, ResultSetError}
+import com.vertica.spark.util.error.{ConnectorError, ErrorList, QueryResultEmpty, MultipleQueryResult, ResultSetError}
 
 /**
  * Abstract class containing base implementation for querying data from Vertica tables. Subclasses are expected to
@@ -98,9 +98,9 @@ abstract class VerticaTable[T](jdbc: JdbcLayerInterface) {
       case Left(error) => Left(error)
       case Right(value) =>
         if(value.isEmpty)
-          Left(IntrospectionResultEmpty(this.tableName, query))
+          Left(QueryResultEmpty(this.tableName, query))
         else if (value.length > 1)
-          Left(MultipleIntrospectionResult(this.tableName, query))
+          Left(MultipleQueryResult(this.tableName, query))
         else
           Right(value.head)
     }

@@ -566,12 +566,12 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     // Query root type info
     val (_, rootRs) = VerticaTableTests.mockGetComplexTypeInfo(nestedArrayTypeDef.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockComplexTypeInfoResult(childArrayTypeDef.typeName, childArrayTypeDef.verticaTypeId, nestedArrayTypeDef.verticaTypeId, rootRs)
+    VerticaTableTests.mockComplexTypeInfoResult(childArrayTypeDef.typeName, childArrayTypeDef.verticaTypeId, nestedArrayTypeDef.verticaTypeId, rootRs, "Array")
     (rootRs.next _).expects().returning(false)
 
     // Query child type info
     val (_, childRs) = VerticaTableTests.mockGetComplexTypeInfo(childArrayTypeDef.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockComplexTypeInfoResult(leafType.typeName, leafType.verticaTypeId, childArrayTypeDef.verticaTypeId, childRs)
+    VerticaTableTests.mockComplexTypeInfoResult(leafType.typeName, leafType.verticaTypeId, childArrayTypeDef.verticaTypeId, childRs, "Array")
     (childRs.next _).expects().returning(false)
 
     // Query leaf type info

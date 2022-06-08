@@ -86,6 +86,9 @@ case class SchemaDiscoveryError() extends ConnectorError {
     "There may be an issue with connectivity to the database."
 
 }
+case class UndefinedError() extends ConnectorError {
+  override def getFullContext: String = "This error is undefined. For development purposes only and should not be used in production"
+}
 case class NoResultError(query: String) extends ConnectorError{
   def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
 }
@@ -585,14 +588,18 @@ case class VerticaColumnNotFound(colName: String, tableName: String, schema: Str
   def getFullContext: String = s"Column $colName (table $tableName, schema $schema) does not exist in Vertica's columns table"
 }
 
-trait TableIntrospectionError extends ConnectorError
+trait TableQueryError extends ConnectorError
 
-case class IntrospectionResultEmpty(table: String, query: String) extends TableIntrospectionError {
+case class QueryResultEmpty(table: String, query: String) extends TableQueryError {
   override def getFullContext: String = s"Query to system table $table returned nothing.\nQUERY: $query"
 }
 
-case class MultipleIntrospectionResult(table: String, query: String) extends TableIntrospectionError {
+case class MultipleQueryResult(table: String, query: String) extends TableQueryError {
   override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
+}
+
+case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
+  override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
 }
 
 
