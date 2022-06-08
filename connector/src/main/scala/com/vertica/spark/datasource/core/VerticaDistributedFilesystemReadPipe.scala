@@ -173,7 +173,7 @@ class VerticaDistributedFilesystemReadPipe(
         (0 until fileRowGroupCount).foreach(currRowGroup => {
           if(partitionSize == maxSize - 1) {
             addNewPartition(currRowGroup)
-          } else if (partitionSize == fileRowGroupCount - 1) {
+          } else if (currRowGroup == fileRowGroupCount - 1) {
             addNewFileRange(currRowGroup)
           } else {
             partitionSize += 1

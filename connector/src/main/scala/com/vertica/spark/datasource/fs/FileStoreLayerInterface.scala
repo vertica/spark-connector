@@ -81,56 +81,52 @@ trait FileStoreLayerInterface {
 }
 
 final case class HadoopFileStoreReader(reader: ParquetFileReader, columnIO: MessageColumnIO, recordConverter: RecordMaterializer[InternalRow], fileRange: ParquetFileRange) {
-  private var recordReader: Option[RecordReader[InternalRow]] = None
-  private var curRow = 0L
+
+  private var curRowGroup = fileRange.minRowGroup
+  // Move reader to position
+  (0 until fileRange.minRowGroup).foreach(_ => reader.skipNextRowGroup)
+
+  private var currRow = 0L
   private var rowCount = 0L
-  private var curRowGroup = 0L
+  private var currRecordReader: Option[RecordReader[InternalRow]] = nextRecordReader
 
-  private def doneReading() : Unit = {
-    this.recordReader = None
-    rowCount = -1
-  }
-
-  def checkUpdateRecordReader(): Unit = {
-    if(this.curRow == this.rowCount){
-      while(this.curRowGroup < fileRange.minRowGroup) {
-        reader.skipNextRowGroup()
-        this.curRowGroup += 1
-      }
-
-      if(this.curRowGroup > fileRange.maxRowGroup) {
-        this.doneReading()
-      }
-      else {
-        val pages = reader.readNextRowGroup()
-        if(pages != null) {
-          this.recordReader = Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
+  private def nextRecordReader: Option[RecordReader[InternalRow]] = {
+    if (this.curRowGroup <= fileRange.maxRowGroup) {
+      Option(reader.readNextRowGroup()) match {
+        case Some(pages) =>
           this.rowCount = pages.getRowCount
-          this.curRow = 0
+          this.currRow = 0
           this.curRowGroup += 1
-        }
-        else {
-          this.doneReading()
-        }
+          Some(columnIO.getRecordReader(pages, recordConverter, FilterCompat.NOOP))
+        case None => None
       }
-    }
-
-    this.curRow += 1
-
+    } else None
   }
 
-  def read(blockSize: Int) : ConnectorResult[DataBlock] = {
-    (0 until blockSize).map(_ => Try {
-      this.checkUpdateRecordReader()
-      recordReader match {
+  private def checkRowGroup(): Option[RecordReader[InternalRow]] = {
+    if (this.currRow == this.rowCount) {
+      this.currRecordReader = nextRecordReader
+    }
+    this.currRow += 1
+    this.currRecordReader
+  }
+
+  private def readRow: Either[ConnectorError, Option[InternalRow]] = {
+    Try {
+      this.checkRowGroup() match {
+        case Some(reader) =>
+          Some(reader.read().copy())
         case None => None
-        case Some(reader) => Some(reader.read().copy())
       }
     } match {
       case Failure(exception) => Left(IntermediaryStoreReadError(exception)
         .context("Error reading parquet file from HDFS."))
       case Success(v) => Right(v)
-    }).toList.sequence match {
+    }
+  }
+
+  def read(blockSize: Int) : ConnectorResult[DataBlock] = {
+    (0 until blockSize).map(_ => readRow).toList.sequence match {
       case Left(err) => Left(err)
       case Right(list) => Right(DataBlock(list.flatten))
     }
