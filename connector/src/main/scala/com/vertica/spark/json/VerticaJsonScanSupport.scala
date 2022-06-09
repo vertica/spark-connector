@@ -20,9 +20,10 @@ import org.apache.spark.sql.connector.catalog.{SupportsRead, Table, TableCapabil
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReader, PartitionReaderFactory, Scan, ScanBuilder}
 import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
-import org.apache.spark.sql.execution.datasources.v2.json.{JsonScanBuilder, JsonTable}
+import org.apache.spark.sql.execution.datasources.v2.json.JsonTable
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import scala.collection.JavaConverters._
 
 import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -33,7 +34,7 @@ object VerticaPartitionedFile {
 }
 
 /**
- * Extended from Spark's PartitionedFile with the purpose to hold extra partitioning information.
+ * Extended from Spark's PartitionedFile with the purpose of holding extra partitioning information.
  *
  * @param partitionIndex The partition's id number out of all partitions created from a file.
  * */
@@ -46,7 +47,7 @@ class VerticaPartitionedFile(override val partitionValues: InternalRow,
   extends PartitionedFile(partitionValues, filePath, start, length)
 
 /**
- * Extended from Spark's FilePartition to hold extra to hold extra partitioning data.
+ * Extended from Spark's FilePartition to hold extra hold extra partitioning data.
  *
  * @param partitioningRecords A record of the partition count for all file partition created with the key being the
  *                            file path.
@@ -56,7 +57,7 @@ class VerticaFilePartition(override val index: Int,
                            val partitioningRecords: Map[String, Int])
   extends FilePartition(index, files)
 
-object VerticaJsonScanSupport {
+class VerticaJsonScanSupport {
   def getJsonScan(filePath: String, schema: Option[StructType], sparkSession: SparkSession): Scan = {
     val paths = List(filePath)
     val options = CaseInsensitiveStringMap.empty()
@@ -71,11 +72,11 @@ object VerticaJsonScanSupport {
  * Wraps a [[JsonTable]] so that that it will create a [[VerticaScanWrapperBuilder]].
  * */
 class VerticaJsonTable(val jsonTable: JsonTable) extends Table with SupportsRead {
-  override def name(): String = jsonTable.name
+  override def name(): String = "VerticaJsonTable"
 
   override def schema(): StructType = jsonTable.schema
 
-  override def capabilities(): util.Set[TableCapability] = jsonTable.capabilities()
+  override def capabilities(): util.Set[TableCapability] = Set[TableCapability](TableCapability.BATCH_READ).asJava
 
   override def newScanBuilder(caseInsensitiveStringMap: CaseInsensitiveStringMap): ScanBuilder =
     new VerticaScanWrapperBuilder(jsonTable.newScanBuilder(caseInsensitiveStringMap))
@@ -100,19 +101,19 @@ class VerticaScanWrapper(val scan: Scan) extends Scan with Batch {
    * Calls the wrapped scan to plan inputs. Then process them into [[VerticaFilePartition]] with partitioning info
    * */
   override def planInputPartitions(): Array[InputPartition] = {
-    val partitioningRecord = scala.collection.mutable.Map[String, Int]()
-    def makeVerticaPartitionedFile(file: PartitionedFile) = {
+    val partitioningRecords = scala.collection.mutable.Map[String, Int]()
+    def recordPartitionedFile(file: PartitionedFile) = {
       val key = file.filePath
-      val count = partitioningRecord.getOrElse(key, 0)
-      partitioningRecord.put(key, count + 1)
+      val count = partitioningRecords.getOrElse(key, 0)
+      partitioningRecords.put(key, count + 1)
       VerticaPartitionedFile(file, count)
     }
 
     scan.toBatch.planInputPartitions()
       .map(partition => partition.asInstanceOf[FilePartition])
       .map(filePartition =>
-        filePartition.copy(files = filePartition.files.map(makeVerticaPartitionedFile)))
-      .map(partition => new VerticaFilePartition(partition.index, partition.files, partitioningRecord.toMap))
+        filePartition.copy(files = filePartition.files.map(recordPartitionedFile)))
+      .map(partition => new VerticaFilePartition(partition.index, partition.files, partitioningRecords.toMap))
   }
 
   override def createReaderFactory(): PartitionReaderFactory = new PartitionReaderWrapperFactory(scan.toBatch.createReaderFactory())

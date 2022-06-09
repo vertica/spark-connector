@@ -24,7 +24,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * We support reading JSON files by re-using Spark's JSON support implemented in [[JsonTable]].
  * */
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], jsonSupport: VerticaJsonScanSupport) extends Scan with Batch {
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
   private lazy val batch: Batch = {
@@ -35,7 +35,7 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) =>
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          VerticaJsonScanSupport.getJsonScan(partitionInfo.rootPath, Some(readSchema()), sparkSession).toBatch
+          jsonSupport.getJsonScan(partitionInfo.rootPath, Some(readSchema()), sparkSession).toBatch
       }
     }
   }
