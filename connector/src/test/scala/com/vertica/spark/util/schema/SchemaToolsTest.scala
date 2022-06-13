@@ -23,6 +23,7 @@ import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.query.VerticaTableTests
+import com.vertica.spark.util.schema.ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -428,23 +429,28 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "parse 1D arrays" in {
-    val (jdbcLayer, mockRs, rsmd) = mockJdbcDeps(tablename)
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0,signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef)
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.DECIMAL, "childTypeName", 0, 0)
-    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer, rootTypeDef.size, rootTypeDef.scale)
 
+    // Query root type info
+    val (_, rootRs) = VerticaTableTests.mockGetTypeInfo(verticaArrayId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(rootTypeDef.verticaTypeId, rootTypeDef.typeName, rootTypeDef.jdbcTypeId, rootRs)
+    (rootRs.next _).expects().returning(false)
+
     // Query element type info
-    val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockTypeInfoResult(childTypeInfo.verticaTypeId, childTypeInfo.typeName, childTypeInfo.jdbcTypeId, typesRs)
-    (typesRs.next _).expects().returning(false)
+    val (_, elementRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(childTypeInfo.verticaTypeId, childTypeInfo.typeName, childTypeInfo.jdbcTypeId, elementRs)
+    (elementRs.next _).expects().returning(false)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(error) =>  fail(error.getFullContext)
@@ -476,10 +482,15 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, schema, rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
 
-    // Query element type info
-    val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockTypeInfoResult(childTypeInfo.verticaTypeId, childTypeInfo.typeName, childTypeInfo.jdbcTypeId, typesRs)
+    // Query root type info
+    val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(rootTypeDef.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(rootTypeDef.verticaTypeId, rootTypeDef.typeName, rootTypeDef.jdbcTypeId, typesRs)
     (typesRs.next _).expects().returning(false)
+
+    // Query element type info
+    val (_, elementRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(childTypeInfo.verticaTypeId, childTypeInfo.typeName, childTypeInfo.jdbcTypeId, elementRs)
+    (elementRs.next _).expects().returning(false)
 
     (new SchemaTools).readSchema(jdbcLayer, tableSource) match {
       case Left(error) =>  fail(error.getFullContext)
@@ -506,6 +517,11 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
+
+    // Query root type info
+    val (_, rootRs) = VerticaTableTests.mockGetTypeInfo(rootTypeDef.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(rootTypeDef.verticaTypeId, rootTypeDef.typeName, rootTypeDef.jdbcTypeId, rootRs)
+    (rootRs.next _).expects().returning(false)
 
     // Query element type info
     val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)
@@ -555,11 +571,16 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
+
+    // Query root type info
+    val (_, rootRs) = VerticaTableTests.mockGetTypeInfo(rootTypeDef.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(rootTypeDef.verticaTypeId, rootTypeDef.typeName, rootTypeDef.jdbcTypeId, rootRs)
+    (rootRs.next _).expects().returning(false)
 
     // Query element type info but returns an empty result set
     val (_, typesRs) = VerticaTableTests.mockGetTypeInfo(childTypeInfo.verticaTypeId, jdbcLayer)

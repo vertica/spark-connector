@@ -17,7 +17,8 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
-import com.vertica.spark.util.{ListUtils, error}
+import com.vertica.spark.util.ConnectorResultUtils.listToEitherSchema
+import com.vertica.spark.util.{ConnectorResultUtils, error}
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
@@ -175,7 +176,7 @@ class SchemaTools extends SchemaToolsInterface {
         getCatalystType(colDef.jdbcType, colDef.size, colDef.scale, colDef.signed, colDef.colTypeName, colDef.children)
           .map(dataType => StructField(colDef.label, dataType, colDef.nullable, colDef.metadata))
       })
-    ListUtils.listToEitherSchema(fieldDefs)
+    listToEitherSchema(fieldDefs)
       .map(fields => StructType(fields))
   }
 

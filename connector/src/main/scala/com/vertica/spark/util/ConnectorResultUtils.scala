@@ -17,21 +17,19 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.util.error.{ConnectorError, ErrorList, SchemaError, SchemaErrorList}
 
-object ListUtils {
+object ConnectorResultUtils {
 
-  def listToEither[T](list: Seq[Either[ConnectorError, T]]): Either[ErrorList, Seq[T]] = {
-    list.toList
+  def listToEither[T](list: List[Either[ConnectorError, T]]): Either[ErrorList, Seq[T]] = {
       // converts List[Either[A, B]] to Either[List[A], List[B]]
-      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
       .toEither
       .map(field => field)
       .left.map(errors => ErrorList(errors))
   }
 
-  def listToEitherSchema[T](list: Seq[Either[SchemaError, T]]): Either[SchemaErrorList, Seq[T]] = {
-    list.toList
-      // converts List[Either[A, B]] to Either[List[A], List[B]]
-      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+  def listToEitherSchema[T](list: List[Either[SchemaError, T]]): Either[SchemaErrorList, Seq[T]] = {
+    // converts List[Either[A, B]] to Either[List[A], List[B]]
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
       .toEither
       .map(field => field)
       .left.map(errors => SchemaErrorList(errors))

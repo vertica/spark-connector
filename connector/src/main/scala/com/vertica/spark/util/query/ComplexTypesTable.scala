@@ -19,10 +19,25 @@ import com.vertica.spark.util.schema.ColumnDef
 import org.apache.spark.sql.types.Metadata
 
 import java.sql.ResultSet
+// scalastyle:off magic.number
 
+/**
+ * A row of complex_types table. Represents a component of the data structure type_id.
+ * [[https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/SystemTables/CATALOG/COMPLEX_TYPES.htm?zoom_highlight=complex%20type Documentations]]
+ *
+ * @param typeId The vertica type id of the complex structure.
+ * @param fieldId the vertica type id of the field.
+ *
+ * */
 case class ComplexTypeInfo(typeId: Long, typeName: String, fieldId: Long, fieldTypeName: String, numericScale: Long, typeKind: String, numericPrecision: Long)
 
-// scalastyle:off magic.number
+/**
+ * When a complex type is created in Vertica, it's structure is recorded in this table.
+ * Each row represents then a component (a field) of the complex structure, with the type_id being the vertica id of the complex type,
+ * and field_id being the vertica id of the component. For example, a nested array will have as many rows as
+ * its depth.
+ * [[https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/SystemTables/CATALOG/COMPLEX_TYPES.htm?zoom_highlight=complex%20type Documentations]]
+ * */
 class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
   extends VerticaTable[ComplexTypeInfo](jdbc = jdbcLayer) {
 
