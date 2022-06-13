@@ -207,6 +207,7 @@ object ComplexTypeSchemaSupport {
           } else {
             (false, typeInfo.typeId - VERTICA_NATIVE_ARRAY_BASE_ID)
           }
+
           queryNativeType(elementId, precision, scale, jdbcLayer)
             .map(elementDef => {
               val metadata = new MetadataBuilder()
@@ -233,18 +234,17 @@ object ComplexTypeSchemaSupport {
             case None => Left(QueryResultEmpty(complexTypesTable.tableName, ""))
             case Some(typeInfo) =>
               if (typeInfo.typeKind.toLowerCase == "row") {
-                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
-                queryVerticaTypes2(typeInfo.typeId, precision, scale, jdbcLayer)
+                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth - 1).build()
+                queryVerticaTypes2(typeInfo.typeId, typeInfo.numericPrecision, typeInfo.numericScale, jdbcLayer)
                   .map(_.copy(metadata = metadata))
-              } else if (!typeInfo.fieldTypeName.startsWith("_ct_")) {
-                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
-                queryVerticaTypes2(typeInfo.fieldId, precision, scale, jdbcLayer)
-                  .map(_.copy(metadata = metadata))
+              } else if (typeInfo.typeKind.toLowerCase == "array" && typeInfo.fieldTypeName.startsWith("_ct_")) {
+                getArrayElementDef(typeInfo.fieldId, typeInfo.numericPrecision, typeInfo.numericScale, depth + 1)
               } else {
-                getArrayElementDef(typeInfo.fieldId, precision, scale, depth + 1)
+                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
+                queryVerticaTypes2(typeInfo.fieldId, typeInfo.numericPrecision, typeInfo.numericScale, jdbcLayer)
+                  .map(_.copy(metadata = metadata))
               }
           }
-
       }
     }
 
@@ -255,7 +255,7 @@ object ComplexTypeSchemaSupport {
         baseElement.typeKind.toLowerCase match {
           case "array" => {
             val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, false).build()
-            getArrayElementDef(baseElement.fieldId, baseElement.numericPrecision, baseElement.numericScale)
+            getArrayElementDef(baseElement.typeId, baseElement.numericPrecision, baseElement.numericScale)
               .map(element =>
                 ColumnDef("", java.sql.Types.ARRAY, baseElement.typeKind, precision.toInt, scale.toInt, false, false, metadata, List(element)))
           }
