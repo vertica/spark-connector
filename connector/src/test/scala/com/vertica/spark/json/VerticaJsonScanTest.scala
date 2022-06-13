@@ -71,6 +71,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
       case Success(_) => ()
       case Failure(e) => fail(e)
     }
+    spark.close()
   }
 
   it should "plan input partitions with partitioning records" in {

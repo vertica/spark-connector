@@ -115,7 +115,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     Try {
       source.extractCatalog(options)
     } match {
-      case Success(_) => fail
+      case Success(e) => fail(e)
       case Failure(_) => ()
     }
   }
