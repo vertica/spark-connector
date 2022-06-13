@@ -17,6 +17,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
+import com.vertica.spark.util.{ListUtils, error}
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
@@ -164,9 +165,18 @@ class SchemaTools extends SchemaToolsInterface {
                                childDefs: List[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => getArrayType(childDefs)
-      case java.sql.Types.STRUCT => Right(StructType(List()))
+      case java.sql.Types.STRUCT => getStructType(childDefs)
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
     }
+  }
+
+  private def getStructType(fields: List[ColumnDef]): Either[SchemaError, DataType] = {
+    val fieldDefs = fields.map(colDef => {
+        getCatalystType(colDef.jdbcType, colDef.size, colDef.scale, colDef.signed, colDef.colTypeName, colDef.children)
+          .map(dataType => StructField(colDef.label, dataType, colDef.nullable, colDef.metadata))
+      })
+    ListUtils.listToEitherSchema(fieldDefs)
+      .map(fields => StructType(fields))
   }
 
   private def getArrayType(elementDef: List[ColumnDef]): Either[SchemaError, ArrayType] = {
@@ -181,12 +191,8 @@ class SchemaTools extends SchemaToolsInterface {
 
     elementDef.headOption match {
       case Some(element) =>
-        getCatalystTypeFromJdbcType(element.jdbcType, element.size, element.scale, element.signed, element.colTypeName) match {
-          case Right(elementType) =>
-            val arrayType = makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType)
-            Right(arrayType)
-          case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
-        }
+        getCatalystType(element.jdbcType, element.size, element.scale, element.signed, element.colTypeName, element.children)
+          .map(elementType => makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType))
       case None => Left(MissingElementTypeError())
     }
   }

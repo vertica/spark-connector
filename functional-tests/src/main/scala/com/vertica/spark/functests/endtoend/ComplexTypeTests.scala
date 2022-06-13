@@ -169,6 +169,89 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
+  it should "read nested arrays" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[array[int]])")
+
+    val insert = "insert into "+ tableName1 + " values(1, array[array[2]])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[LongType])
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+
+  it should "read struct" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 row(int, varchar, array[array[int]]))")
+
+    val insert = "insert into "+ tableName1 + " values(1, row(88, 'hello', array[array[55]]))"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[StructType])
+      // Strut field 1
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(0).dataType.isInstanceOf[LongType])
+      // Struct field 2
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(1).dataType.isInstanceOf[StringType])
+      // Struct field 3
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(2).dataType.isInstanceOf[ArrayType])
+      // Check Struct field 3 is nested array.
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(2).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(2).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[StructType].fields(2)
+        .dataType.asInstanceOf[ArrayType]
+        .elementType.asInstanceOf[ArrayType]
+        .elementType.isInstanceOf[LongType])
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read array[row]" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[row(int, int)])")
+
+    val insert = "insert into "+ tableName1 + " values(1, array[row(30, 60)])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[StructType])
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
   it should "write SET to Vertica" in {
     val tableName = "dftest"
     // Ensure that we are create the table from scratch
@@ -241,32 +324,32 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "error on reading complex types" in {
-    Try {
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      val n = 3
-      // Creates a table called dftest with an integer attribute
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b row(int), c array[array[int]])")
-      val insert = "insert into " + tableName + " values(2, row(2), array[array[10]])"
-      // Inserts 20 rows of the value '2' into dftest
-      TestUtils.populateTableBySQL(stmt, insert, n)
-      // Read dftest into a dataframe
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-        .options(readOpts + ("table" -> tableName))
-        .load()
-      df.show()
-    } match {
-      case Success(_) => fail("Expected error on reading complex types")
-      case Failure(exp) => exp match {
-        case ConnectorException(connectorErr) => connectorErr match {
-          case ComplexTypeReadNotSupported(_,_) => succeed
-          case err => fail("Unexpected error: " + err.getFullContext)
-        }
-        case exp => fail("Unexpected exception", exp)
-      }
-    }
-  }
+  // it should "error on reading complex types" in {
+  //   Try {
+  //     val tableName = "dftest"
+  //     val stmt = conn.createStatement
+  //     val n = 3
+  //     // Creates a table called dftest with an integer attribute
+  //     TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b row(int), c array[array[int]])")
+  //     val insert = "insert into " + tableName + " values(2, row(2), array[array[10]])"
+  //     // Inserts 20 rows of the value '2' into dftest
+  //     TestUtils.populateTableBySQL(stmt, insert, n)
+  //     // Read dftest into a dataframe
+  //     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+  //       .options(readOpts + ("table" -> tableName))
+  //       .load()
+  //     df.show()
+  //   } match {
+  //     case Success(_) => fail("Expected error on reading complex types")
+  //     case Failure(exp) => exp match {
+  //       case ConnectorException(connectorErr) => connectorErr match {
+  //         case ComplexTypeReadNotSupported(_,_) => succeed
+  //         case err => fail("Unexpected error: " + err.getFullContext)
+  //       }
+  //       case exp => fail("Unexpected exception", exp)
+  //     }
+  //   }
+  // }
 
   it should "write table with a struct of primitives" in {
     val tableName = "dftest"
@@ -469,7 +552,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "error when reading Vertica query with complex type columns" in {
+  it should "error when using query option that returns complex types" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -489,7 +572,6 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
           val errorsFound = error.asInstanceOf[ErrorList].errors.head.getUnderlyingError.asInstanceOf[ErrorList]
           assert(errorsFound.errors.length == 2)
           errorsFound.errors.map(e => assert(e.isInstanceOf[QueryReturnsComplexTypes]))
-          // error.asInstanceOf[ErrorList].errors.map(err => assert(err.isInstanceOf[QueryReturnsComplexTypes]))
         case _ => fail("Expected connector exception")
       }
       case Success(_) =>

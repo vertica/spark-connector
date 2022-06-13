@@ -26,7 +26,7 @@ case class ComplexTypeInfo(typeId: Long, typeName: String, fieldId: Long, fieldT
 class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
   extends VerticaTable[ComplexTypeInfo](jdbc = jdbcLayer) {
 
-  override protected def tableName: String = "complex_types"
+  override def tableName: String = "complex_types"
 
   override protected def columns: Seq[String] = List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind", "numeric_precision")
 
@@ -45,9 +45,20 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
     super.selectWhereExpectOne(conditions)
   }
 
+  def getComplexTypeFields(verticaTypeId: Long): ConnectorResult[Seq[ComplexTypeInfo]] = {
+    val conditions = s"type_id=$verticaTypeId"
+    super.selectWhere(conditions)
+  }
+
   def getColumnDef(verticaTypeId: Long): ConnectorResult[ColumnDef] = {
     this.findComplexTypeInfo(verticaTypeId).map(ctInfo =>
       ColumnDef("", 0, ctInfo.fieldTypeName, 0, ctInfo.numericScale.toInt, signed = true, nullable = false, Metadata.empty)
     )
+  }
+
+  def isArray(verticaTypeId: Long): ConnectorResult[Boolean] = {
+    val conditions = s"type_id=$verticaTypeId"
+    super.selectWhereExpectOne(conditions)
+      .map(_.typeKind.toLowerCase == "array")
   }
 }

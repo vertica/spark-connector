@@ -13,11 +13,12 @@
 
 package com.vertica.spark.util.schema
 
+import cats.data.NonEmptyList
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.UnsupportedVerticaType
+import com.vertica.spark.util.error.{ConnectorError, ErrorList, QueryResultEmpty, UnsupportedVerticaType}
 import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
-import org.apache.spark.sql.types.{Metadata, MetadataBuilder}
+import org.apache.spark.sql.types.{Metadata, MetadataBuilder, StructType}
 
 import scala.annotation.tailrec
 
@@ -47,15 +48,58 @@ object ComplexTypeSchemaSupport {
   }
 
   private def queryVerticaTypes(jdbcType: Int, verticaType: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface) : ConnectorResult[ColumnDef] = {
-    jdbcType match {
-      case java.sql.Types.ARRAY => queryVerticaArrayDef(verticaType, precision, scale, jdbcLayer)
-      case java.sql.Types.STRUCT => queryVerticaRowDef()
-      case _ => queryVerticaPrimitiveDef(verticaType, precision, scale,jdbcLayer)
-    }
+    queryVerticaTypes2(verticaType, precision, scale, jdbcLayer)
+    // jdbcType match {
+    //   case java.sql.Types.ARRAY => queryVerticaArrayDef(verticaType, precision, scale, jdbcLayer)
+    //   case java.sql.Types.STRUCT => queryVerticaRowDef(verticaType, jdbcLayer)
+    //   case _ => queryVerticaPrimitiveDef(verticaType, precision, scale,jdbcLayer)
+    // }
+  }
+  import cats.implicits._
+
+  def typeKindToJdbc(typeKind: String): ConnectorResult[Int] = typeKind.toLowerCase match {
+    case "row" => Right(java.sql.Types.STRUCT)
+    case "array" => Right(java.sql.Types.ARRAY)
+    case _ => Left(UnsupportedVerticaType(typeKind))
   }
 
   // Todo: implement Row support for reading.
-  private def queryVerticaRowDef(): ConnectorResult[ColumnDef] = Right(ColumnDef("", java.sql.Types.STRUCT, "Row", 0 ,0 ,false, false, Metadata.empty))
+  private def queryVerticaRowDef(verticaType: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val complexTypesTable = new ComplexTypesTable(jdbcLayer)
+    complexTypesTable.getComplexTypeFields(verticaType) match {
+      case Left(value) => Left(value)
+      case Right(results) => {
+        val errorOrConnectorResults = results.map(field => {
+          if (field.fieldTypeName.startsWith("_ct_")) {
+            complexTypesTable.isArray(field.fieldId) match {
+              case Left(error) => Left(error)
+              case Right(isArray) => if(isArray) {
+                queryVerticaTypes(java.sql.Types.ARRAY, field.fieldId, field.numericPrecision, field.numericScale, jdbcLayer)
+              } else {
+                queryVerticaTypes(java.sql.Types.STRUCT, field.fieldId, field.numericPrecision, field.numericScale, jdbcLayer)
+              }
+            }
+          } else {
+            queryVerticaTypes(-1, field.fieldId, field.numericPrecision, field.numericScale, jdbcLayer)
+          }
+        })
+
+        listToEither(errorOrConnectorResults) match {
+          case Left(error) => Left(error)
+          case Right(fields) => Right(ColumnDef("", java.sql.Types.STRUCT, "Row", 0, 0, false, false, Metadata.empty, fields.toList))
+        }
+      }
+    }
+  }
+
+  private def listToEither[T](list: Seq[Either[ConnectorError, T]]): Either[ErrorList, Seq[T]] = {
+    list.toList
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+      .traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+      .toEither
+      .map(field => field)
+      .left.map(errors => ErrorList(errors))
+  }
 
   /**
    * Query Vertica system tables to find the array's depth and its element type.
@@ -112,16 +156,19 @@ object ComplexTypeSchemaSupport {
       complexTypeTable.findComplexTypeInfo(verticaType) match {
         case Left(value) => Left(value)
         case Right(result: ComplexTypeInfo) =>
-          if (result.typeKind.toLowerCase == "row") {
-            queryVerticaTypes(java.sql.Types.STRUCT, result.typeId, result.numericPrecision, result.numericScale, jdbcLayer)
-              .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
-          } else if (result.fieldId < VERTICA_PRIMITIVES_MAX_ID) {
+          if (result.fieldId < VERTICA_PRIMITIVES_MAX_ID) {
             queryVerticaTypes(-1, result.fieldId, result.numericPrecision, result.numericScale, jdbcLayer)
               .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
-          } else if (result.typeKind.toLowerCase == "array") {
-            recursion(result.fieldId, depth + 1)
           } else {
-            Left(UnsupportedVerticaType(result.typeKind))
+            complexTypeTable.isArray(result.fieldId) match {
+              case Left(e) => ???
+              case Right(isArray) => if(isArray){
+                recursion(result.fieldId, depth + 1)
+              } else {
+                queryVerticaTypes(java.sql.Types.STRUCT, result.fieldId, result.numericPrecision, result.numericScale, jdbcLayer)
+                  .map(result => makeArrayDef("", isSet = false, depth, makeArrayElementDef(result, depth)))
+              }
+            }
           }
       }
     }
@@ -133,4 +180,91 @@ object ComplexTypeSchemaSupport {
     new TypesTable(jdbcLayer).getColumnDef(verticaType)
       .map(result => result.copy(size = precision.toInt, scale = scale.toInt))
   }
+
+  private def queryVerticaTypes2(verticaTypeId: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    if(verticaTypeId < VERTICA_SET_MAX_ID){
+      queryNativeType(verticaTypeId, precision, scale, jdbcLayer)
+    } else {
+      queryComplexType(verticaTypeId, precision, scale, jdbcLayer)
+    }
+  }
+
+  def queryNativeType(verticaTypeId: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val typesTable = new TypesTable(jdbcLayer)
+    typesTable.getVerticaTypeInfo(verticaTypeId) match {
+      case Left(value) => Left(value)
+      case Right(typeInfo) =>
+        val jdbcType = typeInfo.jdbcType.toInt
+        val typeName =  typeInfo.typeName
+        val size = precision.toInt
+        val _scale = scale.toInt
+        val isSigned = typesTable.isSigned(jdbcType)
+        val nullable = false
+
+        if (typeInfo.jdbcType == java.sql.Types.ARRAY) {
+          val (isSet, elementId) = if (typeInfo.typeId > VERTICA_SET_BASE_ID) {
+            (true, typeInfo.typeId - VERTICA_SET_BASE_ID)
+          } else {
+            (false, typeInfo.typeId - VERTICA_NATIVE_ARRAY_BASE_ID)
+          }
+          queryNativeType(elementId, precision, scale, jdbcLayer)
+            .map(elementDef => {
+              val metadata = new MetadataBuilder()
+                .putBoolean(MetadataKey.IS_VERTICA_SET, isSet)
+                .build()
+              val element = elementDef.copy(metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, 0).build())
+              ColumnDef("", jdbcType, typeName, size, _scale, isSigned, nullable ,metadata, List(element))
+            })
+        } else {
+          Right(ColumnDef("", jdbcType, typeName, size, _scale, isSigned, nullable ,Metadata.empty))
+        }
+    }
+  }
+
+  def queryComplexType(verticaTypeId: Long, precision: Long, scale: Long, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
+    val complexTypesTable = new ComplexTypesTable(jdbcLayer)
+
+    @tailrec
+    def getArrayElementDef(verticaTypeId: Long, precision: Long, scale: Long, depth: Long = 0): ConnectorResult[ColumnDef] = {
+      complexTypesTable.getComplexTypeFields(verticaTypeId) match {
+        case Left(value) => Left(value)
+        case Right(fieldsInfo) =>
+          fieldsInfo.headOption match {
+            case None => Left(QueryResultEmpty(complexTypesTable.tableName, ""))
+            case Some(typeInfo) =>
+              if (typeInfo.typeKind.toLowerCase == "row") {
+                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
+                queryVerticaTypes2(typeInfo.typeId, precision, scale, jdbcLayer)
+                  .map(_.copy(metadata = metadata))
+              } else if (!typeInfo.fieldTypeName.startsWith("_ct_")) {
+                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
+                queryVerticaTypes2(typeInfo.fieldId, precision, scale, jdbcLayer)
+                  .map(_.copy(metadata = metadata))
+              } else {
+                getArrayElementDef(typeInfo.fieldId, precision, scale, depth + 1)
+              }
+          }
+
+      }
+    }
+
+    complexTypesTable.getComplexTypeFields(verticaTypeId) match {
+      case Left(e) => Left(e)
+      case Right(fields) =>
+        val baseElement = fields.head
+        baseElement.typeKind.toLowerCase match {
+          case "array" => {
+            val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, false).build()
+            getArrayElementDef(baseElement.fieldId, baseElement.numericPrecision, baseElement.numericScale)
+              .map(element =>
+                ColumnDef("", java.sql.Types.ARRAY, baseElement.typeKind, precision.toInt, scale.toInt, false, false, metadata, List(element)))
+          }
+          case "row" =>
+            val errorsOrFields = fields.map(fieldInfo => queryVerticaTypes2(fieldInfo.fieldId, fieldInfo.numericPrecision, fieldInfo.numericScale, jdbcLayer))
+            listToEither(errorsOrFields)
+              .map(fields => ColumnDef("", java.sql.Types.STRUCT, baseElement.typeKind, 0, 0, false, false, Metadata.empty, fields.toList))
+        }
+    }
+  }
+
 }

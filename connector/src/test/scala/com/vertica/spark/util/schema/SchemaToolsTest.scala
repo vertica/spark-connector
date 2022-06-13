@@ -524,7 +524,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  it should "parse Vertica Row as Struct" in {
+  ignore should "parse Vertica Row as Struct" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.STRUCT, "ROW", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef)
@@ -571,7 +571,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  it should "parse nested array" in {
+  ignore should "parse nested array" in {
     val (jdbcLayer,_, rsmd) = mockJdbcDeps(tablename)
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
     val nestedArrayColDef = TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true)

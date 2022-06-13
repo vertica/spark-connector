@@ -518,7 +518,7 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
     "\nSQL type value: " + sqlType
 }
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
+  def getFullContext: String = "Could not convert array element of SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
 case class ComplexTypeReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
@@ -568,6 +568,11 @@ case class TableNotEnoughRowsError() extends SchemaError {
 case class QueryReturnsComplexTypes(colName: String, typeName: String, query: String) extends SchemaError{
   override def getFullContext: String = s"Complex types are not supported when reading using a query. Column `$colName` has complex types $typeName. \n" +
   s"QUERY: $query"
+}
+
+case class SchemaErrorList(errors: NonEmptyList[SchemaError]) extends SchemaError {
+  def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
+  override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
 }
 
 case class NonEmptyDataFrameError() extends ConnectorError {
