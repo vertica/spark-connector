@@ -18,11 +18,12 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
+import com.vertica.spark.datasource.core.partition.{DistributedFilesystemPartition, FileRange}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
-import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
+import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner, FileCleanupInfo}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.connector.expressions.aggregate._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
@@ -379,8 +380,7 @@ class VerticaDistributedFilesystemReadPipe(
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
 
-  private val cleaner: DistributedFilesCleaner =
-    new DistributedFilesCleaner(this.config.fileStoreConfig, this.fileStoreLayer, this.cleanupUtils)
+  private val cleaner: DistributedFilesCleaner = new DistributedFilesCleaner(this.config.fileStoreConfig, this.fileStoreLayer, this.cleanupUtils)
 
   val timer = new Timer(config.timeOperations, logger, "Partition Read")
 
@@ -460,7 +460,6 @@ class VerticaDistributedFilesystemReadPipe(
     ret
   }
 
-
   /**
    * Ends the read, doing any necessary cleanup. Called by executor once reading the partition is done.
    */
@@ -469,61 +468,6 @@ class VerticaDistributedFilesystemReadPipe(
     this.partition match {
       case Some(partition) => cleaner.start(partition)
       case None => Right()
-    }
-  }
-}
-
-trait FileRange {
-  def filename: String
-  def start: Int
-  def end: Int
-  def index: Int
-}
-
-trait DistributedFilesystemPartition extends InputPartition{
-  def getFileRanges: Seq[FileRange]
-  def getPartitioningRecord: Map[String, Int]
-}
-
-class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
-                              val fileStoreLayer: FileStoreLayerInterface,
-                              val cleanupUtils: CleanupUtilsInterface) {
-
-  private val logger = LogProvider.getLogger(this)
-
-  def start(partition: VerticaDistributedFilesystemPartition): ConnectorResult[Unit] = {
-    for {
-      _ <- cleanupFiles(partition)
-      _ <- fileStoreLayer.closeReadParquetFile()
-    } yield ()
-  }
-
-  def cleanupFiles(partition: VerticaDistributedFilesystemPartition): ConnectorResult[Unit] = {
-    logger.info("Removing files before closing read pipe.")
-
-    for(fileIdx <- 0 to partition.getFileRanges.size) {
-      if(!fileStoreConfig.preventCleanup) {
-        // Cleanup old file if required
-        getCleanupInfo(partition, fileIdx) match {
-          case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
-            case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
-            case Right(_) => ()
-          }
-          case None => logger.warn("No cleanup info found.")
-        }
-      }
-    }
-    Right()
-  }
-
-  def getCleanupInfo(partition: DistributedFilesystemPartition, partitionIndex: Int): Option[FileCleanupInfo] = {
-    logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
-    if (partitionIndex >= partition.getFileRanges.size) {
-      logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
-      None
-    } else {
-      val fileRange = partition.getFileRanges(partitionIndex)
-      Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
     }
   }
 }
