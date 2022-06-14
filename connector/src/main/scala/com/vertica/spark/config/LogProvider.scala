@@ -20,5 +20,6 @@ import com.typesafe.scalalogging.Logger
  */
 case object LogProvider {
   def getLogger(c: Class[_]): Logger = Logger(c)
+  def getLogger(obj: Object): Logger = Logger(obj.getClass)
 }
 

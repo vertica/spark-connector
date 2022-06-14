@@ -38,7 +38,13 @@ import org.apache.spark.sql.types.StructType
  * @param maxRowGroup Last row group to read from parquet file
  * @param rangeIdx Range index for this file. Used to track access to this file / cleanup among different nodes. If there are three ranges for a given file this will be a value between 0 and 2
  */
-final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Option[Int] = None)
+final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends FileRange {
+  override def start: Int = this.minRowGroup
+
+  override def end: Int = this.maxRowGroup
+
+  override def index: Int = this.rangeIdx
+}
 
 /**
  * Partition for distributed filesystem transport method using parquet files
@@ -46,8 +52,12 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  * @param fileRanges List of files and ranges of row groups to read for those files
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
-final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Option[Map[String, Int]] = None) extends VerticaPartition
+final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
+  extends VerticaPartition with DistributedFilesystemPartition {
+  override def getFileRanges: Seq[FileRange] = this.fileRanges
 
+  override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap
+}
 
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -156,8 +166,8 @@ class VerticaDistributedFilesystemReadPipe(
 
         def addNewPartition(currRowGroup: Int): Unit = {
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
-          fileRanges = fileRanges :+ ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
-          partitions = partitions :+ VerticaDistributedFilesystemPartition(fileRanges)
+          fileRanges = fileRanges :+ ParquetFileRange(file.filename, start, currRowGroup, rangeIdx)
+          partitions = partitions :+ VerticaDistributedFilesystemPartition(fileRanges, Map())
           logger.debug("Reached partition with file " + file.filename + " , range low: " +
             start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
           partitionSize = 0
@@ -167,7 +177,7 @@ class VerticaDistributedFilesystemReadPipe(
 
         def addNewFileRange(currRowGroup: Int): Unit = {
           val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
-          val frange = ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
+          val frange = ParquetFileRange(file.filename, start, currRowGroup, rangeIdx)
           fileRanges = fileRanges :+ frange
           logger.debug("Reached end of file " + file.filename + " , range low: " +
             start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
@@ -187,12 +197,12 @@ class VerticaDistributedFilesystemReadPipe(
 
       // Last partition if leftover (only partition not of rowGroupRoom size)
       if(fileRanges.nonEmpty) {
-        val partition = VerticaDistributedFilesystemPartition(fileRanges)
+        val partition = VerticaDistributedFilesystemPartition(fileRanges, Map())
         partitions = partitions :+ partition
       }
 
       // Add range count map info to partition
-      partitions = partitions.map(part => part.copy(rangeCountMap = Some(rangeCountMap.toMap)))
+      partitions = partitions.map(part => part.copy(rangeCountMap = rangeCountMap.toMap))
 
       PartitionInfo(partitions.toArray)
     }
@@ -369,6 +379,8 @@ class VerticaDistributedFilesystemReadPipe(
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
 
+  private val cleaner: DistributedFilesCleaner =
+    new DistributedFilesCleaner(this.config.fileStoreConfig, this.fileStoreLayer, this.cleanupUtils)
 
   val timer = new Timer(config.timeOperations, logger, "Partition Read")
 
@@ -393,34 +405,6 @@ class VerticaDistributedFilesystemReadPipe(
           Left(DoneReading())
         case Some(head) =>
           fileStoreLayer.openReadParquetFile(head)
-      }
-    } yield ret
-  }
-
-  private def getCleanupInfo(part: VerticaDistributedFilesystemPartition, curIdx: Int): Option[FileCleanupInfo] = {
-    logger.debug("Getting cleanup info for partition with idx " + curIdx)
-    for {
-      _ <- if (curIdx >= part.fileRanges.size) {
-        logger.warn("Invalid fileIdx " + this.fileIdx + ", can't perform cleanup.")
-        None
-      } else {
-        Some(())
-      }
-
-      curRange = part.fileRanges(curIdx)
-      ret <- part.rangeCountMap match {
-        case Some (rangeCountMap) if rangeCountMap.contains (curRange.filename) => curRange.rangeIdx match {
-          case Some (rangeIdx) => Some (FileCleanupInfo (curRange.filename, rangeIdx, rangeCountMap (curRange.filename)))
-          case None =>
-            logger.warn ("Missing range count index. Not performing any cleanup for file " + curRange.filename)
-            None
-        }
-        case None =>
-          logger.warn ("Missing range count map. Not performing any cleanup for file " + curRange.filename)
-          None
-        case _ =>
-          logger.warn ("Missing value in range count map. Not performing any cleanup for file " + curRange.filename)
-          None
       }
     } yield ret
   }
@@ -459,7 +443,7 @@ class VerticaDistributedFilesystemReadPipe(
     }
 
     // If there was an underlying error, call cleanup
-    (ret, getCleanupInfo(part,this.fileIdx)) match {
+    (ret, cleaner.getCleanupInfo(part,this.fileIdx)) match {
       case (Left(_), Some(cleanupInfo)) =>
         if(!config.fileStoreConfig.preventCleanup) cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
           case Right(()) => ()
@@ -482,23 +466,45 @@ class VerticaDistributedFilesystemReadPipe(
    */
   def endPartitionRead(): ConnectorResult[Unit] = {
     timer.endTime()
+    this.partition match {
+      case Some(partition) => cleaner.start(partition)
+      case None => Right()
+    }
+  }
+}
+
+trait FileRange {
+  def filename: String
+  def start: Int
+  def end: Int
+  def index: Int
+}
+
+trait DistributedFilesystemPartition extends InputPartition{
+  def getFileRanges: Seq[FileRange]
+  def getPartitioningRecord: Map[String, Int]
+}
+
+class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
+                              val fileStoreLayer: FileStoreLayerInterface,
+                              val cleanupUtils: CleanupUtilsInterface) {
+
+  private val logger = LogProvider.getLogger(this)
+
+  def start(partition: VerticaDistributedFilesystemPartition): ConnectorResult[Unit] = {
     for {
-      _ <- cleanupFiles()
+      _ <- cleanupFiles(partition)
       _ <- fileStoreLayer.closeReadParquetFile()
     } yield ()
   }
 
-  def cleanupFiles(): ConnectorResult[Unit] ={
+  def cleanupFiles(partition: VerticaDistributedFilesystemPartition): ConnectorResult[Unit] = {
     logger.info("Removing files before closing read pipe.")
-    val part = this.partition match {
-      case None => return Left(UninitializedReadError())
-      case Some(p) => p
-    }
 
-    for(fileIdx <- 0 to part.fileRanges.size ){
-      if(!config.fileStoreConfig.preventCleanup) {
+    for(fileIdx <- 0 to partition.getFileRanges.size) {
+      if(!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
-        getCleanupInfo(part, fileIdx) match {
+        getCleanupInfo(partition, fileIdx) match {
           case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
             case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
             case Right(_) => ()
@@ -508,6 +514,17 @@ class VerticaDistributedFilesystemReadPipe(
       }
     }
     Right()
+  }
+
+  def getCleanupInfo(partition: DistributedFilesystemPartition, partitionIndex: Int): Option[FileCleanupInfo] = {
+    logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
+    if (partitionIndex >= partition.getFileRanges.size) {
+      logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
+      None
+    } else {
+      val fileRange = partition.getFileRanges(partitionIndex)
+      Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
+    }
   }
 }
 

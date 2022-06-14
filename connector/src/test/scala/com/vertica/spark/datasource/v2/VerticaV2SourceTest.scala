@@ -84,7 +84,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))
 
-  private val partition = VerticaDistributedFilesystemPartition(Seq(), None)
+  private val partition = VerticaDistributedFilesystemPartition(Seq(), Map().empty)
 
   it should "get no catalog options" in {
     VerticaDatasourceV2Catalog.getOptions match {
