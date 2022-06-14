@@ -73,17 +73,15 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    if(config.useJson) {
+    if(this.useJson(cfg.getRequiredSchema)) {
       new VerticaJsonScan(cfg, readConfigSetup, new VerticaJsonScanSupport)
     } else {
       new VerticaScan(cfg, readConfigSetup)
     }
   }
 
-  private def useJson(schema: StructType): Boolean = {
-    // Todo: parse required schema and return true if found complex type.
-    false
-  }
+  //Todo: Infer when to use json on complex data types.
+  private def useJson(schema: StructType): Boolean = config.useJson
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())

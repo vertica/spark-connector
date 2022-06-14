@@ -460,6 +460,13 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   it should "parse json option" in {
     val opts = Map[String, String]("json" -> "true")
-    getResultOrAssert[Boolean](DSConfigSetupUtils.getJsonOption(opts))
+    val useJson = getResultOrAssert[Boolean](DSConfigSetupUtils.getJsonOption(opts))
+    assert(useJson)
+  }
+
+  it should "default json option to false" in {
+    val opts = Map[String, String]()
+    val useJson = getResultOrAssert[Boolean](DSConfigSetupUtils.getJsonOption(opts))
+    assert(!useJson)
   }
 }
