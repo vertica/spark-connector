@@ -640,7 +640,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "build VerticaJsonScan" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    val scan = new VerticaScanBuilder(readConfig.copy(json = true), readSetup)
+    val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
       .build()
     assert(scan.isInstanceOf[VerticaJsonScan])
   }
