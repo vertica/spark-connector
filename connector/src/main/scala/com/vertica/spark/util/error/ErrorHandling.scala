@@ -589,9 +589,6 @@ case class HDFSConfigError() extends ConnectorError {
 case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
-case class VerticaColumnNotFound(colName: String, tableName: String, schema: String) extends ConnectorError {
-  def getFullContext: String = s"Column $colName (table $tableName, schema $schema) does not exist in Vertica's columns table"
-}
 
 trait TableQueryError extends ConnectorError
 

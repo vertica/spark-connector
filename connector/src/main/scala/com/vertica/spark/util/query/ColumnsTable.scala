@@ -15,7 +15,6 @@ package com.vertica.spark.util.query
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.VerticaColumnNotFound
 
 import java.sql.ResultSet
 
