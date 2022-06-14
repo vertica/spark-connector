@@ -532,14 +532,7 @@ object DSConfigSetupUtils {
     }
   }
 
-  def getJsonOption(config: Map[String, String]) : ValidationResult[Boolean] = {
-    Try {
-      config.getOrElse("json", "false").toBoolean
-    } match {
-      case Failure(_) => false.validNec
-      case Success(value) => value.validNec
-    }
-  }
+  def getJsonOption(config: Map[String, String]) : ValidationResult[Boolean] = config.getOrElse("json", "false").toBoolean.validNec
 
   def validateAndGetJDBCAuth(config: Map[String, String]): DSConfigSetupUtils.ValidationResult[JdbcAuth] = {
     val user = DSConfigSetupUtils.getUser(config)
