@@ -111,6 +111,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
 
   it should "build VerticaScanWrapper" in {
     val builder = mock[ScanBuilder]
+    (builder.build _).expects().returning(mock[VerticaScanWrapper])
     assert(new VerticaScanWrapperBuilder(builder).build().isInstanceOf[VerticaScanWrapper])
   }
 
