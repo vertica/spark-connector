@@ -20,13 +20,11 @@ import com.vertica.spark.datasource.partitions.DistributedFilesystemPartition
 /**
  * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
  * */
-class DistributedFilesCleaner(val config: ReadConfig, val cleanupUtils: CleanupUtilsInterface) {
+class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig, val cleanupUtils: CleanupUtilsInterface, val optionalFSLayer: Option[FileStoreLayerInterface] = None) {
 
   private val logger = LogProvider.getLogger(this)
-  private val (fileStoreLayer, fileStoreConfig) = fileStoreLayer match {
-    case readConfig: DistributedFilesystemReadConfig =>
-      (HadoopFileStoreLayer.make(readConfig), readConfig.fileStoreConfig)
-  }
+  private val fileStoreLayer = optionalFSLayer.getOrElse(HadoopFileStoreLayer.make(config))
+  private val fileStoreConfig = config.fileStoreConfig
 
   /**
    * The idea is to first writing to the filesystem, marking that a portion of a file has been read.

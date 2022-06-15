@@ -36,12 +36,7 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) =>
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          val
-          jsonSupport.buildScan(
-            partitionInfo.rootPath,
-            Some(readSchema()),
-            sparkSession,
-            config).toBatch
+          jsonSupport.buildScan(partitionInfo.rootPath, Some(readSchema()), config, sparkSession).toBatch
       }
     }
   }

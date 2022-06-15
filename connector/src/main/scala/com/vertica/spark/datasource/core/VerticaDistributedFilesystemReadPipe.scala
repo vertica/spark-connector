@@ -379,7 +379,7 @@ class VerticaDistributedFilesystemReadPipe(
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
 
-  private val cleaner: DistributedFilesCleaner = new DistributedFilesCleaner(this.config.fileStoreConfig, this.fileStoreLayer, this.cleanupUtils)
+  private val cleaner: DistributedFilesCleaner = new DistributedFilesCleaner(this.config, this.cleanupUtils, Some(fileStoreLayer))
 
   val timer = new Timer(config.timeOperations, logger, "Partition Read")
 

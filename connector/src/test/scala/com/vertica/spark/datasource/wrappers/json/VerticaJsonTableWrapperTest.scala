@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.vertica.spark.datasource.wrappers.json
 
+import com.vertica.spark.common.TestObjects
 import com.vertica.spark.datasource.wrappers.VerticaScanWrapperBuilder
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.execution.datasources.FileFormat
@@ -24,6 +25,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 
 class VerticaJsonTableWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
+
+  behavior of "VerticaJsonTableTest"
 
   private val spark: SparkSession = SparkSession.builder()
     .master("local[*]")
@@ -42,24 +45,23 @@ class VerticaJsonTableWrapperTest extends AnyFlatSpec with BeforeAndAfterAll wit
   }
 
   private val mockTable = new MockJsonTable("MockJsonTable", spark, CaseInsensitiveStringMap.empty(), List(), Some(StructType(Seq())), classOf[JsonFileFormat])
-
-  behavior of "VerticaJsonTableTest"
+  private val readConfig = TestObjects.readConfig
 
   it should "return JsonTable capabilities" in {
-    assert(new VerticaJsonTableWrapper(mockTable).capabilities() == mockTable.capabilities())
+    assert(new VerticaJsonTableWrapper(mockTable, readConfig).capabilities() == mockTable.capabilities())
   }
 
   it should "build VerticaScanWrapperBuilder" in {
-    assert(new VerticaJsonTableWrapper(mockTable).newScanBuilder(CaseInsensitiveStringMap.empty()).isInstanceOf[VerticaScanWrapperBuilder])
+    assert(new VerticaJsonTableWrapper(mockTable, readConfig).newScanBuilder(CaseInsensitiveStringMap.empty()).isInstanceOf[VerticaScanWrapperBuilder])
   }
 
   it should "return JsonTable name" in {
-    assert(new VerticaJsonTableWrapper(mockTable).name() == "Vertica" + mockTable.name)
+    assert(new VerticaJsonTableWrapper(mockTable, readConfig).name() == "Vertica" + mockTable.name)
   }
 
   it should "return JsonTable schema" in {
     // Comparing references
-    assert(new VerticaJsonTableWrapper(mockTable).schema() == mockTable.schema)
+    assert(new VerticaJsonTableWrapper(mockTable, readConfig).schema() == mockTable.schema)
   }
 
   override protected def afterAll(): Unit = spark.close()
