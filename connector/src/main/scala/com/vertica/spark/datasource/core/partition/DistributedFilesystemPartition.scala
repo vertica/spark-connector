@@ -11,15 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.config
+package com.vertica.spark.datasource.core.partition
 
-import com.typesafe.scalalogging.Logger
+import org.apache.spark.sql.connector.read.InputPartition
 
-/**
- * Used to provide a logger for a given class, configured with a given log level.
- */
-case object LogProvider {
-  def getLogger(c: Class[_]): Logger = Logger(c)
-  def getLogger(obj: Object): Logger = Logger(obj.getClass)
+trait DistributedFilesystemPartition extends InputPartition {
+  def getFileRanges: Seq[FileRange]
+
+  def getPartitioningRecord: Map[String, Int]
 }
-

@@ -11,15 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.config
-
-import com.typesafe.scalalogging.Logger
+package com.vertica.spark.util.cleanup
 
 /**
- * Used to provide a logger for a given class, configured with a given log level.
+ * Structure containing cleanup information for a given portion of a file.
+ *
+ * @param filename       The file to check for cleanup.
+ * @param fileIdx        Which portion of the file is done being read.
+ * @param fileRangeCount How many portions of the file exist.
  */
-case object LogProvider {
-  def getLogger(c: Class[_]): Logger = Logger(c)
-  def getLogger(obj: Object): Logger = Logger(obj.getClass)
-}
-
+final case class FileCleanupInfo(filename: String, fileIdx: Int, fileRangeCount: Int)
