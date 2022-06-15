@@ -37,7 +37,6 @@ class PartitionReaderWrapperTest extends AnyFlatSpec with MockFactory{
     (reader.close _).expects()
     val partitions = mock[VerticaFilePartition]
     (partitions.getFilePortions _).expects().returning(Seq())
-    (partitions.getFilePortions _).expects().returning(Seq())
 
     val mockCleanupUtils = new CleanupUtils
     val mockCleaner = new DistributedFilesCleaner(config, mockCleanupUtils)

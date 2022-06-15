@@ -37,7 +37,7 @@ class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig, val c
   def cleanupFiles(partition: DistributedFilesystemPartition): Unit = {
     logger.info("Removing files before closing read pipe.")
 
-    for (fileIdx <- 0 to partition.getFilePortions.size) {
+    for (fileIdx <- partition.getFilePortions.indices) {
       if (!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
         getCleanupInfo(partition, fileIdx) match {
