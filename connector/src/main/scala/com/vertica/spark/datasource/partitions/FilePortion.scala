@@ -13,12 +13,24 @@
 
 package com.vertica.spark.datasource.partitions
 
-trait FileRange {
+trait FilePortion {
+  /**
+   * @return return a file name.
+   * */
   def filename: String
 
-  def start: Int
+  /**
+   * @return The starting location to read a portion of a file
+   * */
+  def start(): Long
 
-  def end: Int
+  /**
+   * @return The end of a file portion for read
+   * */
+  def end(): Long
 
-  def index: Int
+  /**
+   * @return The portion's unique ID amongst other portions of a file.
+   * */
+  def index(): Long
 }

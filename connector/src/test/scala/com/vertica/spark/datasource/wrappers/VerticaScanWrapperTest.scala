@@ -1,6 +1,6 @@
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaPartitionedFile}
+import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaFilePortion}
 import com.vertica.spark.util.schema.SchemaToolsTests.mock
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
@@ -46,7 +46,7 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
     val verticaFilePartition = partitions.head.asInstanceOf[VerticaFilePartition]
     assert(verticaFilePartition.index == 1)
-    assert(verticaFilePartition.files.head.isInstanceOf[VerticaPartitionedFile])
+    assert(verticaFilePartition.files.head.isInstanceOf[VerticaFilePortion])
 
     val fileCounts = verticaFilePartition.partitioningRecords.keySet.toList.length
     assert(fileCounts == 4)

@@ -16,7 +16,14 @@ package com.vertica.spark.datasource.partitions
 import org.apache.spark.sql.connector.read.InputPartition
 
 trait DistributedFilesystemPartition extends InputPartition {
-  def getFileRanges: Seq[FileRange]
 
+  /**
+   * @return Return the file portions in this partition
+   * */
+  def getFilePortions: Seq[FilePortion]
+
+  /**
+   * @return return the record containing the count of all file partition created.
+   * */
   def getPartitioningRecord: Map[String, Int]
 }

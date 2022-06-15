@@ -37,7 +37,7 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
   def cleanupFiles(partition: DistributedFilesystemPartition): Unit = {
     logger.info("Removing files before closing read pipe.")
 
-    for (fileIdx <- 0 to partition.getFileRanges.size) {
+    for (fileIdx <- 0 to partition.getFilePortions.size) {
       if (!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
         getCleanupInfo(partition, fileIdx) match {
@@ -53,11 +53,11 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
 
   def getCleanupInfo(partition: DistributedFilesystemPartition, partitionIndex: Int): Option[FileCleanupInfo] = {
     logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
-    if (partitionIndex >= partition.getFileRanges.size) {
+    if (partitionIndex >= partition.getFilePortions.size) {
       logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
       None
     } else {
-      val fileRange = partition.getFileRanges(partitionIndex)
+      val fileRange = partition.getFilePortions(partitionIndex)
       Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
     }
   }

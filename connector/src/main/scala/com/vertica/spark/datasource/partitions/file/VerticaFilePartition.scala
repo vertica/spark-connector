@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.partitions.file
 
+import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, FilePortion}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 
 /**
@@ -24,4 +25,9 @@ import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFil
 class VerticaFilePartition(override val index: Int,
                            override val files: Array[PartitionedFile],
                            val partitioningRecords: Map[String, Int])
-  extends FilePartition(index, files)
+  extends FilePartition(index, files) with DistributedFilesystemPartition {
+
+  override def getFilePortions: Seq[FilePortion] = this.files.asInstanceOf[Array[FilePortion]]
+
+  override def getPartitioningRecord: Map[String, Int] = this.partitioningRecords
+}

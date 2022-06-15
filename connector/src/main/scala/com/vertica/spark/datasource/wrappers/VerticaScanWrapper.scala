@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaPartitionedFile}
+import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaFilePortion}
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType
@@ -36,7 +36,7 @@ class VerticaScanWrapper(val scan: Scan) extends Scan with Batch {
       val key = file.filePath
       val count = partitioningRecords.getOrElse(key, 0)
       partitioningRecords.put(key, count + 1)
-      VerticaPartitionedFile(file, count)
+      VerticaFilePortion(file, count)
     }
 
     scan.toBatch.planInputPartitions()
