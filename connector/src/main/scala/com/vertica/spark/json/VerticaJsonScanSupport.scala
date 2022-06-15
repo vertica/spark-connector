@@ -76,7 +76,7 @@ class VerticaJsonTable(val jsonTable: JsonTable) extends Table with SupportsRead
 
   override def schema(): StructType = jsonTable.schema
 
-  override def capabilities(): util.Set[TableCapability] = Set[TableCapability](TableCapability.BATCH_READ).asJava
+  override def capabilities(): util.Set[TableCapability] = jsonTable.capabilities()
 
   override def newScanBuilder(caseInsensitiveStringMap: CaseInsensitiveStringMap): ScanBuilder =
     new VerticaScanWrapperBuilder(jsonTable.newScanBuilder(caseInsensitiveStringMap))
