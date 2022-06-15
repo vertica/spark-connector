@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.core.partition
+package com.vertica.spark.datasource.partitions
 
 import org.apache.spark.sql.connector.read.InputPartition
 
