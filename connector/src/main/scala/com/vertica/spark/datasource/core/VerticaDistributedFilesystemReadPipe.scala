@@ -238,7 +238,7 @@ class VerticaDistributedFilesystemReadPipe(
 
     def getExportType(): String = if(config.useJson) "JSON" else "PARQUET"
 
-    val ret: ConnectorResult[PartitionInfo] = for {
+    def exportData: ConnectorResult[Unit] = for {
       _ <- getMetadata
 
       // Set Vertica to work with kerberos and HDFS/AWS
@@ -304,14 +304,16 @@ class VerticaDistributedFilesystemReadPipe(
         timer.endTime()
         res
       }
+    } yield ()
 
+    def getParquetPartitionInfo: ConnectorResult[PartitionInfo] = for {
       // Retrieve all parquet files created by Vertica
       dirExists <- fileStoreLayer.fileExists(hdfsPath)
       fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
       requestedPartitionCount = config.partitionCount match {
-          case Some(count) => count
-          case None => parquetFileList.size // Default to 1 partition / file
+        case Some(count) => count
+        case None => parquetFileList.size // Default to 1 partition / file
       }
 
       _ = logger.info("Requested partition count: " + requestedPartitionCount)
@@ -348,6 +350,16 @@ class VerticaDistributedFilesystemReadPipe(
 
       _ <- jdbcLayer.close()
     } yield partitionInfo
+
+    val ret: ConnectorResult[PartitionInfo] = exportData match {
+      case Left(error) => Left(error)
+      case Right(_) =>
+        if (config.useJson) {
+          Right(PartitionInfo(Array(), hdfsPath))
+        } else {
+          getParquetPartitionInfo
+        }
+    }
 
     // If there's an error, cleanup
     ret match {
