@@ -1,8 +1,9 @@
-package com.vertica.spark.json
+package com.vertica.spark.datasource.json
 
 import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, PartitionInfo}
+import com.vertica.spark.datasource.json.VerticaJsonScan
 import com.vertica.spark.datasource.v2.VerticaScan
 import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
 import com.vertica.spark.datasource.wrappers.{PartitionReaderWrapper, PartitionReaderWrapperFactory, VerticaScanWrapper, VerticaScanWrapperBuilder}

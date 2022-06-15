@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.json
+package com.vertica.spark.datasource.json
 
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
