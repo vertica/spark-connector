@@ -109,6 +109,11 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     assert(verticaFilePartition.partitioningRecords("path4") == 1)
   }
 
+  it should "build VerticaScanWrapper" in {
+    val builder = mock[ScanBuilder]
+    assert(new VerticaScanWrapperBuilder(builder).build().isInstanceOf[VerticaScanWrapper])
+  }
+
   it should "create wrapped partition reader factory" in {
     val scan = mock[Scan]
     val batch = mock[Batch]
@@ -118,7 +123,24 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     new VerticaScanWrapper(scan).createReaderFactory().isInstanceOf[PartitionReaderWrapperFactory]
   }
 
-  it should "clean up on close" in {
+  it should "read schema from wrapped scan" in {
+    val scan = mock[Scan]
+    (scan.readSchema _).expects().returning(StructType(Nil))
+
+    new VerticaScanWrapper(scan).readSchema()
+  }
+
+  it should "use wrapped reader to read" in {
+    val reader = mock[PartitionReader[InternalRow]]
+    (reader.get _).expects().returning(mock[InternalRow])
+    (reader.next _).expects()
+    val partitions = mock[VerticaFilePartition]
+
+    new PartitionReaderWrapper(reader, partitions).get()
+    new PartitionReaderWrapper(reader, partitions).next()
+  }
+
+  it should "clean up on reader close" in {
     val reader = mock[PartitionReader[InternalRow]]
     (reader.close _).expects()
     val partitions = mock[VerticaFilePartition]
