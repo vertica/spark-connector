@@ -4,6 +4,7 @@ import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, PartitionInfo}
 import com.vertica.spark.datasource.v2.VerticaScan
+import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
 import com.vertica.spark.datasource.wrappers.{PartitionReaderWrapper, PartitionReaderWrapperFactory, VerticaScanWrapper, VerticaScanWrapperBuilder}
 import com.vertica.spark.util.error.{ConnectorException, SchemaDiscoveryError}
 import org.apache.spark.sql.SparkSession

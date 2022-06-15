@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.json.{VerticaFilePartition, VerticaPartitionedFile}
+import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaPartitionedFile}
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType

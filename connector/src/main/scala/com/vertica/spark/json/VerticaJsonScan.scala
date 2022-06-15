@@ -16,6 +16,7 @@ package com.vertica.spark.json
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
 import com.vertica.spark.datasource.v2.VerticaScan
+import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
 import com.vertica.spark.util.error.{ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}

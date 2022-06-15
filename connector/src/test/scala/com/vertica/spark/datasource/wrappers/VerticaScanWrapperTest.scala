@@ -1,6 +1,6 @@
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.json.{VerticaFilePartition, VerticaPartitionedFile}
+import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaPartitionedFile}
 import com.vertica.spark.util.schema.SchemaToolsTests.mock
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}

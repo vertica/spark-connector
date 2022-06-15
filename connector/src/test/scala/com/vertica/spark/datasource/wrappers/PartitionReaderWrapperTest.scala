@@ -1,6 +1,6 @@
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.json.VerticaFilePartition
+import com.vertica.spark.datasource.partitions.file.VerticaFilePartition
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.PartitionReader
 import org.scalamock.scalatest.MockFactory

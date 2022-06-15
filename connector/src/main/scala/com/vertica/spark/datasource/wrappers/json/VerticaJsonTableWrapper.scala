@@ -11,15 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.wrappers
+package com.vertica.spark.datasource.wrappers.json
 
+import com.vertica.spark.datasource.wrappers.VerticaScanWrapperBuilder
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.catalog.{SupportsRead, Table, TableCapability}
-import org.apache.spark.sql.connector.read.ScanBuilder
+import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
+import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
 import org.apache.spark.sql.execution.datasources.v2.json.JsonTable
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
 import java.util
+
 
 /**
  * Wraps a [[JsonTable]] so that that it will create a [[VerticaScanWrapperBuilder]].
