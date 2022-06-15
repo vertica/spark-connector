@@ -27,7 +27,7 @@ import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{AWSOptions, FileStoreConfig, GCSOptions, LogProvider}
+import com.vertica.spark.config.{AWSOptions, DistributedFilesystemReadConfig, FileStoreConfig, GCSOptions, LogProvider, ReadConfig}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
@@ -169,6 +169,20 @@ object GCSEnvVars {
   val SERVICE_EMAIL = "GCS_SERVICE_EMAIL"
 }
 
+object HadoopFileStoreLayer {
+  def make(config: DistributedFilesystemReadConfig): HadoopFileStoreLayer = {
+    val readMetadata = config.metadata match {
+      case Some(metadata) => if (config.getRequiredSchema.nonEmpty) {
+        Some(config.getRequiredSchema)
+      } else {
+        Some(metadata.schema)
+      }
+      case _ => None
+    }
+
+    new HadoopFileStoreLayer(config.fileStoreConfig, readMetadata)
+  }
+}
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
   private val S3_ACCESS_KEY: String = "fs.s3a.access.key"
   private val S3_SECRET_KEY: String = "fs.s3a.secret.key"

@@ -33,7 +33,7 @@ class VerticaFilePortion(override val partitionValues: InternalRow,
 
   override def end(): Long = this.start + this.length
 
-  override def index(): Long = this.partitionIndex
+  override def index(): Int = this.partitionIndex
 }
 
 object VerticaFilePortion {

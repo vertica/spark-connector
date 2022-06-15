@@ -44,7 +44,7 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
 
   override def end(): Long = this.maxRowGroup
 
-  override def index(): Long = this.rangeIdx
+  override def index(): Int = this.rangeIdx
 }
 
 /**
@@ -84,7 +84,6 @@ class VerticaDistributedFilesystemReadPipe(
   // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
   private val maxFileSize = config.maxFileSize
   private val maxRowGroupSize = config.maxRowGroupSize
-
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {

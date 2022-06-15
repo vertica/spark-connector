@@ -13,7 +13,10 @@
 
 package com.vertica.spark.datasource.wrappers
 
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, ReadConfig}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaFilePortion}
+import com.vertica.spark.util.cleanup.{CleanupUtils, DistributedFilesCleaner}
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType
@@ -23,7 +26,8 @@ import org.apache.spark.sql.types.StructType
  *
  * planInputPartition() will also record partitioning information.
  * */
-class VerticaScanWrapper(val scan: Scan) extends Scan with Batch {
+class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan with Batch {
+
   override def readSchema(): StructType = scan.readSchema()
 
   /**
@@ -46,7 +50,9 @@ class VerticaScanWrapper(val scan: Scan) extends Scan with Batch {
       .map(partition => new VerticaFilePartition(partition.index, partition.files, partitioningRecords.toMap))
   }
 
-  override def createReaderFactory(): PartitionReaderFactory = new PartitionReaderWrapperFactory(scan.toBatch.createReaderFactory())
+  override def createReaderFactory(): PartitionReaderFactory = {
+    new PartitionReaderWrapperFactory(scan.toBatch.createReaderFactory(), config)
+  }
 
   override def toBatch: Batch = this
 }

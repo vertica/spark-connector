@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.wrappers.json
 
+import com.vertica.spark.config.ReadConfig
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.Scan
 import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
@@ -23,12 +24,12 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 class VerticaJsonTableSupport {
-  def buildScan(filePath: String, schema: Option[StructType], sparkSession: SparkSession): Scan = {
+  def buildScan(filePath: String, schema: Option[StructType], readConfig: ReadConfig, sparkSession: SparkSession): Scan = {
     val paths = List(filePath)
     val options = CaseInsensitiveStringMap.empty()
     val fallback = classOf[JsonFileFormat]
     val jsonTable = JsonTable("Vertica Table", sparkSession, options, paths, schema, fallback)
-    val verticaJsonTable = new VerticaJsonTableWrapper(jsonTable)
+    val verticaJsonTable = new VerticaJsonTableWrapper(jsonTable, readConfig)
     val builderOpts = new CaseInsensitiveStringMap(Map[String, String]().asJava)
     verticaJsonTable.newScanBuilder(builderOpts).build()
   }

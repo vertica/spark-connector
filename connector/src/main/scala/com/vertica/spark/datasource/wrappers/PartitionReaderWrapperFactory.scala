@@ -13,6 +13,9 @@
 
 package com.vertica.spark.datasource.wrappers
 
+import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.datasource.partitions.DistributedFilesystemPartition
+import com.vertica.spark.util.cleanup.{CleanupUtils, DistributedFilesCleaner}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{InputPartition, PartitionReader, PartitionReaderFactory}
 
@@ -21,7 +24,13 @@ import org.apache.spark.sql.connector.read.{InputPartition, PartitionReader, Par
  *
  * planInputPartition() will also record partitioning information.
  * */
-class PartitionReaderWrapperFactory(val readerFactory: PartitionReaderFactory) extends PartitionReaderFactory {
+class PartitionReaderWrapperFactory(val readerFactory: PartitionReaderFactory, val config: ReadConfig)
+  extends PartitionReaderFactory {
+
   override def createReader(inputPartition: InputPartition): PartitionReader[InternalRow] =
-    new PartitionReaderWrapper(readerFactory.createReader(inputPartition), inputPartition)
+    new PartitionReaderWrapper(
+      readerFactory.createReader(inputPartition),
+      inputPartition.asInstanceOf[DistributedFilesystemPartition],
+      new DistributedFilesCleaner(config, new CleanupUtils)
+    )
 }

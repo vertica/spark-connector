@@ -32,5 +32,5 @@ trait FilePortion {
   /**
    * @return The portion's unique ID amongst other portions of a file.
    * */
-  def index(): Long
+  def index(): Int
 }
