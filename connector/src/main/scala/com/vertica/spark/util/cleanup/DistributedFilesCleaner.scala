@@ -14,25 +14,27 @@
 package com.vertica.spark.util.cleanup
 
 import com.vertica.spark.config.{FileStoreConfig, LogProvider}
-import com.vertica.spark.datasource.core.VerticaDistributedFilesystemPartition
 import com.vertica.spark.datasource.core.partition.DistributedFilesystemPartition
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
+/**
+ * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
+ * */
 class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
                               val fileStoreLayer: FileStoreLayerInterface,
                               val cleanupUtils: CleanupUtilsInterface) {
 
   private val logger = LogProvider.getLogger(this)
 
-  def start(partition: DistributedFilesystemPartition): ConnectorResult[Unit] = {
-    for {
-      _ <- cleanupFiles(partition)
-      _ <- fileStoreLayer.closeReadParquetFile()
-    } yield ()
-  }
-
-  def cleanupFiles(partition: DistributedFilesystemPartition): ConnectorResult[Unit] = {
+  /**
+   * The idea is to first writing to the filesystem, marking that a portion of a file has been read.
+   * Then, we count if all portion of a file are present. Delete the file if so, else ignore.
+   *
+   * This is done for all partitions.
+   *
+   * @param partition The [[DistributedFilesystemPartition]] to be cleanup.
+   * */
+  def cleanupFiles(partition: DistributedFilesystemPartition): Unit = {
     logger.info("Removing files before closing read pipe.")
 
     for (fileIdx <- 0 to partition.getFileRanges.size) {
@@ -47,7 +49,6 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
         }
       }
     }
-    Right()
   }
 
   def getCleanupInfo(partition: DistributedFilesystemPartition, partitionIndex: Int): Option[FileCleanupInfo] = {

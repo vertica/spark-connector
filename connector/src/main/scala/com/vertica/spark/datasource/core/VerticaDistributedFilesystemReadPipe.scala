@@ -466,7 +466,9 @@ class VerticaDistributedFilesystemReadPipe(
   def endPartitionRead(): ConnectorResult[Unit] = {
     timer.endTime()
     this.partition match {
-      case Some(partition) => cleaner.start(partition)
+      case Some(partition) =>
+        cleaner.cleanupFiles(partition)
+        fileStoreLayer.closeReadParquetFile()
       case None => Right()
     }
   }

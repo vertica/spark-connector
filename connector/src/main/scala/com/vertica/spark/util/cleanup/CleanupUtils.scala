@@ -21,15 +21,6 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.Path
 
 /**
- * Structure containing cleanup information for a given portion of a file.
- *
- * @param filename The file to check for cleanup.
- * @param fileIdx Which portion of the file is done being read.
- * @param fileRangeCount How many portions of the file exist.
- */
-final case class FileCleanupInfo(filename: String, fileIdx: Int, fileRangeCount: Int)
-
-/**
  * Interface for cleanup util handling cleaning up files being accessed in a distributed fashion.
  *
  */
