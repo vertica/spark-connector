@@ -14,8 +14,8 @@
 package com.vertica.spark.util.cleanup
 
 import com.vertica.spark.config.{FileStoreConfig, LogProvider}
-import com.vertica.spark.datasource.core.partition.DistributedFilesystemPartition
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
+import com.vertica.spark.datasource.partitions.DistributedFilesystemPartition
 
 /**
  * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
