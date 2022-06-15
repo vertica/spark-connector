@@ -236,6 +236,8 @@ class VerticaDistributedFilesystemReadPipe(
     val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + hdfsPath)
 
+    def getExportType(): String = if(config.useJson) "JSON" else "PARQUET"
+
     val ret: ConnectorResult[PartitionInfo] = for {
       _ <- getMetadata
 
@@ -280,7 +282,7 @@ class VerticaDistributedFilesystemReadPipe(
       }
       _ = logger.info("Export Source: " + exportSource)
 
-      exportStatement = "EXPORT TO PARQUET(" +
+      exportStatement = "EXPORT TO "+ getExportType() + "(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
