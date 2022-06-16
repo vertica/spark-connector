@@ -13,10 +13,8 @@
 
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, ReadConfig}
-import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaFilePortion}
-import com.vertica.spark.util.cleanup.{CleanupUtils, DistributedFilesCleaner}
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType
@@ -36,7 +34,10 @@ class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan wi
   override def planInputPartitions(): Array[InputPartition] = {
     val partitioningRecords = scala.collection.mutable.Map[String, Int]()
 
-    def recordPartitionedFile(file: PartitionedFile) = {
+    /**
+     * Make a file portion and record it.
+     * */
+    def makeFilePortion(file: PartitionedFile) = {
       val key = file.filePath
       val count = partitioningRecords.getOrElse(key, 0)
       partitioningRecords.put(key, count + 1)
@@ -45,8 +46,7 @@ class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan wi
 
     scan.toBatch.planInputPartitions()
       .map(partition => partition.asInstanceOf[FilePartition])
-      .map(filePartition =>
-        filePartition.copy(files = filePartition.files.map(recordPartitionedFile)))
+      .map(filePartition => filePartition.copy(files = filePartition.files.map(makeFilePortion)))
       .map(partition => new VerticaFilePartition(partition.index, partition.files, partitioningRecords.toMap))
   }
 

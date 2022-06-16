@@ -23,7 +23,7 @@ import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, FilePortion}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
-import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner, FileCleanupInfo}
+import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import com.vertica.spark.util.version.VerticaVersionUtils

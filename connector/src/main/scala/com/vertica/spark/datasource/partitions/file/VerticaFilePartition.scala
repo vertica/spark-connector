@@ -27,7 +27,7 @@ class VerticaFilePartition(override val index: Int,
                            val partitioningRecords: Map[String, Int])
   extends FilePartition(index, files) with DistributedFilesystemPartition {
 
-  override def getFilePortions: Seq[FilePortion] = this.files.asInstanceOf[Array[FilePortion]]
+  override def getFilePortions: Seq[FilePortion] = this.files.map(_.asInstanceOf[FilePortion])
 
   override def getPartitioningRecord: Map[String, Int] = this.partitioningRecords
 }
