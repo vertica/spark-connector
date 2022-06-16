@@ -282,7 +282,7 @@ class VerticaDistributedFilesystemReadPipe(
       }
       _ = logger.info("Export Source: " + exportSource)
 
-      exportStatement = "EXPORT TO "+ exportType + "(" +
+      exportStatement = "EXPORT TO " + exportType + "(" +
         "directory = '" + hdfsPath +
         "', fileSizeMB = " + maxFileSize +
         ", rowGroupSizeMB = " + maxRowGroupSize +
