@@ -613,3 +613,18 @@ case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
 }
 
 
+trait TableQueryError extends ConnectorError
+
+case class QueryResultEmpty(table: String, query: String) extends TableQueryError {
+  override def getFullContext: String = s"Query to system table $table returned nothing.\nQUERY: $query"
+}
+
+case class MultipleQueryResult(table: String, query: String) extends TableQueryError {
+  override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
+}
+
+case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
+  override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
+}
+
+

@@ -119,63 +119,75 @@ class VerticaDistributedFilesystemReadPipe(
     map(filename) - 1
   }
 
-  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], partitionCount: Int): PartitionInfo = {
+  /**
+   * Function generate a list of [[VerticaDistributedFilesystemPartition]] by distributing the row groups of the exported
+   * parquets evenly amongst the requested number of partitions.
+   * If no partition number were specified, defaults to one row group per partition. Note that a partition can span
+   * multiple files.
+   *
+   * @param fileMetadata A list of parquet metadata
+   *
+   * @param requestedPartitionCount the number of partition to create
+   *
+   * @return An array of [[VerticaDistributedFilesystemPartition]]
+   * */
+  private def getPartitionInfo(fileMetadata: Seq[ParquetFileMetadata], requestedPartitionCount: Int): PartitionInfo = {
     val totalRowGroups = fileMetadata.map(_.rowGroupCount).sum
 
     // If no data, return empty partition list
     if(totalRowGroups == 0) {
       logger.info("No data. Returning empty partition list.")
       PartitionInfo(Array[InputPartition]())
-    }
-    else {
-      val extraSpace = if(totalRowGroups % partitionCount == 0) 0 else 1
-      val rowGroupRoom = (totalRowGroups / partitionCount) + extraSpace
-
-      // Now, create partitions splitting up files roughly evenly
-      var i = 0
+    } else {
       var partitions = List[VerticaDistributedFilesystemPartition]()
-      var curFileRanges = List[ParquetFileRange]()
+      var fileRanges = List[ParquetFileRange]()
       val rangeCountMap = scala.collection.mutable.Map[String, Int]()
 
       logger.info("Creating partitions.")
-      for(m <- fileMetadata) {
-        val size = m.rowGroupCount
-        logger.debug("Splitting file " + m.filename + " with row group count " + size)
-        var j = 0
-        var low = 0
-        while(j < size){
-          if(i == rowGroupRoom-1){ // Reached end of partition, cut off here
-            val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
 
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
+      val extraSpace = if(totalRowGroups % requestedPartitionCount == 0) 0 else 1
+      val maxSize = (totalRowGroups / requestedPartitionCount) + extraSpace
+      // The row group count of a partition
+      var partitionSize = 0
+      // Create partitions by splitting up files by their row groups roughly evenly.
+      fileMetadata.foreach(file => {
+        val fileRowGroupCount = file.rowGroupCount
+        var start = 0
 
-            curFileRanges = curFileRanges :+ frange
-            val partition = VerticaDistributedFilesystemPartition(curFileRanges)
-            partitions = partitions :+ partition
-            curFileRanges = List[ParquetFileRange]()
-            logger.debug("Reached partition with file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i = 0
-            low = j + 1
-          }
-          else if(j == size - 1){ // Reached end of file's row groups, add to file ranges
-            val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, m.filename)
-            val frange = ParquetFileRange(m.filename, low, j, Some(rangeIdx))
-            curFileRanges = curFileRanges :+ frange
-            logger.debug("Reached end of file " + m.filename + " , range low: " +
-              low + " , range high: " + j + " , idx: " + rangeIdx)
-            i += 1
-          }
-          else {
-            i += 1
-          }
-          j += 1
+        def addNewPartition(currRowGroup: Int): Unit = {
+          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
+          fileRanges = fileRanges :+ ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
+          partitions = partitions :+ VerticaDistributedFilesystemPartition(fileRanges)
+          logger.debug("Reached partition with file " + file.filename + " , range low: " +
+            start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
+          partitionSize = 0
+          start = currRowGroup + 1
+          fileRanges = List[ParquetFileRange]()
         }
-      }
+
+        def addNewFileRange(currRowGroup: Int): Unit = {
+          val rangeIdx = incrementRangeMapGetIndex(rangeCountMap, file.filename)
+          val frange = ParquetFileRange(file.filename, start, currRowGroup, Some(rangeIdx))
+          fileRanges = fileRanges :+ frange
+          logger.debug("Reached end of file " + file.filename + " , range low: " +
+            start + " , range high: " + currRowGroup + " , idx: " + rangeIdx)
+          partitionSize += 1
+        }
+
+        (0 until fileRowGroupCount).foreach(currRowGroup => {
+          if(partitionSize == maxSize - 1) {
+            addNewPartition(currRowGroup)
+          } else if (currRowGroup == fileRowGroupCount - 1) {
+            addNewFileRange(currRowGroup)
+          } else {
+            partitionSize += 1
+          }
+        })
+      })
 
       // Last partition if leftover (only partition not of rowGroupRoom size)
-      if(curFileRanges.nonEmpty) {
-        val partition = VerticaDistributedFilesystemPartition(curFileRanges)
+      if(fileRanges.nonEmpty) {
+        val partition = VerticaDistributedFilesystemPartition(fileRanges)
         partitions = partitions :+ partition
       }
 
