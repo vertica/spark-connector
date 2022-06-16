@@ -494,6 +494,12 @@ case class GenericError(cause: Throwable) extends JdbcError {
 case class ParamsNotSupported(operation: String) extends JdbcError {
   def getFullContext: String = "Params not supported for operation: " + operation
 }
+case class ResultSetError(cause: Throwable) extends JdbcError {
+  private val message = "Error getting JDBC result set data"
+
+  override def getFullContext: String = ErrorHandling.addCause(this.message, this.cause)
+  override def getUserMessage: String = s"$message:${cause.toString}"
+}
 
 /**
   * Enumeration of the list of possible schema errors.
@@ -580,4 +586,19 @@ case class HDFSConfigError() extends ConnectorError {
 case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
+
+trait TableQueryError extends ConnectorError
+
+case class QueryResultEmpty(table: String, query: String) extends TableQueryError {
+  override def getFullContext: String = s"Query to system table $table returned nothing.\nQUERY: $query"
+}
+
+case class MultipleQueryResult(table: String, query: String) extends TableQueryError {
+  override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
+}
+
+case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
+  override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
+}
+
 
