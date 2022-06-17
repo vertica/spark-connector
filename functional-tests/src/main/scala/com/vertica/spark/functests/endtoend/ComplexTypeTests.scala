@@ -3,8 +3,8 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
-import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
+import com.vertica.spark.util.error.{ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
+import com.vertica.spark.util.schema.{MetadataKey, ComplexTypeSchemaSupport}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 

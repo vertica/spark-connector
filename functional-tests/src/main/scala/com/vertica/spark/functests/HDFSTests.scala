@@ -108,7 +108,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
     val dataOrError = for {
       files <- fsLayer.getFileList(fsCfg.address)
-      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet")).head,0,0))
+      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet")).head,0,0,0))
       data <- fsLayer.readDataFromParquetFile(100)
       _ <- fsLayer.closeReadParquetFile()
     } yield data
@@ -165,7 +165,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
     assert(fsLayer.fileExists(filename).right.getOrElse(false))
 
-    fsLayer.openReadParquetFile(ParquetFileRange(filename, 0, 0, None))
+    fsLayer.openReadParquetFile(ParquetFileRange(filename, 0, 0, 0))
     val dataOrError = fsLayer.readDataFromParquetFile(100)
     fsLayer.closeReadParquetFile()
 
