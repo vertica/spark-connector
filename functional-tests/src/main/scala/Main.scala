@@ -197,7 +197,7 @@ object Main extends App {
   val writeOpts = Map() ++ connectorOptions
   val readOpts = Map() ++ connectorOptions
 
-  private def defaultTestSuites: String = {
+  private def defaultTestSuitesNames: String = {
     val result = Seq(
       new JDBCTests(jdbcConfig),
       new HDFSTests(fileStoreConfig, jdbcConfig),
@@ -208,12 +208,12 @@ object Main extends App {
     result + "\n"
   }
 
-  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "", remote: Boolean = false)
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "", remote: Boolean = false, json: Boolean = false)
   val builder = OParser.builder[Options]
   val optParser = {
     import builder._
     OParser.sequence(
-      note("By default, the following test suites will be run:\n" + defaultTestSuites),
+      note("By default, the following test suites will be run:\n" + defaultTestSuitesNames),
       note("Use the following options to alter the test suites:\n"),
       opt[Unit]('l', "large")
         .optional()
@@ -231,6 +231,9 @@ object Main extends App {
       opt[String]('t', "test")
         .action((value: String, options: Options) => options.copy(testName = value.trim))
         .text("Specify a test name in a suite to run. Require -s to be given."),
+      opt[Unit]('j', "json")
+        .action((_, options: Options) => options.copy(json = true))
+        .text("Use json export option"),
      help('h', "help")
         .text("Print help"),
     )
@@ -267,6 +270,10 @@ object Main extends App {
   }
 
   private def buildTestSuitesForExecution(options: Options): Seq[AnyFlatSpec with BeforeAndAfterAll] = {
+
+    var readOpts = Main.readOpts
+    if(options.json) readOpts = readOpts + ("json" -> "true")
+
     var testSuites =  Seq(
       new JDBCTests(jdbcConfig),
       new HDFSTests(fileStoreConfig, jdbcConfig),
@@ -277,9 +284,9 @@ object Main extends App {
     testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     else testSuites :+ new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
-    testSuites = if (options.large) testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
+    if (options.large) testSuites = testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
-    testSuites = if (options.remote) testSuites :+ new RemoteTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig) else testSuites
+    if (options.remote) testSuites = testSuites :+ new RemoteTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
     if(options.suite.isBlank) {
       testSuites
