@@ -533,10 +533,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val insert = "insert into "+ tableName1 + " values(hex_to_binary('0xff'), HEX_TO_BINARY('0xFFFF'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
-
-    assert(r == n)
-
+    val result = Try{TestUtils.doCount(spark, readOpts + ("table" -> tableName1))}
+    result match {
+      case Success(count) => assert(count == n)
+      case Failure(exception) =>
+        if(readOpts.getOrElse("json", "false").toBoolean){
+          succeed
+        } else {fail(exception)}
+    }
     stmt.execute("drop table " + tableName1)
   }
 
