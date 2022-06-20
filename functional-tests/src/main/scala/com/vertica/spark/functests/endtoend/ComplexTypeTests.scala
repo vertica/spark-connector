@@ -1,11 +1,10 @@
 package com.vertica.spark.functests.endtoend
 
-import cats.data.NonEmptyList
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorError, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
-import com.vertica.spark.util.schema.{MetadataKey, SchemaTools}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
+import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
@@ -31,6 +30,35 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
       assert(dataType.elementType.isInstanceOf[LongType])
       df.rdd.foreach(row => assert(row.getAs[mutable.WrappedArray[Long]](0)(0) == 2))
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read dataframe with 1D array with scale and precision" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a array[numeric(5,2)])")
+
+    val insert = "insert into "+ tableName1 + " values(array[2.5])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      assert(df.count() == 1)
+      assert(df.schema.fields(0).dataType.isInstanceOf[ArrayType])
+      val dataType = df.schema.fields(0).dataType.asInstanceOf[ArrayType]
+      assert(dataType.elementType.isInstanceOf[DecimalType])
+      assert(dataType.elementType.asInstanceOf[DecimalType].scale == 2)
+      assert(dataType.elementType.asInstanceOf[DecimalType].precision == 5)
+      df.rdd.foreach(row => {
+        val firstRow = row.getAs[mutable.WrappedArray[java.math.BigDecimal]](0)
+        println(firstRow.head.compareTo(new java.math.BigDecimal(2.5)))
+      })
     } catch {
       case e: Exception => fail(e)
     } finally {
@@ -168,7 +196,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       val columnRs = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
       val verticaId = columnRs.getLong("data_type_id")
-      assert(verticaId > SchemaTools.VERTICA_SET_BASE_ID & verticaId < SchemaTools.VERTICA_SET_MAX_ID)
+      assert(verticaId > ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID & verticaId < ComplexTypeSchemaSupport.VERTICA_SET_MAX_ID)
     } catch {
       case err : Exception => fail(err)
     }
@@ -324,7 +352,8 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "write a table with column type Array[Row]" in {
+  // Currently Row type is not supported
+  ignore should "write a table with column type Array[Row]" in {
     val tableName = "dftest"
     val colName = "col1"
     val arrayRow = StructField(colName, ArrayType(
