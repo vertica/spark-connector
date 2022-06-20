@@ -69,9 +69,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     anyFiles match {
       case Right(files) =>
-        if(files.nonEmpty)
-          println("uh oh")
-        // assert(files.isEmpty, ". After each test, staging directory should be cleaned.")
+        if(files.nonEmpty) assert(files.isEmpty, ". After each test, staging directory should be cleaned.")
       case Left(_) => fail("Error getting file list from " + fsConfig.address)
     }
   }

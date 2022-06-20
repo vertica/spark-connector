@@ -16,7 +16,7 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.functests._
-import com.vertica.spark.functests.endtoend.{ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests, RemoteTests}
+import com.vertica.spark.functests.endtoend.{BasicJsonReadTests, ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests, RemoteTests}
 import com.vertica.spark.datasource.fs.GCSEnvVars
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -279,6 +279,7 @@ object Main extends App {
       new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
       new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
+      new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     )
 
     testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
