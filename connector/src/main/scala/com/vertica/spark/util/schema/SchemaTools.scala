@@ -715,16 +715,15 @@ class SchemaToolsV10 extends SchemaTools {
       case Left(value) => Left(value)
       case Right(columnInfo: ColumnInfo) =>
         val verticaType = columnInfo.verticaType
+        val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, 0).build()
 
         // Native array case
         if(verticaType > VERTICA_NATIVE_ARRAY_BASE_ID && verticaType < VERTICA_SET_MAX_ID) {
-          val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, 0).build()
           val dummyChild = ColumnDef("", java.sql.Types.VARCHAR, "STRING", 0, 0, false, false, metadata)
           Right(colDef.copy(jdbcType = java.sql.Types.ARRAY, children = List(dummyChild)))
         }
         // Complex array case
         else {
-          val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, 0).build()
           complexTypesTable.findComplexTypeInfo(verticaType) match {
             // If found, we return a struct regardless of the actual CT type.
             case Right(_) => Right(colDef.copy(jdbcType = java.sql.Types.STRUCT, metadata = metadata))
