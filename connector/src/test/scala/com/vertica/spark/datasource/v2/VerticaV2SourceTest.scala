@@ -29,6 +29,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
+import com.vertica.spark.json.VerticaJsonScan
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -114,7 +115,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     Try {
       source.extractCatalog(options)
     } match {
-      case Success(_) => fail
+      case Success(e) => fail(e)
       case Failure(_) => ()
     }
   }
@@ -635,5 +636,12 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     VerticaDatasourceV2Catalog.setOptions(opOpts)
 
     assert(VerticaDatasourceV2Catalog.getOptions.get.containsKey("thing"))
+  }
+
+  it should "build VerticaJsonScan" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
+      .build()
+    assert(scan.isInstanceOf[VerticaJsonScan])
   }
 }

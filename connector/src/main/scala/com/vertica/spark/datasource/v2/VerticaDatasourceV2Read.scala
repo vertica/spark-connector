@@ -17,10 +17,10 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.util.error.{ConnectorError, ErrorHandling, InitialSetupPartitioningError}
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
+import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
+import com.vertica.spark.json.VerticaJsonScan
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -74,8 +74,15 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    new VerticaScan(cfg, readConfigSetup)
+    if(this.useJson(cfg.getRequiredSchema)) {
+      new VerticaJsonScan(cfg, readConfigSetup, new VerticaJsonTableSupport)
+    } else {
+      new VerticaScan(cfg, readConfigSetup)
+    }
   }
+
+  //Todo: Infer when to use json on complex data types.
+  private def useJson(schema: StructType): Boolean = config.useJson
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())
