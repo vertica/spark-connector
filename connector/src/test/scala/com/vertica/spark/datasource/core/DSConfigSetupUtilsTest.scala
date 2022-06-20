@@ -457,4 +457,16 @@ class DSConfigSetupUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     )
     getResultOrAssert[Option[GCSServiceAuth]](DSConfigSetupUtils.getGCSServiceAccountAuth(opts))
   }
+
+  it should "parse json option" in {
+    val opts = Map[String, String]("json" -> "true")
+    val useJson = getResultOrAssert[Boolean](DSConfigSetupUtils.getJsonOption(opts))
+    assert(useJson)
+  }
+
+  it should "default json option to false" in {
+    val opts = Map[String, String]()
+    val useJson = getResultOrAssert[Boolean](DSConfigSetupUtils.getJsonOption(opts))
+    assert(!useJson)
+  }
 }

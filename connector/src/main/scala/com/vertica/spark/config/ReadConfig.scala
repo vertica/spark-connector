@@ -51,6 +51,8 @@ trait ReadConfig {
   def setGroupBy(groupBy: Array[StructField]): Unit
 
   def setPushdownAgg(pushdownAgg: Boolean) : Unit
+
+  def useJson: Boolean
 }
 
 
@@ -103,7 +105,8 @@ final case class DistributedFilesystemReadConfig(
                                                   filePermissions: ValidFilePermissions,
                                                   maxRowGroupSize: Int,
                                                   maxFileSize: Int,
-                                                  timeOperations : Boolean = true
+                                                  timeOperations : Boolean = true,
+                                                  useJson: Boolean = false
                                                 ) extends ReadConfig {
   private var pushdownFilters: List[PushdownFilter] = Nil
   private var groupBy: Array[StructField] = Array()
