@@ -587,6 +587,10 @@ case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
 
+case class BinaryTypeNotSupported(fieldName: String) extends SchemaError {
+  def getFullContext: String = s"Field: $fieldName. Binary data types are not supported when when exporting files as JSON."
+}
+
 trait TableQueryError extends ConnectorError
 
 case class QueryResultEmpty(table: String, query: String) extends TableQueryError {
