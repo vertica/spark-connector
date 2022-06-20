@@ -691,25 +691,6 @@ class SchemaToolsV10 extends SchemaTools {
    * If column is not of complex type in Vertica, then return the ColumnDef as is.
    * */
   private def checkV10ComplexType(colDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
-    // def handleVerticaTypeFound(rs: ResultSet): ConnectorResult[ColumnDef] = {
-    //   val verticaType = rs.getLong("data_type_id")
-    //   if(verticaType > VERTICA_NATIVE_ARRAY_BASE_ID && verticaType < VERTICA_SET_MAX_ID) {
-    //     val dummyChild = makeArrayElementDef(java.sql.Types.VARCHAR, "STRING", 0)
-    //     Right(colDef.copy(colType = java.sql.Types.ARRAY, childDefinitions = List(dummyChild)))
-    //   } else {
-    //     val queryComplexType = s"SELECT field_type_name FROM complex_types WHERE type_id='$verticaType'"
-    //     // If found, we return a struct regardless of the actual CT type.
-    //     def handleCTFound(rs: ResultSet): ConnectorResult[ColumnDef] = Right(colDef.copy(colType = java.sql.Types.STRUCT))
-    //     // Else, return the column def as is.
-    //     def handleCTNotFound(q:String): ConnectorResult[ColumnDef] = Right(colDef)
-    //     JdbcUtils.queryAndNext(queryComplexType, jdbcLayer, handleCTFound, handleCTNotFound)
-    //   }
-    // }
-    //
-    // val schemaCond = if(dbSchema.nonEmpty) s" AND table_schema='$dbSchema'" else ""
-    // val queryColType = s"SELECT data_type_id FROM columns WHERE table_name='$tableName'$schemaCond AND column_name='${colDef.label}'"
-    // JdbcUtils.queryAndNext(queryColType, jdbcLayer, handleVerticaTypeFound)
-
     val complexTypesTable = new ComplexTypesTable(jdbcLayer)
     new ColumnsTable(jdbcLayer).getColumnInfo(colDef.label, tableName, dbSchema) match {
       case Left(value) => Left(value)
