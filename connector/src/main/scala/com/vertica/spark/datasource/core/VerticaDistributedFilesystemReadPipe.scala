@@ -392,15 +392,17 @@ class VerticaDistributedFilesystemReadPipe(
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
     for {
       _ <- VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
-      _ <- if(config.useJson) checkBinaryTypes(config.getRequiredSchema) else Right()
+      _ <- checkTypeSupport(config)
     } yield ()
   }
 
-  private def checkBinaryTypes(structType: StructType): ConnectorResult[Unit] = {
+  private def checkTypeSupport(readConfig: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
+    val useJson = readConfig.useJson
+
     @tailrec
     def checkFieldType(name: String, dataType: DataType): ConnectorResult[Unit] = {
         dataType match {
-          case BinaryType => Left(BinaryTypeNotSupported(name))
+          case BinaryType => if(useJson) Left(BinaryTypeNotSupported(name)) else Right()
           case ArrayType(elementType, _) => checkFieldType(name, elementType)
           case struct: StructType => checkStructFields(struct)
           case _ => Right()
@@ -416,7 +418,7 @@ class VerticaDistributedFilesystemReadPipe(
         .left.map(errors => ErrorList(errors))
     }
 
-    checkStructFields(structType)
+    checkStructFields(readConfig.getRequiredSchema)
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
