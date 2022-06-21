@@ -13,7 +13,18 @@
 
 package com.vertica.spark.datasource.partitions
 
+/**
+ * Mixin trait for partitions containing file cleanup info
+ * */
 trait Cleanup {
-  def fileName: String
-  def fileIndex: Int
+
+  /**
+   * @return the filename of the partition.
+   * */
+  def filename: String
+
+  /**
+   * @return partition's index in a file. Start from 0.
+   * */
+  def index: Int
 }

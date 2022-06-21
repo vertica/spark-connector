@@ -9,14 +9,6 @@ class ParquetFileRangeTest extends AnyFlatSpec with MockFactory{
 
   val fileRange = ParquetFileRange("filename", 10, 20, 30)
 
-  it should "return correct start" in {
-    assert(fileRange.start == 10)
-  }
-
-  it should "return correct end" in {
-    assert(fileRange.end == 20)
-  }
-
   it should "return correct filename" in {
     assert(fileRange.filename == "filename")
   }

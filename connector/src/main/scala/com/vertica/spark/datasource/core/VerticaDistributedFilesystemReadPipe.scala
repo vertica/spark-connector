@@ -18,11 +18,9 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.datasource.core.partition.{DistributedFilesystemPartition, FileRange}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
-import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, FilePortion}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}

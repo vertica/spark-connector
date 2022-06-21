@@ -14,7 +14,7 @@
 package com.vertica.spark.datasource.wrappers
 
 import com.vertica.spark.config.LogProvider
-import com.vertica.spark.datasource.partitions.DistributedFilesystemPartition
+import com.vertica.spark.datasource.partitions.PartitionsCleanup
 import com.vertica.spark.util.cleanup.DistributedFilesCleaner
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{InputPartition, PartitionReader}
@@ -23,7 +23,7 @@ import org.apache.spark.sql.connector.read.{InputPartition, PartitionReader}
  * Wraps a [[PartitionReader]], allowing us to intercept it's methods and add additional functionalities.
  * */
 class PartitionReaderWrapper(val reader: PartitionReader[InternalRow],
-                             val partitions: DistributedFilesystemPartition,
+                             val partitions: PartitionsCleanup,
                              val cleaner: DistributedFilesCleaner)
   extends PartitionReader[InternalRow] {
 

@@ -13,9 +13,9 @@
 
 package com.vertica.spark.util.cleanup
 
-import com.vertica.spark.config.{FileStoreConfig, LogProvider}
-import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.partitions.PartitionCleanup
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
+import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, HadoopFileStoreLayer}
+import com.vertica.spark.datasource.partitions.PartitionsCleanup
 
 /**
  * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
@@ -32,15 +32,15 @@ class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig, val c
    *
    * This is done for all partitions.
    *
-   * @param partition The [[PartitionCleanup]] to be cleanup.
+   * @param partition The [[PartitionsCleanup]] containing partitions cleanup info.
    * */
-  def cleanupFiles(partition: PartitionCleanup): Unit = {
+  def cleanupFiles(partition: PartitionsCleanup): Unit = {
     logger.info("Removing files before closing read pipe.")
 
-    for (fileIdx <- 0 to partition.getCleanUps.size) {
+    partition.getCleanupInformation.indices.foreach(fileIndex => {
       if (!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
-        getCleanupInfo(partition, fileIdx) match {
+        getCleanupInfo(partition, fileIndex) match {
           case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
             case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
             case Right(_) => ()
@@ -48,17 +48,17 @@ class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig, val c
           case None => logger.warn("No cleanup info found.")
         }
       }
-    }
+    })
   }
 
-  def getCleanupInfo(partition: PartitionCleanup, partitionIndex: Int): Option[FileCleanupInfo] = {
+  def getCleanupInfo(partition: PartitionsCleanup, partitionIndex: Int): Option[FileCleanupInfo] = {
     logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
-    if (partitionIndex >= partition.getCleanUps.size) {
+    if (partitionIndex >= partition.getCleanupInformation.size) {
       logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
       None
     } else {
-      val fileRange = partition.getCleanUps(partitionIndex)
-      Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
+      val cleanup = partition.getCleanupInformation(partitionIndex)
+      Some(FileCleanupInfo(cleanup.filename, cleanup.index, partition.getPartitioningRecord(cleanup.filename)))
     }
   }
 }

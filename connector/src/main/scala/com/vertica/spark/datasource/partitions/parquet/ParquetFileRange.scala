@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.partitions.parquet
 
-import com.vertica.spark.datasource.partitions.FilePortion
+import com.vertica.spark.datasource.partitions.Cleanup
 
 /**
  * Represents a portion of a parquet file
@@ -24,10 +24,7 @@ import com.vertica.spark.datasource.partitions.FilePortion
  * @param rangeIdx    Range index for this file. Used to track access to this file / cleanup among different nodes.
  *                    If there are three ranges for a given file this will be a value between 0 and 2
  */
-final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends FilePortion {
-  override def start(): Long = this.minRowGroup
+final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends Cleanup {
 
-  override def end(): Long = this.maxRowGroup
-
-  override def index(): Int = this.rangeIdx
+  override def index: Int = this.rangeIdx
 }

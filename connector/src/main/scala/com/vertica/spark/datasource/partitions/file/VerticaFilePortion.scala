@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.partitions.file
 
-import com.vertica.spark.datasource.partitions.FilePortion
+import com.vertica.spark.datasource.partitions.Cleanup
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.PartitionedFile
 
@@ -28,12 +28,10 @@ class VerticaFilePortion(override val partitionValues: InternalRow,
                          override val length: Long,
                          val partitionIndex: Int
                             )
-  extends PartitionedFile(partitionValues, filePath, start, length) with FilePortion {
+  extends PartitionedFile(partitionValues, filePath, start, length) with Cleanup {
   override def filename: String = this.filePath
 
-  override def end(): Long = this.start + this.length
-
-  override def index(): Int = this.partitionIndex
+  override def index: Int = this.partitionIndex
 }
 
 object VerticaFilePortion {

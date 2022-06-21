@@ -14,7 +14,7 @@
 package com.vertica.spark.datasource.partitions.parquet
 
 import com.vertica.spark.datasource.core.VerticaPartition
-import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, FilePortion}
+import com.vertica.spark.datasource.partitions.{Cleanup, PartitionsCleanup}
 
 /**
  * Partition for distributed filesystem transport method using parquet files
@@ -23,8 +23,8 @@ import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, 
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
-  extends VerticaPartition with DistributedFilesystemPartition {
-  override def getFilePortions: Seq[FilePortion] = this.fileRanges
+  extends VerticaPartition with PartitionsCleanup {
+  override def getCleanupInformation: Seq[Cleanup] = this.fileRanges
 
   override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap
 }
