@@ -15,15 +15,16 @@ package com.vertica.spark.datasource.partitions
 
 import org.apache.spark.sql.connector.read.InputPartition
 
-trait DistributedFilesystemPartition extends InputPartition {
+trait PartitionCleanup extends InputPartition {
 
   /**
    * @return Return the file portions in this partition
    * */
-  def getFilePortions: Seq[FilePortion]
+  def getCleanUps: Seq[Cleanup]
 
   /**
    * @return return the record containing the count of all file partition created.
    * */
   def getPartitioningRecord: Map[String, Int]
+
 }

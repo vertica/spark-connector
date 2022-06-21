@@ -18,6 +18,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
+import com.vertica.spark.datasource.core.partition.{DistributedFilesystemPartition, FileRange}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
 import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
@@ -55,6 +56,7 @@ class VerticaDistributedFilesystemReadPipe(
   // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
   private val maxFileSize = config.maxFileSize
   private val maxRowGroupSize = config.maxRowGroupSize
+
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {
