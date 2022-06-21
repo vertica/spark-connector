@@ -67,11 +67,14 @@ object ComplexTypeSchemaSupport {
         val nullable = false
 
         def getNativeArray: ConnectorResult[ColumnDef] = {
-          val (isSet, elementId) = if (typeInfo.typeId > VERTICA_SET_BASE_ID) {
+          var (isSet, elementId) = if (typeInfo.typeId > VERTICA_SET_BASE_ID) {
             (true, typeInfo.typeId - VERTICA_SET_BASE_ID)
           } else {
             (false, typeInfo.typeId - VERTICA_NATIVE_ARRAY_BASE_ID)
           }
+
+          // Special case. Array[Binary] has id of 1522, but Binary has id of 117
+          elementId = if (elementId == 22) 117 else elementId
 
           queryNativeTypesTable(elementId, precision, scale, jdbcLayer)
             .map(elementDef => {

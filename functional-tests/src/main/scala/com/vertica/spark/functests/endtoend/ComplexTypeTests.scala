@@ -38,6 +38,25 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read array[binary] column" in {
+    val tableName = "dftest"
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a array[binary])")
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    Try {
+      df.collect
+    } match {
+      case Failure(exception) => fail("Expected to succeed", exception)
+      case Success(_) =>
+        val schema = df.schema.fields
+        assert(schema.head.dataType.isInstanceOf[ArrayType])
+        assert(schema.head.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[BinaryType])
+    }
+    stmt.close()
+    TestUtils.dropTable(conn, tableName)
+  }
+
   it should "read dataframe with 1D array with scale and precision" in {
     val tableName1 = "dftest_array"
     val n = 1

@@ -466,6 +466,42 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
+  it should "parse array[binary]" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.ARRAY, "ARRAY", 0,signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+    mockColumnCount(rsmd, 1)
+
+    val tbName = tablename.name.replaceAll("\"", "")
+    val childTypeInfo = TestVerticaTypeDef(22, java.sql.Types.BINARY, "childTypeName", 0, 0)
+    val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val rootTypeInfo = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
+
+    // Query column type info
+    VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeInfo.verticaTypeId, rootTypeInfo.typeName, jdbcLayer, rootTypeInfo.size, rootTypeInfo.scale)
+
+    // Query root type info
+    val (_, rootRs) = VerticaTableTests.mockGetTypeInfo(verticaArrayId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(rootTypeInfo.verticaTypeId, rootTypeInfo.typeName, rootTypeInfo.jdbcTypeId, rootRs)
+    (rootRs.next _).expects().returning(false)
+
+    // Query element type info
+    val (_, elementRs) = VerticaTableTests.mockGetTypeInfo(117, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(childTypeInfo.verticaTypeId, childTypeInfo.typeName, childTypeInfo.jdbcTypeId, elementRs)
+    (elementRs.next _).expects().returning(false)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>  fail(error.getFullContext)
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields(0).dataType.isInstanceOf[ArrayType])
+        assert(fields(0).dataType.asInstanceOf[ArrayType]
+          .elementType.isInstanceOf[BinaryType])
+        assert(!fields(0).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+    }
+  }
+
   it should "query columns in a table under a schema space" in {
     val schema = "schema"
     val tableSource = this.tablename.copy(dbschema = Some(schema))
