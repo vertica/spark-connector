@@ -238,6 +238,16 @@ class VerticaDistributedFilesystemReadPipe(
 
     def exportType: String = if(config.useJson) "JSON" else "PARQUET"
 
+    def buildExportStatement(filePermissions: ValidFilePermissions, selectClause: String, groupbyClause: String, pushdownFilters: String, exportSource: String) = {
+      "EXPORT TO " + exportType + "(" +
+        "directory = '" + hdfsPath +
+        "', fileSizeMB = " + maxFileSize +
+        ", rowGroupSizeMB = " + maxRowGroupSize +
+        ", fileMode = '" + filePermissions +
+        "', dirMode = '" + filePermissions +
+        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+    }
+
     def exportData: ConnectorResult[Unit] = for {
       _ <- getMetadata
 
@@ -282,13 +292,7 @@ class VerticaDistributedFilesystemReadPipe(
       }
       _ = logger.info("Export Source: " + exportSource)
 
-      exportStatement = "EXPORT TO " + exportType + "(" +
-        "directory = '" + hdfsPath +
-        "', fileSizeMB = " + maxFileSize +
-        ", rowGroupSizeMB = " + maxRowGroupSize +
-        ", fileMode = '" + filePermissions +
-        "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+      exportStatement = buildExportStatement(filePermissions, selectClause, groupbyClause, pushdownFilters, exportSource)
 
       // Export if not already exported
       _ <- if(exportDone) {
@@ -382,7 +386,6 @@ class VerticaDistributedFilesystemReadPipe(
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
   var fileIdx = 0
-
 
   val timer = new Timer(config.timeOperations, logger, "Partition Read")
 

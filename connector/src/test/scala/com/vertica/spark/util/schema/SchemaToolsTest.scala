@@ -965,7 +965,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val colsString = new SchemaTools().makeColumnsString(colDef, requiredSchema)
     println(colsString)
-    val expected = s"($colName::ARRAY[$typeName]) as $colName"
+    val expected = s"""("$colName"::ARRAY[$typeName]) as "$colName""""
     println(expected)
     assert(colsString.trim().equals(expected))
   }

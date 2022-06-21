@@ -484,7 +484,7 @@ class SchemaTools extends SchemaToolsInterface {
     def castToVarchar: String => String = colName => colName + "::varchar AS " + addDoubleQuotes(colName)
 
     def castToArray(colInfo: ColumnDef): String = {
-      val colName = colInfo.label
+      val colName = addDoubleQuotes(colInfo.label)
       colInfo.children.headOption match {
         case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
         case None => s"($colName::ARRAY[UNKNOWN]) as $colName"
@@ -492,6 +492,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
 
     requiredColumnDefs.map(info => {
+      val colLabel = addDoubleQuotes(info.label)
       info.jdbcType match {
         case java.sql.Types.OTHER =>
           val typenameNormalized = info.colTypeName.toLowerCase()
@@ -499,14 +500,14 @@ class SchemaTools extends SchemaToolsInterface {
             typenameNormalized.startsWith("uuid")) {
             castToVarchar(info.label)
           } else {
-            addDoubleQuotes(info.label)
+            colLabel
           }
         case java.sql.Types.TIME => castToVarchar(info.label)
         case java.sql.Types.ARRAY =>
           val isSet = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
           // Casting on Vertica side as a work around until Vertica Export supports Set
-          if(isSet) castToArray(info) else info.label
-        case _ => addDoubleQuotes(info.label)
+          if(isSet) castToArray(info) else colLabel
+        case _ => colLabel
       }
     }).mkString(",")
   }

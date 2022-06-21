@@ -29,7 +29,7 @@ import java.sql.ResultSet
  * @param fieldId the vertica type id of the field.
  *
  * */
-case class ComplexTypeInfo(typeId: Long, typeName: String, fieldId: Long, fieldTypeName: String, numericScale: Long, typeKind: String, numericPrecision: Long)
+case class ComplexTypeInfo(typeId: Long, typeName: String, fieldId: Long, fieldTypeName: String, numericScale: Long, typeKind: String, numericPrecision: Long, fieldName: String)
 
 /**
  * When a complex type is created in Vertica, it's structure is recorded in this table.
@@ -43,7 +43,7 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
 
   override def tableName: String = "complex_types"
 
-  override protected def columns: Seq[String] = List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind", "numeric_precision")
+  override protected def columns: Seq[String] = List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind", "numeric_precision", "field_name")
 
   override protected def buildRow(rs: ResultSet): ComplexTypeInfo =
     ComplexTypeInfo(
@@ -53,7 +53,8 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
       rs.getString(4),
       rs.getLong(5),
       rs.getString(6),
-      rs.getLong(7))
+      rs.getLong(7),
+      rs.getString(8))
 
   def findComplexTypeInfo(verticaTypeId: Long): ConnectorResult[ComplexTypeInfo] = {
     val conditions = s"type_id=$verticaTypeId"

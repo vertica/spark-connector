@@ -17,7 +17,7 @@ import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.ConnectorResultUtils.listToEither
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.QueryResultEmpty
-import com.vertica.spark.util.query.{ColumnsTable, ComplexTypesTable, TypesTable}
+import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder}
 
 import scala.annotation.tailrec
@@ -41,7 +41,7 @@ object ComplexTypeSchemaSupport {
   def startQueryingVerticaComplexTypes(rootDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new ColumnsTable(jdbcLayer).getColumnInfo(rootDef.label, tableName, dbSchema) match {
       case Right(colInfo) => queryVerticaTypes(colInfo.verticaType, colInfo.precision, colInfo.scale, jdbcLayer)
-          .map(columnDef => rootDef.copy(metadata = columnDef.metadata, children = columnDef.children))
+          .map(columnDef => rootDef.copy(rootDef.label, metadata = columnDef.metadata, children = columnDef.children))
       case Left(err) => Left(err)
     }
   }
@@ -104,7 +104,7 @@ object ComplexTypeSchemaSupport {
         case Right(fieldsInfo) =>
           fieldsInfo.headOption match {
             case None => Left(QueryResultEmpty(complexTypesTable.tableName, ""))
-            case Some(typeInfo) =>
+            case Some(typeInfo: ComplexTypeInfo) =>
               if (typeInfo.typeKind.toLowerCase == "row") {
                 val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth - 1).build()
                 queryVerticaTypes(typeInfo.typeId, typeInfo.numericPrecision, typeInfo.numericScale, jdbcLayer)
@@ -120,8 +120,8 @@ object ComplexTypeSchemaSupport {
       }
     }
 
-    // Since each row in complex_types represents a component, query for the type and infer the root type
-    // then perform the appropriate procedures.
+    // Since each row in complex_types represents a component, query for the type and infer the root type.
+    // Then, perform the appropriate procedures.
     complexTypesTable.getComplexTypeFields(verticaTypeId) match {
       case Left(e) => Left(e)
       case Right(fields) =>
@@ -132,8 +132,14 @@ object ComplexTypeSchemaSupport {
             getArrayElementDef(baseElement.typeId).map(element =>
                 ColumnDef("", java.sql.Types.ARRAY, baseElement.typeKind, precision.toInt, scale.toInt, false, false, metadata, List(element)))
           case "row" =>
-            val errorsOrFields = fields.map(fieldInfo => queryVerticaTypes(fieldInfo.fieldId, fieldInfo.numericPrecision, fieldInfo.numericScale, jdbcLayer))
-            listToEither(errorsOrFields.toList)
+
+            def getFieldDef(fieldInfo: ComplexTypeInfo) = {
+              queryVerticaTypes(fieldInfo.fieldId, fieldInfo.numericPrecision, fieldInfo.numericScale, jdbcLayer)
+                .map(colDef => colDef.copy(label = fieldInfo.fieldName))
+            }
+
+            val errorsOrRowFields = fields.map(getFieldDef)
+            listToEither(errorsOrRowFields.toList)
               .map(fields => ColumnDef("", java.sql.Types.STRUCT, baseElement.typeKind, 0, 0, false, false, Metadata.empty, fields.toList))
         }
     }
