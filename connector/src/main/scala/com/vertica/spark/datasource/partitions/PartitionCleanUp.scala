@@ -15,8 +15,8 @@ package com.vertica.spark.datasource.partitions
 
 import org.apache.spark.sql.connector.read.InputPartition
 
-trait DistributedFilesystemPartition extends InputPartition {
-  def getFileRanges: Seq[FileRange]
+trait PartitionCleanUp extends InputPartition {
+  def getCleanUps: Seq[CleanUp]
 
   def getPartitioningRecord: Map[String, Int]
 }

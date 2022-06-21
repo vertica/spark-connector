@@ -13,12 +13,8 @@
 
 package com.vertica.spark.datasource.partitions
 
-trait FileRange {
+trait CleanUp {
   def filename: String
-
-  def start: Int
-
-  def end: Int
 
   def index: Int
 }

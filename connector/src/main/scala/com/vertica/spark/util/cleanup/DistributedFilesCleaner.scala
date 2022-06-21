@@ -15,7 +15,7 @@ package com.vertica.spark.util.cleanup
 
 import com.vertica.spark.config.{FileStoreConfig, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.partitions.DistributedFilesystemPartition
+import com.vertica.spark.datasource.partitions.PartitionCleanUp
 
 /**
  * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
@@ -32,12 +32,12 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
    *
    * This is done for all partitions.
    *
-   * @param partition The [[DistributedFilesystemPartition]] to be cleanup.
+   * @param partition The [[PartitionCleanUp]] to be cleanup.
    * */
-  def cleanupFiles(partition: DistributedFilesystemPartition): Unit = {
+  def cleanupFiles(partition: PartitionCleanUp): Unit = {
     logger.info("Removing files before closing read pipe.")
 
-    for (fileIdx <- 0 to partition.getFileRanges.size) {
+    for (fileIdx <- 0 to partition.getCleanUps.size) {
       if (!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
         getCleanupInfo(partition, fileIdx) match {
@@ -51,13 +51,13 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
     }
   }
 
-  def getCleanupInfo(partition: DistributedFilesystemPartition, partitionIndex: Int): Option[FileCleanupInfo] = {
+  def getCleanupInfo(partition: PartitionCleanUp, partitionIndex: Int): Option[FileCleanupInfo] = {
     logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
-    if (partitionIndex >= partition.getFileRanges.size) {
+    if (partitionIndex >= partition.getCleanUps.size) {
       logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
       None
     } else {
-      val fileRange = partition.getFileRanges(partitionIndex)
+      val fileRange = partition.getCleanUps(partitionIndex)
       Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
     }
   }
