@@ -15,8 +15,18 @@ package com.vertica.spark.datasource.partitions
 
 import org.apache.spark.sql.connector.read.InputPartition
 
-trait PartitionCleanup extends InputPartition {
-  def getCleanUps: Seq[Cleanup]
+/**
+ * Mixin trait for [[InputPartition]] that contains partitions cleanup information
+ * */
+trait PartitionCleanup {
 
+  /**
+   * @return returns a list of partition cleanup information
+   * */
+  def getCleanupInformation: Seq[Cleanup]
+
+  /**
+   * @return return a mapping of filename to their partition count
+   * */
   def getPartitioningRecord: Map[String, Int]
 }

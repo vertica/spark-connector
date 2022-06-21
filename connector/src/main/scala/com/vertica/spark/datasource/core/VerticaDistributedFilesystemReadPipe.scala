@@ -52,7 +52,7 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
   extends VerticaPartition with PartitionCleanup {
-  override def getCleanUps: Seq[Cleanup] = this.fileRanges
+  override def getCleanupInformation: Seq[Cleanup] = this.fileRanges
 
   override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap
 }
