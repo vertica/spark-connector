@@ -20,12 +20,11 @@ import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
-import com.vertica.spark.datasource.partitions.{PartitionCleanup, PortionId}
+import com.vertica.spark.datasource.partitions.{Cleanup, PortionId}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
-import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner, FileCleanupInfo}
+import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import org.apache.spark.sql.connector.expressions.aggregate._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.connector.read.InputPartition
@@ -51,7 +50,7 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
-  extends VerticaPartition with PartitionCleanup {
+  extends VerticaPartition with Cleanup {
   override def getCleanupInformation: Seq[PortionId] = this.fileRanges
 
   override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap

@@ -15,7 +15,7 @@ package com.vertica.spark.util.cleanup
 
 import com.vertica.spark.config.{FileStoreConfig, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.partitions.PartitionCleanup
+import com.vertica.spark.datasource.partitions.Cleanup
 
 /**
  * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
@@ -32,9 +32,9 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
    *
    * This is done for all partitions.
    *
-   * @param partition The [[PartitionCleanup]] to be cleanup.
+   * @param partition The object with [[Cleanup]] information.
    * */
-  def cleanupFiles(partition: PartitionCleanup): Unit = {
+  def cleanupFiles(partition: Cleanup): Unit = {
     logger.info("Removing files before closing read pipe.")
 
     for (fileIdx <- 0 to partition.getCleanupInformation.size) {
@@ -51,7 +51,7 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
     }
   }
 
-  def getCleanupInfo(partition: PartitionCleanup, partitionIndex: Int): Option[FileCleanupInfo] = {
+  def getCleanupInfo(partition: Cleanup, partitionIndex: Int): Option[FileCleanupInfo] = {
     logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
     if (partitionIndex >= partition.getCleanupInformation.size) {
       logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")

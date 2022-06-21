@@ -18,7 +18,7 @@ import org.apache.spark.sql.connector.read.InputPartition
 /**
  * Mixin trait for [[InputPartition]] that contains partitions cleanup information
  * */
-trait PartitionCleanup {
+trait Cleanup {
 
   /**
    * @return returns a list of partition cleanup information
