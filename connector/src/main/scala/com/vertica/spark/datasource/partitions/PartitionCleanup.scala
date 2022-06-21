@@ -23,10 +23,10 @@ trait PartitionCleanup {
   /**
    * @return returns a list of partition cleanup information
    * */
-  def getCleanupInformation: Seq[Cleanup]
+  def getCleanupInformation: Seq[PortionId]
 
   /**
-   * @return return a mapping of filename to their partition count
+   * @return return a mapping of filename to their portion count
    * */
   def getPartitioningRecord: Map[String, Int]
 }

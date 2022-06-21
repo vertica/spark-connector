@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
-import com.vertica.spark.datasource.partitions.{PartitionCleanup, Cleanup}
+import com.vertica.spark.datasource.partitions.{PartitionCleanup, PortionId}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner, FileCleanupInfo}
@@ -39,7 +39,7 @@ import org.apache.spark.sql.types.StructType
  * @param maxRowGroup Last row group to read from parquet file
  * @param rangeIdx Range index for this file. Used to track access to this file / cleanup among different nodes. If there are three ranges for a given file this will be a value between 0 and 2
  */
-final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends Cleanup {
+final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends PortionId {
 
   override def index: Int = this.rangeIdx
 }
@@ -52,7 +52,7 @@ final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGrou
  */
 final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
   extends VerticaPartition with PartitionCleanup {
-  override def getCleanupInformation: Seq[Cleanup] = this.fileRanges
+  override def getCleanupInformation: Seq[PortionId] = this.fileRanges
 
   override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap
 }

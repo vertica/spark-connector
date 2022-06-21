@@ -13,8 +13,18 @@
 
 package com.vertica.spark.datasource.partitions
 
-trait Cleanup {
+/**
+ * Mixin trait for objects containing identifying information of data portions
+ * */
+trait PortionId {
+
+  /**
+   * @return the name of the file the portion belongs to
+   * */
   def filename: String
 
+  /**
+   * @return the portion's index amongst the other portions of a file.
+   * */
   def index: Int
 }
