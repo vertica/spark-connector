@@ -30,6 +30,7 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.json.VerticaJsonScan
+import com.vertica.spark.datasource.partitions.parquet.VerticaDistributedFilesystemPartition
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
