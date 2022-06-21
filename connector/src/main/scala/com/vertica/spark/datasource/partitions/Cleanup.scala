@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.partitions
 
-trait CleanUp {
+trait Cleanup {
   def filename: String
 
   def index: Int

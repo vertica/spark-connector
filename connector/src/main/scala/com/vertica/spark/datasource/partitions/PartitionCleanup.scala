@@ -15,8 +15,8 @@ package com.vertica.spark.datasource.partitions
 
 import org.apache.spark.sql.connector.read.InputPartition
 
-trait PartitionCleanUp extends InputPartition {
-  def getCleanUps: Seq[CleanUp]
+trait PartitionCleanup extends InputPartition {
+  def getCleanUps: Seq[Cleanup]
 
   def getPartitioningRecord: Map[String, Int]
 }
