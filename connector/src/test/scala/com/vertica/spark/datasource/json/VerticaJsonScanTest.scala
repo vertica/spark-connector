@@ -68,7 +68,6 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
     (jsonSupport.build _).expects("path", *, *, *).returning(verticaScanWrapper)
-    (verticaScanWrapper.toBatch: () => Batch).expects().returns(verticaScanWrapper.asInstanceOf[Batch])
     (verticaScanWrapper.asInstanceOf[Batch].planInputPartitions _).expects().returns(Array())
 
     val scan = new VerticaJsonScan(readConfig, readSetup, jsonSupport)
@@ -94,7 +93,6 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
     (jsonSupport.build _).expects("path", *, *, *).returning(verticaScanWrapper)
-    (verticaScanWrapper.toBatch: () => Batch).expects().returns(verticaScanWrapper.asInstanceOf[Batch])
     val readerFactory = mock[PartitionReaderFactory]
     (verticaScanWrapper.asInstanceOf[Batch].createReaderFactory _).expects().returns(readerFactory)
 
