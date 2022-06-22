@@ -217,8 +217,8 @@ class VerticaDistributedFilesystemReadPipe(
   override def doPreReadSteps(): ConnectorResult[PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
-    logger.debug("Export path: " + hdfsPath)
+    val exportPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
+    logger.debug("Export path: " + exportPath)
 
     def exportType: String = if(config.useJson) "JSON" else "PARQUET"
 
@@ -239,7 +239,7 @@ class VerticaDistributedFilesystemReadPipe(
         logger.info("Export Source: " + exportSource)
 
         "EXPORT TO " + exportType + "(" +
-          "directory = '" + hdfsPath +
+          "directory = '" + exportPath +
           "', fileSizeMB = " + maxFileSize +
           rowGroupSize +
           ", fileMode = '" + filePermissions +
@@ -273,7 +273,7 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Check if export is already done (previous call of this function)
-      exportDone <- fileStoreLayer.fileExists(hdfsPath)
+      exportDone <- fileStoreLayer.fileExists(exportPath)
 
       exportStatement <- buildExportStatement()
 
@@ -295,8 +295,8 @@ class VerticaDistributedFilesystemReadPipe(
 
     def getParquetPartitionInfo: ConnectorResult[PartitionInfo] = for {
       // Retrieve all parquet files created by Vertica
-      dirExists <- fileStoreLayer.fileExists(hdfsPath)
-      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
+      dirExists <- fileStoreLayer.fileExists(exportPath)
+      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(exportPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
       requestedPartitionCount = config.partitionCount match {
         case Some(count) => count
@@ -316,8 +316,8 @@ class VerticaDistributedFilesystemReadPipe(
       // If table is empty, cleanup
       _ =  if(totalRowGroups == 0) {
         if(!config.fileStoreConfig.preventCleanup) {
-          logger.debug("Cleaning up empty directory in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+          logger.debug("Cleaning up empty directory in path: " + exportPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, exportPath)
         }
         else {
           Right()
@@ -342,7 +342,7 @@ class VerticaDistributedFilesystemReadPipe(
       case Left(error) => Left(error)
       case Right(_) =>
         if (config.useJson) {
-          Right(PartitionInfo(Array(), hdfsPath))
+          Right(PartitionInfo(Array(), exportPath))
         } else {
           getParquetPartitionInfo
         }
@@ -352,8 +352,8 @@ class VerticaDistributedFilesystemReadPipe(
     ret match {
       case Left(_) =>
         if(!config.fileStoreConfig.preventCleanup) {
-          logger.info("Cleaning up all files in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+          logger.info("Cleaning up all files in path: " + exportPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, exportPath)
         }
         jdbcLayer.close()
       case _ => logger.info("Reading data from Parquet file.")

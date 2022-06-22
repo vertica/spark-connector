@@ -16,8 +16,9 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{BinaryTypeNotSupported, ConnectorException, ErrorList}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{ArrayType, LongType}
+import com.vertica.spark.util.schema.MetadataKey
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{ArrayType, IntegerType, MetadataBuilder, StringType, StructField, StructType}
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -27,17 +28,21 @@ import scala.util.{Failure, Success, Try}
  * A few minimal tests for the json feature. Not intended to be comprehensive.
  * */
 class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts + ("json" -> "true"), writeOpts, jdbcConfig, fileStoreConfig) {
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
 
-  it should "read vertica native types using export to json" in {
+  private val jsonReadOpts = readOpts + ("json" -> "true")
+
+  it should "read a primitive types" in {
     val tableName1 = "dftest"
     val n = 1
     val stmt = conn.createStatement
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int, b varchar, c float, d array[int])")
 
+    TestUtils.populateTableBySQL(stmt, "insert into dftest values (1, 'heeelo', 3.2, array[3,5])", 10)
+
     val df =  spark.read.format("com.vertica.spark.datasource.VerticaSource")
-      .options(readOpts + ("table" -> tableName1)).load()
-    val result = Try {df.collect()}
+      .options(jsonReadOpts + ("table" -> tableName1)).load()
+    val result = Try {df.show()}
     result match {
       case Failure(exception) => fail("Expected to succeed", exception)
       case Success(_) =>
@@ -46,14 +51,14 @@ class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, S
     TestUtils.dropTable(conn, tableName1)
   }
 
-  ignore should "error on binary types when using export to json" in {
+  it should "error on binary types when using export to json" in {
     val tableName = "dftest"
     val n = 1
     val stmt = conn.createStatement
     TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a binary, b varbinary, c array[binary], d array[varbinary], e long varbinary)")
 
     val df =  spark.read.format("com.vertica.spark.datasource.VerticaSource")
-      .options(readOpts + ("table" -> tableName)).load()
+      .options(jsonReadOpts + ("table" -> tableName)).load()
     val result = Try{df.collect}
     result match {
       case Failure(exception) => exception match {
