@@ -22,6 +22,7 @@ import com.vertica.spark.util.schema._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
+import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
@@ -429,12 +430,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       case Right(partitionInfo) =>
         val partitions = partitionInfo.partitionSeq
         assert(partitions.length == partitionCount)
-        assert(partitions(0).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,0,3,Some(0)))
-        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,4,4,Some(1)))
-        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname2,0,2,Some(0)))
-        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname2,3,4,Some(1)))
-        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname3,0,1,Some(0)))
-        assert(partitions(3).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname3,2,4,Some(1)))
+        assert(partitions(0).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,0,3,0))
+        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname1,4,4,1))
+        assert(partitions(1).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname2,0,2,0))
+        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname2,3,4,1))
+        assert(partitions(2).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(1) == ParquetFileRange(fname3,0,1,0))
+        assert(partitions(3).asInstanceOf[VerticaDistributedFilesystemPartition].fileRanges(0) == ParquetFileRange(fname3,2,4,1))
     }
   }
 
@@ -480,13 +481,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
         val partitions = partitionInfo.partitionSeq
         assert(partitions.length == partitionCount)
         for(partition <- partitions){
-          partition.asInstanceOf[VerticaDistributedFilesystemPartition].rangeCountMap match {
-            case None => fail
-            case Some(map) =>
-              assert(map(fname1) == 2)
-              assert(map(fname2) == 2)
-              assert(map(fname3) == 2)
-          }
+          val rangeCountMap = partition.asInstanceOf[VerticaDistributedFilesystemPartition].rangeCountMap
+          assert(rangeCountMap(fname1) == 2)
+          assert(rangeCountMap(fname2) == 2)
+          assert(rangeCountMap(fname3) == 2)
         }
     }
   }
@@ -563,10 +561,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val filename = "test.parquet"
     val v1: Int = 1
     val v2: Float = 2.0f
-    val data = DataBlock(List(InternalRow(v1, v2) ))
+    val data = DataBlock(List(InternalRow(v1, v2)))
 
-    val fileRange = ParquetFileRange(filename, 0, 1)
-    val partition = VerticaDistributedFilesystemPartition(List(fileRange))
+    val fileRange = ParquetFileRange(filename, 0, 1, 0)
+    val rangeCountMap = Map(filename -> 1)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange), rangeCountMap)
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange).returning(Right())
@@ -575,7 +574,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper], dataSize = 2)
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    val cleanupInfo = FileCleanupInfo(filename, fileRange.rangeIdx, rangeCountMap(filename))
+    (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, cleanupInfo).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper], dataSize = 2)
 
     this.failOnError(pipe.startPartitionRead(partition))
 
@@ -602,9 +605,10 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
-    val fileRange1 = ParquetFileRange(filename1, 0, 1)
-    val fileRange2 = ParquetFileRange(filename2, 0, 1)
-    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2))
+    val fileRange1 = ParquetFileRange(filename1, 0, 1, 0)
+    val fileRange2 = ParquetFileRange(filename2, 0, 1, 0)
+    val rangeCountMap = Map(filename1 -> 1, filename2 -> 1)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), rangeCountMap)
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(fileRange1).returning(Right())
@@ -618,7 +622,13 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper], dataSize = 2)
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    val cleanupInfo1 = FileCleanupInfo(filename1, fileRange1.rangeIdx, rangeCountMap(filename1))
+    val cleanupInfo2 = FileCleanupInfo(filename2, fileRange2.rangeIdx, rangeCountMap(filename2))
+    (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, cleanupInfo1).returning(Right())
+    (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, cleanupInfo2).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper], dataSize = 2)
 
     pipe.startPartitionRead(partition) match {
       case Left(_) => fail
@@ -662,9 +672,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
-    val fileRange1 = ParquetFileRange(filename1, 0, 1, Some(0))
-    val fileRange2 = ParquetFileRange(filename2, 0, 1, Some(0))
-    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Some(Map(filename1 -> 1, filename2 -> 1)))
+    val fileRange1 = ParquetFileRange(filename1, 0, 1, 0)
+    val fileRange2 = ParquetFileRange(filename2, 0, 1, 0)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Map(filename1 -> 1, filename2 -> 1))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
@@ -712,7 +722,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val filename = "test.parquet"
-    val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+    val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1, 0)), Map())
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Left(StagingFsUrlMissingError()))
@@ -731,7 +741,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val config = makeReadConfig
 
     val filename = "test.parquet"
-    val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+    val fileRange = ParquetFileRange(filename, 0, 1, 0)
+    val rangeCountMap = Map(filename -> 1)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange), rangeCountMap)
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
@@ -739,7 +751,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    val cleanupInfo = FileCleanupInfo(filename, fileRange.rangeIdx, rangeCountMap(filename))
+    (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, cleanupInfo).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
 
     this.failOnError(pipe.startPartitionRead(partition))
 
@@ -757,7 +773,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val v2: Float = 2.0f
     val data = DataBlock(List(InternalRow(v1, v2) ))
 
-    val partition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+    val fileRange = ParquetFileRange(filename, 0, 1, 0)
+    val rangeCountMap = Map(filename -> 1)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange), rangeCountMap)
 
     val fileStoreLayer = mock[FileStoreLayerInterface]
     (fileStoreLayer.openReadParquetFile _).expects(*).returning(Right())
@@ -766,7 +784,11 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val jdbcLayer = mock[JdbcLayerInterface]
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    val cleanupInfo = FileCleanupInfo(filename, fileRange.rangeIdx, rangeCountMap(filename))
+    (cleanupUtils.checkAndCleanup _).expects(fileStoreLayer, cleanupInfo).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
 
     this.failOnError(pipe.startPartitionRead(partition))
     this.failOnError(pipe.readData)
@@ -935,9 +957,9 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
 
     val filename1 = "test.parquet"
     val filename2 = "test2.parquet"
-    val fileRange1 = ParquetFileRange(filename1, 0, 1, Some(0))
-    val fileRange2 = ParquetFileRange(filename2, 0, 1, Some(0))
-    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Some(Map(filename1 -> 1, filename2 -> 1)))
+    val fileRange1 = ParquetFileRange(filename1, 0, 1, 0)
+    val fileRange2 = ParquetFileRange(filename2, 0, 1, 0)
+    val partition = VerticaDistributedFilesystemPartition(List(fileRange1, fileRange2), Map(filename1 -> 1, filename2 -> 1))
 
     val jdbcLayer = mock[JdbcLayerInterface]
 

@@ -16,9 +16,10 @@ package com.vertica.spark.functests
 import java.sql.Connection
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
+import com.vertica.spark.datasource.core.DataBlock
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import com.vertica.spark.datasource.partitions.parquet.ParquetFileRange
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.FsPermission
@@ -108,7 +109,7 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
     val dataOrError = for {
       files <- fsLayer.getFileList(fsCfg.address)
-      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet")).head,0,0, None))
+      _ <- fsLayer.openReadParquetFile(ParquetFileRange(files.filter(fname => fname.endsWith(".parquet")).head,0,0,0))
       data <- fsLayer.readDataFromParquetFile(100)
       _ <- fsLayer.closeReadParquetFile()
     } yield data
@@ -165,10 +166,9 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
 
     assert(fsLayer.fileExists(filename).right.getOrElse(false))
 
-    fsLayer.openReadParquetFile(ParquetFileRange(filename, 0, 0, None))
+    fsLayer.openReadParquetFile(ParquetFileRange(filename, 0, 0, 0))
     val dataOrError = fsLayer.readDataFromParquetFile(100)
     fsLayer.closeReadParquetFile()
-
 
     dataOrError match {
       case Right(dataBlock) =>

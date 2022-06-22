@@ -68,14 +68,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
     logger.debug(thread + "Getting read pipe")
     config match {
       case cfg: DistributedFilesystemReadConfig =>
-        val hadoopFileStoreLayer = new HadoopFileStoreLayer(cfg.fileStoreConfig, cfg.metadata match {
-          case Some(metadata) => if (cfg.getRequiredSchema.nonEmpty) {
-            Some(cfg.getRequiredSchema)
-          } else {
-            Some(metadata.schema)
-          }
-          case _ => None
-        })
+        val hadoopFileStoreLayer = HadoopFileStoreLayer.make(cfg)
         readLayerJdbc = checkJdbcLayer(readLayerJdbc, cfg.jdbcConfig)
         val sparkContext: Option[SparkContext] = SparkSession.getActiveSession match {
           case None => None

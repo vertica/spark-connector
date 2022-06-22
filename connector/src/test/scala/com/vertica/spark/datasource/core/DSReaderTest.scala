@@ -18,6 +18,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
+import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
@@ -46,7 +47,7 @@ class DSReaderTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   }
 
   val filename = "test.parquet"
-  val partition: VerticaDistributedFilesystemPartition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1)))
+  val partition: VerticaDistributedFilesystemPartition = VerticaDistributedFilesystemPartition(List(ParquetFileRange(filename, 0, 1, 0)), Map(filename -> 1))
 
 
 

@@ -1,6 +1,8 @@
 package com.vertica.spark.datasource.wrappers
 
+import com.vertica.spark.common.TestObjects
 import com.vertica.spark.datasource.partitions.file.VerticaFilePartition
+import com.vertica.spark.util.cleanup.{CleanupUtils, DistributedFilesCleaner}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.PartitionReader
 import org.scalamock.scalatest.MockFactory
@@ -10,23 +12,34 @@ class PartitionReaderWrapperTest extends AnyFlatSpec with MockFactory{
 
   behavior of "PartitionReaderWrapperTest"
 
+  private val config = TestObjects.readConfig
+
   it should "get" in {
     val reader = mock[PartitionReader[InternalRow]]
     (reader.get _).expects().returning(mock[InternalRow])
-    new PartitionReaderWrapper(reader, mock[VerticaFilePartition]).get()
+    val mockCleanupUtils = new CleanupUtils
+    val mockCleaner = new DistributedFilesCleaner(config, mockCleanupUtils)
+
+    new PartitionReaderWrapper(reader, mock[VerticaFilePartition], mockCleaner).get()
   }
 
   it should "next" in {
     val reader = mock[PartitionReader[InternalRow]]
     (reader.next _).expects()
-    new PartitionReaderWrapper(reader, mock[VerticaFilePartition]).next()
+    val mockCleanupUtils = new CleanupUtils
+    val mockCleaner = new DistributedFilesCleaner(config, mockCleanupUtils)
+
+    new PartitionReaderWrapper(reader, mock[VerticaFilePartition], mockCleaner).next()
   }
 
   it should "perform cleanup on close" in {
     val reader = mock[PartitionReader[InternalRow]]
     (reader.close _).expects()
     val partitions = mock[VerticaFilePartition]
-    // Todo: cleanup not yet supported.
-    new PartitionReaderWrapper(reader, partitions).close()
+    (partitions.getPortions _).expects().returning(Seq())
+
+    val cleanupUtils = new CleanupUtils
+    val cleaner = new DistributedFilesCleaner(config, cleanupUtils)
+    new PartitionReaderWrapper(reader, partitions, cleaner).close()
   }
 }

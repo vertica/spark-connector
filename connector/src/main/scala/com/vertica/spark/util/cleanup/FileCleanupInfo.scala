@@ -11,14 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.wrappers
-
-import com.vertica.spark.config.ReadConfig
-import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
+package com.vertica.spark.util.cleanup
 
 /**
- * Wraps a [[ScanBuilder]] to create a [[VerticaScanWrapper]]
- * */
-class VerticaScanWrapperBuilder(val builder: ScanBuilder, val config: ReadConfig) extends ScanBuilder {
-  override def build(): Scan = new VerticaScanWrapper(builder.build(), config)
-}
+ * Structure containing cleanup information for a given portion of a file.
+ *
+ * @param filename       The file to check for cleanup.
+ * @param fileIdx        Which portion of the file is done being read.
+ * @param fileRangeCount How many portions of the file exist.
+ */
+final case class FileCleanupInfo(filename: String, fileIdx: Int, fileRangeCount: Int)

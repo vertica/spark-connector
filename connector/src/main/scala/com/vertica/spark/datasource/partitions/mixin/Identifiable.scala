@@ -11,14 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.wrappers
-
-import com.vertica.spark.config.ReadConfig
-import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
+package com.vertica.spark.datasource.partitions.mixin
 
 /**
- * Wraps a [[ScanBuilder]] to create a [[VerticaScanWrapper]]
+ * Mixin trait for data portion containing information that identify itself amongst other portions.
  * */
-class VerticaScanWrapperBuilder(val builder: ScanBuilder, val config: ReadConfig) extends ScanBuilder {
-  override def build(): Scan = new VerticaScanWrapper(builder.build(), config)
+trait Identifiable {
+
+  /**
+   * @return the name of the file the portion belongs to
+   * */
+  def filename: String
+
+  /**
+   * @return the portion's index amongst the other portions of a file.
+   * */
+  def index: Int
 }

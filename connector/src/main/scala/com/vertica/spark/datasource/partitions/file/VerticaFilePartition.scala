@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.partitions.file
 
+import com.vertica.spark.datasource.partitions.mixin.{Cleanup, Identifiable}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 
 /**
@@ -24,4 +25,9 @@ import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFil
 class VerticaFilePartition(override val index: Int,
                            override val files: Array[PartitionedFile],
                            val partitioningRecords: Map[String, Int])
-  extends FilePartition(index, files)
+  extends FilePartition(index, files) with Cleanup {
+
+  override def getPortions: Seq[Identifiable] = this.files.map(_.asInstanceOf[Identifiable])
+
+  override def getPartitioningRecord: Map[String, Int] = this.partitioningRecords
+}
