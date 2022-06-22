@@ -58,7 +58,6 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
       case Invalid(_) => new StructType()
       case Valid(_) => this.newScanBuilder(caseInsensitiveStringMap).build().readSchema()
     }
-
   }
 
   /**

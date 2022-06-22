@@ -13,12 +13,12 @@
 
 package com.vertica.spark.datasource.partitions.file
 
-import com.vertica.spark.datasource.partitions.Cleanup
+import com.vertica.spark.datasource.partitions.mixin.Identifiable
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.PartitionedFile
 
 /**
- * Extended from Spark's PartitionedFile with the purpose of holding extra partitioning information.
+ * Extended from Spark's [[PartitionedFile]] with the purpose of holding extra partitioning information.
  *
  * @param partitionIndex The partition's id number out of all partitions created from a file.
  * */
@@ -28,7 +28,7 @@ class VerticaFilePortion(override val partitionValues: InternalRow,
                          override val length: Long,
                          val partitionIndex: Int
                             )
-  extends PartitionedFile(partitionValues, filePath, start, length) with Cleanup {
+  extends PartitionedFile(partitionValues, filePath, start, length) with Identifiable {
   override def filename: String = this.filePath
 
   override def index: Int = this.partitionIndex
