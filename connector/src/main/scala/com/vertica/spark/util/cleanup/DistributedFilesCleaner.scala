@@ -19,7 +19,7 @@ import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.partitions.mixin.Cleanup
 
 /**
- * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
+ * Class handles cleanup of exported files on file system. Intended to be used by each worker before exiting.
  * */
 class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig,
                               val cleanupUtils: CleanupUtilsInterface,
