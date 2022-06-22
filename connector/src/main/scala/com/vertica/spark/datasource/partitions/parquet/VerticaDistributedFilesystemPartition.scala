@@ -14,7 +14,6 @@
 package com.vertica.spark.datasource.partitions.parquet
 
 import com.vertica.spark.datasource.core.VerticaPartition
-import com.vertica.spark.datasource.partitions.Identifiable
 import com.vertica.spark.datasource.partitions.mixin.{Cleanup, Identifiable}
 
 /**

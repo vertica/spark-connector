@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.partitions.parquet
 
-import com.vertica.spark.datasource.partitions.Identifiable
 import com.vertica.spark.datasource.partitions.mixin.Identifiable
 
 /**

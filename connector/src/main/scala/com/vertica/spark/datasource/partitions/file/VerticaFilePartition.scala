@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.partitions.file
 
-import com.vertica.spark.datasource.partitions.Identifiable
 import com.vertica.spark.datasource.partitions.mixin.{Cleanup, Identifiable}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 
