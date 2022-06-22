@@ -11,15 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.config
-
-import com.typesafe.scalalogging.Logger
+package com.vertica.spark.datasource.partitions
 
 /**
- * Used to provide a logger for a given class, configured with a given log level.
- */
-case object LogProvider {
-  def getLogger(c: Class[_]): Logger = Logger(c)
-  def getLogger(obj: Object): Logger = Logger(obj.getClass)
-}
+ * Mixin trait for objects containing identifying information of data portions
+ * */
+trait PortionId {
 
+  /**
+   * @return the name of the file the portion belongs to
+   * */
+  def filename: String
+
+  /**
+   * @return the portion's index amongst the other portions of a file.
+   * */
+  def index: Int
+}
