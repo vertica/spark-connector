@@ -16,7 +16,6 @@ package com.vertica.spark.datasource.json
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
 import com.vertica.spark.datasource.v2.VerticaScan
-import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
 import com.vertica.spark.util.error.{ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
@@ -25,7 +24,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * We support reading JSON files by re-using Spark's JSON support implemented in [[JsonTable]].
  * */
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], jsonSupport: VerticaJsonTableSupport) extends Scan with Batch {
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], jsonSupport: JsonReaderSupport) extends Scan with Batch {
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
   private lazy val batch: Batch = {

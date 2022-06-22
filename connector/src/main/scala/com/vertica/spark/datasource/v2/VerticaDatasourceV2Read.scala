@@ -19,8 +19,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.datasource.json.VerticaJsonScan
-import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableSupport
+import com.vertica.spark.datasource.json.{VerticaJsonScan, JsonReaderSupport}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -75,7 +74,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
     if(this.useJson(cfg.getRequiredSchema)) {
-      new VerticaJsonScan(cfg, readConfigSetup, new VerticaJsonTableSupport)
+      new VerticaJsonScan(cfg, readConfigSetup, new JsonReaderSupport)
     } else {
       new VerticaScan(cfg, readConfigSetup)
     }

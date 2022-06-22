@@ -14,7 +14,7 @@
 package com.vertica.spark.datasource.partitions.mixin
 
 /**
- * Mixin trait for objects containing identifying information of data portions
+ * Mixin trait for data portion containing information that identify itself amongst other portions.
  * */
 trait Identifiable {
 

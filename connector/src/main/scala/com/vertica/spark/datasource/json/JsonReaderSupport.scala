@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.wrappers.json
+package com.vertica.spark.datasource.json
 
 import com.vertica.spark.config.ReadConfig
+import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableWrapper
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.Scan
 import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
@@ -23,7 +24,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-class VerticaJsonTableSupport {
+class JsonReaderSupport {
   def buildScan(filePath: String, schema: Option[StructType], readConfig: ReadConfig, sparkSession: SparkSession): Scan = {
     val paths = List(filePath)
     val options = CaseInsensitiveStringMap.empty()
