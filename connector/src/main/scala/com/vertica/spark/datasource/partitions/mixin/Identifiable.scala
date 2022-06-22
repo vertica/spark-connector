@@ -11,12 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions
+package com.vertica.spark.datasource.partitions.mixin
 
 /**
- * Mixin trait for objects containing identifying information of data portions
+ * Mixin trait for data portion containing information that identify itself amongst other portions.
  * */
-trait PortionId {
+trait Identifiable {
 
   /**
    * @return the name of the file the portion belongs to

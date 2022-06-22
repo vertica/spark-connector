@@ -29,8 +29,10 @@ import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig,
 
 import scala.collection.JavaConversions._
 import com.vertica.spark.datasource.core._
-import com.vertica.spark.json.VerticaJsonScan
+import com.vertica.spark.datasource.json.VerticaJsonScan
+import com.vertica.spark.datasource.partitions.parquet.VerticaDistributedFilesystemPartition
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read.InputPartition
@@ -107,17 +109,6 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val ident = source.extractIdentifier(options)
 
     assert(ident.name() == "t1")
-  }
-
-  it should "fail to extract catalog name without spark session" in {
-    val source = new VerticaSource()
-
-    Try {
-      source.extractCatalog(options)
-    } match {
-      case Success(e) => fail(e)
-      case Failure(_) => ()
-    }
   }
 
   it should "table returns scan builder" in {
@@ -643,5 +634,17 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
       .build()
     assert(scan.isInstanceOf[VerticaJsonScan])
+  }
+
+  it should "fail to extract catalog name without spark session" in {
+    SparkSession.clearActiveSession()
+    val source = new VerticaSource()
+
+    Try {
+      source.extractCatalog(options)
+    } match {
+      case Success(e) => fail(e)
+      case Failure(_) => ()
+    }
   }
 }

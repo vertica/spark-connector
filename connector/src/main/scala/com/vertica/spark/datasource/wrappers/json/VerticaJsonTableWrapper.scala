@@ -13,11 +13,10 @@
 
 package com.vertica.spark.datasource.wrappers.json
 
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, ReadConfig}
 import com.vertica.spark.datasource.wrappers.VerticaScanWrapperBuilder
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.catalog.{SupportsRead, Table, TableCapability}
-import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
-import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
+import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.execution.datasources.v2.json.JsonTable
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
@@ -28,7 +27,7 @@ import java.util
 /**
  * Wraps a [[JsonTable]] so that that it will create a [[VerticaScanWrapperBuilder]].
  * */
-class VerticaJsonTableWrapper(val jsonTable: JsonTable) extends Table with SupportsRead {
+class VerticaJsonTableWrapper(val jsonTable: JsonTable, config: ReadConfig) extends Table with SupportsRead {
   override def name(): String = "Vertica" + jsonTable.name
 
   override def schema(): StructType = jsonTable.schema
@@ -36,5 +35,5 @@ class VerticaJsonTableWrapper(val jsonTable: JsonTable) extends Table with Suppo
   override def capabilities(): util.Set[TableCapability] = jsonTable.capabilities()
 
   override def newScanBuilder(caseInsensitiveStringMap: CaseInsensitiveStringMap): ScanBuilder =
-    new VerticaScanWrapperBuilder(jsonTable.newScanBuilder(caseInsensitiveStringMap))
+    new VerticaScanWrapperBuilder(jsonTable.newScanBuilder(caseInsensitiveStringMap), config)
 }

@@ -13,23 +13,28 @@
 
 package com.vertica.spark.datasource.partitions.file
 
+import com.vertica.spark.datasource.partitions.mixin.Identifiable
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.PartitionedFile
 
 /**
- * Extended from Spark's PartitionedFile with the purpose of holding extra partitioning information.
+ * Extended from Spark's [[PartitionedFile]] with the purpose of holding extra partitioning information.
  *
  * @param partitionIndex The partition's id number out of all partitions created from a file.
  * */
-class VerticaPartitionedFile(override val partitionValues: InternalRow,
-                             override val filePath: String,
-                             override val start: Long,
-                             override val length: Long,
-                             val partitionIndex: Int
+class VerticaFilePortion(override val partitionValues: InternalRow,
+                         override val filePath: String,
+                         override val start: Long,
+                         override val length: Long,
+                         val partitionIndex: Int
                             )
-  extends PartitionedFile(partitionValues, filePath, start, length)
+  extends PartitionedFile(partitionValues, filePath, start, length) with Identifiable {
+  override def filename: String = this.filePath
 
-object VerticaPartitionedFile {
-  def apply(file: PartitionedFile, partitionIndex: Int): VerticaPartitionedFile =
-    new VerticaPartitionedFile(file.partitionValues, file.filePath, file.start, file.length, partitionIndex)
+  override def index: Int = this.partitionIndex
+}
+
+object VerticaFilePortion {
+  def apply(file: PartitionedFile, partitionIndex: Int): VerticaFilePortion =
+    new VerticaFilePortion(file.partitionValues, file.filePath, file.start, file.length, partitionIndex)
 }

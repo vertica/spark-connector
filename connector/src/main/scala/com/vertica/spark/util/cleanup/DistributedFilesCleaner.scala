@@ -13,18 +13,21 @@
 
 package com.vertica.spark.util.cleanup
 
-import com.vertica.spark.config.{FileStoreConfig, LogProvider}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
-import com.vertica.spark.datasource.partitions.Cleanup
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
+import com.vertica.spark.datasource.partitions.mixin.Cleanup
 
 /**
- * Class handles cleanup of exported files on file system. Intended to be used by each worker thread when finished.
+ * Class handles cleanup of exported files on file system. Intended to be used by each worker before exiting.
  * */
-class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
-                              val fileStoreLayer: FileStoreLayerInterface,
-                              val cleanupUtils: CleanupUtilsInterface) {
+class DistributedFilesCleaner(val config: DistributedFilesystemReadConfig,
+                              val cleanupUtils: CleanupUtilsInterface,
+                              val optionalFSLayer: Option[FileStoreLayerInterface] = None) {
 
   private val logger = LogProvider.getLogger(this)
+  private val fileStoreLayer = optionalFSLayer.getOrElse(HadoopFileStoreLayer.make(config))
+  private val fileStoreConfig = config.fileStoreConfig
 
   /**
    * The idea is to first writing to the filesystem, marking that a portion of a file has been read.
@@ -37,10 +40,10 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
   def cleanupFiles(partition: Cleanup): Unit = {
     logger.info("Removing files before closing read pipe.")
 
-    for (fileIdx <- 0 to partition.getCleanupInformation.size) {
+    partition.getPortions.indices.foreach(fileIndex => {
       if (!fileStoreConfig.preventCleanup) {
         // Cleanup old file if required
-        getCleanupInfo(partition, fileIdx) match {
+        getCleanupInfo(partition, fileIndex) match {
           case Some(cleanupInfo) => cleanupUtils.checkAndCleanup(fileStoreLayer, cleanupInfo) match {
             case Left(err) => logger.warn("Ran into error when calling cleaning up. Treating as non-fatal. Err: " + err.getFullContext)
             case Right(_) => ()
@@ -48,16 +51,16 @@ class DistributedFilesCleaner(val fileStoreConfig: FileStoreConfig,
           case None => logger.warn("No cleanup info found.")
         }
       }
-    }
+    })
   }
 
   def getCleanupInfo(partition: Cleanup, partitionIndex: Int): Option[FileCleanupInfo] = {
     logger.debug("Getting cleanup info for partition with idx " + partitionIndex)
-    if (partitionIndex >= partition.getCleanupInformation.size) {
+    if (partitionIndex >= partition.getPortions.size) {
       logger.warn("Invalid fileIdx " + partitionIndex + ", can't perform cleanup.")
       None
     } else {
-      val fileRange = partition.getCleanupInformation(partitionIndex)
+      val fileRange = partition.getPortions(partitionIndex)
       Some(FileCleanupInfo(fileRange.filename, fileRange.index, partition.getPartitioningRecord(fileRange.filename)))
     }
   }

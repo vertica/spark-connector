@@ -11,19 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions
+package com.vertica.spark.datasource.partitions.mixin
 
 import org.apache.spark.sql.connector.read.InputPartition
 
 /**
- * Mixin trait for [[InputPartition]] that contains partitions cleanup information
+ * Mixin trait for [[InputPartition]] that contains information for cleanup
  * */
 trait Cleanup {
 
   /**
-   * @return returns a list of partition cleanup information
+   * @return returns any [[Identifiable]] object
    * */
-  def getCleanupInformation: Seq[PortionId]
+  def getPortions: Seq[Identifiable]
 
   /**
    * @return return a mapping of filename to their portion count

@@ -1,6 +1,7 @@
 package com.vertica.spark.datasource.wrappers
 
-import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaPartitionedFile}
+import com.vertica.spark.common.TestObjects
+import com.vertica.spark.datasource.partitions.file.{VerticaFilePartition, VerticaFilePortion}
 import com.vertica.spark.util.schema.SchemaToolsTests.mock
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
@@ -14,8 +15,10 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
 
   behavior of "VerticaScanWrapperTest"
 
+  private val readConfig = TestObjects.readConfig
+
   it should "convert itself to Batch" in {
-    val instance = new VerticaScanWrapper(mock[Scan])
+    val instance = new VerticaScanWrapper(mock[Scan], readConfig)
     assert(instance.toBatch == instance)
   }
 
@@ -41,12 +44,12 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     (scan.toBatch _).expects().returning(batch)
     (batch.planInputPartitions _).expects().returning(inputPartitions.asInstanceOf[Array[InputPartition]])
 
-    val partitions = new VerticaScanWrapper(scan).planInputPartitions()
+    val partitions = new VerticaScanWrapper(scan, readConfig).planInputPartitions()
     assert(partitions.head.isInstanceOf[VerticaFilePartition])
 
     val verticaFilePartition = partitions.head.asInstanceOf[VerticaFilePartition]
     assert(verticaFilePartition.index == 1)
-    assert(verticaFilePartition.files.head.isInstanceOf[VerticaPartitionedFile])
+    assert(verticaFilePartition.files.head.isInstanceOf[VerticaFilePortion])
 
     val fileCounts = verticaFilePartition.partitioningRecords.keySet.toList.length
     assert(fileCounts == 4)
@@ -62,14 +65,14 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     (scan.toBatch _).expects().returning(batch)
     (batch.createReaderFactory _).expects().returning(mock[PartitionReaderFactory])
 
-    new VerticaScanWrapper(scan).createReaderFactory().isInstanceOf[PartitionReaderWrapperFactory]
+    new VerticaScanWrapper(scan, readConfig).createReaderFactory().isInstanceOf[PartitionReaderWrapperFactory]
   }
 
   it should "read schema of the wrapped Scan" in {
     val scan = mock[Scan]
     (scan.readSchema _).expects().returning(StructType(Nil))
 
-    new VerticaScanWrapper(scan).readSchema()
+    new VerticaScanWrapper(scan, readConfig).readSchema()
   }
 
 }

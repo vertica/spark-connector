@@ -22,6 +22,7 @@ import com.vertica.spark.util.schema._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
 import org.apache.spark.sql.types._
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
+import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._

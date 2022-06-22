@@ -13,11 +13,12 @@
 
 package com.vertica.spark.datasource.wrappers
 
+import com.vertica.spark.config.ReadConfig
 import org.apache.spark.sql.connector.read.{Scan, ScanBuilder}
 
 /**
  * Wraps a [[ScanBuilder]] to create a [[VerticaScanWrapper]]
  * */
-class VerticaScanWrapperBuilder(val builder: ScanBuilder) extends ScanBuilder {
-  override def build(): Scan = new VerticaScanWrapper(builder.build())
+class VerticaScanWrapperBuilder(val builder: ScanBuilder, val config: ReadConfig) extends ScanBuilder {
+  override def build(): Scan = new VerticaScanWrapper(builder.build(), config)
 }
