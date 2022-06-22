@@ -11,19 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions
+package com.vertica.spark.datasource.partitions.mixin
 
-import org.apache.spark.sql.connector.read.InputPartition
-
-trait DistributedFilesystemPartition extends InputPartition {
-
-  /**
-   * @return Return the file portions in this partition
-   * */
-  def getFilePortions: Seq[FilePortion]
+/**
+ * Mixin trait for objects containing identifying information of data portions
+ * */
+trait Identifiable {
 
   /**
-   * @return return the record containing the count of all file partition created.
+   * @return the name of the file the portion belongs to
    * */
-  def getPartitioningRecord: Map[String, Int]
+  def filename: String
+
+  /**
+   * @return the portion's index amongst the other portions of a file.
+   * */
+  def index: Int
 }

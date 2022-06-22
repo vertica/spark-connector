@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.fs
 import java.net.URI
 import java.util
 import java.util.Collections
-import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
+import com.vertica.spark.datasource.core.DataBlock
 import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{CommonConfigurationKeys, FileSystem, Path}
@@ -28,6 +28,7 @@ import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{AWSOptions, DistributedFilesystemReadConfig, FileStoreConfig, GCSOptions, LogProvider, ReadConfig}
+import com.vertica.spark.datasource.partitions.parquet.ParquetFileRange
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text

@@ -11,26 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions
+package com.vertica.spark.datasource.partitions.mixin
 
-trait FilePortion {
-  /**
-   * @return return a file name.
-   * */
-  def filename: String
+import org.apache.spark.sql.connector.read.InputPartition
 
-  /**
-   * @return The starting location to read a portion of a file
-   * */
-  def start(): Long
+/**
+ * Mixin trait for [[InputPartition]] that contains information for cleanup
+ * */
+trait Cleanup {
 
   /**
-   * @return The end of a file portion for read
+   * @return returns any [[Identifiable]] object
    * */
-  def end(): Long
+  def getPortions: Seq[Identifiable]
 
   /**
-   * @return The portion's unique ID amongst other portions of a file.
+   * @return return a mapping of filename to their portion count
    * */
-  def index(): Int
+  def getPartitioningRecord: Map[String, Int]
 }

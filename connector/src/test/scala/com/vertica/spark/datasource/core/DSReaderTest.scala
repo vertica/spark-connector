@@ -18,6 +18,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.factory.VerticaPipeFactoryInterface
+import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe

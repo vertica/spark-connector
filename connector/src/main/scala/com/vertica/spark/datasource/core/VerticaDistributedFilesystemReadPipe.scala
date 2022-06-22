@@ -21,7 +21,7 @@ import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.datasource.fs._
-import com.vertica.spark.datasource.partitions.{DistributedFilesystemPartition, FilePortion}
+import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
@@ -32,36 +32,6 @@ import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, StructType}
 
 import scala.annotation.tailrec
-
-/**
- * Represents a portion of a parquet file
- *
- * @param filename Full path with name of the parquet file
- * @param minRowGroup First row group to read from parquet file
- * @param maxRowGroup Last row group to read from parquet file
- * @param rangeIdx Range index for this file. Used to track access to this file / cleanup among different nodes.
- *                 If there are three ranges for a given file this will be a value between 0 and 2
- */
-final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends FilePortion {
-  override def start(): Long = this.minRowGroup
-
-  override def end(): Long = this.maxRowGroup
-
-  override def index(): Int = this.rangeIdx
-}
-
-/**
- * Partition for distributed filesystem transport method using parquet files
- *
- * @param fileRanges List of files and ranges of row groups to read for those files
- * @param rangeCountMap Map representing how many file ranges exist for each file. Used for tracking and cleanup.
- */
-final case class VerticaDistributedFilesystemPartition(fileRanges: Seq[ParquetFileRange], rangeCountMap: Map[String, Int])
-  extends VerticaPartition with DistributedFilesystemPartition {
-  override def getFilePortions: Seq[FilePortion] = this.fileRanges
-
-  override def getPartitioningRecord: Map[String, Int] = this.rangeCountMap
-}
 
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -87,6 +57,7 @@ class VerticaDistributedFilesystemReadPipe(
   // TODO: Tune these with performance tests. Determine whether a single value is suitable or if we need to add a user option.
   private val maxFileSize = config.maxFileSize
   private val maxRowGroupSize = config.maxRowGroupSize
+
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {
