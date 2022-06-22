@@ -222,14 +222,30 @@ class VerticaDistributedFilesystemReadPipe(
 
     def exportType: String = if(config.useJson) "JSON" else "PARQUET"
 
-    def buildExportStatement(filePermissions: ValidFilePermissions, selectClause: String, groupbyClause: String, pushdownFilters: String, exportSource: String) = {
-      "EXPORT TO " + exportType + "(" +
-        "directory = '" + hdfsPath +
-        "', fileSizeMB = " + maxFileSize +
-        ", rowGroupSizeMB = " + maxRowGroupSize +
-        ", fileMode = '" + filePermissions +
-        "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+    def buildExportStatement(): ConnectorResult[String] = {
+      this.getSelectClause.map(selectClause => {
+        // File permissions.
+        val filePermissions = config.filePermissions
+        val groupbyClause = this.getGroupbyClause
+        val pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+        val  exportSource = config.tableSource match {
+          case tableName: TableName => tableName.getFullTableName
+          case TableQuery(query, _) => "(" + query + ") AS x"
+        }
+        val rowGroupSize = if(config.useJson) "" else ", rowGroupSizeMB = " + maxRowGroupSize
+
+        logger.info("Select clause requested: " + selectClause)
+        logger.info("Pushdown filters: " + pushdownFilters)
+        logger.info("Export Source: " + exportSource)
+
+        "EXPORT TO " + exportType + "(" +
+          "directory = '" + hdfsPath +
+          "', fileSizeMB = " + maxFileSize +
+          rowGroupSize +
+          ", fileMode = '" + filePermissions +
+          "', dirMode = '" + filePermissions +
+          "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+      })
     }
 
     def exportData: ConnectorResult[Unit] = for {
@@ -259,24 +275,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Check if export is already done (previous call of this function)
       exportDone <- fileStoreLayer.fileExists(hdfsPath)
 
-      // File permissions.
-      filePermissions = config.filePermissions
-
-      selectClause <- this.getSelectClause
-      _ = logger.info("Select clause requested: " + selectClause)
-
-      groupbyClause = this.getGroupbyClause
-
-      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownFilters)
-
-      exportSource = config.tableSource match {
-        case tablename: TableName => tablename.getFullTableName
-        case TableQuery(query, _) => "(" + query + ") AS x"
-      }
-      _ = logger.info("Export Source: " + exportSource)
-
-      exportStatement = buildExportStatement(filePermissions, selectClause, groupbyClause, pushdownFilters, exportSource)
+      exportStatement <- buildExportStatement()
 
       // Export if not already exported
       _ <- if(exportDone) {
