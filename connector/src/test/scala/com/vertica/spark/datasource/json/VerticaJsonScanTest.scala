@@ -33,7 +33,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(StructType(List())))
 
-    val scan = new VerticaJsonScan(readConfig, readSetup, new JsonReaderSupport)
+    val scan = new VerticaJsonScan(readConfig, readSetup, new JsonBatchFactory)
 
     Try { scan.readSchema() } match {
       case Success(_) => ()
@@ -45,7 +45,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.getTableSchema _).expects(readConfig).returning(Left(SchemaDiscoveryError()))
 
-    val scan = new VerticaJsonScan(readConfig, readSetup, new JsonReaderSupport)
+    val scan = new VerticaJsonScan(readConfig, readSetup, new JsonBatchFactory)
 
     Try { scan.readSchema() } match {
       case Success(_) => fail
@@ -65,9 +65,9 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     (readSetup.performInitialSetup _).expects(readConfig).returning(Right(Some(partitionInfo)))
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
 
-    val jsonSupport = mock[JsonReaderSupport]
+    val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
-    (jsonSupport.buildScan _).expects("path", *, *, *).returning(verticaScanWrapper)
+    (jsonSupport.build _).expects("path", *, *, *).returning(verticaScanWrapper)
     (verticaScanWrapper.toBatch: () => Batch).expects().returns(verticaScanWrapper.asInstanceOf[Batch])
     (verticaScanWrapper.asInstanceOf[Batch].planInputPartitions _).expects().returns(Array())
 
@@ -91,9 +91,9 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     (readSetup.performInitialSetup _).expects(readConfig).returning(Right(Some(partitionInfo)))
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
 
-    val jsonSupport = mock[JsonReaderSupport]
+    val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
-    (jsonSupport.buildScan _).expects("path", *, *, *).returning(verticaScanWrapper)
+    (jsonSupport.build _).expects("path", *, *, *).returning(verticaScanWrapper)
     (verticaScanWrapper.toBatch: () => Batch).expects().returns(verticaScanWrapper.asInstanceOf[Batch])
     val readerFactory = mock[PartitionReaderFactory]
     (verticaScanWrapper.asInstanceOf[Batch].createReaderFactory _).expects().returns(readerFactory)

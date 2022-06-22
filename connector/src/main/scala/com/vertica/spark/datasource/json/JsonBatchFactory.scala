@@ -16,7 +16,7 @@ package com.vertica.spark.datasource.json
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.datasource.wrappers.json.VerticaJsonTableWrapper
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.connector.read.Scan
+import org.apache.spark.sql.connector.read.Batch
 import org.apache.spark.sql.execution.datasources.json.JsonFileFormat
 import org.apache.spark.sql.execution.datasources.v2.json.JsonTable
 import org.apache.spark.sql.types.StructType
@@ -24,14 +24,14 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-class JsonReaderSupport {
-  def buildScan(filePath: String, schema: Option[StructType], readConfig: ReadConfig, sparkSession: SparkSession): Scan = {
+class JsonBatchFactory {
+  def build(filePath: String, schema: Option[StructType], readConfig: ReadConfig, sparkSession: SparkSession): Batch = {
     val paths = List(filePath)
     val options = CaseInsensitiveStringMap.empty()
     val fallback = classOf[JsonFileFormat]
     val jsonTable = JsonTable("Vertica Table", sparkSession, options, paths, schema, fallback)
     val verticaJsonTable = new VerticaJsonTableWrapper(jsonTable, readConfig)
     val builderOpts = new CaseInsensitiveStringMap(Map[String, String]().asJava)
-    verticaJsonTable.newScanBuilder(builderOpts).build()
+    verticaJsonTable.newScanBuilder(builderOpts).build().toBatch
   }
 }
