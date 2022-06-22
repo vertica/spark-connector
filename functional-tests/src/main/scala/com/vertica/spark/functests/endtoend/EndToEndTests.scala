@@ -69,9 +69,7 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     anyFiles match {
       case Right(files) =>
-        if(files.nonEmpty)
-          println("uh oh")
-        // assert(files.isEmpty, ". After each test, staging directory should be cleaned.")
+        if(files.nonEmpty) assert(files.isEmpty, ". After each test, staging directory should be cleaned.")
       case Left(_) => fail("Error getting file list from " + fsConfig.address)
     }
   }
@@ -533,10 +531,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val insert = "insert into "+ tableName1 + " values(hex_to_binary('0xff'), HEX_TO_BINARY('0xFFFF'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'), HEX_TO_BINARY('0xF00F'))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
-
-    assert(r == n)
-
+    val result = Try{TestUtils.doCount(spark, readOpts + ("table" -> tableName1))}
+    result match {
+      case Success(count) => assert(count == n)
+      case Failure(exception) =>
+        if(readOpts.getOrElse("json", "false").toBoolean){
+          succeed
+        } else {fail(exception)}
+    }
     stmt.execute("drop table " + tableName1)
   }
 

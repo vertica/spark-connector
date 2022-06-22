@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
+import cats.data.NonEmptyList
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.util.error._
 import com.vertica.spark.config._
@@ -28,7 +29,9 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.connector.read.InputPartition
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, StructType}
+
+import scala.annotation.tailrec
 
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -362,7 +365,35 @@ class VerticaDistributedFilesystemReadPipe(
 
   private def checkSchemaTypesSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
-    VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
+    for {
+      _ <- VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
+      _ <- checkTypeSupport(config)
+    } yield ()
+  }
+
+  private def checkTypeSupport(readConfig: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
+    val useJson = readConfig.useJson
+
+    @tailrec
+    def checkFieldType(name: String, dataType: DataType): ConnectorResult[Unit] = {
+        dataType match {
+          case BinaryType => if(useJson) Left(BinaryTypeNotSupported(name)) else Right()
+          case ArrayType(elementType, _) => checkFieldType(name, elementType)
+          case struct: StructType => checkStructFields(struct)
+          case _ => Right()
+        }
+    }
+
+    def checkStructFields(structType: StructType): ConnectorResult[Unit] = {
+      structType.fields.map(field => checkFieldType(field.name, field.dataType))
+        .toList
+        .traverse(field => {field.leftMap(err => NonEmptyList.one(err)).toValidated})
+        .toEither
+        .map(_ => {})
+        .left.map(errors => ErrorList(errors))
+    }
+
+    checkStructFields(readConfig.getRequiredSchema)
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
