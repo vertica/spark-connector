@@ -16,9 +16,10 @@ package com.vertica.spark.functests
 import java.sql.Connection
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource.core.{DataBlock, ParquetFileRange}
+import com.vertica.spark.datasource.core.DataBlock
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
+import com.vertica.spark.datasource.partitions.parquet.ParquetFileRange
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.FsPermission
