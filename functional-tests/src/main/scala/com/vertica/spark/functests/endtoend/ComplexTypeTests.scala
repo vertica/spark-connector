@@ -150,32 +150,57 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     val tableName1 = "dftest_array"
     val n = 1
     val stmt = conn.createStatement
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 row(int, varchar, array[varchar], array[array[int]]))")
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 row(cat int, dog varchar, mouse array[varchar], shark array[array[int]], row(float)))")
 
-    val insert = "insert into "+ tableName1 + " values(1, row(88, 'hello', array['heelo'], array[array[55]]))"
+    val insert = "insert into "+ tableName1 + " values(1, row(88, 'hello', array['heelo'], array[array[55]], row(4.2)))"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
-      df.show()
+      val rowData = df.collect()(0)
       assert(df.count() == 1)
-      val col2Schema = df.schema.fields(1)
+      // Checking col 1
+      assert(rowData.schema.fields(0).dataType.isInstanceOf[LongType])
+      assert(rowData.schema.fields(0).name == "col1")
+      assert(rowData.getLong(0) == 1)
+
+      val col2Data = rowData.getAs[Row](1)
+      val col2Schema = rowData.schema.fields(1)
       assert(col2Schema.dataType.isInstanceOf[StructType])
+      assert(col2Schema.name == "col2")
       val struct = col2Schema.dataType.asInstanceOf[StructType]
-      assert(struct.fields.length == 4)
+      assert(struct.fields.length == 5)
       // Struct field 1
       assert(struct.fields(0).dataType.isInstanceOf[LongType])
+      assert(struct.fields(0).name == "cat")
+      assert(col2Data.getLong(0) == 88)
       // Struct field 2
       assert(struct.fields(1).dataType.isInstanceOf[StringType])
+      assert(struct.fields(1).name == "dog")
+      assert(col2Data.getString(1) == "hello")
       // Struct field 3
       assert(struct.fields(2).dataType.isInstanceOf[ArrayType])
       assert(struct.fields(2).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[StringType])
+      assert(struct.fields(2).name == "mouse")
+      val array = col2Data.getAs[mutable.WrappedArray[String]](2)
+      assert(array(0) == "heelo")
       // Struct field 4
       assert(struct.fields(3).dataType.isInstanceOf[ArrayType])
-      // Check Struct field 3 is nested array.
+      assert(struct.fields(3).name == "shark")
+      // Check field 4 is nested array.
       val nestedArray = struct.fields(3).dataType.asInstanceOf[ArrayType]
       assert(nestedArray.elementType.isInstanceOf[ArrayType])
       assert(nestedArray.elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[LongType])
+      val rootArray = col2Data.getAs[mutable.WrappedArray[mutable.WrappedArray[Long]]](3)
+      val innerArray = rootArray(0)
+      assert(innerArray(0) == 55)
+
+      // Check field 5
+      assert(struct.fields(4).dataType.isInstanceOf[StructType])
+      val innerRow = struct.fields(4).dataType.asInstanceOf[StructType]
+      assert(innerRow.fields(0).dataType.isInstanceOf[DoubleType])
+      assert(innerRow.fields(0).name == "f0")
+      assert(col2Data.getAs[Row](4).getDouble(0) == 4.2)
     } catch {
       case e: Exception => fail(e)
     } finally {
