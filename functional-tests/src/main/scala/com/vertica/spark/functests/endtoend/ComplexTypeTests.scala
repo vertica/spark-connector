@@ -3,7 +3,7 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
 import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
@@ -464,32 +464,32 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  // it should "error on reading complex types" in {
-  //   Try {
-  //     val tableName = "dftest"
-  //     val stmt = conn.createStatement
-  //     val n = 3
-  //     // Creates a table called dftest with an integer attribute
-  //     TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b row(int), c array[array[int]])")
-  //     val insert = "insert into " + tableName + " values(2, row(2), array[array[10]])"
-  //     // Inserts 20 rows of the value '2' into dftest
-  //     TestUtils.populateTableBySQL(stmt, insert, n)
-  //     // Read dftest into a dataframe
-  //     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-  //       .options(readOpts + ("table" -> tableName))
-  //       .load()
-  //     df.show()
-  //   } match {
-  //     case Success(_) => fail("Expected error on reading complex types")
-  //     case Failure(exp) => exp match {
-  //       case ConnectorException(connectorErr) => connectorErr match {
-  //         case ComplexTypeReadNotSupported(_,_) => succeed
-  //         case err => fail("Unexpected error: " + err.getFullContext)
-  //       }
-  //       case exp => fail("Unexpected exception", exp)
-  //     }
-  //   }
-  // }
+  ignore should "error on reading complex types" in {
+    Try {
+      val tableName = "dftest"
+      val stmt = conn.createStatement
+      val n = 3
+      // Creates a table called dftest with an integer attribute
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int, b row(int), c array[array[int]])")
+      val insert = "insert into " + tableName + " values(2, row(2), array[array[10]])"
+      // Inserts 20 rows of the value '2' into dftest
+      TestUtils.populateTableBySQL(stmt, insert, n)
+      // Read dftest into a dataframe
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(readOpts + ("table" -> tableName))
+        .load()
+      df.show()
+    } match {
+      case Success(_) => fail("Expected error on reading complex types")
+      case Failure(exp) => exp match {
+        case ConnectorException(connectorErr) => connectorErr match {
+          case ComplexTypeReadNotSupported(_,_) => succeed
+          case err => fail("Unexpected error: " + err.getFullContext)
+        }
+        case exp => fail("Unexpected exception", exp)
+      }
+    }
+  }
 
   it should "write table with a struct of primitives" in {
     val tableName = "dftest"

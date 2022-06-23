@@ -29,7 +29,7 @@ case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: St
 
 case class TestVerticaTableDef(name: String, schema: Option[String])
 
-case class TestVerticaTypeDef(verticaTypeId: Long, jdbcTypeId: Long, typeName: String, size: Int, scale: Int, children: Seq[TestVerticaTypeDef] = List.empty)
+case class TestVerticaTypeDef(name: String = "",verticaTypeId: Long, jdbcTypeId: Long, typeName: String, size: Int, scale: Int, children: Seq[TestVerticaTypeDef] = List.empty)
 
 /**
  * Tests functionality of schema tools: converting schema between JDBC and Spark types.
@@ -435,9 +435,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.DECIMAL, "childTypeName", 0, 0)
+    val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.DECIMAL, "childTypeName", 0, 0)
     val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer, rootTypeDef.size, rootTypeDef.scale)
@@ -473,9 +473,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(22, java.sql.Types.BINARY, "childTypeName", 0, 0)
+    val childTypeInfo = TestVerticaTypeDef("", 22, java.sql.Types.BINARY, "childTypeName", 0, 0)
     val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeInfo = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
+    val rootTypeInfo = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 5, 2,List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeInfo.verticaTypeId, rootTypeInfo.typeName, jdbcLayer, rootTypeInfo.size, rootTypeInfo.scale)
@@ -511,9 +511,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tableSource.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
+    val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, schema, rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -547,9 +547,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
+    val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -576,17 +576,33 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  ignore should "parse Vertica Row as Struct" in {
+  it should "parse Vertica Row with primitive fields as Struct" in {
     val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
     val testColDef = TestColumnDef(1, "col1", java.sql.Types.STRUCT, "ROW", 0, signed = false, nullable = true)
     mockColumnMetadata(rsmd, testColDef)
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val rootTypeDef = TestVerticaTypeDef(123456789L, java.sql.Types.STRUCT, "rootType", 0, 0, List())
+    val field1 = TestVerticaTypeDef("f1", 6, java.sql.Types.BIGINT, "field1Type", 0, 0, List())
+    val field2 = TestVerticaTypeDef("f2", 7, java.sql.Types.VARCHAR, "field2Type", 0, 0, List())
+    val rootTypeDef = TestVerticaTypeDef("root", 123456789L, java.sql.Types.STRUCT, "row", 0, 0, List(field1, field2))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
+
+    // Query Row Def
+    val (_, structRs) = VerticaTableTests.mockGetComplexTypeInfo(rootTypeDef.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(rootTypeDef, field1, structRs)
+    VerticaTableTests.mockComplexTypeInfoResult(rootTypeDef, field2, structRs)
+    (structRs.next _).expects().returning(false)
+
+    val (_, field1Rs) = VerticaTableTests.mockGetTypeInfo(field1.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(field1, field1Rs)
+    (field1Rs.next _).expects().returning(false)
+
+    val (_, field2Rs) = VerticaTableTests.mockGetTypeInfo(field2.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(field2, field2Rs)
+    (field2Rs.next _).expects().returning(false)
 
     (new SchemaTools).readSchema(jdbcLayer, tablename) match {
       case Left(error) =>  fail(error.getFullContext)
@@ -595,7 +611,57 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         assert(fields.length == 1)
         assert(fields.head.dataType.isInstanceOf[StructType])
         // Struct parsing is not yet supported
-        assert(fields.head.dataType.asInstanceOf[StructType].fields.isEmpty)
+        assert(fields.head.dataType.asInstanceOf[StructType].fields.nonEmpty)
+        assert(fields.head.dataType.asInstanceOf[StructType].fields(0).dataType.isInstanceOf[LongType])
+        assert(fields.head.dataType.asInstanceOf[StructType].fields(1).dataType.isInstanceOf[StringType])
+    }
+  }
+
+  it should "parse Vertica Row as Struct with array field" in {
+    val (jdbcLayer, _, rsmd) = mockJdbcDeps(tablename)
+    val testColDef = TestColumnDef(1, "col1", java.sql.Types.STRUCT, "ROW", 0, signed = false, nullable = true)
+    mockColumnMetadata(rsmd, testColDef)
+    mockColumnCount(rsmd, 1)
+
+    val tbName = tablename.name.replaceAll("\"", "")
+    val arrayElement = TestVerticaTypeDef("element", 7, java.sql.Types.VARCHAR, "field2Type", 0, 0, List())
+    val innerArray = TestVerticaTypeDef("innerArray", 123456789, java.sql.Types.ARRAY, "array", 0, 0, List(arrayElement))
+    val arrayField = TestVerticaTypeDef("array", 222222222, java.sql.Types.ARRAY, "array", 0, 0, List(innerArray))
+    val rootTypeDef = TestVerticaTypeDef("root", 111111111, java.sql.Types.STRUCT, "row", 0, 0, List(arrayField))
+
+    // Query column type info
+    VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
+
+    // Query Row Def
+    val (_, structRs) = VerticaTableTests.mockGetComplexTypeInfo(rootTypeDef.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(rootTypeDef, arrayField, structRs)
+    // VerticaTableTests.mockComplexTypeInfoResult(rootTypeDef, field2, structRs)
+    (structRs.next _).expects().returning(false)
+
+    // Query base type
+    val (_, arrayRs) = VerticaTableTests.mockGetComplexTypeInfo(arrayField.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(arrayField, innerArray, arrayRs)
+    (arrayRs.next _).expects().returning(false)
+
+    // Query second level type
+    val (_, arrayRs3) = VerticaTableTests.mockGetComplexTypeInfo(innerArray.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(innerArray, arrayElement, arrayRs3)
+    (arrayRs3.next _).expects().returning(false)
+
+    // Query element type
+    val (_, elementRs) = VerticaTableTests.mockGetTypeInfo(arrayElement.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(arrayElement, elementRs)
+    (elementRs.next _).expects().returning(false)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>  fail(error.getFullContext)
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 1)
+        assert(fields.head.dataType.isInstanceOf[StructType])
+        // Struct parsing is not yet supported
+        assert(fields.head.dataType.asInstanceOf[StructType].fields.nonEmpty)
+        assert(fields.head.dataType.asInstanceOf[StructType].fields(0).dataType.isInstanceOf[ArrayType])
     }
   }
 
@@ -606,9 +672,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 1)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val childTypeInfo = TestVerticaTypeDef(6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
+    val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
     val verticaArrayId = VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
-    val rootTypeDef = TestVerticaTypeDef(verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
+    val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(testColDef.name, tbName, "", rootTypeDef.verticaTypeId, rootTypeDef.typeName, jdbcLayer)
@@ -636,9 +702,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     mockColumnCount(rsmd, 2)
 
     val tbName = tablename.name.replaceAll("\"", "")
-    val leafType = TestVerticaTypeDef(3, java.sql.Types.DECIMAL, "leafType", 5, 2)
-    val childArrayTypeDef = TestVerticaTypeDef(2000000L, java.sql.Types.ARRAY, "_ct_childType", 0, 0, List(leafType))
-    val nestedArrayTypeDef = TestVerticaTypeDef(1000000L, java.sql.Types.ARRAY, "_ct_rootType", 0, 0, List(childArrayTypeDef))
+    val leafType = TestVerticaTypeDef("", 3, java.sql.Types.DECIMAL, "leafType", 5, 2)
+    val childArrayTypeDef = TestVerticaTypeDef("", 2000000L, java.sql.Types.ARRAY, "_ct_childType", 0, 0, List(leafType))
+    val nestedArrayTypeDef = TestVerticaTypeDef("", 1000000L, java.sql.Types.ARRAY, "_ct_rootType", 0, 0, List(childArrayTypeDef))
 
     // Query column type info
     VerticaTableTests.mockGetColumnInfo(nestedArrayColDef.name, tbName, "", nestedArrayTypeDef.verticaTypeId, nestedArrayTypeDef.typeName, jdbcLayer)
@@ -677,6 +743,64 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         assert(!fields(1).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
         assert(element2.asInstanceOf[DecimalType].precision == 5)
         assert(element2.asInstanceOf[DecimalType].scale == 2)
+    }
+  }
+
+  it should "parse array array[row]" in {
+    val (jdbcLayer,_, rsmd) = mockJdbcDeps(tablename)
+    mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
+    val nestedArrayColDef = TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true)
+    mockColumnMetadata(rsmd, nestedArrayColDef)
+    mockColumnCount(rsmd, 2)
+
+    val tbName = tablename.name.replaceAll("\"", "")
+    val field1 = TestVerticaTypeDef("key", 10, java.sql.Types.VARCHAR, "leafType", 5, 2)
+    val field2 = TestVerticaTypeDef("value", 6, java.sql.Types.BIGINT, "leafType", 5, 2)
+    val struct = TestVerticaTypeDef("", 2000000L, java.sql.Types.STRUCT, "row", 0, 0, List(field1, field2))
+    val array = TestVerticaTypeDef("", 1000000L, java.sql.Types.ARRAY, "array", 0, 0, List(struct))
+
+    // Query column type info
+    VerticaTableTests.mockGetColumnInfo(nestedArrayColDef.name, tbName, "", array.verticaTypeId, array.typeName, jdbcLayer)
+
+    // Query array type info
+    val (_, arrayRs) = VerticaTableTests.mockGetComplexTypeInfo(array.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(array, struct, arrayRs)
+    (arrayRs.next _).expects().returning(false)
+
+    // Query struct type info
+    val (_, structRs) = VerticaTableTests.mockGetComplexTypeInfo(struct.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockComplexTypeInfoResult(struct, field1, structRs)
+    VerticaTableTests.mockComplexTypeInfoResult(struct, field2, structRs)
+    (structRs.next _).expects().returning(false)
+
+    // Query key type info
+    val (_, field1Rs) = VerticaTableTests.mockGetTypeInfo(field1.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(field1, field1Rs)
+    (field1Rs.next _).expects().returning(false)
+
+    // Query value type info
+    val (_, field2Rs) = VerticaTableTests.mockGetTypeInfo(field2.verticaTypeId, jdbcLayer)
+    VerticaTableTests.mockTypeInfoResult(field2, field2Rs)
+    (field2Rs.next _).expects().returning(false)
+
+    (new SchemaTools).readSchema(jdbcLayer, tablename) match {
+      case Left(error) =>
+        println(error)
+        fail
+      case Right(schema) =>
+        val fields = schema.fields
+        assert(fields.length == 2)
+        assert(fields(0).dataType.isInstanceOf[LongType])
+
+        val arrayType = fields(1).dataType
+        assert(arrayType.isInstanceOf[ArrayType])
+        assert(!fields(1).metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+        val structType = arrayType.asInstanceOf[ArrayType].elementType
+        assert(structType.isInstanceOf[StructType])
+        val keyType = structType.asInstanceOf[StructType].fields(0).dataType
+        assert(keyType.isInstanceOf[StringType])
+        val valueType = structType.asInstanceOf[StructType].fields(1).dataType
+        assert(valueType.isInstanceOf[LongType])
     }
   }
 

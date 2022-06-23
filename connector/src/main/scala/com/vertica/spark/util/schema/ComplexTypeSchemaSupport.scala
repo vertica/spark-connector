@@ -98,30 +98,29 @@ object ComplexTypeSchemaSupport {
     val complexTypesTable = new ComplexTypesTable(jdbcLayer)
 
     @tailrec
-    def getArrayElementDef(verticaTypeId: Long, depth: Long = 0): ConnectorResult[ColumnDef] = {
-      complexTypesTable.getComplexTypeFields(verticaTypeId) match {
-        case Left(value) => Left(value)
-        case Right(fieldsInfo) =>
-          fieldsInfo.headOption match {
+    def getArrayElementDef(componentInfo: ComplexTypeInfo, depth: Int): ConnectorResult[ColumnDef] = {
+      if (componentInfo.typeKind.toLowerCase == "row") {
+        val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth - 1).build()
+        queryVerticaTypes(componentInfo.typeId, componentInfo.numericPrecision, componentInfo.numericScale, jdbcLayer)
+          .map(_.copy(metadata = metadata))
+      } else if (componentInfo.typeKind.toLowerCase == "array" && componentInfo.fieldTypeName.startsWith("_ct_")) {
+        complexTypesTable.getComplexTypeFields(componentInfo.fieldId) match {
+          case Left(value) => Left(value)
+          case Right(results) => results.headOption match {
             case None => Left(QueryResultEmpty(complexTypesTable.tableName, ""))
-            case Some(typeInfo: ComplexTypeInfo) =>
-              if (typeInfo.typeKind.toLowerCase == "row") {
-                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth - 1).build()
-                queryVerticaTypes(typeInfo.typeId, typeInfo.numericPrecision, typeInfo.numericScale, jdbcLayer)
-                  .map(_.copy(metadata = metadata))
-              } else if (typeInfo.typeKind.toLowerCase == "array" && typeInfo.fieldTypeName.startsWith("_ct_")) {
-                getArrayElementDef(typeInfo.fieldId, depth + 1)
-              } else {
-                val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
-                queryVerticaTypes(typeInfo.fieldId, typeInfo.numericPrecision, typeInfo.numericScale, jdbcLayer)
-                  .map(_.copy(metadata = metadata))
-              }
+            case Some(head) => getArrayElementDef(head, depth + 1)
           }
+        }
+      } else {
+        val metadata = new MetadataBuilder().putLong(MetadataKey.DEPTH, depth).build()
+        queryVerticaTypes(componentInfo.fieldId, componentInfo.numericPrecision, componentInfo.numericScale, jdbcLayer)
+          .map(_.copy(metadata = metadata))
       }
     }
 
-    // Since each row in complex_types represents a component, query for the type and infer the root type.
-    // Then, perform the appropriate procedures.
+    // Since each row in complex_types represents a component of the complex type,
+    // First, query for the type and infer the root type.
+    // Then, query for each components
     complexTypesTable.getComplexTypeFields(verticaTypeId) match {
       case Left(e) => Left(e)
       case Right(fields) =>
@@ -129,7 +128,7 @@ object ComplexTypeSchemaSupport {
         baseElement.typeKind.toLowerCase match {
           case "array" =>
             val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, false).build()
-            getArrayElementDef(baseElement.typeId).map(element =>
+            getArrayElementDef(baseElement, 0).map(element =>
                 ColumnDef("", java.sql.Types.ARRAY, baseElement.typeKind, precision.toInt, scale.toInt, false, false, metadata, List(element)))
           case "row" =>
 
@@ -141,6 +140,8 @@ object ComplexTypeSchemaSupport {
             val errorsOrRowFields = fields.map(getFieldDef)
             listToEither(errorsOrRowFields.toList)
               .map(fields => ColumnDef("", java.sql.Types.STRUCT, baseElement.typeKind, 0, 0, false, false, Metadata.empty, fields.toList))
+
+          // case _ => Left()
         }
     }
   }
