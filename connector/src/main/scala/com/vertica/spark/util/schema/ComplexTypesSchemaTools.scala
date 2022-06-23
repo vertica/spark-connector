@@ -76,8 +76,10 @@ class ComplexTypesSchemaTools {
             (false, typeInfo.typeId - VERTICA_NATIVE_ARRAY_BASE_ID)
           }
 
+          //scalastyle:off
           // Special case. Array[Binary] has id of 1522, but Binary has id of 117
           elementId = if (elementId == 22) 117 else elementId
+          //scalastyle:on
 
           queryNativeTypesTable(elementId, precision, scale, jdbcLayer)
             .map(elementDef => {

@@ -4,7 +4,7 @@ import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
-import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
+import com.vertica.spark.util.schema.{ComplexTypesSchemaTools, MetadataKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
@@ -419,7 +419,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       val columnRs = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
       val verticaId = columnRs.getLong("data_type_id")
-      assert(verticaId > ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID & verticaId < ComplexTypeSchemaSupport.VERTICA_SET_MAX_ID)
+      assert(verticaId > ComplexTypesSchemaTools.VERTICA_SET_BASE_ID & verticaId < ComplexTypesSchemaTools.VERTICA_SET_MAX_ID)
     } catch {
       case err : Exception => fail(err)
     }
