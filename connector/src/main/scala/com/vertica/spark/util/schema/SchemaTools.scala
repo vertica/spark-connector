@@ -18,12 +18,11 @@ import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.ConnectorResultUtils.listToEitherSchema
-import com.vertica.spark.util.{ConnectorResultUtils, error}
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable}
-import com.vertica.spark.util.schema.ComplexTypeSchemaSupport.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID, startQueryingVerticaComplexTypes}
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
 import java.sql.ResultSetMetaData
@@ -146,7 +145,7 @@ trait SchemaToolsInterface {
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
 }
 
-class SchemaTools extends SchemaToolsInterface {
+class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools) extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
   private val unknown = "UNKNOWN"
   private val maxlength = "maxlength"
@@ -295,7 +294,7 @@ class SchemaTools extends SchemaToolsInterface {
                     val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
                     colType match {
                       case java.sql.Types.ARRAY | java.sql.Types.STRUCT =>
-                        startQueryingVerticaComplexTypes(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
+                        ctTools.startQueryingVerticaComplexTypes(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
                       case _ => Right(colDef)
                     }
                   case query: TableQuery =>

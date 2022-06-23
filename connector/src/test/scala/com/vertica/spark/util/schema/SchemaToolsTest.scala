@@ -23,7 +23,7 @@ import com.vertica.spark.datasource.jdbc._
 import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.query.VerticaTableTests
-import com.vertica.spark.util.schema.ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -512,7 +512,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tableSource.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypesSchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
@@ -548,7 +548,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
     val tbName = tablename.name.replaceAll("\"", "")
     val childTypeInfo = TestVerticaTypeDef("", 6, java.sql.Types.BIGINT, "childTypeName", 0, 0)
-    val verticaArrayId = ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
+    val verticaArrayId = ComplexTypesSchemaTools.VERTICA_SET_BASE_ID + childTypeInfo.verticaTypeId
     val rootTypeDef = TestVerticaTypeDef("", verticaArrayId, java.sql.Types.ARRAY, "rootTypeName", 0, 0, List(childTypeInfo))
 
     // Query column type info
@@ -694,7 +694,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  ignore should "parse nested array" in {
+  it should "parse nested array" in {
     val (jdbcLayer,_, rsmd) = mockJdbcDeps(tablename)
     mockColumnMetadata(rsmd, TestColumnDef(1, "col1", java.sql.Types.BIGINT, "BIGINT", 0, signed = true, nullable = true))
     val nestedArrayColDef = TestColumnDef(2, "col2", java.sql.Types.ARRAY, "ARRAY", 0, signed = true, nullable = true)

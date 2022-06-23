@@ -18,20 +18,23 @@ import com.vertica.spark.util.ConnectorResultUtils.listToEither
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.QueryResultEmpty
 import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types.{Metadata, MetadataBuilder}
 
 import scala.annotation.tailrec
 
-/**
- * Support class to read complex type schema from Vertica
- * */
-object ComplexTypeSchemaSupport {
+object ComplexTypesSchemaTools {
   //  This number is chosen from diff of array and set base id.
   val VERTICA_NATIVE_ARRAY_BASE_ID: Long = 1500L
   val VERTICA_SET_BASE_ID: Long = 2700L
   // This number is not defined be Vertica, so we use the delta of set and native array base id.
   val VERTICA_PRIMITIVES_MAX_ID:Long = VERTICA_SET_BASE_ID - VERTICA_NATIVE_ARRAY_BASE_ID
   val VERTICA_SET_MAX_ID: Long = VERTICA_SET_BASE_ID + VERTICA_PRIMITIVES_MAX_ID
+}
+/**
+ * Support class to read complex type schema from Vertica
+ * */
+class ComplexTypesSchemaTools {
 
   /**
    * Vertica's JDBC does not expose information needed to construct complex type structure of a column.
@@ -41,7 +44,7 @@ object ComplexTypeSchemaSupport {
   def startQueryingVerticaComplexTypes(rootDef: ColumnDef, tableName: String, dbSchema: String, jdbcLayer: JdbcLayerInterface): ConnectorResult[ColumnDef] = {
     new ColumnsTable(jdbcLayer).getColumnInfo(rootDef.label, tableName, dbSchema) match {
       case Right(colInfo) => queryVerticaTypes(colInfo.verticaType, colInfo.precision, colInfo.scale, jdbcLayer)
-          .map(columnDef => rootDef.copy(rootDef.label, metadata = columnDef.metadata, children = columnDef.children))
+          .map(columnDef => rootDef.copy(label = rootDef.label, metadata = columnDef.metadata, children = columnDef.children))
       case Left(err) => Left(err)
     }
   }
