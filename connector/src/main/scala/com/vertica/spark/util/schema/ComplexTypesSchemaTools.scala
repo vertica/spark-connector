@@ -19,7 +19,7 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error.QueryResultEmpty
 import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
-import org.apache.spark.sql.types.{Metadata, MetadataBuilder}
+import org.apache.spark.sql.types.{ArrayType, MapType, Metadata, MetadataBuilder, StructField, StructType}
 
 import scala.annotation.tailrec
 
@@ -148,6 +148,40 @@ class ComplexTypesSchemaTools {
 
           // case _ => Left()
         }
+    }
+  }
+
+  def getComplexTypeColumns(schema: StructType):  List[StructField] = filterColumnTypes(schema)._2
+
+  def getNativeTypeColumns(schema: StructType): List[StructField] = filterColumnTypes(schema)._1
+
+  /**
+   * @return A tuple of (nativeColumns, complexColumns)
+   * */
+  def filterColumnTypes(schema: StructType): (List[StructField], List[StructField]) = {
+    val initialAccumulators: (List[StructField], List[StructField]) = (List(), List())
+    schema.foldLeft(initialAccumulators)((acc, col) => {
+      val (nativeCols, complexTypeCols) = acc
+      if (isNativeType(col)) {
+        (col :: nativeCols, complexTypeCols)
+      } else {
+        (nativeCols, col :: complexTypeCols)
+      }
+    })
+  }
+
+  /*
+    * Check if field is a vertica native type. Vertica native types contains 1D arrays
+    * */
+  private def isNativeType(field: StructField): Boolean = {
+    field.dataType match {
+      case ArrayType(elementType, _) =>
+        elementType match {
+          case MapType(_, _, _) | StructType(_) | ArrayType(_, _) => false
+          case _ => true
+        }
+      case MapType(_, _, _) | StructType(_) => false
+      case _ => true
     }
   }
 }

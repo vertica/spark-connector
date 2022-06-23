@@ -55,18 +55,14 @@ object VerticaTableTests extends VerticaTableTests {
   }
 
   def mockComplexTypeInfoResult(parentDef: TestVerticaTypeDef, childDef: TestVerticaTypeDef, rs: ResultSet): Unit = {
-    (rs.next _).expects().returning(true)
-    (rs.getLong: Int => Long).expects(1).returning(parentDef.verticaTypeId)
-    (rs.getString: Int => String).expects(2).returning(parentDef.typeName)
-    (rs.getLong: Int => Long).expects(3).returning(childDef.verticaTypeId)
-    (rs.getString: Int => String).expects(4).returning(childDef.typeName)
-    (rs.getLong: Int => Long).expects(5).returning(childDef.scale)
-    (rs.getString: Int => String).expects(6).returning(parentDef.typeName)
-    (rs.getLong: Int => Long).expects(7).returning(childDef.size)
-    (rs.getString: Int => String).expects(8).returning(childDef.name)
+    mockComplexTypeInfoResult(childDef.typeName, childDef.verticaTypeId, parentDef.verticaTypeId, rs, parentDef.typeName, parentDef.typeName, parentDef.size, parentDef.scale, childDef.name)
   }
 
-  def mockGetTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
+  def mockComplexTypeInfoResult(parentDef: TestVerticaTypeDef, childDef: TestVerticaTypeDef, fieldTypeName: String, rs: ResultSet): Unit = {
+    mockComplexTypeInfoResult(fieldTypeName, childDef.verticaTypeId, parentDef.verticaTypeId, rs, parentDef.typeName, parentDef.typeName, childDef.size, childDef.scale, childDef.name)
+  }
+
+    def mockGetTypeInfo(verticaTypeId: Long, jdbcLayer: JdbcLayerInterface): (JdbcLayerInterface, ResultSet) = {
     val conditions = s"type_id=$verticaTypeId"
     val (jdbc, rs) = mockVerticaTableQuery(List("type_id", "jdbc_type", "type_name", "max_scale"), "types", conditions, jdbcLayer)
     (jdbc, rs)
