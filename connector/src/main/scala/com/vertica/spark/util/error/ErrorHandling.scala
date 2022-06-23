@@ -612,6 +612,10 @@ case class MultipleQueryResult(table: String, query: String) extends TableQueryE
   override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
 }
 
+case class UnrecognizedComplexType(verticaType: Long, typeStr: String) extends ConnectorError {
+  override def getFullContext: String = s"Column has type $typeStr (id:$verticaType) which is not supported."
+}
+
 case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
   override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
 }

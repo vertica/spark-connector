@@ -146,7 +146,7 @@ class ComplexTypesSchemaTools {
             listToEither(errorsOrRowFields.toList)
               .map(fields => ColumnDef("", java.sql.Types.STRUCT, baseElement.typeKind, 0, 0, false, false, Metadata.empty, fields.toList))
 
-          // case _ => Left()
+          case _ => Left(UnrecognizedComplexType(verticaTypeId, baseElement.typeKind))
         }
     }
   }
