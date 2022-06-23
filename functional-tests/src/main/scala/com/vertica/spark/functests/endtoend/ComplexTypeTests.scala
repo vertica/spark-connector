@@ -4,7 +4,7 @@ import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
-import com.vertica.spark.util.schema.{MetadataKey, ComplexTypeSchemaSupport}
+import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
@@ -121,7 +121,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "read nested arrays" in {
+  it should "read nested array" in {
     val tableName1 = "dftest_array"
     val n = 1
     val stmt = conn.createStatement
@@ -132,12 +132,14 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
 
     try {
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
-      df.show()
+      val rowData = df.collect()(0)
       assert(df.count() == 1)
       val col2Schema = df.schema.fields(1)
       assert(col2Schema.dataType.isInstanceOf[ArrayType])
       assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
       assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[LongType])
+      val array = rowData.getAs[mutable.WrappedArray[mutable.WrappedArray[Long]]](1)
+      assert(array(0)(0) == 2L)
     } catch {
       case e: Exception => fail(e)
     } finally {
@@ -264,7 +266,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
 
     try {
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
-      df.show()
+      val rowData = df.collect()(0)
       assert(df.count() == 1)
 
       val col2 = df.schema.fields(1)
@@ -272,6 +274,8 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       assert(col2.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
       assert(col2.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 5)
       assert(col2.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 2)
+      val col2Data = rowData.getAs[mutable.WrappedArray[Number]](1)
+      assert(col2Data(0).doubleValue() == 1.5)
 
       val col3 = df.schema.fields(2)
       assert(col3.dataType.isInstanceOf[ArrayType])
@@ -279,6 +283,8 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
       assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 6)
       assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 2)
+      val col3Data = rowData.getAs[mutable.WrappedArray[mutable.WrappedArray[Number]]](2)
+      assert(col3Data(0)(0).doubleValue() == 2.5)
     } catch {
       case e: Exception => fail(e)
     } finally {
@@ -291,18 +297,24 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     val tableName1 = "dftest_array"
     val n = 1
     val stmt = conn.createStatement
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[row(int, int)])")
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[row(key varchar, value int)])")
 
-    val insert = "insert into "+ tableName1 + " values(1, array[row(30, 60)])"
+    val insert = "insert into "+ tableName1 + " values(1, array[row('daug', 60)])"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
-      df.show()
+      val rowData = df.collect()(0)
       assert(df.count() == 1)
       val col2Schema = df.schema.fields(1)
       assert(col2Schema.dataType.isInstanceOf[ArrayType])
       assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[StructType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields(0).name == "key")
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields(1).name == "value")
+      val col2Data = rowData.getAs[mutable.WrappedArray[Row]](1)
+      assert(col2Data(0).getString(0) == "daug")
+      assert(col2Data(0).getLong(1) == 60)
+
     } catch {
       case e: Exception => fail(e)
     } finally {
@@ -643,7 +655,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
 
     TestUtils.dropTable(conn, tableName)
-    // Since we are writing external table, data will persist
+    // Since we are writing external table, rowData will persist
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
 
