@@ -599,7 +599,7 @@ case class VerticaColumnNotFound(colName: String, tableName: String, schema: Str
 }
 
 case class BinaryTypeNotSupported(fieldName: String) extends SchemaError {
-  def getFullContext: String = s"Field: $fieldName. Binary data types are not supported when when exporting files as JSON."
+  def getFullContext: String = s"Field: $fieldName. Binary data types are not supported when exporting files as JSON."
 }
 
 trait TableQueryError extends ConnectorError
