@@ -76,6 +76,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
+
     if(useJson(cfg)) {
       new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory)
     } else {
@@ -86,12 +87,17 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   private def useJson(cfg: ReadConfig): Boolean = {
     cfg match {
       case config: DistributedFilesystemReadConfig =>
-        val schema = (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-          case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+        (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
+          case (Right(metadataSchema), requiredSchema) =>
+            val schema: StructType = if (requiredSchema.nonEmpty) {
+              requiredSchema
+            } else {
+              metadataSchema
+            }
+            config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
           case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
         }
-        config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
-      case _ => false
+      case _=> false
     }
   }
 

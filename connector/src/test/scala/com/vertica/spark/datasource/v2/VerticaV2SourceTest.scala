@@ -45,10 +45,17 @@ trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
 class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory{
 
+  var spark: SparkSession = _
   override def beforeAll(): Unit = {
+    // Activate lazy reference
+    spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("Test session")
+      .getOrCreate()
   }
 
   override def afterAll(): Unit = {
+    spark.close()
   }
 
   val jOptions = new util.HashMap[String, String]()
@@ -157,7 +164,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "table returns schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
 
     val table = new VerticaTable(options, readSetup)
 
@@ -204,6 +211,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
     val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
 
@@ -247,6 +255,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "prune columns on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
     val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
 
@@ -564,7 +573,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "catalog tests if table exists" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
 
     val catalog = new VerticaDatasourceV2Catalog()
     catalog.readSetupInterface = readSetup
@@ -629,6 +638,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "build VerticaJsonScan" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
     val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
       .build()
     assert(scan.isInstanceOf[VerticaJsonScan])
@@ -648,6 +658,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "automatically build a Json scan" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+
     val config = readConfig.copy()
     val builder = new VerticaScanBuilder(config, readSetup)
     builder.pruneColumns(StructType(Array(
@@ -659,6 +671,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "use json when option is set" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+
     val config = readConfig.copy(useJson = true)
     val builder = new VerticaScanBuilder(config, readSetup)
     assert(builder.build().isInstanceOf[VerticaJsonScan])
