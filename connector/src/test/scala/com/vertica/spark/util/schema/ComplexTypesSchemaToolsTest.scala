@@ -14,8 +14,6 @@ class ComplexTypesSchemaToolsTest extends AnyFlatSpec with MockFactory{
   val schema = "schema"
   val colName = "colName"
 
-  //  Todo: Extract the rest of complex types test in SchemaToolsTests here.
-
   it should "correctly handles array[binary]" in {
     val jdbcLayer = mock[JdbcLayerInterface]
     val binary = TestVerticaTypeDef("", 117, java.sql.Types.BINARY, "binary", 5, 2)
