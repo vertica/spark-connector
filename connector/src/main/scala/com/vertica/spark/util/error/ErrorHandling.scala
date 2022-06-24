@@ -103,8 +103,8 @@ case class SchemaDiscoveryError() extends ConnectorError {
     "There may be an issue with connectivity to the database."
 
 }
-case class UndefinedError() extends ConnectorError {
-  override def getFullContext: String = "This error is undefined. For development purposes only and should not be used in production"
+case class PlaceholderError() extends ConnectorError {
+  override def getFullContext: String = "A placeholder error. For development purposes only and should not be used in production"
 }
 case class NoResultError(query: String) extends ConnectorError{
   def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
