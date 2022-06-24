@@ -18,6 +18,7 @@ package com.vertica.spark.util.error
   */
 
 import cats.data.NonEmptyList
+import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.fs.GCSConnectorOptions
 import com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -79,6 +80,22 @@ object ErrorHandling {
 
   val invariantViolation: String = "This is likely a bug and should be reported to the developers here:\n" +
     "https://github.com/vertica/spark-connector/issues"
+
+  def listToEither[T](list: List[Either[ConnectorError, T]]): Either[ErrorList, Seq[T]] = {
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+      .toEither
+      .map(field => field)
+      .left.map(errors => ErrorList(errors))
+  }
+
+  def listToEitherSchema[T](list: List[Either[SchemaError, T]]): Either[SchemaErrorList, Seq[T]] = {
+    // converts List[Either[A, B]] to Either[List[A], List[B]]
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+      .toEither
+      .map(field => field)
+      .left.map(errors => SchemaErrorList(errors))
+  }
 }
 
 case class SchemaDiscoveryError() extends ConnectorError {

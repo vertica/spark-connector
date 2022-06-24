@@ -14,11 +14,10 @@
 package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.ConnectorResultUtils.listToEither
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{QueryResultEmpty, UnrecognizedComplexType}
+import com.vertica.spark.util.error.{ErrorHandling, QueryResultEmpty, UnrecognizedComplexType}
 import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
-import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_BINARY_ID, VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types.{ArrayType, MapType, Metadata, MetadataBuilder, StructField, StructType}
 
 import scala.annotation.tailrec
@@ -30,12 +29,13 @@ object ComplexTypesSchemaTools {
   // This number is not defined be Vertica, so we use the delta of set and native array base id.
   val VERTICA_PRIMITIVES_MAX_ID:Long = VERTICA_SET_BASE_ID - VERTICA_NATIVE_ARRAY_BASE_ID
   val VERTICA_SET_MAX_ID: Long = VERTICA_SET_BASE_ID + VERTICA_PRIMITIVES_MAX_ID
+
+  val VERTICA_BINARY_ID = 117
 }
 /**
  * Support class to read complex type schema from Vertica
  * */
 class ComplexTypesSchemaTools {
-
   /**
    * Vertica's JDBC does not expose information needed to construct complex type structure of a column.
    * Thus, we have to query Vertica's system tables for this information.
@@ -76,10 +76,8 @@ class ComplexTypesSchemaTools {
             (false, typeInfo.typeId - VERTICA_NATIVE_ARRAY_BASE_ID)
           }
 
-          //scalastyle:off
           // Special case. Array[Binary] has id of 1522, but Binary has id of 117
-          elementId = if (elementId == 22) 117 else elementId
-          //scalastyle:on
+          elementId = if (elementId == 22) VERTICA_BINARY_ID else elementId
 
           queryNativeTypesTable(elementId, precision, scale, jdbcLayer)
             .map(elementDef => {
