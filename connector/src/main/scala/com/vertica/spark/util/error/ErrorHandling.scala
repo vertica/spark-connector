@@ -637,4 +637,9 @@ case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
   override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
 }
 
+case class ExportToJsonNotSupported(version: String) extends ConnectorError {
+  override def getFullContext: String = s"Export to JSON was added in Vertica 11.1.1. Your Vertica version is $version\n" +
+    "Export to JSON is required for reading complex data types."
+}
+
 

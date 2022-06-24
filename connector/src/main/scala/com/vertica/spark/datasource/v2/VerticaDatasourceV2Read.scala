@@ -19,9 +19,10 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.datasource.json.{VerticaJsonScan, JsonBatchFactory}
+import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
 
@@ -80,8 +81,16 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     }
   }
 
-  //Todo: Infer when to use json on complex data types.
-  private def useJson(schema: StructType): Boolean = config.useJson
+  private def useJson(schema: StructType): Boolean = {
+
+    def hasComplexTypeColumns: Boolean = {
+      new ComplexTypesSchemaTools()
+        .getComplexTypeColumns(schema)
+        .nonEmpty
+    }
+
+    config.useJson || hasComplexTypeColumns
+  }
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())
