@@ -2,6 +2,7 @@ package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.query.VerticaTableTests
+import org.apache.spark.sql.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -89,5 +90,26 @@ class ComplexTypesSchemaToolsTest extends AnyFlatSpec with MockFactory{
         val field2 = element.children(1)
         assert(field2.jdbcType == value.jdbcTypeId)
     }
+  }
+
+  it should "filters native and complex type columns" in {
+    val schema = StructType(Array(
+      StructField("", MapType(StringType, IntegerType)),
+      StructField("", StringType),
+      StructField("", ArrayType(IntegerType)),
+      StructField("", ArrayType(ArrayType(IntegerType))),
+      StructField("", StructType(Array(
+        StructField("", StringType),
+        StructField("", ArrayType(IntegerType)),
+        StructField("", ArrayType(ArrayType(IntegerType))),
+      ))),
+    ))
+
+    val ctTools =  new ComplexTypesSchemaTools()
+    val (nativeCols, complexCols) = ctTools.filterColumnTypes(schema)
+    assert(nativeCols.length == 2)
+    assert(complexCols.length == 3)
+    assert(ctTools.filterNativeTypeColumns(schema).length == 2)
+    assert(ctTools.filterComplexTypeColumns(schema).length == 3)
   }
 }

@@ -13,7 +13,7 @@
 
 package com.vertica.spark.functests.endtoend
 
-import com.vertica.spark.config.{FileStoreConfig, GCSOptions, JDBCConfig}
+import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.fs.{GCSSparkOptions, HadoopFileStoreLayer}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
@@ -23,8 +23,8 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{Assertion, BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.flatspec.AnyFlatSpec
 
 import java.sql.{Connection, Date, Statement, Timestamp}
 import scala.util.{Failure, Success, Try}
@@ -3659,6 +3659,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
     df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {

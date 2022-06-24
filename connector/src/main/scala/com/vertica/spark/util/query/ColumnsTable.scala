@@ -53,8 +53,4 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInf
     val conditions = s"table_name='$tableName'$schemaCond AND column_name='$columnName'"
     super.selectWhereExpectOne(conditions)
   }
-
-  def find(columnName: String, tableName: String): ConnectorResult[ColumnInfo] = {
-    getColumnInfo(columnName, tableName, "")
-  }
 }

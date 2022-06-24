@@ -15,8 +15,6 @@ package com.vertica.spark.util.query
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.schema.ColumnDef
-import org.apache.spark.sql.types.Metadata
 
 import java.sql.ResultSet
 // scalastyle:off magic.number
@@ -66,17 +64,5 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
   def getComplexTypeFields(verticaTypeId: Long): ConnectorResult[Seq[ComplexTypeInfo]] = {
     val conditions = s"type_id=$verticaTypeId"
     super.selectWhere(conditions)
-  }
-
-  def getColumnDef(verticaTypeId: Long): ConnectorResult[ColumnDef] = {
-    this.findComplexTypeInfo(verticaTypeId).map(ctInfo =>
-      ColumnDef("", 0, ctInfo.fieldTypeName, 0, ctInfo.numericScale.toInt, signed = true, nullable = false, Metadata.empty)
-    )
-  }
-
-  def isArray(verticaTypeId: Long): ConnectorResult[Boolean] = {
-    val conditions = s"type_id=$verticaTypeId"
-    super.selectWhereExpectOne(conditions)
-      .map(_.typeKind.toLowerCase == "array")
   }
 }

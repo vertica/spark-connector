@@ -155,9 +155,9 @@ class ComplexTypesSchemaTools {
     }
   }
 
-  def getComplexTypeColumns(schema: StructType):  List[StructField] = filterColumnTypes(schema)._2
+  def filterComplexTypeColumns(schema: StructType):  List[StructField] = filterColumnTypes(schema)._2
 
-  def getNativeTypeColumns(schema: StructType): List[StructField] = filterColumnTypes(schema)._1
+  def filterNativeTypeColumns(schema: StructType): List[StructField] = filterColumnTypes(schema)._1
 
   /**
    * @return A tuple of (nativeColumns, complexColumns)
