@@ -52,7 +52,6 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
     }
   }
 
-  //Todo: need to infer complex type schema from Vertica tables.
   override def readSchema(): StructType = {
     (readConfigSetup.getTableSchema(config), jsonReadConfig.getRequiredSchema) match {
       case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }

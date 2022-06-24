@@ -17,7 +17,7 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
@@ -76,15 +76,25 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    logger.info("Complex cols found" + ctTools.filterComplexTypeColumns(cfg.getRequiredSchema))
-    if(this.useJson(cfg.getRequiredSchema)) {
+    if(useJson(cfg)) {
       new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory)
     } else {
       new VerticaScan(cfg, readConfigSetup)
     }
   }
 
-  private def useJson(schema: StructType): Boolean = config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
+  private def useJson(cfg: ReadConfig): Boolean = {
+    cfg match {
+      case config: DistributedFilesystemReadConfig =>
+        val schema = (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
+          case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+          case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
+        }
+        config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
+      case _ => false
+    }
+  }
+
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())
