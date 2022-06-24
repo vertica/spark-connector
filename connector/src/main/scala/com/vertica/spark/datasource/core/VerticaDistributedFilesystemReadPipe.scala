@@ -14,19 +14,19 @@
 package com.vertica.spark.datasource.core
 
 import cats.data.NonEmptyList
-import com.typesafe.scalalogging.Logger
-import com.vertica.spark.util.error._
-import com.vertica.spark.config._
-import com.vertica.spark.datasource.jdbc._
 import cats.implicits._
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.typesafe.scalalogging.Logger
+import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs._
+import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, StructType}
@@ -254,7 +254,9 @@ class VerticaDistributedFilesystemReadPipe(
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
-      _ <- checkSchemaTypesSupport(config, jdbcLayer)
+      _ <- checkVersionCompatibility(config)
+
+      _ <- if(config.useJson) checkJSONExportTypesSupport(config) else Right()
 
       // Create unique directory for session
       perm = config.filePermissions
@@ -362,15 +364,15 @@ class VerticaDistributedFilesystemReadPipe(
     ret
   }
 
-  private def checkSchemaTypesSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+  private def checkVersionCompatibility(config: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
     for {
       _ <- VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
-      _ <- checkTypeSupport(config)
+      _ <- if(config.useJson) VerticaVersionUtils.checkJsonSupport(version) else Right()
     } yield ()
   }
 
-  private def checkTypeSupport(readConfig: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
+  private def checkJSONExportTypesSupport(readConfig: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
     val useJson = readConfig.useJson
 
     @tailrec
