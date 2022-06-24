@@ -17,7 +17,6 @@ import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 
 import java.sql.ResultSet
-// scalastyle:off magic.number
 
 /**
  * A row of complex_types table. Represents a component of the data structure type_id.

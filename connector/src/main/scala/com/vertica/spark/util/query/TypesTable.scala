@@ -22,7 +22,6 @@ import java.sql.ResultSet
 
 case class TypeInfo(typeId: Long, jdbcType: Long, typeName: String, maxScale: Long)
 
-// scalastyle:off magic.number
 /**
  * Vertica's types table contains type information of primitives and 1D array/set of primitive type.
  * */
@@ -68,4 +67,5 @@ class TypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[TypeInfo](j
           nullable = false,
           Metadata.empty))
   }
+
 }
