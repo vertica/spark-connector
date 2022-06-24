@@ -63,6 +63,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
+  protected val ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools()
+
 /**
   * Builds the class representing a scan of a Vertica table
   *
@@ -81,16 +83,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     }
   }
 
-  private def useJson(schema: StructType): Boolean = {
-
-    def hasComplexTypeColumns: Boolean = {
-      new ComplexTypesSchemaTools()
-        .getComplexTypeColumns(schema)
-        .nonEmpty
-    }
-
-    config.useJson || hasComplexTypeColumns
-  }
+  private def useJson(schema: StructType): Boolean = config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())

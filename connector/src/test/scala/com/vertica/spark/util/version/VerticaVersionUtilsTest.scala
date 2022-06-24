@@ -14,8 +14,8 @@
 package com.vertica.spark.util.version
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ErrorList, InternalMapNotSupported, NativeArrayWriteNotSupported}
-import org.apache.spark.sql.types.{ArrayType, IntegerType, LongType, MapType, Metadata, StructField, StructType}
+import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ExportToJsonNotSupported, InternalMapNotSupported, NativeArrayWriteNotSupported}
+import org.apache.spark.sql.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
@@ -182,18 +182,36 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
       case Left(err) => fail
     }
   }
+
+  it should "block version < 11.1.1 when checking for Json export support" in {
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11,1,1)) == Right())
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(12)) == Right())
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11,1)) == Left(ExportToJsonNotSupported(VerticaVersion(11,1).toString)))
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11)) == Left(ExportToJsonNotSupported(VerticaVersion(11).toString)))
+  }
+
 }
 
 class VerticaVersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
-  it should "compare to bigger Vertica version" in {
+  it should "compare to bigger version" in {
     //scalastyle:off
-    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(10,4,7,5)))
+    assert(VerticaVersion(11,1,5,3).largerThan(VerticaVersion(10,4,7,5)))
   }
 
-  it should "compare to smaller Vertica version" in {
+  it should "compare to smaller version" in {
     //scalastyle:off
-    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(12,0,2,1)))
+    assert(VerticaVersion(11,1,5,3).lessThan(VerticaVersion(12,0,2,1)))
+  }
+
+  it should "compare to smaller or equal versions" in {
+    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(11,1,5,3)))
+    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(11,2,5,3)))
+  }
+
+  it should "compare to bigger or equal versions" in {
+    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(11,1,5,3)))
+    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(11,1,5,2)))
   }
 }
 

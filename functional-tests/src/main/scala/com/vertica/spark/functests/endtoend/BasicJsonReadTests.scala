@@ -16,11 +16,7 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{BinaryTypeNotSupported, ConnectorException, ErrorList}
-import com.vertica.spark.util.schema.MetadataKey
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{ArrayType, IntegerType, MetadataBuilder, StringType, StructField, StructType}
 
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 
@@ -32,7 +28,7 @@ class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, S
 
   private val jsonReadOpts = readOpts + ("json" -> "true")
 
-  it should "read a primitive types" in {
+  it should "read primitive types" in {
     val tableName1 = "dftest"
     val n = 1
     val stmt = conn.createStatement
@@ -51,7 +47,7 @@ class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, S
     TestUtils.dropTable(conn, tableName1)
   }
 
-  it should "error on binary types when using export to json" in {
+  it should "error on binary types" in {
     val tableName = "dftest"
     val n = 1
     val stmt = conn.createStatement

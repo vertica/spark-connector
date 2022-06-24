@@ -13,6 +13,7 @@
 
 package com.vertica.spark.datasource.core
 
+import cats.data.NonEmptyList
 import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
@@ -1014,7 +1015,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       StructField("f1", BinaryType),
       StructField("f2", ArrayType(ArrayType(BinaryType))),
       StructField("f3", StructType(StructType(Array(
-        StructField("f4", BinaryType)
+        StructField("f2", ArrayType(ArrayType(BinaryType))),
       ))))
     )))
 

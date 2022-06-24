@@ -404,6 +404,7 @@ case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorErro
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
   override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
 }
+
 case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
   override def getFullContext: String = "Could not retrieve an impersonation token for the designated user " + username + " on address: " + address
 }
