@@ -13,7 +13,7 @@
 
 package com.vertica.spark.datasource.json
 
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
 import com.vertica.spark.datasource.v2.VerticaScan
 import com.vertica.spark.util.error.{ErrorHandling, InitialSetupPartitioningError}
@@ -25,24 +25,35 @@ import org.apache.spark.sql.types.StructType
  * We support reading JSON files by re-using Spark's JSON support implemented in [[JsonTable]].
  * */
 class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], batchFactory: JsonBatchFactory) extends Scan with Batch {
+
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
+
+  private val jsonReadConfig = config match {
+    case cfg: DistributedFilesystemReadConfig =>
+      val copied = cfg.copy(useJson = true)
+      copied.setGroupBy(cfg.getGroupBy)
+      copied.setPushdownAgg(cfg.isAggPushedDown)
+      copied.setPushdownFilters(cfg.getPushdownFilters)
+      copied.setRequiredSchema(cfg.getRequiredSchema)
+      copied
+    case _ => config
+  }
 
   private lazy val batch: Batch = {
     // Export JSON before initializing Spark's JSON support.
-    readConfigSetup.performInitialSetup(config) match {
+    readConfigSetup.performInitialSetup(jsonReadConfig) match {
       case Left(err) => ErrorHandling.logAndThrowError(logger, err)
       case Right(opt) => opt match {
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) =>
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          batchFactory.build(partitionInfo.rootPath, Some(readSchema()), config, sparkSession)
+          batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
       }
     }
   }
 
-  //Todo: need to infer complex type schema from Vertica tables.
   override def readSchema(): StructType = {
-    (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
+    (readConfigSetup.getTableSchema(config), jsonReadConfig.getRequiredSchema) match {
       case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }

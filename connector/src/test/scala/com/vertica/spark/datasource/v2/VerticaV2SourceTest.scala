@@ -13,25 +13,18 @@
 
 package com.vertica.spark.datasource.v2
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.flatspec.AnyFlatSpec
-import com.vertica.spark.datasource._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.connector.expressions.{NamedReference, Transform}
-import org.apache.spark.sql.connector.catalog._
-import org.scalamock.scalatest.MockFactory
-
-import java.util
 import cats.data.Validated.Valid
 import cats.implicits.catsSyntaxValidatedIdBinCompat0
 import com.vertica.spark.common.TestObjects
-import com.vertica.spark.config.{BasicJdbcAuth, DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, JDBCConfig, JDBCTLSConfig, ReadConfig, TableName, ValidFilePermissions, WriteConfig}
-
-import scala.collection.JavaConversions._
+import com.vertica.spark.config._
+import com.vertica.spark.datasource._
 import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.json.VerticaJsonScan
 import com.vertica.spark.datasource.partitions.parquet.VerticaDistributedFilesystemPartition
-import com.vertica.spark.util.error.{ConnectorException, ErrorList, InitialSetupPartitioningError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriterNotInitializedError, JobAbortedError, SchemaDiscoveryError, UserMissingError}
+import com.vertica.spark.util.error._
+import org.apache.spark.sql.connector.catalog._
+import org.apache.spark.sql.connector.expressions.{NamedReference, Transform}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -39,18 +32,30 @@ import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, PhysicalWriteInfo}
 import org.apache.spark.sql.sources.{Filter, GreaterThan, LessThan}
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
 
-import collection.JavaConverters._
+import java.util
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 trait DummyReadPipe extends VerticaPipeInterface with VerticaPipeReadInterface
 
 class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory{
 
+  var spark: SparkSession = _
   override def beforeAll(): Unit = {
+    // Activate lazy reference
+    spark = SparkSession.builder()
+      .master("local[1]")
+      .appName("Test session")
+      .getOrCreate()
   }
 
   override def afterAll(): Unit = {
+    spark.close()
   }
 
   val jOptions = new util.HashMap[String, String]()
@@ -159,7 +164,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "table returns schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
 
     val table = new VerticaTable(options, readSetup)
 
@@ -206,6 +211,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
     (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
     val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
 
@@ -249,6 +255,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "prune columns on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
     val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
 
@@ -566,7 +573,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "catalog tests if table exists" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
 
     val catalog = new VerticaDatasourceV2Catalog()
     catalog.readSetupInterface = readSetup
@@ -631,6 +638,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "build VerticaJsonScan" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
     val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
       .build()
     assert(scan.isInstanceOf[VerticaJsonScan])
@@ -646,5 +654,27 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       case Success(e) => fail(e)
       case Failure(_) => ()
     }
+  }
+
+  it should "automatically build a Json scan" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+
+    val config = readConfig.copy()
+    val builder = new VerticaScanBuilder(config, readSetup)
+    builder.pruneColumns(StructType(Array(
+      StructField("", ArrayType(ArrayType(IntegerType))))
+    ))
+
+    assert(builder.build().isInstanceOf[VerticaJsonScan])
+  }
+
+  it should "use json when option is set" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+
+    val config = readConfig.copy(useJson = true)
+    val builder = new VerticaScanBuilder(config, readSetup)
+    assert(builder.build().isInstanceOf[VerticaJsonScan])
   }
 }

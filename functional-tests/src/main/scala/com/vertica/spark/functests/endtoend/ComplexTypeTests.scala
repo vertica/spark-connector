@@ -4,7 +4,7 @@ import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
-import com.vertica.spark.util.schema.{ComplexTypeSchemaSupport, MetadataKey}
+import com.vertica.spark.util.schema.{ComplexTypesSchemaTools, MetadataKey}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
@@ -38,6 +38,25 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.dropTable(conn, tableName1)
   }
 
+  it should "read array[binary] column" in {
+    val tableName = "dftest"
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a array[binary])")
+
+    val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    Try {
+      df.collect
+    } match {
+      case Failure(exception) => fail("Expected to succeed", exception)
+      case Success(_) =>
+        val schema = df.schema.fields
+        assert(schema.head.dataType.isInstanceOf[ArrayType])
+        assert(schema.head.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[BinaryType])
+    }
+    stmt.close()
+    TestUtils.dropTable(conn, tableName)
+  }
+
   it should "read dataframe with 1D array with scale and precision" in {
     val tableName1 = "dftest_array"
     val n = 1
@@ -59,6 +78,241 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
         val firstRow = row.getAs[mutable.WrappedArray[java.math.BigDecimal]](0)
         println(firstRow.head.compareTo(new java.math.BigDecimal(2.5)))
       })
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read Vertica SET as ARRAY" in {
+    val tableName1 = "dftest_array"
+    val n = 10
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a SET[int])")
+    val insert = "insert into "+ tableName1 + " values(set[0,1,2,3,4,5])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try{
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+
+      assert(df.count() == n)
+      val arrayCol = df.schema.fields(0)
+      assert(arrayCol.dataType.isInstanceOf[ArrayType])
+      assert(arrayCol.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
+      val elementDataType = arrayCol.dataType.asInstanceOf[ArrayType]
+      assert(elementDataType.elementType.isInstanceOf[LongType])
+      df.rdd.foreach(row => {
+        assert(row.get(0).isInstanceOf[mutable.WrappedArray[Long]])
+        val array = row.getAs[mutable.WrappedArray[Long]](0)
+        (0 to 5).foreach(i => {
+          assert(array(i) == i)
+        })
+      }
+      )
+    }catch {
+      case e: Exception => fail(e)
+    }finally {
+      stmt.close()
+      TestUtils.dropTable(conn, tableName1)
+    }
+  }
+
+  it should "read nested array" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[array[int]])")
+
+    val insert = "insert into "+ tableName1 + " values(1, array[array[2]])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      val rowData = df.collect()(0)
+      assert(df.count() == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[LongType])
+      val array = rowData.getAs[mutable.WrappedArray[mutable.WrappedArray[Long]]](1)
+      assert(array(0)(0) == 2L)
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read struct" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 row(cat int, dog varchar, mouse array[varchar], shark array[array[int]], row(float)))")
+
+    val insert = "insert into "+ tableName1 + " values(1, row(88, 'hello', array['heelo'], array[array[55]], row(4.2)))"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      val rowData = df.collect()(0)
+      assert(df.count() == 1)
+      // Checking col 1
+      assert(rowData.schema.fields(0).dataType.isInstanceOf[LongType])
+      assert(rowData.schema.fields(0).name == "col1")
+      assert(rowData.getLong(0) == 1)
+
+      val col2Data = rowData.getAs[Row](1)
+      val col2Schema = rowData.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[StructType])
+      assert(col2Schema.name == "col2")
+      val struct = col2Schema.dataType.asInstanceOf[StructType]
+      assert(struct.fields.length == 5)
+      // Struct field 1
+      assert(struct.fields(0).dataType.isInstanceOf[LongType])
+      assert(struct.fields(0).name == "cat")
+      assert(col2Data.getLong(0) == 88)
+      // Struct field 2
+      assert(struct.fields(1).dataType.isInstanceOf[StringType])
+      assert(struct.fields(1).name == "dog")
+      assert(col2Data.getString(1) == "hello")
+      // Struct field 3
+      assert(struct.fields(2).dataType.isInstanceOf[ArrayType])
+      assert(struct.fields(2).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[StringType])
+      assert(struct.fields(2).name == "mouse")
+      val array = col2Data.getAs[mutable.WrappedArray[String]](2)
+      assert(array(0) == "heelo")
+      // Struct field 4
+      assert(struct.fields(3).dataType.isInstanceOf[ArrayType])
+      assert(struct.fields(3).name == "shark")
+      // Check field 4 is nested array.
+      val nestedArray = struct.fields(3).dataType.asInstanceOf[ArrayType]
+      assert(nestedArray.elementType.isInstanceOf[ArrayType])
+      assert(nestedArray.elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[LongType])
+      val rootArray = col2Data.getAs[mutable.WrappedArray[mutable.WrappedArray[Long]]](3)
+      val innerArray = rootArray(0)
+      assert(innerArray(0) == 55)
+
+      // Check field 5
+      assert(struct.fields(4).dataType.isInstanceOf[StructType])
+      val innerRow = struct.fields(4).dataType.asInstanceOf[StructType]
+      assert(innerRow.fields(0).dataType.isInstanceOf[DoubleType])
+      assert(innerRow.fields(0).name == "f0")
+      assert(col2Data.getAs[Row](4).getDouble(0) == 4.2)
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read struct with numeric types" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 row(numeric(4, 1), numeric(5, 2), array[numeric(6, 3)], array[array[numeric(7, 4)]]))")
+
+    val insert = "insert into "+ tableName1 + " values(1, row(1.2, 2.5, array[3.6], array[array[5.8]]))"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      df.show()
+      assert(df.count == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[StructType])
+      val struct = col2Schema.dataType.asInstanceOf[StructType]
+      assert(struct.fields.length == 4)
+      // Struct field 1
+      assert(struct.fields(0).dataType.isInstanceOf[DecimalType])
+      assert(struct.fields(0).dataType.asInstanceOf[DecimalType].precision == 4)
+      assert(struct.fields(0).dataType.asInstanceOf[DecimalType].scale == 1)
+      // Struct field 2
+      assert(struct.fields(1).dataType.isInstanceOf[DecimalType])
+      assert(struct.fields(1).dataType.asInstanceOf[DecimalType].precision == 5)
+      assert(struct.fields(1).dataType.asInstanceOf[DecimalType].scale == 2)
+      // Struct field 3
+      assert(struct.fields(2).dataType.isInstanceOf[ArrayType])
+      assert(struct.fields(2).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
+      assert(struct.fields(2).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 6)
+      assert(struct.fields(2).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 3)
+      // Struct field 4
+      assert(struct.fields(3).dataType.isInstanceOf[ArrayType])
+      assert(struct.fields(3).dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(struct.fields(3).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
+      assert(struct.fields(3).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 7)
+      assert(struct.fields(3).dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 4)
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read arrays with numeric types" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[numeric(5, 2)], col3 array[array[numeric(6, 2)]])")
+
+    val insert = "insert into "+ tableName1 + " values(1, array[1.5], array[array[2.5]])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      val rowData = df.collect()(0)
+      assert(df.count() == 1)
+
+      val col2 = df.schema.fields(1)
+      assert(col2.dataType.isInstanceOf[ArrayType])
+      assert(col2.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
+      assert(col2.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 5)
+      assert(col2.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 2)
+      val col2Data = rowData.getAs[mutable.WrappedArray[Number]](1)
+      assert(col2Data(0).doubleValue() == 1.5)
+
+      val col3 = df.schema.fields(2)
+      assert(col3.dataType.isInstanceOf[ArrayType])
+      assert(col3.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[ArrayType])
+      assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.isInstanceOf[DecimalType])
+      assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].precision == 6)
+      assert(col3.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[ArrayType].elementType.asInstanceOf[DecimalType].scale == 2)
+      val col3Data = rowData.getAs[mutable.WrappedArray[mutable.WrappedArray[Number]]](2)
+      assert(col3Data(0)(0).doubleValue() == 2.5)
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      stmt.close()
+    }
+    TestUtils.dropTable(conn, tableName1)
+  }
+
+  it should "read array[row]" in {
+    val tableName1 = "dftest_array"
+    val n = 1
+    val stmt = conn.createStatement
+    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (col1 int, col2 array[row(key varchar, value int)])")
+
+    val insert = "insert into "+ tableName1 + " values(1, array[row('daug', 60)])"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
+      val rowData = df.collect()(0)
+      assert(df.count() == 1)
+      val col2Schema = df.schema.fields(1)
+      assert(col2Schema.dataType.isInstanceOf[ArrayType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.isInstanceOf[StructType])
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields(0).name == "key")
+      assert(col2Schema.dataType.asInstanceOf[ArrayType].elementType.asInstanceOf[StructType].fields(1).name == "value")
+      val col2Data = rowData.getAs[mutable.WrappedArray[Row]](1)
+      assert(col2Data(0).getString(0) == "daug")
+      assert(col2Data(0).getLong(1) == 60)
+
     } catch {
       case e: Exception => fail(e)
     } finally {
@@ -136,39 +390,6 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "read Vertica SET as ARRAY" in {
-    val tableName1 = "dftest_array"
-    val n = 10
-    val stmt = conn.createStatement
-    TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a SET[int])")
-    val insert = "insert into "+ tableName1 + " values(set[0,1,2,3,4,5])"
-    TestUtils.populateTableBySQL(stmt, insert, n)
-
-    try{
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
-
-      assert(df.count() == n)
-      val arrayCol = df.schema.fields(0)
-      assert(arrayCol.dataType.isInstanceOf[ArrayType])
-      assert(arrayCol.metadata.getBoolean(MetadataKey.IS_VERTICA_SET))
-      val elementDataType = arrayCol.dataType.asInstanceOf[ArrayType]
-      assert(elementDataType.elementType.isInstanceOf[LongType])
-      df.rdd.foreach(row => {
-        assert(row.get(0).isInstanceOf[mutable.WrappedArray[Long]])
-        val array = row.getAs[mutable.WrappedArray[Long]](0)
-        (0 to 5).foreach(i => {
-          assert(array(i) == i)
-        })
-      }
-      )
-    }catch {
-      case e: Exception => fail(e)
-    }finally {
-      stmt.close()
-      TestUtils.dropTable(conn, tableName1)
-    }
-  }
-
   it should "write SET to Vertica" in {
     val tableName = "dftest"
     // Ensure that we are create the table from scratch
@@ -196,7 +417,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
       val columnRs = stmt.executeQuery(s"select data_type_id from columns where table_name='$tableName' and column_name='$colName'")
       assert(columnRs.next)
       val verticaId = columnRs.getLong("data_type_id")
-      assert(verticaId > ComplexTypeSchemaSupport.VERTICA_SET_BASE_ID & verticaId < ComplexTypeSchemaSupport.VERTICA_SET_MAX_ID)
+      assert(verticaId > ComplexTypesSchemaTools.VERTICA_SET_BASE_ID & verticaId < ComplexTypesSchemaTools.VERTICA_SET_MAX_ID)
     } catch {
       case err : Exception => fail(err)
     }
@@ -241,7 +462,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "error on reading complex types" in {
+  ignore should "error on reading complex types" in {
     Try {
       val tableName = "dftest"
       val stmt = conn.createStatement
@@ -432,7 +653,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
 
     TestUtils.dropTable(conn, tableName)
-    // Since we are writing external table, data will persist
+    // Since we are writing external table, rowData will persist
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
 
@@ -469,7 +690,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
   }
 
-  it should "error when reading Vertica query with complex type columns" in {
+  it should "error when using query option that returns complex types" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
     val n = 1
@@ -489,7 +710,6 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
           val errorsFound = error.asInstanceOf[ErrorList].errors.head.getUnderlyingError.asInstanceOf[ErrorList]
           assert(errorsFound.errors.length == 2)
           errorsFound.errors.map(e => assert(e.isInstanceOf[QueryReturnsComplexTypes]))
-          // error.asInstanceOf[ErrorList].errors.map(err => assert(err.isInstanceOf[QueryReturnsComplexTypes]))
         case _ => fail("Expected connector exception")
       }
       case Success(_) =>

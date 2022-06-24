@@ -12,15 +12,13 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
-import cats.data.NonEmptyList
 import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
-import com.vertica.spark.util.complex.ComplexTypeUtils
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, InternalMapNotSupported, NativeArrayReadNotSupported, NativeArrayWriteNotSupported, NoResultError}
-import org.apache.spark.sql.types.{ArrayType, MapType, StructField, StructType}
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools
+import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 
-import java.util
 import scala.util.Try
 
 
@@ -31,7 +29,8 @@ object VerticaVersionUtils {
   // Should always be the latest major release.
   // scalastyle:off
   val VERRTICA_LATEST: VerticaVersion = VerticaVersion(11)
-  val complexTypeUtils = new ComplexTypeUtils()
+  val complexTypeUtils = new ComplexTypesSchemaTools()
+
   /**
    * Query and cache Vertica version. Return the default version on any error.
    * */
@@ -54,7 +53,7 @@ object VerticaVersionUtils {
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion, toInternalTable: Boolean): ConnectorResult[Unit] = {
-    val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
+    val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val complexTypeFound = complexTypeCols.nonEmpty
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 9) {
@@ -80,7 +79,7 @@ object VerticaVersionUtils {
   }
 
   def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
-    val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
+    val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 10) {
       if (complexTypeCols.nonEmpty)
@@ -88,21 +87,37 @@ object VerticaVersionUtils {
       else if (nativeArrayCols.nonEmpty)
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
       else Right()
-    } else {
-      // As of Vertica 11.x the EXPORT function does not support exporting complex types to parquet.
+    } else if (version.lesserOrEqual(VerticaVersion(11, 1))) {
       if (complexTypeCols.nonEmpty)
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       else
         Right()
+    } else {
+      Right()
     }
   }
+
+  /**
+   * Export to Json was added in Vertica 11.1.1
+   * */
+  def checkJsonSupport(version: VerticaVersion): ConnectorResult[Unit] =
+    if(version.lessThan(VerticaVersion(11,1,1))){
+      Left(ExportToJsonNotSupported(version.toString))
+    }  else {
+      Right()
+    }
+
 }
 
 case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
 
   def largerOrEqual(version: VerticaVersion): Boolean = this.compare(version) >= 0
 
+  def largerThan(version: VerticaVersion): Boolean = this.compare(version) > 0
+
   def lesserOrEqual(version: VerticaVersion): Boolean = this.compare(version) <= 0
+
+  def lessThan(version: VerticaVersion): Boolean = this.compare(version) < 0
 
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 

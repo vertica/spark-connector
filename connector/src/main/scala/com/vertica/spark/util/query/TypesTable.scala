@@ -22,14 +22,21 @@ import java.sql.ResultSet
 
 case class TypeInfo(typeId: Long, jdbcType: Long, typeName: String, maxScale: Long)
 
-// scalastyle:off magic.number
+/**
+ * Vertica's types table contains type information of primitives and 1D array/set of primitive type.
+ * */
 class TypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[TypeInfo](jdbcLayer) {
   override protected def tableName: String = "types"
 
   override protected def columns: Seq[String] = List("type_id", "jdbc_type", "type_name", "max_scale")
 
   override protected def buildRow(rs: ResultSet): TypeInfo =
-    TypeInfo(rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getLong(4))
+  // The column name should be in sync with the ones defined above.
+    TypeInfo(
+      rs.getLong("type_id"),
+      rs.getLong("jdbc_type"),
+      rs.getString("type_name"),
+      rs.getLong("max_scale"))
 
   def getVerticaTypeInfo(verticaType: Long): ConnectorResult[TypeInfo] = {
     val conditions = s"type_id=$verticaType"
@@ -60,4 +67,5 @@ class TypesTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[TypeInfo](j
           nullable = false,
           Metadata.empty))
   }
+
 }

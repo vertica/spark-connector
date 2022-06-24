@@ -18,6 +18,7 @@ package com.vertica.spark.util.error
   */
 
 import cats.data.NonEmptyList
+import cats.implicits._
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.datasource.fs.GCSConnectorOptions
 import com.vertica.spark.util.error.ErrorHandling.invariantViolation
@@ -79,6 +80,22 @@ object ErrorHandling {
 
   val invariantViolation: String = "This is likely a bug and should be reported to the developers here:\n" +
     "https://github.com/vertica/spark-connector/issues"
+
+  def listToEither[T](list: List[Either[ConnectorError, T]]): Either[ErrorList, Seq[T]] = {
+      // converts List[Either[A, B]] to Either[List[A], List[B]]
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+      .toEither
+      .map(field => field)
+      .left.map(errors => ErrorList(errors))
+  }
+
+  def listToEitherSchema[T](list: List[Either[SchemaError, T]]): Either[SchemaErrorList, Seq[T]] = {
+    // converts List[Either[A, B]] to Either[List[A], List[B]]
+    list.traverse(_.leftMap(err => NonEmptyList.one(err)).toValidated)
+      .toEither
+      .map(field => field)
+      .left.map(errors => SchemaErrorList(errors))
+  }
 }
 
 case class SchemaDiscoveryError() extends ConnectorError {
@@ -384,6 +401,7 @@ case class ErrorList(errors: NonEmptyList[ConnectorError]) extends ConnectorErro
   def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
   override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
 }
+
 case class MissingHDFSImpersonationTokenError(username: String, address: String) extends ConnectorError {
   override def getFullContext: String = "Could not retrieve an impersonation token for the designated user " + username + " on address: " + address
 }
@@ -515,7 +533,7 @@ case class MissingSqlConversionError(sqlType: String, typename: String) extends 
     "\nSQL type value: " + sqlType
 }
 case class ArrayElementConversionError(sqlType: String, typeName: String) extends SchemaError {
-  def getFullContext: String = "Could not find conversion for unsupported SQL type " + typeName +
+  def getFullContext: String = "Could not convert array element of SQL type " + typeName +
     "\nSQL type value: " + sqlType
 }
 case class ComplexTypeReadNotSupported(colList: List[StructField], version: String) extends SchemaError {
@@ -567,6 +585,11 @@ case class QueryReturnsComplexTypes(colName: String, typeName: String, query: St
   s"QUERY: $query"
 }
 
+case class SchemaErrorList(errors: NonEmptyList[SchemaError]) extends SchemaError {
+  def getFullContext: String = this.errors.toList.map(errs => errs.getFullContext).mkString("\n")
+  override def getUserMessage: String = this.errors.toList.map(errs => errs.getUserMessage).mkString("\n")
+}
+
 case class NonEmptyDataFrameError() extends ConnectorError {
   override def getFullContext: String = "Non-empty DataFrame supplied while trying to create external table out of existing data. Please supply an empty DataFrame or use create_external_table=\"new-data\" instead."
 }
@@ -586,6 +609,13 @@ case class HDFSConfigError() extends ConnectorError {
 case class JobAbortedError() extends ConnectorError {
   def getFullContext: String = "Writing job aborted. Check spark worker log for specific error."
 }
+case class VerticaColumnNotFound(colName: String, tableName: String, schema: String) extends ConnectorError {
+  def getFullContext: String = s"Column $colName (table $tableName, schema $schema) does not exist in Vertica's columns table"
+}
+
+case class BinaryTypeNotSupported(fieldName: String) extends SchemaError {
+  def getFullContext: String = s"Field: $fieldName. Binary data types are not supported when exporting files as JSON."
+}
 
 trait TableQueryError extends ConnectorError
 
@@ -597,8 +627,17 @@ case class MultipleQueryResult(table: String, query: String) extends TableQueryE
   override def getFullContext: String = s"Query to system table $table return more than one result.\nQUERY: $query"
 }
 
+case class UnrecognizedComplexType(verticaType: Long, typeStr: String) extends ConnectorError {
+  override def getFullContext: String = s"Column has type $typeStr (id:$verticaType) which is not supported."
+}
+
 case class UnsupportedVerticaType(typeName: String) extends TableQueryError {
   override def getFullContext: String = s"Complex type $typeName in Vertica is not supported"
+}
+
+case class ExportToJsonNotSupported(version: String) extends ConnectorError {
+  override def getFullContext: String = s"Export to JSON was added in Vertica 11.1.1. Your Vertica version is $version\n" +
+    "Export to JSON is required for reading complex data types."
 }
 
 

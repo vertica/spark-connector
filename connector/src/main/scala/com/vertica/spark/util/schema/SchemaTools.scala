@@ -18,10 +18,10 @@ import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ErrorHandling.{listToEitherSchema, ConnectorResult, SchemaResult}
 import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable}
-import com.vertica.spark.util.schema.ComplexTypeSchemaSupport.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID, startQueryingVerticaComplexTypes}
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
 import java.sql.ResultSetMetaData
@@ -144,7 +144,7 @@ trait SchemaToolsInterface {
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
 }
 
-class SchemaTools extends SchemaToolsInterface {
+class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools) extends SchemaToolsInterface {
   private val logger = LogProvider.getLogger(classOf[SchemaTools])
   private val unknown = "UNKNOWN"
   private val maxlength = "maxlength"
@@ -164,9 +164,18 @@ class SchemaTools extends SchemaToolsInterface {
                                childDefs: List[ColumnDef]): Either[SchemaError, DataType] = {
     sqlType match {
       case java.sql.Types.ARRAY => getArrayType(childDefs)
-      case java.sql.Types.STRUCT => Right(StructType(List()))
+      case java.sql.Types.STRUCT => getStructType(childDefs)
       case _ => getCatalystTypeFromJdbcType(sqlType, precision, scale, signed, typename)
     }
+  }
+
+  private def getStructType(fields: List[ColumnDef]): Either[SchemaError, DataType] = {
+    val fieldDefs = fields.map(colDef => {
+        getCatalystType(colDef.jdbcType, colDef.size, colDef.scale, colDef.signed, colDef.colTypeName, colDef.children)
+          .map(dataType => StructField(colDef.label, dataType, colDef.nullable, colDef.metadata))
+      })
+    listToEitherSchema(fieldDefs)
+      .map(fields => StructType(fields))
   }
 
   private def getArrayType(elementDef: List[ColumnDef]): Either[SchemaError, ArrayType] = {
@@ -181,12 +190,8 @@ class SchemaTools extends SchemaToolsInterface {
 
     elementDef.headOption match {
       case Some(element) =>
-        getCatalystTypeFromJdbcType(element.jdbcType, element.size, element.scale, element.signed, element.colTypeName) match {
-          case Right(elementType) =>
-            val arrayType = makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType)
-            Right(arrayType)
-          case Left(err) => Left(ArrayElementConversionError(err.sqlType, err.typename))
-        }
+        getCatalystType(element.jdbcType, element.size, element.scale, element.signed, element.colTypeName, element.children)
+          .map(elementType => makeNestedArrays(element.metadata.getLong(MetadataKey.DEPTH), elementType))
       case None => Left(MissingElementTypeError())
     }
   }
@@ -288,7 +293,7 @@ class SchemaTools extends SchemaToolsInterface {
                     val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
                     colType match {
                       case java.sql.Types.ARRAY | java.sql.Types.STRUCT =>
-                        startQueryingVerticaComplexTypes(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
+                        ctTools.startQueryingVerticaComplexTypes(colDef, unQuotedName, unQuotedDbSchema, jdbcLayer)
                       case _ => Right(colDef)
                     }
                   case query: TableQuery =>
@@ -477,7 +482,7 @@ class SchemaTools extends SchemaToolsInterface {
     def castToVarchar: String => String = colName => colName + "::varchar AS " + addDoubleQuotes(colName)
 
     def castToArray(colInfo: ColumnDef): String = {
-      val colName = colInfo.label
+      val colName = addDoubleQuotes(colInfo.label)
       colInfo.children.headOption match {
         case Some(element) => s"($colName::ARRAY[${element.colTypeName}]) as $colName"
         case None => s"($colName::ARRAY[UNKNOWN]) as $colName"
@@ -485,6 +490,7 @@ class SchemaTools extends SchemaToolsInterface {
     }
 
     requiredColumnDefs.map(info => {
+      val colLabel = addDoubleQuotes(info.label)
       info.jdbcType match {
         case java.sql.Types.OTHER =>
           val typenameNormalized = info.colTypeName.toLowerCase()
@@ -492,14 +498,14 @@ class SchemaTools extends SchemaToolsInterface {
             typenameNormalized.startsWith("uuid")) {
             castToVarchar(info.label)
           } else {
-            addDoubleQuotes(info.label)
+            colLabel
           }
         case java.sql.Types.TIME => castToVarchar(info.label)
         case java.sql.Types.ARRAY =>
           val isSet = Try{info.metadata.getBoolean(MetadataKey.IS_VERTICA_SET)}.getOrElse(false)
           // Casting on Vertica side as a work around until Vertica Export supports Set
-          if(isSet) castToArray(info) else info.label
-        case _ => addDoubleQuotes(info.label)
+          if(isSet) castToArray(info) else colLabel
+        case _ => colLabel
       }
     }).mkString(",")
   }

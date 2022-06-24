@@ -13,24 +13,25 @@
 
 package com.vertica.spark.datasource.core
 
+import cats.data.NonEmptyList
 import com.vertica.spark.common.TestObjects
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalamock.scalatest.MockFactory
 import com.vertica.spark.config._
-import com.vertica.spark.util.schema._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
-import org.apache.spark.sql.types._
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcLayerParam}
 import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushFilter
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, FileCleanupInfo}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.listeners.SparkContextWrapper
+import com.vertica.spark.util.schema._
 import com.vertica.spark.util.version.VerticaVersionUtilsTest
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
+import org.apache.spark.sql.types._
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -1005,6 +1006,35 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     pipe.doPreReadSteps() match {
       case Left(err) => assert(err.getUnderlyingError == ParentDirMissingError(""))
       case Right(_) => fail
+    }
+  }
+
+  it should "prevent exporting binary types when using json" in {
+    val config = makeReadConfig.copy(useJson = true)
+    config.setRequiredSchema(StructType(Array(
+      StructField("f1", BinaryType),
+      StructField("f2", ArrayType(ArrayType(BinaryType))),
+      StructField("f3", StructType(StructType(Array(
+        StructField("f2", ArrayType(ArrayType(BinaryType))),
+      ))))
+    )))
+
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayer.close _).expects().returning(Right(()))
+
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    (cleanupUtils.cleanupAll _).expects(*, *).returning(Right())
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
+
+    pipe.doPreReadSteps() match {
+      case Right(_) => fail("Expected to fail")
+      case Left(err) => err match {
+        case ErrorList(errors) => assert(errors.length == 3)
+      }
     }
   }
 }

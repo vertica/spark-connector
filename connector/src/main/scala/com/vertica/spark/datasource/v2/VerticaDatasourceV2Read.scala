@@ -17,11 +17,12 @@ import com.typesafe.scalalogging.Logger
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.catalyst.InternalRow
-import com.vertica.spark.config.{LogProvider, ReadConfig}
+import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
-import com.vertica.spark.datasource.json.{VerticaJsonScan, JsonBatchFactory}
+import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
+import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.sources.Filter
 
@@ -62,6 +63,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
+  protected val ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools()
+
 /**
   * Builds the class representing a scan of a Vertica table
   *
@@ -73,15 +76,31 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
-    if(this.useJson(cfg.getRequiredSchema)) {
+
+    if(useJson(cfg)) {
       new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory)
     } else {
       new VerticaScan(cfg, readConfigSetup)
     }
   }
 
-  //Todo: Infer when to use json on complex data types.
-  private def useJson(schema: StructType): Boolean = config.useJson
+  private def useJson(cfg: ReadConfig): Boolean = {
+    cfg match {
+      case config: DistributedFilesystemReadConfig =>
+        (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
+          case (Right(metadataSchema), requiredSchema) =>
+            val schema: StructType = if (requiredSchema.nonEmpty) {
+              requiredSchema
+            } else {
+              metadataSchema
+            }
+            config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
+          case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
+        }
+      case _=> false
+    }
+  }
+
 
   override def pushFilters(filters: Array[Filter]): Array[Filter] = {
     val initialLists: (List[NonPushFilter], List[PushFilter]) = (List(), List())

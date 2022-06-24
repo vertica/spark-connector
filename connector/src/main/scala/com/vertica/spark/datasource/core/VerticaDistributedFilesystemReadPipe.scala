@@ -13,22 +13,25 @@
 
 package com.vertica.spark.datasource.core
 
-import com.typesafe.scalalogging.Logger
-import com.vertica.spark.util.error._
-import com.vertica.spark.config._
-import com.vertica.spark.datasource.jdbc._
+import cats.data.NonEmptyList
 import cats.implicits._
-import com.vertica.spark.util.schema.SchemaToolsInterface
+import com.typesafe.scalalogging.Logger
+import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs._
+import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, VerticaDistributedFilesystemPartition}
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
+import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.connector.read.InputPartition
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, StructType}
+
+import scala.annotation.tailrec
 
 /**
  * Implementation of the pipe to Vertica using a distributed filesystem as an intermediary layer.
@@ -214,10 +217,36 @@ class VerticaDistributedFilesystemReadPipe(
   override def doPreReadSteps(): ConnectorResult[PartitionInfo] = {
     val fileStoreConfig = config.fileStoreConfig
     val delimiter = if(fileStoreConfig.address.takeRight(1) == "/" || fileStoreConfig.address.takeRight(1) == "\\") "" else "/"
-    val hdfsPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
-    logger.debug("Export path: " + hdfsPath)
+    val exportPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
+    logger.debug("Export path: " + exportPath)
 
     def exportType: String = if(config.useJson) "JSON" else "PARQUET"
+
+    def buildExportStatement(): ConnectorResult[String] = {
+      this.getSelectClause.map(selectClause => {
+        // File permissions.
+        val filePermissions = config.filePermissions
+        val groupbyClause = this.getGroupbyClause
+        val pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
+        val  exportSource = config.tableSource match {
+          case tableName: TableName => tableName.getFullTableName
+          case TableQuery(query, _) => "(" + query + ") AS x"
+        }
+        val rowGroupSize = if(config.useJson) "" else ", rowGroupSizeMB = " + maxRowGroupSize
+
+        logger.info("Select clause requested: " + selectClause)
+        logger.info("Pushdown filters: " + pushdownFilters)
+        logger.info("Export Source: " + exportSource)
+
+        "EXPORT TO " + exportType + "(" +
+          "directory = '" + exportPath +
+          "', fileSizeMB = " + maxFileSize +
+          rowGroupSize +
+          ", fileMode = '" + filePermissions +
+          "', dirMode = '" + filePermissions +
+          "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+      })
+    }
 
     def exportData: ConnectorResult[Unit] = for {
       _ <- getMetadata
@@ -225,7 +254,9 @@ class VerticaDistributedFilesystemReadPipe(
       // Set Vertica to work with kerberos and HDFS/AWS
       _ <- jdbcLayer.configureSession(fileStoreLayer)
 
-      _ <- checkSchemaTypesSupport(config, jdbcLayer)
+      _ <- checkVersionCompatibility(config)
+
+      _ <- if(config.useJson) checkJSONExportTypesSupport(config) else Right()
 
       // Create unique directory for session
       perm = config.filePermissions
@@ -244,32 +275,9 @@ class VerticaDistributedFilesystemReadPipe(
       }
 
       // Check if export is already done (previous call of this function)
-      exportDone <- fileStoreLayer.fileExists(hdfsPath)
+      exportDone <- fileStoreLayer.fileExists(exportPath)
 
-      // File permissions.
-      filePermissions = config.filePermissions
-
-      selectClause <- this.getSelectClause
-      _ = logger.info("Select clause requested: " + selectClause)
-
-      groupbyClause = this.getGroupbyClause
-
-      pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
-      _ = logger.info("Pushdown filters: " + pushdownFilters)
-
-      exportSource = config.tableSource match {
-        case tablename: TableName => tablename.getFullTableName
-        case TableQuery(query, _) => "(" + query + ") AS x"
-      }
-      _ = logger.info("Export Source: " + exportSource)
-
-      exportStatement = "EXPORT TO " + exportType + "(" +
-        "directory = '" + hdfsPath +
-        "', fileSizeMB = " + maxFileSize +
-        ", rowGroupSizeMB = " + maxRowGroupSize +
-        ", fileMode = '" + filePermissions +
-        "', dirMode = '" + filePermissions +
-        "') AS SELECT " + selectClause + " FROM " + exportSource + pushdownFilters + groupbyClause + ";"
+      exportStatement <- buildExportStatement()
 
       // Export if not already exported
       _ <- if(exportDone) {
@@ -289,8 +297,8 @@ class VerticaDistributedFilesystemReadPipe(
 
     def getParquetPartitionInfo: ConnectorResult[PartitionInfo] = for {
       // Retrieve all parquet files created by Vertica
-      dirExists <- fileStoreLayer.fileExists(hdfsPath)
-      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(hdfsPath)
+      dirExists <- fileStoreLayer.fileExists(exportPath)
+      fullFileList <- if(!dirExists) Right(List()) else fileStoreLayer.getFileList(exportPath)
       parquetFileList = fullFileList.filter(x => x.endsWith(".parquet"))
       requestedPartitionCount = config.partitionCount match {
         case Some(count) => count
@@ -310,8 +318,8 @@ class VerticaDistributedFilesystemReadPipe(
       // If table is empty, cleanup
       _ =  if(totalRowGroups == 0) {
         if(!config.fileStoreConfig.preventCleanup) {
-          logger.debug("Cleaning up empty directory in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+          logger.debug("Cleaning up empty directory in path: " + exportPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, exportPath)
         }
         else {
           Right()
@@ -336,7 +344,7 @@ class VerticaDistributedFilesystemReadPipe(
       case Left(error) => Left(error)
       case Right(_) =>
         if (config.useJson) {
-          Right(PartitionInfo(Array(), hdfsPath))
+          Right(PartitionInfo(Array(), exportPath))
         } else {
           getParquetPartitionInfo
         }
@@ -346,8 +354,8 @@ class VerticaDistributedFilesystemReadPipe(
     ret match {
       case Left(_) =>
         if(!config.fileStoreConfig.preventCleanup) {
-          logger.info("Cleaning up all files in path: " + hdfsPath)
-          cleanupUtils.cleanupAll(fileStoreLayer, hdfsPath)
+          logger.info("Cleaning up all files in path: " + exportPath)
+          cleanupUtils.cleanupAll(fileStoreLayer, exportPath)
         }
         jdbcLayer.close()
       case _ => logger.info("Reading data from Parquet file.")
@@ -356,9 +364,37 @@ class VerticaDistributedFilesystemReadPipe(
     ret
   }
 
-  private def checkSchemaTypesSupport(config: DistributedFilesystemReadConfig, jdbcLayer: JdbcLayerInterface): ConnectorResult[Unit] = {
+  private def checkVersionCompatibility(config: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
-    VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
+    for {
+      _ <- VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
+      _ <- if(config.useJson) VerticaVersionUtils.checkJsonSupport(version) else Right()
+    } yield ()
+  }
+
+  private def checkJSONExportTypesSupport(readConfig: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
+    val useJson = readConfig.useJson
+
+    @tailrec
+    def checkFieldType(name: String, dataType: DataType): ConnectorResult[Unit] = {
+        dataType match {
+          case BinaryType => if(useJson) Left(BinaryTypeNotSupported(name)) else Right()
+          case ArrayType(elementType, _) => checkFieldType(name, elementType)
+          case struct: StructType => checkStructFields(struct)
+          case _ => Right()
+        }
+    }
+
+    def checkStructFields(structType: StructType): ConnectorResult[Unit] = {
+      structType.fields.map(field => checkFieldType(field.name, field.dataType))
+        .toList
+        .traverse(field => {field.leftMap(err => NonEmptyList.one(err)).toValidated})
+        .toEither
+        .map(_ => {})
+        .left.map(errors => ErrorList(errors))
+    }
+
+    checkStructFields(readConfig.getRequiredSchema)
   }
 
   var partition : Option[VerticaDistributedFilesystemPartition] = None
