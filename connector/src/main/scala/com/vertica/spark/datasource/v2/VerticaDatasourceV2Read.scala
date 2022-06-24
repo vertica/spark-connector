@@ -76,6 +76,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setRequiredSchema(this.requiredSchema)
     cfg.setPushdownAgg(this.aggPushedDown)
     cfg.setGroupBy(this.groupBy)
+    logger.info("Complex cols found" + ctTools.filterComplexTypeColumns(cfg.getRequiredSchema))
     if(this.useJson(cfg.getRequiredSchema)) {
       new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory)
     } else {
