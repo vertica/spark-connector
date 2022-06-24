@@ -14,11 +14,11 @@
 package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.{ErrorHandling, QueryResultEmpty, UnrecognizedComplexType}
+import com.vertica.spark.util.error.{QueryResultEmpty, UnrecognizedComplexType}
+import com.vertica.spark.util.error.ErrorHandling.{listToEither, ConnectorResult}
 import com.vertica.spark.util.query.{ColumnsTable, ComplexTypeInfo, ComplexTypesTable, TypesTable}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_BINARY_ID, VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_BASE_ID, VERTICA_SET_MAX_ID}
-import org.apache.spark.sql.types.{ArrayType, MapType, Metadata, MetadataBuilder, StructField, StructType}
+import org.apache.spark.sql.types._
 
 import scala.annotation.tailrec
 

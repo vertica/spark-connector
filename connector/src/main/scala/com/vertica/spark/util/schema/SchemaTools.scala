@@ -18,8 +18,8 @@ import cats.implicits._
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
-import com.vertica.spark.util.error.ErrorHandling.{ConnectorResult, SchemaResult}
-import com.vertica.spark.util.error.{ErrorHandling, _}
+import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ErrorHandling.{listToEitherSchema, ConnectorResult, SchemaResult}
 import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._

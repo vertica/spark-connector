@@ -20,7 +20,6 @@ import java.sql.ResultSet
 
 case class ColumnInfo(verticaType: Long, dataTypeName: String, precision: Long, scale: Long)
 
-// scalastyle:off magic.number
 class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInfo](jdbc = jdbcLayer) {
 
   override def tableName: String = "columns"
@@ -28,11 +27,12 @@ class ColumnsTable(jdbcLayer: JdbcLayerInterface) extends VerticaTable[ColumnInf
   override def columns: Seq[String] = List("data_type_id", "data_type", "numeric_precision", "numeric_scale")
 
   override def buildRow(resultSet: ResultSet): ColumnInfo = {
+    // The column name should be in sync with the ones defined above.
     ColumnInfo(
-      resultSet.getLong(1),
-      getTypeName(resultSet.getString(2)),
-      resultSet.getLong(3),
-      resultSet.getLong(4)
+      resultSet.getLong("data_type_id"),
+      getTypeName(resultSet.getString("data_type")),
+      resultSet.getLong("numeric_precision"),
+      resultSet.getLong("numeric_scale")
     )
   }
 

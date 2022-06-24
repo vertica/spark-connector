@@ -45,16 +45,18 @@ class ComplexTypesTable(jdbcLayer: JdbcLayerInterface)
 
   override protected def columns: Seq[String] = List("type_id", "type_name", "field_id", "field_type_name", "numeric_scale", "type_kind", "numeric_precision", "field_name")
 
-  override protected def buildRow(rs: ResultSet): ComplexTypeInfo =
+  override protected def buildRow(rs: ResultSet): ComplexTypeInfo = {
+    // The column name should be in sync with the ones defined above.
     ComplexTypeInfo(
-      rs.getLong(1),
-      rs.getString(2),
-      rs.getLong(3),
-      rs.getString(4),
-      rs.getLong(5),
-      rs.getString(6),
-      rs.getLong(7),
-      rs.getString(8))
+      rs.getLong("type_id"),
+      rs.getString("type_name"),
+      rs.getLong("field_id"),
+      rs.getString("field_type_name"),
+      rs.getLong("numeric_scale"),
+      rs.getString("type_kind"),
+      rs.getLong("numeric_precision"),
+      rs.getString("field_name"))
+  }
 
   def findComplexTypeInfo(verticaTypeId: Long): ConnectorResult[ComplexTypeInfo] = {
     val conditions = s"type_id=$verticaTypeId"

@@ -27,10 +27,10 @@ object VerticaTableTests extends VerticaTableTests {
     val (jdbc, rs) = mockVerticaTableQuery(List("data_type_id" , "data_type", "numeric_precision", "numeric_scale"), "columns", conditions, jdbcLayer)
 
     (rs.next _).expects().returning(true)
-    (rs.getLong: Int => Long).expects(1).returning(typeId)
-    (rs.getString: Int => String).expects(2).returning(typeName)
-    (rs.getLong: Int => Long).expects(3).returning(precision)
-    (rs.getLong: Int => Long).expects(4).returning(scale)
+    (rs.getLong: String => Long).expects("data_type_id").returning(typeId)
+    (rs.getString: String => String).expects("data_type").returning(typeName)
+    (rs.getLong: String => Long).expects("numeric_precision").returning(precision)
+    (rs.getLong: String => Long).expects("numeric_scale").returning(scale)
     (rs.next _).expects().returning(false)
 
     (jdbc, rs)
@@ -44,14 +44,14 @@ object VerticaTableTests extends VerticaTableTests {
 
   def mockComplexTypeInfoResult(fieldTypeName:String, fieldId: Long, typeId: Long, rs: ResultSet, typeKind: String = "", typeName: String = "", precision: Long = 0, scale: Long = 0, fieldName: String = ""): Unit = {
     (rs.next _).expects().returning(true)
-    (rs.getLong: Int => Long).expects(1).returning(typeId)
-    (rs.getString: Int => String).expects(2).returning(typeName)
-    (rs.getLong: Int => Long).expects(3).returning(fieldId)
-    (rs.getString: Int => String).expects(4).returning(fieldTypeName)
-    (rs.getLong: Int => Long).expects(5).returning(scale)
-    (rs.getString: Int => String).expects(6).returning(typeKind)
-    (rs.getLong: Int => Long).expects(7).returning(precision)
-    (rs.getString: Int => String).expects(8).returning(fieldName)
+    (rs.getLong: String => Long).expects("type_id").returning(typeId)
+    (rs.getString: String => String).expects("type_name").returning(typeName)
+    (rs.getLong: String => Long).expects("field_id").returning(fieldId)
+    (rs.getString: String => String).expects("field_type_name").returning(fieldTypeName)
+    (rs.getLong: String => Long).expects("numeric_scale").returning(scale)
+    (rs.getString: String => String).expects("type_kind").returning(typeKind)
+    (rs.getLong: String => Long).expects("numeric_precision").returning(precision)
+    (rs.getString: String => String).expects("field_name").returning(fieldName)
   }
 
   def mockComplexTypeInfoResult(parentDef: TestVerticaTypeDef, childDef: TestVerticaTypeDef, rs: ResultSet): Unit = {
@@ -68,21 +68,17 @@ object VerticaTableTests extends VerticaTableTests {
     (jdbc, rs)
   }
 
-  def mockTypeInfoResult(typeId: Long, typeName: String, jdbcType: Long, rs: ResultSet): Unit = {
+  def mockTypeInfoResult(typeId: Long, typeName: String, jdbcType: Long, rs: ResultSet): ResultSet = {
     (rs.next _).expects().returning(true)
-    (rs.getLong: Int => Long).expects(1).returning(typeId)
-    (rs.getLong: Int => Long).expects(2).returning(jdbcType)
-    (rs.getString: Int => String).expects(3).returning(typeName)
-    (rs.getLong: Int => Long).expects(4).returning(0)
+    (rs.getLong: String => Long).expects("type_id").returning(typeId)
+    (rs.getLong: String => Long).expects("jdbc_type").returning(jdbcType)
+    (rs.getString: String => String).expects("type_name").returning(typeName)
+    (rs.getLong: String => Long).expects("max_scale").returning(0)
+    rs
   }
 
   def mockTypeInfoResult(typeDef: TestVerticaTypeDef, rs: ResultSet): ResultSet = {
-    (rs.next _).expects().returning(true)
-    (rs.getLong: Int => Long).expects(1).returning(typeDef.verticaTypeId)
-    (rs.getLong: Int => Long).expects(2).returning(typeDef.jdbcTypeId)
-    (rs.getString: Int => String).expects(3).returning(typeDef.typeName)
-    (rs.getLong: Int => Long).expects(4).returning(typeDef.scale)
-    rs
+    mockTypeInfoResult(typeDef.verticaTypeId, typeDef.typeName ,typeDef.jdbcTypeId, rs)
   }
 
 }
