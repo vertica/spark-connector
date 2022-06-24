@@ -14,8 +14,6 @@ import scala.util.{Failure, Success, Try}
 class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
 
-  private val jsonReadOpts = readOpts + ("json" -> "true")
-
   it should "read dataframe with 1D array" in {
     val tableName1 = "dftest_array"
     val n = 1
@@ -131,7 +129,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
       val rowData = df.collect()(0)
       assert(df.count() == 1)
       val col2Schema = df.schema.fields(1)
@@ -158,7 +156,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
       val rowData = df.collect()(0)
       assert(df.count() == 1)
       // Checking col 1
@@ -221,7 +219,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
       df.show()
       assert(df.count == 1)
       val col2Schema = df.schema.fields(1)
@@ -265,7 +263,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
       val rowData = df.collect()(0)
       assert(df.count() == 1)
 
@@ -303,7 +301,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(jsonReadOpts + ("table" -> tableName1)).load()
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
       val rowData = df.collect()(0)
       assert(df.count() == 1)
       val col2Schema = df.schema.fields(1)
