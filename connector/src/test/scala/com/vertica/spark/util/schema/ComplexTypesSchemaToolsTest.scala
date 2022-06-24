@@ -2,7 +2,6 @@ package com.vertica.spark.util.schema
 
 import com.vertica.spark.datasource.jdbc.JdbcLayerInterface
 import com.vertica.spark.util.query.VerticaTableTests
-import org.apache.spark.sql.types.{ArrayType, LongType, StringType, StructType}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -58,7 +57,7 @@ class ComplexTypesSchemaToolsTest extends AnyFlatSpec with MockFactory{
 
     // Query array type info
     val (_, arrayRs) = VerticaTableTests.mockGetComplexTypeInfo(array.verticaTypeId, jdbcLayer)
-    VerticaTableTests.mockComplexTypeInfoResult(array, struct, arrayRs)
+    VerticaTableTests.mockComplexTypeInfoResult(array, struct, "_ct_struct", arrayRs)
     (arrayRs.next _).expects().returning(false)
 
     // Query struct type info
