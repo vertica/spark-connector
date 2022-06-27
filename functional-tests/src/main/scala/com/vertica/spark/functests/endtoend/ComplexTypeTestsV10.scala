@@ -134,7 +134,6 @@ class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, 
     }
   }
 
-  // ERROR
   it should "error on reading 1D arrays from external table in Vertica 10" in {
     val tableName = "dftest"
     val stagingPath = fsConfig.address + tableName
