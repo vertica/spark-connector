@@ -169,13 +169,27 @@ Below is a detailed list of connector options that are used in the options map:
 | gcs_service_key_id                             | String                                              | The GCS service account key id. For use instead of specifying a keyfile path. The value be found within the service account json keyfile field `private_key_id`. Alternatively, you can use the Spark configuration `fs.gs.auth.service.account.private.key.id` or the environment variable `GCS_SERVICE_KEY_ID`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | No (Yes if `gcs_service_key` and `gcs_service_email` were specified)    |                             |
 | gcs_service_key                                | String                                              | The GCS service account key. For use instead of specifying a keyfile path. The value be found within the service account json keyfile field `private_key`. Alternatively, you can use the Spark configuration `fs.gs.auth.service.account.private.key` or the environment variable `GCS_SERVICE_KEY`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | No (Yes if `gcs_service_key_id` and `gcs_service_email` were specified) |                             |
 | gcs_service_email                              | String                                              | The GCS service account email. For use instead of specifying a keyfile path. The value be found within the service account json keyfile field `client_email`, you can use the Spark configuration `fs.gs.auth.service.account.email` or the environment variable `GCS_SERVICE_EMAIL`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | No (Yes if `gcs_service_key` and `gcs_service_key_id` were specified)   |                             |
+| json                                           | Boolean                                             | If true, the connector will always export data as JSON when reading.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | No                                                                      | "false"                     |
 
 Note: If you are using the S3 properties, the connector options has priority over the Spark configuration, which has priority over the environment variables.
 
 ## Complex Data Types
 
+The connector supports reading/writing:
+
+- Rows type columns.
+- Complex arrays (any arrays that are not 1D arrays of primitives) columns. 
+
+When reading complex types, *all of the data* will be exported as JSON files instead of Parquet files.
+
+For map type, the connector can only write to an external table but cannot read them. Vertica [suggests](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm) using `Array[Row(key, value)]` instead for use in internal tables. 
 ### Requirements
-Complex data types require at least Vertica 11 and Vertica JDBC Driver 11. Refer to the examples for usage demonstration.
+
+**Writing** complex data types requires at least Vertica 11.x and Vertica JDBC Driver 11.
+
+**Reading** complex data types requires at least Vertica 11.1.1-0.
+
+Refer to the examples for usage demonstration.
 
 Note: If the connector option `query` is used, the specified query cannot return complex types.
 
@@ -188,26 +202,17 @@ Note: If the connector option `query` is used, the specified query cannot return
 | Struct                   | Row                            |
 | Map                      | Map (only for external tables) |
 
+
+
+### Restrictions
 Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
-
-- While maps are only supported in external tables, it can be modeled as `Array[Row(key, value)]` for use in internal tables. Refer to the Vertica documentation [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
 - Arrays and Sets do not support Long types.
-
-### Array
-There are two types of arrays supported by Vertica, native and complex arrays. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm):
-- On Dataframe save() to Vertica, native and complex arrays are supported.
-- On DataFrame load() from Vertica, only native arrays are supported for now.
+- When reading complex types, binary types cannot be present in the data. This is due to Vertica's [JSON export limitation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/BinaryDataTypes.htm?zoom_highlight=Binary)
 
 ### Set
 JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). Thus, it is represented as an array in Spark with its metadata containing `is_vertica_set = true`:
 - On load operations, arrays column's metadata will contains the above value if it is a set in Vertica.
 - On save operations, data will be written into Vertica as set if the array column's metadata contains `is_vertica_set = true`. Unique elements are only checked once Vertica start loading data from staging area.
-
-### Row
-Only save operations are supported. Fields data type can be of primitives or supported complex types.
-
-### Map
-Only save operations are supported. However, Vertica's map can only contain primitives, is only available for external tables and cannot be queried. It is recommended that you use ARRAY[ROW] format instead. More details [here](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm).
 
 ### Backwards Compatibility
 
