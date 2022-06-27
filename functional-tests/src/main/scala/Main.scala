@@ -279,11 +279,10 @@ object Main extends App {
       new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
       new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
-      new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     )
 
     testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
-    else testSuites :+ new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+    else testSuites ++ List(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig), new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig))
 
     if (options.large) testSuites = testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
