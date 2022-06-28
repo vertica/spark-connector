@@ -202,7 +202,7 @@ object Main {
       {
         /** ******************************
          *
-         * Writing external table with Map type column
+         * Writing an external table with Map type column
          *
          * ****************************** */
 
@@ -227,7 +227,7 @@ object Main {
           "staging_fs_url" -> (conf.getString("functional-tests.filepath") + "external_data")
         )
 
-        // Write to Vertica a table with Map type
+        // Write to Vertica an external table with Map type
         spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
           .write
           .options(writeOpts)
@@ -236,7 +236,7 @@ object Main {
           .save()
 
         // Map type cannot be queried in Vertica and is only allowed in external tables.
-        // As such, the connector cannot read such tables.
+        // As such, the connector cannot read those tables.
         // Map type currently exists for interoperability with external data.
       }
 
