@@ -218,8 +218,7 @@ Thus, the exported data will be of array type, with Spark's column metadata cont
 
 ### Backwards Compatibility
 
-For Vertica 10, only reading native arrays is supported.
-For Vertica 10.x **only 1D array save() is supported.**  
+For Vertica 10, only writing native arrays (1D arrays of primitive) is supported.
 
 ## Examples
 

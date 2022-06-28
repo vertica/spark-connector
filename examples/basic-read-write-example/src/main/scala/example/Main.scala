@@ -38,7 +38,7 @@ object Main {
       // Save mode
       val mode = SaveMode.Overwrite
       // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource")
+      df.write.format(VERTICA_SOURCE)
         .options(options + ("table" -> tableName))
         .mode(mode)
         .save()
