@@ -211,7 +211,7 @@ Be aware that Vertica has a number of restrictions on the use of these complex t
 
 ### Set
 JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). 
-Thus, the exported data will be of array type, with Spark's column metadata containing `is_vertica_set = true' if it is a set.
+Thus, the exported data will be of array type, with Spark's column metadata containing `is_vertica_set = true` if it is a set.
 - When writing to Vertica using overwrite mode, the recreated table will have the column as a set type. Unique elements are only checked once Vertica start loading data from staging area.
 - When writing without overwrite mode, the connector will not recreate the table and the column type is unchanged.
 - When reading Vertica tables, the array column's metadata will contains the above value if it is a set in Vertica.
