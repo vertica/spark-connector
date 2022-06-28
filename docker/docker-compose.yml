@@ -24,14 +24,8 @@ services:
       - AWS_SECRET_ACCESS_KEY
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
-#    build: ../../vertica-kubernetes/docker-vertica/
-#      context: .
-#      args:
-#        VERTICA_RPM: vertica-x86_64.RHEL6.latest.rpm
-#        BASE_OS_VERSION: focal-20220316
-#        BUILDER_OS_VERSION: 7.9.2009
     container_name: docker_vertica_1
-    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/entry/docker-entrypoint.sh"]
+    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:
       - "5433:5433"
     volumes:
