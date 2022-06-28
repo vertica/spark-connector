@@ -30,7 +30,6 @@ services:
       - "5433:5433"
     volumes:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-      - ./vertica-scripts:/opt/vertica/bin/entry
   hdfs:
     image: mdouchement/hdfs
     container_name: docker_hdfs_1
