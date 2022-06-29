@@ -17,10 +17,8 @@ import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.Timer
-import com.vertica.spark.util.error.CreateExternalTableMergeKey
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.error.CreateExternalTableAlreadyExistsError
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
 import com.vertica.spark.util.version.VerticaVersionUtils

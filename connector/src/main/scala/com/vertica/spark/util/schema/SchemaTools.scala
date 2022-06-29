@@ -548,9 +548,19 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   }
 
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit] = {
+    for {
+      _ <- checkBlankColumnNames(schema)
+      _ <- checkComplexTypesSchema(schema)
+    } yield()
+  }
+
+  /**
+   * Complex type columns needs at least one native type column in the schema
+   * */
+  private def checkComplexTypesSchema(schema: StructType): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
     if (nativeCols.isEmpty) {
-      if(complexTypeCols.nonEmpty)
+      if (complexTypeCols.nonEmpty)
         Left(InvalidTableSchemaComplexType())
       else
         Left(EmptySchemaError())
@@ -652,6 +662,25 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       logger.info("Updated create external table statement: " + updatedCreateTableStmt)
       Right(updatedCreateTableStmt)
     }
+  }
+
+  def checkBlankColumnNames(schema: StructType): ConnectorResult[Unit] = {
+
+    @tailrec
+    def findEmptyColumnName(fields: List[StructField]): ConnectorResult[Unit] = {
+      fields.headOption match {
+        case Some(column) =>
+          if (column.name.isBlank) {
+            Left(BlankColumnNamesError())
+          } else {
+            findEmptyColumnName(fields.tail)
+          }
+        case None => Right()
+      }
+    }
+
+    // Use recursion to break early
+    findEmptyColumnName(schema.fields.toList)
   }
 }
 

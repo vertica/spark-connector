@@ -722,28 +722,21 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     val tableName = "dftest"
     val colName = "col1"
     val schema = new StructType(Array(
-      StructField("required", IntegerType),
+      StructField("    ", IntegerType),
       StructField(colName, StructType(Array(
         StructField("", IntegerType, false, Metadata.empty)
       )))))
 
     val data = Seq(Row(1,Row(77)))
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
-    println(df.toString())
-    val mode = SaveMode.Overwrite
-
-    val stmt = conn.createStatement()
     try {
       df.write.format("com.vertica.spark.datasource.VerticaSource")
         .options(writeOpts + ("table" -> tableName))
-        .mode(mode)
+        .mode(SaveMode.Overwrite)
         .save()
     }
     catch{
       case err : Exception => fail(err)
-    }
-    finally {
-      stmt.close()
     }
 
     TestUtils.dropTable(conn, tableName)

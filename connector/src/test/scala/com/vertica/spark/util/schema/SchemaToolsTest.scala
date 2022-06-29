@@ -1163,6 +1163,36 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         assert(str == " (\"col1\" ROW(INTEGER, VARCHAR(0), \"cat\" INTEGER))")
     }
   }
+
+  it should "error on empty names" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("cat", IntegerType),
+      ))),
+      StructField("", StringType)
+    ))
+
+    new SchemaTools().checkValidTableSchema(schema) match {
+      case Left(exp) => assert(exp.isInstanceOf[BlankColumnNamesError])
+      case Right(_) => fail("expected to fail")
+    }
+  }
+
+  it should "error on names with only white space" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("cat", IntegerType),
+      ))),
+      StructField("   ", StringType)
+    ))
+
+    new SchemaTools().checkValidTableSchema(schema) match {
+      case Left(exp) => assert(exp.isInstanceOf[BlankColumnNamesError])
+      case Right(_) => fail("expected to fail")
+    }
+  }
 }
 // For package private access without instantiation
 object SchemaToolsTests extends SchemaToolsTests
