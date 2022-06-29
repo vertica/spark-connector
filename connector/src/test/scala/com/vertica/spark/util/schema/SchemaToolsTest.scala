@@ -1148,7 +1148,17 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  it should "build create row column def string with empty field name" in {
+  it should "build column def string with empty column name containing no quotations" in {
+    val schema = StructType(Array(StructField("", IntegerType)))
+
+    new SchemaTools().makeTableColumnDefs(schema, 0, 0) match {
+      case Left(e) => fail("Expected to succeed")
+      case Right(str) =>
+        assert(str == " (INTEGER)")
+    }
+  }
+
+  it should "build row column def with empty field name" in {
     val schema = StructType(Array(
       StructField("col1", StructType(Array(
         StructField("", IntegerType),
@@ -1164,7 +1174,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     }
   }
 
-  it should "error on empty names" in {
+  it should "error on empty column name" in {
     val schema = StructType(Array(
       StructField("col1", StructType(Array(
         StructField("", IntegerType),
