@@ -17,6 +17,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, StringType, StructField, StructType}
 
+/**
+ * This Example shows how to write then read a Vertica table with complex ARRAY type columns.
+ * */
 object ComplexArrayExample {
 
   def main(args: Array[String]): Unit = {

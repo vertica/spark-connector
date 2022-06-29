@@ -17,6 +17,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types._
 
+/**
+ * This Example shows how to write then read a Vertica table with ROW type columns.
+ * */
 object RowExample {
 
   def main(Args: Array[String]): Unit = {

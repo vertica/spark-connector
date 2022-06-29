@@ -18,6 +18,9 @@ import com.vertica.spark.util.schema.MetadataKey
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, MetadataBuilder, StructField, StructType}
 
+/**
+ * This Example shows how to write then read a Vertica table with SET type columns.
+ * */
 object SetExample {
 
   def main(args: Array[String]): Unit = {

@@ -21,6 +21,14 @@ import org.apache.spark.sql.types._
 
 import java.net.URI
 
+/**
+ * This example shows how to write an external table with MAP type column to Vertica.
+ *
+ * NOTE:
+ * Map type cannot be queried in Vertica and is only allowed in external tables.
+ * As such, the connector cannot read these tables.
+ * Map type currently only exists for interoperability with external data.
+ * */
 object MapExample {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
@@ -69,10 +77,6 @@ object MapExample {
         .format(VERTICA_SOURCE)
         .mode(SaveMode.Overwrite)
         .save()
-
-      // Map type cannot be queried in Vertica and is only allowed in external tables.
-      // As such, the connector cannot read those tables.
-      // Map type currently exists for interoperability with external data.
     } catch {
       case e: Exception => e.printStackTrace()
     }
