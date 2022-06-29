@@ -722,7 +722,7 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     val tableName = "dftest"
     val colName = "col1"
     val schema = new StructType(Array(
-      StructField("    ", IntegerType),
+      StructField("required", IntegerType),
       StructField(colName, StructType(Array(
         StructField("", IntegerType, false, Metadata.empty)
       )))))

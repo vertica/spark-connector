@@ -4142,5 +4142,27 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
+
+  it should "error on empty column names" in {
+    val tableName = "dftest"
+    val schema = new StructType(Array(StructField("", IntegerType)))
+    val data = Seq(Row(1,Row(77)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts + ("table" -> tableName))
+        .mode(SaveMode.Overwrite)
+        .save()
+    }
+    catch{
+      case ConnectorException(error) => error match {
+        case BlankColumnNamesError() => succeed
+        case _ => fail
+      }
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
 }
 
