@@ -512,7 +512,13 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val colDefsOrErrors = schema.map(col => {
-      val colName = "\"" + col.name + "\""
+
+      val colName = if(col.name.isEmpty){
+        ""
+      } else {
+        "\"" + col.name + "\""
+      }
+
       val notNull = if (!col.nullable) "NOT NULL" else ""
       getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength, col.metadata) match {
         case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))

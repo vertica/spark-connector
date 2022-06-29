@@ -1147,6 +1147,22 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       }
     }
   }
+
+  it should "build create row column def string with empty field name" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("", StringType),
+        StructField("cat", IntegerType),
+      )))
+    ))
+
+    new SchemaTools().makeTableColumnDefs(schema, 0, 0) match {
+      case Left(e) => fail("Expected to succeed")
+      case Right(str) =>
+        assert(str == " (\"col1\" ROW(INTEGER, VARCHAR(0), \"cat\" INTEGER))")
+    }
+  }
 }
 // For package private access without instantiation
 object SchemaToolsTests extends SchemaToolsTests
