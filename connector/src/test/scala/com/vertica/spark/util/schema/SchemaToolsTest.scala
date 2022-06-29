@@ -96,7 +96,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "parse schema of query" in {
-    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "", None)
     val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
 
     // Schema
@@ -114,7 +114,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "fail when query's schema contains complex types" in {
-    val query = TableQuery("SELECT * FROM t WHERE a > 1", "")
+    val query = TableQuery("SELECT * FROM t WHERE a > 1", "", None)
     val (jdbcLayer, _, rsmd) = mockJdbcDepsQuery(query)
 
     // Schema

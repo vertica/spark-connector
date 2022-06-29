@@ -13,8 +13,6 @@
 
 package com.vertica.spark.config
 
-import com.vertica.spark.datasource.core.SessionId
-
 object EscapeUtils {
   def sqlEscape(str: String, char: Char = '\"'): String = {
     val c = char.toString
@@ -72,7 +70,7 @@ final case class TableName(name: String, dbschema: Option[String]) extends Table
   override def identifier: String = name
 }
 
-final case class TableQuery(query: String, uniqueId: String) extends TableSource {
+final case class TableQuery(query: String, uniqueId: String, dbSchema: Option[String]) extends TableSource {
   override def identifier: String = uniqueId
 }
 

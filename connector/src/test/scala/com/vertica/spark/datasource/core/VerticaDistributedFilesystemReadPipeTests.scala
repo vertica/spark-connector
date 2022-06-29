@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
@@ -204,7 +203,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "export using query" in {
-    val query = TableQuery("SELECT * FROM t where n > 777", "")
+    val query = TableQuery("SELECT * FROM t where n > 777", "", None)
     val config = makeReadConfig.copy(tableSource = query)
 
     val fileStoreLayer = mockFileStoreLayer(config, fileStoreConfig.address + "/" + query.identifier)
@@ -1036,5 +1035,21 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
         case ErrorList(errors) => assert(errors.length == 3)
       }
     }
+  }
+
+  it should "build export statement with schema included in query" in {
+    val query = "SELECT * From dftest join dftest2 on dftest.a = dftest2.b where x = 1"
+    val config = makeReadConfig.copy(tableSource = TableQuery(query, "uniqueId", Some("test-schema")))
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    assert(pipe.makeQuery(query, Some("schema")) == "SELECT * From schema:dftest join dftest2 on dftest.a = dftest2.b where x = 1")
+  }
+
+  it should "build export statement without adding schema when FROM clause is a sub-query" in {
+    val query = "SELECT * from (select * from) where x = 1"
+    val config = makeReadConfig.copy(tableSource = TableQuery(query, "uniqueId", Some("test-schema")))
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    assert(pipe.makeQuery(query, Some("schema")) == query)
   }
 }

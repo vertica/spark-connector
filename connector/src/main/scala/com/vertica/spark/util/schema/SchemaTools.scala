@@ -267,7 +267,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     val emptyQuery = tableSource match {
       case tb: TableName => "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0"
-      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+      case TableQuery(query, _, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
     }
    // We query an empty result to get the table's metadata.
     jdbcLayer.query(emptyQuery) match {
@@ -665,7 +665,7 @@ class SchemaToolsV10 extends SchemaTools {
               val unQuotedName = tb.getTableName.replaceAll("\"", "")
               val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
               checkForComplexType(col, unQuotedName, unQuotedDbSchema, jdbcLayer)
-            case TableQuery(_,_) => Right(col)
+            case TableQuery(_,_,_) => Right(col)
           }
         )
           .toList
