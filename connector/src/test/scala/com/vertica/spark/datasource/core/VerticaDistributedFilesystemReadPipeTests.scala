@@ -221,6 +221,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1", StructType(Nil), query)
+    (mockSchemaTools.addDbSchemaToQuery _).expects(*, *).returning(query.query)
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
@@ -1035,21 +1036,5 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
         case ErrorList(errors) => assert(errors.length == 3)
       }
     }
-  }
-
-  it should "build export statement with schema included in query" in {
-    val query = "SELECT * From dftest join dftest2 on dftest.a = dftest2.b where x = 1"
-    val config = makeReadConfig.copy(tableSource = TableQuery(query, "uniqueId", Some("test-schema")))
-
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
-    assert(pipe.makeQuery(query, Some("schema")) == "SELECT * From schema:dftest join dftest2 on dftest.a = dftest2.b where x = 1")
-  }
-
-  it should "build export statement without adding schema when FROM clause is a sub-query" in {
-    val query = "SELECT * from (select * from) where x = 1"
-    val config = makeReadConfig.copy(tableSource = TableQuery(query, "uniqueId", Some("test-schema")))
-
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mock[SchemaToolsInterface], mock[CleanupUtilsInterface], mock[SparkContextWrapper])
-    assert(pipe.makeQuery(query, Some("schema")) == query)
   }
 }

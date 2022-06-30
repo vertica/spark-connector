@@ -142,6 +142,16 @@ trait SchemaToolsInterface {
    * @param schema schema of the table
    */
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
+
+  /**
+   * Given a query, append the schema to FROM clause table.
+   * Ignore if FROM clause is a sub query or already has a schema
+   *
+   * @param query an SQL query
+   * @param schema an optional schema to be added.
+   * @return the query with the added schema.
+   * */
+  def addDbSchemaToQuery(query: String, schema: Option[String]): String
 }
 
 class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools) extends SchemaToolsInterface {
@@ -267,7 +277,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     val emptyQuery = tableSource match {
       case tb: TableName => "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0"
-      case TableQuery(query, _, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+      case TableQuery(query, _, schema) => "SELECT * FROM (" + addDbSchemaToQuery(query, schema) + ") AS x WHERE 1=0"
     }
    // We query an empty result to get the table's metadata.
     jdbcLayer.query(emptyQuery) match {
@@ -645,6 +655,67 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       val updatedCreateTableStmt = stmt.replace(schemaString, updatedSchema)
       logger.info("Updated create external table statement: " + updatedCreateTableStmt)
       Right(updatedCreateTableStmt)
+    }
+  }
+
+  @tailrec
+  private def countDotInEscapedString(str: String, quotationsCount: Int, dotsCount: Int): Int = {
+    str.headOption match {
+      case Some(head) => head match {
+        // track quotation
+        case '"' => countDotInEscapedString(str.tail, (quotationsCount + 1) % 2, dotsCount)
+        case '.' => if (quotationsCount == 0) {
+          // only counting dots outside of quotation wrapping.
+          countDotInEscapedString(str.tail, quotationsCount, dotsCount + 1)
+        } else {
+          countDotInEscapedString(str.tail, quotationsCount, dotsCount)
+        }
+        case _ => countDotInEscapedString(str.tail, quotationsCount, dotsCount)
+      }
+      case None => dotsCount
+    }
+  }
+
+  def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
+
+    def getQuerySource(dbSchema: String, source: String): String = {
+      if (source.startsWith("(")) {
+        source
+      } else {
+        val dotCount: Int = if (source.contains("\"")) {
+          countDotInEscapedString(source, 0, 0)
+        } else {
+          source.split("\\.").length - 1
+        }
+
+        if (dotCount == 0) {
+          s"$dbSchema." + source
+        } else {
+          source
+        }
+      }
+    }
+
+    @tailrec
+    def recursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
+      parts.headOption match {
+        case Some(head) =>
+          if(head.toLowerCase == "from") {
+            recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause = true)
+          } else if (foundFROMClause) {
+            val querySource = getQuerySource(dbSchema, head)
+            query + s" $querySource " + parts.tail.mkString(" ")
+          } else {
+            recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause)
+          }
+        case None => query
+      }
+    }
+
+    val parts = query.split(" ").toList
+    dbSchema match {
+      case Some(schema) => recursion(parts, schema, "", foundFROMClause = false).trim
+      case None => query
     }
   }
 }

@@ -203,37 +203,6 @@ class VerticaDistributedFilesystemReadPipe(
     }
   }
 
-  def makeQuery(query: String, dbSchema: Option[String]): String = dbSchema match {
-    case Some(schema) =>
-      //  Find the first FROM clause and append the schema to the table name.
-      val queryParts = query.split(" ")
-      queryParts.tail.foldLeft((queryParts.head, false, false))((vars, curr) => {
-        val (accum, fromClauseFound, done) = vars
-        if (!done) {
-          if (curr.toLowerCase == "from") {
-            // From clause found
-            (accum + s" $curr", true, done)
-          } else if (fromClauseFound) {
-
-            if (curr.startsWith("(")) {
-              // The FROM clause is a a sub query
-              // Don't append schema and mark as done.
-              (accum + s" $curr", fromClauseFound, true)
-            } else {
-              // Append schema to table and mark as done.
-              (accum + s" $schema:$curr", fromClauseFound, true)
-            }
-
-          } else {
-            (accum + s" $curr", fromClauseFound, done)
-          }
-        } else {
-          (accum + s" $curr", fromClauseFound, done)
-        }
-      })._1
-    case None => query
-  }
-
   /**
    * Initial setup for the whole read operation. Called by driver.
    *
@@ -262,7 +231,7 @@ class VerticaDistributedFilesystemReadPipe(
         val pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
         val  exportSource = config.tableSource match {
           case tableName: TableName => tableName.getFullTableName
-          case TableQuery(query, _, dbSchema) => "(" + makeQuery(query, dbSchema) + ") AS x"
+          case TableQuery(query, _, dbSchema) => "(" + schemaTools.addDbSchemaToQuery(query, dbSchema) + ") AS x"
         }
         val rowGroupSize = if(config.useJson) "" else ", rowGroupSizeMB = " + maxRowGroupSize
 

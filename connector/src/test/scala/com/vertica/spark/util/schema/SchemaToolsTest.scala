@@ -13,17 +13,16 @@
 
 package com.vertica.spark.util.schema
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalamock.scalatest.MockFactory
-
-import java.sql.ResultSet
-import java.sql.ResultSetMetaData
 import com.vertica.spark.config.{TableName, TableQuery}
 import com.vertica.spark.datasource.jdbc._
-import org.apache.spark.sql.types._
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.query.VerticaTableTests
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.VERTICA_NATIVE_ARRAY_BASE_ID
+import org.apache.spark.sql.types._
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.flatspec.AnyFlatSpec
+
+import java.sql.{ResultSet, ResultSetMetaData}
 
 case class TestColumnDef(index: Int, name: String, colType: Int, colTypeName: String, scale: Int, signed: Boolean, nullable: Boolean)
 
@@ -1146,6 +1145,43 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         case ConnectionError(_) =>
       }
     }
+  }
+
+  it should "add schema to query" in {
+    val query = "SELECT * From dftest join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema"))
+      == "SELECT * From schema.dftest join dftest2 on dftest.a = dftest2.b where x = 1")
+  }
+
+  it should "not add schema to query with sub-query in FROM clause" in {
+    val query = "SELECT * from (select * from) where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
+  }
+
+  it should "not add schema to query when already present" in {
+    val query = "SELECT * from test.dftest where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
+  }
+
+  it should "not add schema to query with schema and database are already present" in {
+    val query = "SELECT * from db.test.dftest where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
+  }
+
+  it should "add schema to query with escaped table name" in {
+    val query = "SELECT * From \"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema"))
+      == "SELECT * From schema.\"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1")
+  }
+
+  it should "not add schema to query with escaped table name, schema, and database" in {
+    val query = "SELECT * From \"database\".\"schema\".\"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
+  }
+
+  it should "not add schema to query with some escaped table name, schema, and database" in {
+    val query = "SELECT * From database.\"schema\".dftest join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
   }
 }
 // For package private access without instantiation

@@ -216,7 +216,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
     TestUtils.dropTable(conn, tableName1)
   }
-  
+
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -4140,6 +4140,41 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     assert(success)
 
     TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "read a table using query option with dbschema option" in {
+    val schema = "test"
+    val tableName = "dftest"
+    val tableNameSchema = s"$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    // stmt.execute(s"drop schema if exists $schema")
+    // stmt.execute(s"create schema $schema")
+    //
+    // TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
+    //
+    // val insert = "insert into " + tableNameSchema + " values(2)"
+    // TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $tableName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> schema))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      // TestUtils.dropTable(conn, tableNameSchema, Some(schema))
+      // stmt.execute(s"drop schema if exists $schema")
+    }
   }
 
 }
