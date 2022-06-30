@@ -4149,13 +4149,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val stmt = conn.createStatement
     val n = 1
 
-    // stmt.execute(s"drop schema if exists $schema")
-    // stmt.execute(s"create schema $schema")
-    //
-    // TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
-    //
-    // val insert = "insert into " + tableNameSchema + " values(2)"
-    // TestUtils.populateTableBySQL(stmt, insert, n)
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
+
+    val insert = "insert into " + tableNameSchema + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
 
     try {
       val query = s"select * from $tableName"
@@ -4172,8 +4170,105 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     } catch {
       case e: Exception => fail(e)
     } finally {
-      // TestUtils.dropTable(conn, tableNameSchema, Some(schema))
-      // stmt.execute(s"drop schema if exists $schema")
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "read a table using query option using literal table name and dbschema option" in {
+    val schema = "test"
+    val tableName = "\"df_test\""
+    val tableNameSchema = s"$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
+
+    val insert = "insert into " + tableNameSchema + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $tableName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> schema))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "ignore dbschema option when reading a table using query containing schema and database" in {
+    val db = "docker"
+    val schema = "test"
+    val tableName = "dftest"
+    val fullName = s"$db.$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, fullName, "create table " + fullName + " (a int)")
+
+    val insert = "insert into " + fullName + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $fullName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> "invalid-schema"))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "ignore dbschema option when reading a table using query containing schema, database, and string literals" in {
+    val db = "docker"
+    val schema = "\"test_schema\""
+    val tableName = "\"df_test\""
+    val fullName = s"$db.$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, fullName, "create table " + fullName + " (a int)")
+
+    val insert = "insert into " + fullName + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $fullName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> "invalid-schema"))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
     }
   }
 

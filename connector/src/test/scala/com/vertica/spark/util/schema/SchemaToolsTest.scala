@@ -1174,12 +1174,12 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       == "SELECT * From schema.\"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1")
   }
 
-  it should "not add schema to query with escaped table name, schema, and database" in {
+  it should "not add schema to query with literal table name, schema, and database" in {
     val query = "SELECT * From \"database\".\"schema\".\"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1"
     assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
   }
 
-  it should "not add schema to query with some escaped table name, schema, and database" in {
+  it should "not add schema to query with some literal table name, schema, and database" in {
     val query = "SELECT * From database.\"schema\".dftest join dftest2 on dftest.a = dftest2.b where x = 1"
     assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
   }
