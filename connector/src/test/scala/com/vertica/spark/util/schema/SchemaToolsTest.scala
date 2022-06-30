@@ -1147,6 +1147,62 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       }
     }
   }
+
+  it should "build column def string with empty column name containing no quotations" in {
+    val schema = StructType(Array(StructField("", IntegerType)))
+
+    new SchemaTools().makeTableColumnDefs(schema, 0, 0) match {
+      case Left(e) => fail("Expected to succeed")
+      case Right(str) =>
+        assert(str == " (INTEGER)")
+    }
+  }
+
+  it should "build row column def with empty field name" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("", StringType),
+        StructField("cat", IntegerType),
+      )))
+    ))
+
+    new SchemaTools().makeTableColumnDefs(schema, 0, 0) match {
+      case Left(e) => fail("Expected to succeed")
+      case Right(str) =>
+        assert(str == " (\"col1\" ROW(INTEGER, VARCHAR(0), \"cat\" INTEGER))")
+    }
+  }
+
+  it should "error on empty column name" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("cat", IntegerType),
+      ))),
+      StructField("", StringType)
+    ))
+
+    new SchemaTools().checkValidTableSchema(schema) match {
+      case Left(exp) => assert(exp.isInstanceOf[BlankColumnNamesError])
+      case Right(_) => fail("expected to fail")
+    }
+  }
+
+  it should "error on names with only white space" in {
+    val schema = StructType(Array(
+      StructField("col1", StructType(Array(
+        StructField("", IntegerType),
+        StructField("cat", IntegerType),
+      ))),
+      StructField("   ", StringType)
+    ))
+
+    new SchemaTools().checkValidTableSchema(schema) match {
+      case Left(exp) => assert(exp.isInstanceOf[BlankColumnNamesError])
+      case Right(_) => fail("expected to fail")
+    }
+  }
 }
 // For package private access without instantiation
 object SchemaToolsTests extends SchemaToolsTests

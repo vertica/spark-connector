@@ -640,4 +640,8 @@ case class ExportToJsonNotSupported(version: String) extends ConnectorError {
     "Export to JSON is required for reading complex data types."
 }
 
+case class BlankColumnNamesError() extends SchemaError {
+  override def getFullContext: String = "Column names cannot contains only white spaces or be empty"
+}
+
 

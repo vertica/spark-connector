@@ -717,4 +717,28 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     }
     TestUtils.dropTable(conn, tableName1)
   }
+
+  it should "successfully create row type columns with empty field names" in {
+    val tableName = "dftest"
+    val colName = "col1"
+    val schema = new StructType(Array(
+      StructField("required", IntegerType),
+      StructField(colName, StructType(Array(
+        StructField("", IntegerType, false, Metadata.empty)
+      )))))
+
+    val data = Seq(Row(1,Row(77)))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    try {
+      df.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts + ("table" -> tableName))
+        .mode(SaveMode.Overwrite)
+        .save()
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
 }

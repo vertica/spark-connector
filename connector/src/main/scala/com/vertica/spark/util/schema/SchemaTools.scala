@@ -512,7 +512,13 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def makeTableColumnDefs(schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val colDefsOrErrors = schema.map(col => {
-      val colName = "\"" + col.name + "\""
+
+      val colName = if(col.name.isEmpty){
+        ""
+      } else {
+        "\"" + col.name + "\""
+      }
+
       val notNull = if (!col.nullable) "NOT NULL" else ""
       getVerticaTypeFromSparkType(col.dataType, strlen, arrayLength, col.metadata) match {
         case Left(err) => Left(SchemaConversionError(err).context("Schema error when trying to create table"))
@@ -542,9 +548,19 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   }
 
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit] = {
+    for {
+      _ <- checkBlankColumnNames(schema)
+      _ <- checkComplexTypesSchema(schema)
+    } yield()
+  }
+
+  /**
+   * Complex type columns needs at least one native type column in the schema
+   * */
+  private def checkComplexTypesSchema(schema: StructType): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.getComplexTypeColumns(schema)
     if (nativeCols.isEmpty) {
-      if(complexTypeCols.nonEmpty)
+      if (complexTypeCols.nonEmpty)
         Left(InvalidTableSchemaComplexType())
       else
         Left(EmptySchemaError())
@@ -646,6 +662,25 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       logger.info("Updated create external table statement: " + updatedCreateTableStmt)
       Right(updatedCreateTableStmt)
     }
+  }
+
+  def checkBlankColumnNames(schema: StructType): ConnectorResult[Unit] = {
+
+    @tailrec
+    def findEmptyColumnName(fields: List[StructField]): ConnectorResult[Unit] = {
+      fields.headOption match {
+        case Some(column) =>
+          if (column.name.isBlank) {
+            Left(BlankColumnNamesError())
+          } else {
+            findEmptyColumnName(fields.tail)
+          }
+        case None => Right()
+      }
+    }
+
+    // Use recursion to break early
+    findEmptyColumnName(schema.fields.toList)
   }
 }
 
