@@ -210,14 +210,15 @@ Be aware that Vertica has a number of restrictions on the use of these complex t
 - When reading complex types, binary types cannot be present in the data. This is due to Vertica's [JSON export limitation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/BinaryDataTypes.htm?zoom_highlight=Binary)
 
 ### Set
-JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). Thus, it is represented as an array in Spark with its metadata containing `is_vertica_set = true`:
-- On load operations, arrays column's metadata will contains the above value if it is a set in Vertica.
-- On save operations, data will be written into Vertica as set if the array column's metadata contains `is_vertica_set = true`. Unique elements are only checked once Vertica start loading data from staging area.
+JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). 
+Thus, the exported data will be of array type, with Spark's column metadata containing `is_vertica_set = true` if it is a set.
+- When writing to Vertica using overwrite mode, the recreated table will have the column as a set type. Unique elements are only checked once Vertica start loading data from staging area.
+- When writing without overwrite mode, the connector will not recreate the table and the column type is unchanged.
+- When reading Vertica tables, the array column's metadata will contains the above value if it is a set in Vertica.
 
 ### Backwards Compatibility
 
-For Vertica 10, only saving native arrays is supported.
-For Vertica 10.x **only 1D array save() is supported.**  
+For Vertica 10, only writing native arrays (1D arrays of primitive) is supported.
 
 ## Examples
 

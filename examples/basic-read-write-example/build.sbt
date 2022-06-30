@@ -21,7 +21,7 @@ versionProps := {
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-basic-read-example"
+name := "spark-vertica-connector-basic-read-write-example"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
 

@@ -13,48 +13,59 @@
 
 package example
 
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
-import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.types.{ArrayType, IntegerType, StructField, StructType}
 
-object Main  {
+/**
+ * This Example shows how to write then read a Vertica table with native ARRAY type columns.
+ * */
+object NativeArrayExample {
+
   def main(args: Array[String]): Unit = {
+
     val conf: Config = ConfigFactory.load()
     // Configuration options for the connector
-    val writeOpts = Map(
+    val options = Map(
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
       "db" -> conf.getString("functional-tests.db"),
       "staging_fs_url" -> conf.getString("functional-tests.filepath"),
       "password" -> conf.getString("functional-tests.password")
     )
-    // Entry-point to all functionality in Spark
+
+    // Creating a Spark context
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 
+    val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
+
+    val tableName = "1D_array"
+    // Define schema of a table with a 1D array column
+    val schema = new StructType(Array(StructField("1D_array", ArrayType(IntegerType))))
+    // Data
+    val data = Seq(Row(Array(1, 1, 1, 2, 2, 2)))
+    // Create a dataframe corresponding to the schema and data specified above
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+
     try {
-      val tableName = "dftest"
-      // Define schema of a table with a single integer attribute
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-      // Create a row with element '77'
-      val data = Seq(Row(77))
-      // Create a dataframe corresponding to the schema and data specified above
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      // Outputs dataframe schema
-      println(df.toString())
-      // Save mode
-      val mode = SaveMode.Overwrite
-      // Write dataframe to Vertica
-      df.write.format("com.vertica.spark.datasource.VerticaSource")
-        .options(writeOpts + ("table" -> tableName))
-        .mode(mode)
+      // Write dataframe to Vertica. note the data source
+      val writeOpts = options + ("table" -> tableName)
+      df.write.format(VERTICA_SOURCE)
+        .options(writeOpts)
+        .mode(SaveMode.Overwrite)
         .save()
 
-    } finally {
-      spark.close()
+      // Loading Vertica table
+      spark.read.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
+        .load()
+        .show()
+    } catch {
+      case e: Exception => e.printStackTrace()
     }
+    spark.close()
   }
 }

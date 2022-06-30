@@ -4,7 +4,6 @@
 // You may obtain a copy of the License at
 //
 // http://www.apache.org/licenses/LICENSE-2.0
-//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,16 +12,15 @@
 
 package example
 
-import java.sql.Connection
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
     // Configuration options for the connector
-    val readOpts = Map(
+    val options = Map(
       "host" -> conf.getString("functional-tests.host"),
       "user" -> conf.getString("functional-tests.user"),
       "db" -> conf.getString("functional-tests.db"),
@@ -30,31 +28,44 @@ object Main {
       "password" -> conf.getString("functional-tests.password")
     )
 
-    // Creates a JDBC connection to Vertica
-    val conn: Connection = TestUtils.getJDBCConnection(readOpts("host"), db = readOpts("db"), user = readOpts("user"), password = readOpts("password"))
-    // Entry-point to all functionality in Spark
+    // Creating a Spark context
     val spark = SparkSession.builder()
       .master("local[*]")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 
+    val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
+
     try {
       val tableName = "dftest"
-      val stmt = conn.createStatement
+      // Define schema of a table with a single integer attribute
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
+      // Create n rows with element '77'
       val n = 20
-      // Creates a table called dftest with an integer attribute
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (a int)")
-      val insert = "insert into " + tableName + " values(2)"
-      // Inserts 20 rows of the value '2' into dftest
-      TestUtils.populateTableBySQL(stmt, insert, n)
+      val data = (0 until n).map(_ => Row(77))
+      // Create a dataframe corresponding to the schema and data specified above
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      // Outputs dataframe schema
+      println(df.toString())
+      // Save mode
+      val mode = SaveMode.Overwrite
+      // Write dataframe to Vertica
+      df.write.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
+        .mode(mode)
+        .save()
+
       // Read dftest into a dataframe
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
-        .options(readOpts + ("table" -> tableName))
+     val dfRead = spark.read.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
         .load()
-      df.show()
+
+      dfRead.show()
+
+    } catch {
+      case e: Exception => e.printStackTrace()
     } finally {
       spark.close()
-      conn.close()
     }
   }
 }

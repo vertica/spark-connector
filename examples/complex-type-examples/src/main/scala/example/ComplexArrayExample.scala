@@ -14,14 +14,13 @@
 package example
 
 import com.typesafe.config.{Config, ConfigFactory}
-import com.vertica.spark.util.schema.MetadataKey
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
-import org.apache.spark.sql.types.{ArrayType, IntegerType, MetadataBuilder, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, IntegerType, StringType, StructField, StructType}
 
 /**
- * This Example shows how to write then read a Vertica table with SET type columns.
+ * This Example shows how to write then read a Vertica table with complex ARRAY type columns.
  * */
-object SetExample {
+object ComplexArrayExample {
 
   def main(args: Array[String]): Unit = {
 
@@ -43,13 +42,37 @@ object SetExample {
 
     val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
-    val tableName = "Set"
-    // Marking the array as a Set.
-    val metadata = new MetadataBuilder().putBoolean(MetadataKey.IS_VERTICA_SET, true).build()
-    // Define schema of a table with a 1D array column
-    val schema = new StructType(Array(StructField("Set", ArrayType(IntegerType), metadata = metadata)))
-    // Data. Note the repeating numbers
-    val data = Seq(Row(Array(1, 1, 1, 2, 2, 2)))
+    val tableName = "Complex_Array_Examples"
+    // Define schema of a table with a row type column.
+    // Vertica Row = SparkSQL StructType.
+    val schema = new StructType(Array(
+      // Complex type tables require at least one native type column
+      StructField("native_array", ArrayType(IntegerType)),
+      StructField("nested_array", ArrayType(ArrayType(IntegerType))),
+
+      // Map type is not supported by Vertica.
+      // It is suggested to use Array[Row] to represent map types instead.
+      StructField("internal_map", ArrayType(
+        StructType(Array(
+          StructField("key", StringType),
+          StructField("value", IntegerType),
+        ))
+      )),
+    ))
+
+    val data = Seq(Row(
+      Array(12754),
+      Array(Array(12754)),
+      Array(
+        Row(
+          "key_1", 4812
+        ),
+        Row(
+          "key_2", 3415
+        )
+      )
+    ))
+
     // Create a dataframe corresponding to the schema and data specified above
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
 
@@ -65,11 +88,13 @@ object SetExample {
       spark.read.format(VERTICA_SOURCE)
         .options(options + ("table" -> tableName))
         .load()
-        .show()
+        .show(false)
     } catch {
-      case e: Exception => e.printStackTrace()
+      case e:Exception => e.printStackTrace()
     }
+
     spark.close()
+
   }
 
 }
