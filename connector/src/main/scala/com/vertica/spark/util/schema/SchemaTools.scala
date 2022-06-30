@@ -144,8 +144,8 @@ trait SchemaToolsInterface {
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
 
   /**
-   * Given a query, append the schema to FROM clause table.
-   * Ignore if FROM clause is a sub query or already has a schema
+   * Given a query, append the schema to the FROM clause table.
+   * Ignore if FROM clause is a sub query or already has a schema.
    *
    * @param query an SQL query
    * @param schema an optional schema to be added.
@@ -658,19 +658,23 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     }
   }
 
+  /**
+   * Recursion count the dots outside of a double quotation wrapped string. For example,
+   * "db.name".schema."df.test" will yield 2.
+   * */
   @tailrec
-  private def countDotInEscapedString(str: String, quotationsCount: Int, dotsCount: Int): Int = {
+  private def countDotsInLiteralSource(str: String, quotationsCount: Int, dotsCount: Int): Int = {
     str.headOption match {
       case Some(head) => head match {
-        // track quotation
-        case '"' => countDotInEscapedString(str.tail, (quotationsCount + 1) % 2, dotsCount)
+        // tracking quotation
+        case '"' => countDotsInLiteralSource(str.tail, (quotationsCount + 1) % 2, dotsCount)
         case '.' => if (quotationsCount == 0) {
           // only counting dots outside of quotation wrapping.
-          countDotInEscapedString(str.tail, quotationsCount, dotsCount + 1)
+          countDotsInLiteralSource(str.tail, quotationsCount, dotsCount + 1)
         } else {
-          countDotInEscapedString(str.tail, quotationsCount, dotsCount)
+          countDotsInLiteralSource(str.tail, quotationsCount, dotsCount)
         }
-        case _ => countDotInEscapedString(str.tail, quotationsCount, dotsCount)
+        case _ => countDotsInLiteralSource(str.tail, quotationsCount, dotsCount)
       }
       case None => dotsCount
     }
@@ -678,12 +682,17 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
 
-    def getQuerySource(dbSchema: String, source: String): String = {
+    def appendSchema(dbSchema: String, source: String): String = {
       if (source.startsWith("(")) {
+        // The source could be sub query, in which case we don't append the schema
         source
       } else {
+        // The datasource syntax uses dots to separate schema and database name of the table.
+        // For example, schema.dftest or database.schema.dftest.
+        // Counting the dots allow us to know if we need to append the schema or not.
         val dotCount: Int = if (source.contains("\"")) {
-          countDotInEscapedString(source, 0, 0)
+          // source can contains literal string, like schema."df_test"
+          countDotsInLiteralSource(source, 0, 0)
         } else {
           source.split("\\.").length - 1
         }
@@ -696,6 +705,9 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       }
     }
 
+    /**
+     * Recursion locate the FROM clause table for processing.
+     * */
     @tailrec
     def recursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
       parts.headOption match {
@@ -703,8 +715,8 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
           if(head.toLowerCase == "from") {
             recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause = true)
           } else if (foundFROMClause) {
-            val querySource = getQuerySource(dbSchema, head)
-            query + s" $querySource " + parts.tail.mkString(" ")
+            val dataSource = appendSchema(dbSchema, head)
+            query + s" $dataSource " + parts.tail.mkString(" ")
           } else {
             recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause)
           }
@@ -712,9 +724,13 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       }
     }
 
-    val parts = query.split(" ").toList
+    /**
+     * Given a query, we need to located the FROM clause and append the schema to the table. The query could contains
+     * sub queries, string literals, or already defined a schema. All cases will need to be handled as well
+     * */
+    val queryParts = query.split(" ").toList
     dbSchema match {
-      case Some(schema) => recursion(parts, schema, "", foundFROMClause = false).trim
+      case Some(schema) => recursion(queryParts, schema, "", foundFROMClause = false).trim
       case None => query
     }
   }
