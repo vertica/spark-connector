@@ -658,46 +658,52 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     }
   }
 
-  /**
-   * Recursion count the dots outside of a double quotation wrapped string. For example,
-   * "db.name".schema."df.test" will yield 2.
-   * */
-  @tailrec
-  private def countDotsInLiteralSource(str: String, quotationsCount: Int, dotsCount: Int): Int = {
-    str.headOption match {
-      case Some(head) => head match {
-        // tracking quotation
-        case '"' => countDotsInLiteralSource(str.tail, (quotationsCount + 1) % 2, dotsCount)
-        case '.' => if (quotationsCount == 0) {
-          // only counting dots outside of quotation wrapping.
-          countDotsInLiteralSource(str.tail, quotationsCount, dotsCount + 1)
-        } else {
-          countDotsInLiteralSource(str.tail, quotationsCount, dotsCount)
+  private def dotNotExistOutsideStringLiteral(str: String): Boolean = {
+
+    /**
+     * Find the first dot outside of a string literal
+     * */
+    @tailrec
+    def dotExistsOutsideStringLiterals(str: String, quotationsCount: Int): Boolean = {
+      str.headOption match {
+        case Some(head) => head match {
+          // tracking if inside quotation
+          case '"' => dotExistsOutsideStringLiterals(str.tail, (quotationsCount + 1) % 2)
+          case '.' =>
+            if (quotationsCount == 0) {
+              // Only count dot if outside of string literal
+              true
+            } else {
+              dotExistsOutsideStringLiterals(str.tail, quotationsCount)
+            }
+          case _ => dotExistsOutsideStringLiterals(str.tail, quotationsCount)
         }
-        case _ => countDotsInLiteralSource(str.tail, quotationsCount, dotsCount)
+        case None => false
       }
-      case None => dotsCount
     }
+
+    !dotExistsOutsideStringLiterals(str, 0)
   }
 
   def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
 
     def appendSchema(dbSchema: String, source: String): String = {
       if (source.startsWith("(")) {
-        // The source could be sub query, in which case we don't append the schema
+        // The source could be sub-query, in which case we don't append the schema
         source
       } else {
         // The datasource syntax uses dots to separate schema and database name of the table.
         // For example, schema.dftest or database.schema.dftest.
         // Counting the dots allow us to know if we need to append the schema or not.
-        val dotCount: Int = if (source.contains("\"")) {
-          // source can contains literal string, like schema."df_test"
-          countDotsInLiteralSource(source, 0, 0)
+        // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
+        val appendSchema: Boolean = if (source.contains("\"")) {
+          // source can contains literal string like schema."df_test"
+          dotNotExistOutsideStringLiteral(source)
         } else {
-          source.split("\\.").length - 1
+          source.split("\\.").length < 2
         }
 
-        if (dotCount == 0) {
+        if (appendSchema) {
           s"$dbSchema." + source
         } else {
           source
@@ -706,7 +712,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     }
 
     /**
-     * Recursion locate the FROM clause table for processing.
+     * Recursion locate the FROM clause for processing.
      * */
     @tailrec
     def recursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
@@ -726,7 +732,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
     /**
      * Given a query, we need to located the FROM clause and append the schema to the table. The query could contains
-     * sub queries, string literals, or already defined a schema. All cases will need to be handled as well
+     * sub queries, string literals, or already defined a schema, and will all need to be handled.
      * */
     val queryParts = query.split(" ").toList
     dbSchema match {

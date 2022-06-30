@@ -1148,9 +1148,9 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "add schema to query" in {
-    val query = "SELECT * From dftest join dftest2 on dftest.a = dftest2.b where x = 1"
+    val query = "SELECT * From dftest join    dftest2 on dftest.a = dftest2.b where x = 1"
     assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema"))
-      == "SELECT * From schema.dftest join dftest2 on dftest.a = dftest2.b where x = 1")
+      == "SELECT * From schema.dftest join    dftest2 on dftest.a = dftest2.b where x = 1")
   }
 
   it should "not add schema to query with sub-query in FROM clause" in {
@@ -1175,7 +1175,7 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
   }
 
   it should "not add schema to query with literal table name, schema, and database" in {
-    val query = "SELECT * From \"database\".\"schema\".\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    val query = "SELECT * From \"data.base\".\"test\".\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
     assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
   }
 
