@@ -658,31 +658,31 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     }
   }
 
-  private def dotNotExistOutsideStringLiteral(str: String): Boolean = {
+  private def noDotOutsideStringLiteral(str: String): Boolean = {
 
     /**
      * Find the first dot outside of a string literal
      * */
     @tailrec
-    def dotExistsOutsideStringLiterals(str: String, quotationsCount: Int): Boolean = {
+    def dotOutsideStringLiterals(str: String, quotationsCount: Int): Boolean = {
       str.headOption match {
         case Some(head) => head match {
           // tracking if inside quotation
-          case '"' => dotExistsOutsideStringLiterals(str.tail, (quotationsCount + 1) % 2)
+          case '"' => dotOutsideStringLiterals(str.tail, (quotationsCount + 1) % 2)
           case '.' =>
             if (quotationsCount == 0) {
               // Only count dot if outside of string literal
               true
             } else {
-              dotExistsOutsideStringLiterals(str.tail, quotationsCount)
+              dotOutsideStringLiterals(str.tail, quotationsCount)
             }
-          case _ => dotExistsOutsideStringLiterals(str.tail, quotationsCount)
+          case _ => dotOutsideStringLiterals(str.tail, quotationsCount)
         }
         case None => false
       }
     }
 
-    !dotExistsOutsideStringLiterals(str, 0)
+    !dotOutsideStringLiterals(str, 0)
   }
 
   def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
@@ -698,7 +698,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
         // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
         val appendSchema: Boolean = if (source.contains("\"")) {
           // source can contains literal string like schema."df_test"
-          dotNotExistOutsideStringLiteral(source)
+          noDotOutsideStringLiteral(source)
         } else {
           source.split("\\.").length < 2
         }
