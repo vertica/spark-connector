@@ -13,7 +13,6 @@
 
 package com.vertica.spark.datasource.core
 
-import cats.data.NonEmptyList
 import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.fs.{FileStoreLayerInterface, ParquetFileMetadata}
@@ -204,7 +203,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   }
 
   it should "export using query" in {
-    val query = TableQuery("SELECT * FROM t where n > 777", "")
+    val query = TableQuery("SELECT * FROM t where n > 777", "", None)
     val config = makeReadConfig.copy(tableSource = query)
 
     val fileStoreLayer = mockFileStoreLayer(config, fileStoreConfig.address + "/" + query.identifier)
@@ -222,6 +221,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val columnDef = ColumnDef("col1", java.sql.Types.REAL, "REAL", 32, 32, signed = false, nullable = true, metadata)
 
     val mockSchemaTools = this.mockSchemaTools(List(columnDef), "col1", StructType(Nil), query)
+    (mockSchemaTools.addDbSchemaToQuery _).expects(*, *).returning(query.query)
 
     val pipe = new VerticaDistributedFilesystemReadPipe(config, fileStoreLayer, jdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mockSparkContext)
 
