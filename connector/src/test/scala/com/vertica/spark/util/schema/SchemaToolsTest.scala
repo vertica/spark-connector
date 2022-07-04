@@ -1174,9 +1174,20 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       == "SELECT * From schema.\"dftest\" join dftest2 on dftest.a = dftest2.b where x = 1")
   }
 
+  it should "add schema to query with literal table name \"df.test\" " in {
+    val query = "SELECT * From \"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema"))
+      == "SELECT * From schema.\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1")
+  }
+
+  it should "not add schema to query with FROM source \"test.schema\".\"dftest\" " in {
+    val query2 = "SELECT * From \"test.schema\".\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query2, Some("schema")) == query2)
+  }
+
   it should "not add schema to query with literal table name, schema, and database" in {
-    val query = "SELECT * From \"data.base\".\"test\".\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
-    assert(new SchemaTools().addDbSchemaToQuery(query, Some("schema")) == query)
+    val query2 = "SELECT * From \"data.base\".\"test\".\"df.test\" join dftest2 on dftest.a = dftest2.b where x = 1"
+    assert(new SchemaTools().addDbSchemaToQuery(query2, Some("schema")) == query2)
   }
 
   it should "not add schema to query with some literal table name, schema, and database" in {

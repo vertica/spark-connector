@@ -693,52 +693,26 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     findEmptyColumnName(schema.fields.toList)
   }
 
-  private def noDotOutsideStringLiteral(str: String): Boolean = {
-
-    /**
-     * Find the first dot outside of a string literal
-     * */
-    @tailrec
-    def dotOutsideStringLiterals(str: String, quotationsCount: Int): Boolean = {
-      str.headOption match {
-        case Some(head) => head match {
-          // tracking if inside quotation
-          case '"' => dotOutsideStringLiterals(str.tail, (quotationsCount + 1) % 2)
-          case '.' =>
-            if (quotationsCount == 0) {
-              // Only count dot if outside of string literal
-              true
-            } else {
-              dotOutsideStringLiterals(str.tail, quotationsCount)
-            }
-          case _ => dotOutsideStringLiterals(str.tail, quotationsCount)
-        }
-        case None => false
-      }
-    }
-
-    !dotOutsideStringLiterals(str, 0)
-  }
-
   def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
+
+    // The datasource syntax uses dots to separate schema and database name of the table.
+    // So finding a dot means we do not add a schema
+    // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
+
+    // This regex to capture sources that contain literals with schema defined, like: schema."table_name"
+    val literalSourceWithSchema = "\\.\".*\"".r
+    def noSchemaFound(source: String): Boolean = if (source.contains("\"")) {
+      literalSourceWithSchema.findFirstIn(source).isEmpty
+    } else {
+      source.split("\\.").length < 2
+    }
 
     def appendSchema(dbSchema: String, source: String): String = {
       if (source.startsWith("(")) {
         // The source could be sub-query, in which case we don't append the schema
         source
       } else {
-        // The datasource syntax uses dots to separate schema and database name of the table.
-        // For example, schema.dftest or database.schema.dftest.
-        // Counting the dots allow us to know if we need to append the schema or not.
-        // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
-        val appendSchema: Boolean = if (source.contains("\"")) {
-          // source can contains literal string like schema."df_test"
-          noDotOutsideStringLiteral(source)
-        } else {
-          source.split("\\.").length < 2
-        }
-
-        if (appendSchema) {
+        if (noSchemaFound(source)) {
           s"$dbSchema." + source
         } else {
           source
@@ -747,19 +721,19 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     }
 
     /**
-     * Recursion locate the FROM clause for processing.
+     * Recursion to locate the FROM clause for processing.
      * */
     @tailrec
-    def recursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
+    def addDbSchemaToQueryRecursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
       parts.headOption match {
         case Some(head) =>
           if(head.toLowerCase == "from") {
-            recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause = true)
+            addDbSchemaToQueryRecursion(parts.tail, dbSchema, query + s" $head", foundFROMClause = true)
           } else if (foundFROMClause) {
             val dataSource = appendSchema(dbSchema, head)
             query + s" $dataSource " + parts.tail.mkString(" ")
           } else {
-            recursion(parts.tail, dbSchema, query + s" $head", foundFROMClause)
+            addDbSchemaToQueryRecursion(parts.tail, dbSchema, query + s" $head", foundFROMClause)
           }
         case None => query
       }
@@ -767,11 +741,11 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
     /**
      * Given a query, we need to located the FROM clause and append the schema to the table. The query could contains
-     * sub queries, string literals, or already defined a schema, and will all need to be handled.
+     * sub queries, string literals, or already defined a schema, all of which needs to be handled.
      * */
     val queryParts = query.split(" ").toList
     dbSchema match {
-      case Some(schema) => recursion(queryParts, schema, "", foundFROMClause = false).trim
+      case Some(schema) => addDbSchemaToQueryRecursion(queryParts, schema, "", foundFROMClause = false).trim
       case None => query
     }
   }
