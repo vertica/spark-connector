@@ -699,7 +699,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     // So finding a dot means we do not add a schema
     // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
 
-    // This regex to capture sources that contain literals with schema defined, like: schema."table_name"
+    // This regex captures literal sources with a schema defined, ex: schema."table.name"
     val literalSourceWithSchema = "\\.\".*\"".r
     def noSchemaFound(source: String): Boolean = if (source.contains("\"")) {
       literalSourceWithSchema.findFirstIn(source).isEmpty
