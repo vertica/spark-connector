@@ -20,13 +20,13 @@ import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
+import org.apache.spark.sql.connector.expressions.Expression
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.connector.expressions.Expression
 
 trait PushdownFilter {
   def getFilterString: String
@@ -66,6 +66,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   protected val ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools()
+
+  protected val sparkVersionUtils: SparkVersionUtils = new SparkVersionUtils
 
 /**
   * Builds the class representing a scan of a Vertica table
@@ -177,20 +179,9 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   }
 
   private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
-    val sparkLegacyVersion = SparkSession.getActiveSession match {
-      case Some(sparkSession) =>
-        val parts = sparkSession.version.split("\\.")
-        if (parts.length >= 2) {
-          val major = parts(0).toInt
-          val minor = parts(1).toInt
-          major <= 3 && minor < 3
-        } else {
-          false
-        }
-      case None => false
-    }
-
-    val groupByExpressions: Array[Expression] = if(sparkLegacyVersion){
+    val (major, minor, _) = sparkVersionUtils.getSparkVersion
+    // The method we want is different in Spark 3.2.x
+    val groupByExpressions: Array[Expression] = if(major == 3 && minor == 2){
       classOf[Aggregation]
         .getDeclaredMethod("groupByColumns")
         .invoke(aggregation)
