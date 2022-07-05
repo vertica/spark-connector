@@ -13,37 +13,36 @@
 
 package com.vertica.spark.datasource.fs
 
-import java.net.URI
-import java.util
-import java.util.Collections
-import com.vertica.spark.datasource.core.DataBlock
-import com.vertica.spark.util.error.{CloseReadError, CloseWriteError, ConnectorError, CreateDirectoryAlreadyExistsError, CreateDirectoryError, CreateFileAlreadyExistsError, CreateFileError, DoneReading, FileListError, FileStoreThrownError, IntermediaryStoreReadError, IntermediaryStoreReaderNotInitializedError, IntermediaryStoreWriteError, IntermediaryStoreWriterNotInitializedError, MissingHDFSImpersonationTokenError, OpenReadError, OpenWriteError, RemoveDirectoryError, RemoveFileError}
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{CommonConfigurationKeys, FileSystem, Path}
-import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetOutputFormat, ParquetWriter}
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport
-import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import cats.implicits._
 import com.typesafe.scalalogging.Logger
-import com.vertica.spark.config.{AWSOptions, DistributedFilesystemReadConfig, FileStoreConfig, GCSOptions, LogProvider, ReadConfig}
+import com.vertica.spark.config._
+import com.vertica.spark.datasource.core.DataBlock
 import com.vertica.spark.datasource.partitions.parquet.ParquetFileRange
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{CommonConfigurationKeys, FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.parquet.filter2.compat.FilterCompat
+import org.apache.parquet.hadoop.{ParquetFileReader, ParquetFileWriter, ParquetOutputFormat, ParquetWriter}
 import org.apache.parquet.hadoop.ParquetOutputFormat.JobSummaryLevel
 import org.apache.parquet.hadoop.api.InitContext
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.hadoop.util.HadoopInputFile
-import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.parquet.io.{ColumnIOFactory, MessageColumnIO, RecordReader}
+import org.apache.parquet.io.api.RecordMaterializer
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport
 import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
 
-import collection.JavaConverters._
+import java.util
+import java.util.Collections
+import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 // Relevant parquet metadata
@@ -201,6 +200,8 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val LEGACY_PARQUET_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.datetimeRebaseModeInWrite"
   private val LEGACY_PARQUET_REBASE_MODE_IN_READ =  "spark.sql.legacy.parquet.datetimeRebaseModeInRead"
   private val LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.int96RebaseModeInWrite"
+  // Added to SQLConf in Spark 3.3.0 thus not backward compatible if using SQLConf.PARQUET_FIELD_ID_WRITE_ENABLED.
+  private val PARQUET_FIELD_ID_WRITE_ENABLED = "spark.sql.parquet.fieldId.write.enabled"
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -279,6 +280,9 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
   hdfsConfig.set(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
+
+  // Compatibility with Spark 3.3.x as it checks for this configuration
+  hdfsConfig.set(PARQUET_FIELD_ID_WRITE_ENABLED, "false")
   // Don't use SQLConf because that breaks things for users on Spark 3.2
   hdfsConfig.set(LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
   hdfsConfig.set(LEGACY_PARQUET_REBASE_MODE_IN_READ, "CORRECTED")
