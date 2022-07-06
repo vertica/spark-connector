@@ -21,7 +21,7 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     assert(instance.toBatch == instance)
   }
 
-  it should "planInputPartitions" in {
+  it should "correctly record partitioning information" in {
     val inputPartitions = Array(
       FilePartition(1, Array(
         PartitionedFile(InternalRow(), "path1", 0, 1, Array.empty),
@@ -46,15 +46,60 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
     val partitions = new VerticaScanWrapper(scan, readConfig).planInputPartitions()
     assert(partitions.head.isInstanceOf[VerticaFilePartition])
 
-    val verticaFilePartition = partitions.head.asInstanceOf[VerticaFilePartition]
-    assert(verticaFilePartition.index == 1)
+    {
+      // Checking first partition
+      val verticaFilePartition = partitions.head.asInstanceOf[VerticaFilePartition]
+      assert(verticaFilePartition.index == 1)
 
-    val fileCounts = verticaFilePartition.partitioningRecords.keySet.toList.length
-    assert(fileCounts == 4)
-    assert(verticaFilePartition.partitioningRecords("path1") == 2)
-    assert(verticaFilePartition.partitioningRecords("path2") == 2)
-    assert(verticaFilePartition.partitioningRecords("path3") == 2)
-    assert(verticaFilePartition.partitioningRecords("path4") == 1)
+      // Checking each VerticaFilePartition has the correct identities
+      assert(verticaFilePartition.getPortions.length == verticaFilePartition.files.length)
+      assert(verticaFilePartition.getPortions(0).filename == "path1")
+      assert(verticaFilePartition.getPortions(1).filename == "path2")
+
+      // Checking partitioning record count
+      assert(verticaFilePartition.partitioningRecords.keySet.toList.length == 4)
+      assert(verticaFilePartition.partitioningRecords("path1") == 2)
+      assert(verticaFilePartition.partitioningRecords("path2") == 2)
+      assert(verticaFilePartition.partitioningRecords("path3") == 2)
+      assert(verticaFilePartition.partitioningRecords("path4") == 1)
+    }
+
+    {
+      // Checking second partition
+      val verticaFilePartition = partitions(1).asInstanceOf[VerticaFilePartition]
+      assert(verticaFilePartition.index == 2)
+
+      // Checking each VerticaFilePartition has the correct identities
+      assert(verticaFilePartition.getPortions.length == verticaFilePartition.files.length)
+      assert(verticaFilePartition.getPortions(0).filename == "path2")
+      assert(verticaFilePartition.getPortions(1).filename == "path1")
+      assert(verticaFilePartition.getPortions(2).filename == "path3")
+
+      // Checking partitioning record count
+      assert(verticaFilePartition.partitioningRecords.keySet.toList.length == 4)
+      assert(verticaFilePartition.partitioningRecords("path1") == 2)
+      assert(verticaFilePartition.partitioningRecords("path2") == 2)
+      assert(verticaFilePartition.partitioningRecords("path3") == 2)
+      assert(verticaFilePartition.partitioningRecords("path4") == 1)
+    }
+
+    {
+      // Checking third partition
+      val verticaFilePartition = partitions(2).asInstanceOf[VerticaFilePartition]
+      assert(verticaFilePartition.index == 3)
+
+      // Checking each VerticaFilePartition has the correct identities
+      assert(verticaFilePartition.getPortions.length == verticaFilePartition.files.length)
+      assert(verticaFilePartition.getPortions(0).filename == "path3")
+      assert(verticaFilePartition.getPortions(1).filename == "path4")
+
+      // Checking partitioning record count
+      assert(verticaFilePartition.partitioningRecords.keySet.toList.length == 4)
+      assert(verticaFilePartition.partitioningRecords("path1") == 2)
+      assert(verticaFilePartition.partitioningRecords("path2") == 2)
+      assert(verticaFilePartition.partitioningRecords("path3") == 2)
+      assert(verticaFilePartition.partitioningRecords("path4") == 1)
+    }
   }
 
   it should "create PartitionReaderWrapperFactory" in {

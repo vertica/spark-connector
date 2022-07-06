@@ -19,8 +19,6 @@ import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionRead
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType
 
-import scala.collection.mutable.ArrayBuffer
-
 /**
  * Wraps a [[Scan]] so that it will create a [[PartitionReaderWrapperFactory]]
  *
@@ -35,23 +33,24 @@ class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan wi
    * */
   override def planInputPartitions(): Array[InputPartition] = {
     val partitioningRecords = scala.collection.mutable.Map[String, Int]()
-    val fileIdentities = new ArrayBuffer[PartitionedFileIdentity]()
 
-    /**
-     * Make a file portion and record it.
-     * */
-    def makeFilePortion(file: PartitionedFile): PartitionedFile = {
-      val key = file.filePath
-      val count = partitioningRecords.getOrElse(key, 0)
-      partitioningRecords.put(key, count + 1)
-      fileIdentities.append(PartitionedFileIdentity(file.filePath, file.start))
-      file
+    def recordFiles(files: Array[PartitionedFile]): Array[PartitionedFileIdentity] = {
+      // Record each files to the count and create each an identity
+      files.map(file => {
+        val key = file.filePath
+        val count = partitioningRecords.getOrElse(key, 0)
+        partitioningRecords.put(key, count + 1)
+        PartitionedFileIdentity(file.filePath, file.start)
+      })
     }
 
     scan.toBatch.planInputPartitions()
       .map(partition => partition.asInstanceOf[FilePartition])
-      .map(filePartition => filePartition.copy(files = filePartition.files.map(makeFilePortion)))
-      .map(partition => new VerticaFilePartition(partition.index, partition.files, fileIdentities.toArray, partitioningRecords.toMap))
+      .map(filePartition => (filePartition, recordFiles(filePartition.files)))
+      .map(result => {
+        val (filePartition, fileIdentities) = result
+        new VerticaFilePartition(filePartition.index, filePartition.files, fileIdentities, partitioningRecords.toMap)
+      })
   }
 
   override def createReaderFactory(): PartitionReaderFactory = {
