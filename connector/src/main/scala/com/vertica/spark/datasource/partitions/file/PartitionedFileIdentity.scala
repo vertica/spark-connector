@@ -11,20 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions.mixin
+package com.vertica.spark.datasource.partitions.file
 
-/**
- * Mixin trait for data portion containing information that identify itself amongst other portions.
- * */
-trait Identifiable {
+import com.vertica.spark.datasource.partitions.mixin.Identifiable
 
-  /**
-   * @return the name of the file the portion belongs to
-   * */
-  def filename: String
-
-  /**
-   * @return the portion's index amongst the other portions of a file.
-   * */
-  def index: Long
-}
+case class PartitionedFileIdentity(filename: String, index: Long) extends Identifiable

@@ -46,7 +46,7 @@ trait CleanupUtilsInterface {
 
 class CleanupUtils extends CleanupUtilsInterface {
   private val logger = LogProvider.getLogger(classOf[CleanupUtils])
-  private def recordFileName(filename: String, idx: Int) = filename + ".cleanup" + idx
+  private def recordFileName(filename: String, idx: Long) = filename + ".cleanup" + idx
 
   def cleanupAll(fileStoreLayer: FileStoreLayerInterface, path: String) : ConnectorResult[Unit] = {
     // Cleanup parent dir (unique id)

@@ -20,4 +20,4 @@ package com.vertica.spark.util.cleanup
  * @param fileIdx        Which portion of the file is done being read.
  * @param fileRangeCount How many portions of the file exist.
  */
-final case class FileCleanupInfo(filename: String, fileIdx: Int, fileRangeCount: Int)
+final case class FileCleanupInfo(filename: String, fileIdx: Long, fileRangeCount: Int)

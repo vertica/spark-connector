@@ -26,5 +26,5 @@ import com.vertica.spark.datasource.partitions.mixin.Identifiable
  */
 final case class ParquetFileRange(filename: String, minRowGroup: Int, maxRowGroup: Int, rangeIdx: Int) extends Identifiable {
 
-  override def index: Int = this.rangeIdx
+  override def index: Long = this.rangeIdx
 }
