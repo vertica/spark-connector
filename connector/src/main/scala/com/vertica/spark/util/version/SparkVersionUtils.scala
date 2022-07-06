@@ -16,6 +16,10 @@ package com.vertica.spark.util.version
 import org.apache.spark.sql.SparkSession
 
 class SparkVersionUtils {
+
+  /**
+   * @return a tuple containing Spark version numbers in the format (major, minor, patch)
+   * */
   def getSparkVersion: (Int, Int, Int) = SparkSession.getActiveSession match {
     case Some(sparkSession) =>
       val parts = sparkSession.version.split("\\.")
