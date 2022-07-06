@@ -182,10 +182,12 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
     val (major, minor, _) = sparkVersionUtils.getSparkVersion
     // The method we want is different in Spark 3.2.x
     val groupByExpressions: Array[Expression] = if(major == 3 && minor == 2){
+      // $COVERAGE-OFF$
       classOf[Aggregation]
         .getDeclaredMethod("groupByColumns")
         .invoke(aggregation)
         .asInstanceOf[Array[Expression]]
+      // $COVERAGE-ON$
     } else {
       aggregation.groupByExpressions()
     }
