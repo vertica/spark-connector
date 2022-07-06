@@ -3141,52 +3141,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  // This behavior is invalid for Spark 3.3.0.
-  ignore should "fail to save a DF with column names with spaces" in {
-    val tableName = "Quoted_Identifiers"
-
-    val options = writeOpts + ("table" -> tableName)
-    val rows = spark.sparkContext.parallelize(Array(
-      Row(1)
-    ))
-    val schema = StructType(Array(
-      StructField("My sequence", IntegerType, nullable=false)
-    ))
-
-    val df = spark.createDataFrame(rows,schema)
-
-    val mode = SaveMode.Overwrite
-
-    var failure: Option[Exception] = None
-    try {
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options).mode(mode).save()
-    }
-    catch {
-      case e: java.lang.Exception => failure = Some(e)
-    }
-    failure match {
-      case None => fail("Expected error.")
-      case Some(exception) =>
-        val err: ConnectorError = exception match {
-          case e: SparkException =>
-            assert(e.getCause.getCause.isInstanceOf[ConnectorException])
-            exception.asInstanceOf[SparkException].getCause.asInstanceOf[SparkException].getCause.asInstanceOf[ConnectorException].error.getUnderlyingError
-
-          case e: AnalysisException =>
-            val error: ConnectorError = OpenWriteError(e)
-            error
-
-          case _ => fail("Exception type was not SparkException or AnalysisException.")
-        }
-        val bool = err match {
-          case OpenWriteError(_) => true
-          case _ => fail("Incorrect error type")
-        }
-    }
-
-    TestUtils.dropTable(conn, tableName)
-  }
-
   it should "fail to save a DF if target_table_sql doesn't generate the right table" in {
     // table name is inconsistent with the DDL
     val tableName = "targetTable"
