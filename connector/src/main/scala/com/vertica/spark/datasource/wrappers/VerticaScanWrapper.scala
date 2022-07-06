@@ -32,24 +32,24 @@ class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan wi
    * Calls the wrapped scan to plan inputs. Then process them into [[VerticaFilePartition]] with partitioning info
    * */
   override def planInputPartitions(): Array[InputPartition] = {
-    val partitioningRecords = scala.collection.mutable.Map[String, Int]()
+    val partitioningCounts = scala.collection.mutable.Map[String, Int]()
 
-    def recordFiles(files: Array[PartitionedFile]): Array[PartitionedFileIdentity] = {
+    def makeFilesIdentity(files: Array[PartitionedFile]): Array[PartitionedFileIdentity] = {
       // Record each files to the count and create each an identity
       files.map(file => {
         val key = file.filePath
-        val count = partitioningRecords.getOrElse(key, 0)
-        partitioningRecords.put(key, count + 1)
+        val count = partitioningCounts.getOrElse(key, 0)
+        partitioningCounts.put(key, count + 1)
         PartitionedFileIdentity(file.filePath, file.start)
       })
     }
 
     scan.toBatch.planInputPartitions()
       .map(partition => partition.asInstanceOf[FilePartition])
-      .map(filePartition => (filePartition, recordFiles(filePartition.files)))
+      .map(filePartition => (filePartition, makeFilesIdentity(filePartition.files)))
       .map(result => {
         val (filePartition, fileIdentities) = result
-        new VerticaFilePartition(filePartition.index, filePartition.files, fileIdentities, partitioningRecords.toMap)
+        new VerticaFilePartition(filePartition.index, filePartition.files, fileIdentities, partitioningCounts.toMap)
       })
   }
 
