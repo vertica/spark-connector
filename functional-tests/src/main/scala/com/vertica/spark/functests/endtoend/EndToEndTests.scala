@@ -3141,7 +3141,8 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
-  it should "fail to save a DF with column names with spaces" in {
+  // This behavior is invalid for Spark 3.3.0.
+  ignore should "fail to save a DF with column names with spaces" in {
     val tableName = "Quoted_Identifiers"
 
     val options = writeOpts + ("table" -> tableName)
