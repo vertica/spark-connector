@@ -67,8 +67,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
 
   protected val ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools()
 
-  protected val sparkVersionUtils: SparkVersionUtils = new SparkVersionUtils
-
 /**
   * Builds the class representing a scan of a Vertica table
   *
@@ -179,7 +177,7 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   }
 
   private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
-    val (major, minor, _) = sparkVersionUtils.getSparkVersion
+    val (major, minor) = SparkVersionUtils.getSparkVersion
     // The method we want is different in Spark 3.2.x
     val groupByExpressions: Array[Expression] = if(major == 3 && minor == 2){
       // $COVERAGE-OFF$
