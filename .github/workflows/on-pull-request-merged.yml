@@ -1,0 +1,11 @@
+name: On Pull Request Merged
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  build:
+    uses: vertica/spark-connector/.github/workflows/build.yml@updating_test_pipelines
+  regression-testing:
+    uses: vertica/spark-connector/.github/workflows/regression-testing.yml@updating_test_pipelines
