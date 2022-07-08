@@ -33,7 +33,7 @@ jobs:
           fail_ci_if_error: true
           verbose: true
   run-integration-tests:
-    uses: vertica/spark-connector/.github/workflows/funtional-test.yml@main
+    uses: vertica/spark-connector/.github/workflows/functional-test.yml@main
     with:
       spark-version: 3.3.0
       vertica-verison: 11.1.1-2
