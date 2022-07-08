@@ -27,7 +27,7 @@ case class Version(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int
 
   def lessThan(version: Version): Boolean = this.compare(version) < 0
 
-  def equals(version: Version): Boolean = this.compare(version) == 0
+  def isEquals(version: Version): Boolean =  this.compare(version) == 0
 
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 

@@ -24,8 +24,6 @@ import org.apache.spark.sql.connector.expressions.Expression
 class DSReadCompatibilityTools(reflection: ReflectionTools = new ReflectionTools) {
 
   def getGroupByExpressions(sparkVersion: Version, aggObj: Aggregation): Array[Expression] = {
-    val x = sparkVersion.compare(Version(3,3))
-    println(x)
     if(sparkVersion.lessThan(Version(3, 3))){
       // $COVERAGE-OFF$
       reflection.aggregationInvokeMethod[Array[Expression]](aggObj, "groupByColumns")

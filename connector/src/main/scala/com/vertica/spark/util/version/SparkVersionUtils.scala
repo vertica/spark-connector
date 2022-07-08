@@ -21,11 +21,10 @@ object SparkVersionUtils {
 
   def getVersion: Option[Version] = SparkSession.getActiveSession match {
     case Some(sparkSession) =>
-      val regex = "([0-9]*).([0-9]*).([0-9]*)-(.*)".r
+      val regex = "([0-9]+)\\.([0-9]+)\\.([0-9]+)".r
       Try{
-        val regex(major, minor, service, hotfix) = sparkSession.version
-        val hotfixNumber: Int = Try{hotfix.toInt}.getOrElse(0)
-        Some(Version(major.toInt, minor.toInt, service.toInt, hotfixNumber))
+        val regex(major, minor, service) = sparkSession.version
+        Some(Version(major.toInt, minor.toInt, service.toInt))
       }.getOrElse(None)
     case None => None
   }
