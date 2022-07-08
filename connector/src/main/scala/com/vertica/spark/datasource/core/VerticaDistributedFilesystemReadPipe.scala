@@ -220,9 +220,10 @@ class VerticaDistributedFilesystemReadPipe(
     val exportPath = fileStoreConfig.address + delimiter + config.tableSource.identifier
     logger.debug("Export path: " + exportPath)
 
-    def exportType: String = if(config.useJson) "JSON" else "PARQUET"
+    def buildExportStatement(exportPath: String): ConnectorResult[String] = {
 
-    def buildExportStatement(): ConnectorResult[String] = {
+      def exportType: String = if(config.useJson) "JSON" else "PARQUET"
+
       this.getSelectClause.map(selectClause => {
         // File permissions.
         val filePermissions = config.filePermissions
@@ -230,7 +231,7 @@ class VerticaDistributedFilesystemReadPipe(
         val pushdownFilters = this.addPushdownFilters(this.config.getPushdownFilters)
         val  exportSource = config.tableSource match {
           case tableName: TableName => tableName.getFullTableName
-          case TableQuery(query, _) => "(" + query + ") AS x"
+          case TableQuery(query, _, dbSchema) => "(" + schemaTools.addDbSchemaToQuery(query, dbSchema) + ") AS x"
         }
         val rowGroupSize = if(config.useJson) "" else ", rowGroupSizeMB = " + maxRowGroupSize
 
@@ -277,7 +278,7 @@ class VerticaDistributedFilesystemReadPipe(
       // Check if export is already done (previous call of this function)
       exportDone <- fileStoreLayer.fileExists(exportPath)
 
-      exportStatement <- buildExportStatement()
+      exportStatement <- buildExportStatement(exportPath)
 
       // Export if not already exported
       _ <- if(exportDone) {

@@ -216,7 +216,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
     TestUtils.dropTable(conn, tableName1)
   }
-  
+
   it should "read 20 rows of data from Vertica" in {
     val tableName1 = "dftest1"
     val stmt = conn.createStatement
@@ -4117,6 +4117,168 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     TestUtils.dropTable(conn, tableName)
+  }
+
+  it should "read a table using query option with dbschema option" in {
+    val schema = "test"
+    val tableName = "dftest"
+    val tableNameSchema = s"$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
+
+    val insert = "insert into " + tableNameSchema + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $tableName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> schema))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "read a table using query option using literal table name and dbschema option" in {
+    val schema = "test"
+    val tableName = "\"df_test\""
+    val tableNameSchema = s"$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, tableNameSchema, "create table " + tableNameSchema + " (a int)")
+
+    val insert = "insert into " + tableNameSchema + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $tableName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> schema))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "ignore dbschema option when reading a table using query containing schema and database" in {
+    val db = "docker"
+    val schema = "test"
+    val tableName = "dftest"
+    val fullName = s"$db.$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, fullName, "create table " + fullName + " (a int)")
+
+    val insert = "insert into " + fullName + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $fullName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> "invalid-schema"))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "ignore dbschema option when reading a table using a query where string literals contains a dot" in {
+    val schema = "\"test.schema\""
+    val tableName = "\"df.test\""
+    val fullName = s"$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, fullName, "create table " + fullName + " (a int)")
+
+    val insert = "insert into " + fullName + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $fullName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> "invalid-schema"))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
+  }
+
+  it should "ignore dbschema option when reading a table using query containing schema, database, and string literals" in {
+    val db = "docker"
+    val schema = "\"testschema\""
+    val tableName = "\"df.test\""
+    val fullName = s"$db.$schema.$tableName"
+    val stmt = conn.createStatement
+    val n = 1
+
+    TestUtils.cascadeDropThenCreateSchema(schema, conn)
+    TestUtils.createTableBySQL(conn, fullName, "create table " + fullName + " (a int)")
+
+    val insert = "insert into " + fullName + " values(2)"
+    TestUtils.populateTableBySQL(stmt, insert, n)
+
+    try {
+      val query = s"select * from $fullName"
+      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          readOpts +
+            ("query" -> query) +
+            ("dbschema" -> "invalid-schema"))
+        .load()
+
+      assert(df.count() == 1)
+      df.rdd.foreach(row => assert(row.getAs[Long](0) == 2))
+
+    } catch {
+      case e: Exception => fail(e)
+    } finally {
+      TestUtils.cascadeDropSchema(schema, conn)
+    }
   }
 
 }

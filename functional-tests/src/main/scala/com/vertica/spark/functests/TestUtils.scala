@@ -153,4 +153,23 @@ object TestUtils {
     fsLayer.createDir(path, "777")
   }
 
+  def cascadeDropThenCreateSchema(schema: String, conn: Connection): Boolean = {
+    val stmt = conn.createStatement()
+    try{
+      stmt.execute(s"drop schema if exists $schema cascade")
+      stmt.execute(s"create schema $schema")
+    } finally {
+      stmt.close()
+    }
+  }
+
+  def cascadeDropSchema(schema: String, conn: Connection): Boolean = {
+    val stmt = conn.createStatement()
+    try{
+      stmt.execute(s"drop schema if exists $schema cascade")
+    } finally {
+      stmt.close()
+    }
+  }
+
 }

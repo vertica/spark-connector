@@ -142,6 +142,16 @@ trait SchemaToolsInterface {
    * @param schema schema of the table
    */
   def checkValidTableSchema(schema: StructType): ConnectorResult[Unit]
+
+  /**
+   * Given a query, append the schema to the FROM clause table.
+   * Ignore if FROM clause is a sub query or already has a schema.
+   *
+   * @param query an SQL query
+   * @param schema an optional schema to be added.
+   * @return the query with the added schema.
+   * */
+  def addDbSchemaToQuery(query: String, schema: Option[String]): String
 }
 
 class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools) extends SchemaToolsInterface {
@@ -267,7 +277,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   def getColumnInfo(jdbcLayer: JdbcLayerInterface, tableSource: TableSource): ConnectorResult[Seq[ColumnDef]] = {
     val emptyQuery = tableSource match {
       case tb: TableName => "SELECT * FROM " + tb.getFullTableName + " WHERE 1=0"
-      case TableQuery(query, _) => "SELECT * FROM (" + query + ") AS x WHERE 1=0"
+      case TableQuery(query, _, schema) => "SELECT * FROM (" + addDbSchemaToQuery(query, schema) + ") AS x WHERE 1=0"
     }
    // We query an empty result to get the table's metadata.
     jdbcLayer.query(emptyQuery) match {
@@ -682,6 +692,63 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     // Use recursion to break early
     findEmptyColumnName(schema.fields.toList)
   }
+
+  def addDbSchemaToQuery(query: String, dbSchema: Option[String]): String = {
+
+    // The datasource syntax uses dots to separate schema and database name of the table.
+    // So finding a dot means we do not add a schema
+    // Docs: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/SELECT/table-ref.htm
+
+    // This regex captures literal sources with a schema defined, ex: schema."table.name"
+    val literalSourceWithSchema = "\\.\".*\"".r
+    def noSchemaFound(source: String): Boolean = if (source.contains("\"")) {
+      literalSourceWithSchema.findFirstIn(source).isEmpty
+    } else {
+      source.split("\\.").length < 2
+    }
+
+    def appendSchema(dbSchema: String, source: String): String = {
+      if (source.startsWith("(")) {
+        // The source could be sub-query, in which case we don't append the schema
+        source
+      } else {
+        if (noSchemaFound(source)) {
+          s"$dbSchema." + source
+        } else {
+          source
+        }
+      }
+    }
+
+    /**
+     * Recursion to locate the FROM clause for processing.
+     * */
+    @tailrec
+    def addDbSchemaToQueryRecursion(parts: List[String], dbSchema: String, query: String, foundFROMClause: Boolean): String = {
+      parts.headOption match {
+        case Some(head) =>
+          if(head.toLowerCase == "from") {
+            addDbSchemaToQueryRecursion(parts.tail, dbSchema, query + s" $head", foundFROMClause = true)
+          } else if (foundFROMClause) {
+            val dataSource = appendSchema(dbSchema, head)
+            query + s" $dataSource " + parts.tail.mkString(" ")
+          } else {
+            addDbSchemaToQueryRecursion(parts.tail, dbSchema, query + s" $head", foundFROMClause)
+          }
+        case None => query
+      }
+    }
+
+    /**
+     * Given a query, we need to located the FROM clause and append the schema to the table. The query could contains
+     * sub queries, string literals, or already defined a schema, all of which needs to be handled.
+     * */
+    val queryParts = query.split(" ").toList
+    dbSchema match {
+      case Some(schema) => addDbSchemaToQueryRecursion(queryParts, schema, "", foundFROMClause = false).trim
+      case None => query
+    }
+  }
 }
 
 /**
@@ -700,7 +767,7 @@ class SchemaToolsV10 extends SchemaTools {
               val unQuotedName = tb.getTableName.replaceAll("\"", "")
               val unQuotedDbSchema = tb.getDbSchema.replaceAll("\"", "")
               checkForComplexType(col, unQuotedName, unQuotedDbSchema, jdbcLayer)
-            case TableQuery(_,_) => Right(col)
+            case TableQuery(_,_,_) => Right(col)
           }
         )
           .toList
