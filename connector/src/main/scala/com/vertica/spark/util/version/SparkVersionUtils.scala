@@ -15,21 +15,18 @@ package com.vertica.spark.util.version
 
 import org.apache.spark.sql.SparkSession
 
+import scala.util.Try
+
 object SparkVersionUtils {
 
-  /**
-   * @return a tuple containing Spark version numbers in the format (major, minor, patch)
-   * */
-  def getSparkVersion: (Int, Int) = SparkSession.getActiveSession match {
+  def getVersion: Option[Version] = SparkSession.getActiveSession match {
     case Some(sparkSession) =>
-      val parts = sparkSession.version.split("\\.")
-      if (parts.length >= 2) {
-        val major = parts(0).toInt
-        val minor = parts(1).toInt
-        (major, minor)
-      } else {
-        (0, 0)
-      }
-    case None => (0, 0)
+      val regex = "([0-9]*).([0-9]*).([0-9]*)-(.*)".r
+      Try{
+        val regex(major, minor, service, hotfix) = sparkSession.version
+        val hotfixNumber: Int = Try{hotfix.toInt}.getOrElse(0)
+        Some(Version(major.toInt, minor.toInt, service.toInt, hotfixNumber))
+      }.getOrElse(None)
+    case None => None
   }
 }

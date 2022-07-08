@@ -22,8 +22,7 @@ import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema.{SchemaTools, SchemaToolsV10}
 import com.vertica.spark.util.table.TableUtils
-import com.vertica.spark.util.version.{VerticaVersion, VerticaVersionUtils}
-import org.apache.log4j.LogManager
+import com.vertica.spark.util.version.{Version, VerticaVersionUtils}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
@@ -75,7 +74,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case Some(session) => Some(session.sparkContext)
         }
 
-        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(readLayerJdbc.get) else VerticaVersion(0)
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(readLayerJdbc.get) else Version(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
 
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
@@ -96,9 +95,9 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
         val jdbcLayer = writeLayerJdbc.get
 //        This check is done so that executor won't create a jdbc connection through lazy init.
-        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(jdbcLayer) else VerticaVersion(0)
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(jdbcLayer) else Version(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
-        if(verticaVersion.largerOrEqual(VerticaVersion(11,1,1))){
+        if(verticaVersion.largerOrEqual(Version(11,1,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,
             new HadoopFileStoreLayer(cfg.fileStoreConfig, Some(cfg.schema)),
             jdbcLayer,
