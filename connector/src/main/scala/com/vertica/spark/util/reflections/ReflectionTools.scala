@@ -19,7 +19,7 @@ import com.vertica.spark.datasource.v2.{VerticaScanBuilder, VerticaScanBuilderWi
 import org.apache.spark.sql.connector.expressions.aggregate.Aggregation
 
 class ReflectionTools {
-  def makeScanBuilderWithPushDown(config: ReadConfig, readSetupInterface: DSConfigSetupInterface[ReadConfig]): VerticaScanBuilderWithPushdown = {
+  def makeScanBuilderWithPushDown(config: ReadConfig, readSetupInterface: DSConfigSetupInterface[ReadConfig]): VerticaScanBuilder = {
     classOf[VerticaScanBuilderWithPushdown]
       .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
       .newInstance(config, readSetupInterface)
