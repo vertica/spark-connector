@@ -30,8 +30,8 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "11.0.2-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.2.1"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.2.1"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.3.0"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.3.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.0"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2" % Test
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"

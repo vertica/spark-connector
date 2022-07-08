@@ -23,7 +23,7 @@ import com.vertica.spark.datasource.json.VerticaJsonScan
 import com.vertica.spark.datasource.partitions.parquet.VerticaDistributedFilesystemPartition
 import com.vertica.spark.util.error._
 import org.apache.spark.sql.connector.catalog._
-import org.apache.spark.sql.connector.expressions.{NamedReference, Transform}
+import org.apache.spark.sql.connector.expressions.{Expression, NamedReference, Transform}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -222,10 +222,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       new Count(columnA,false),
       new Max(columnB)
     )
-    val groupBy: Array[NamedReference] = Array(
-      columnC
-    )
-    val aggregates: Aggregation = new Aggregation(aggregatesFuncs,groupBy)
+    val groupBy: Array[Expression] = Array(columnC)
+    val aggregates: Aggregation = new Aggregation(aggregatesFuncs, groupBy)
     val countPushed = scanBuilder.pushAggregation(aggregates)
     assert(countPushed)
     val requiredSchema = scanBuilder.build().readSchema()
@@ -235,8 +233,10 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(requiredSchema.fields(2).name == "MAX(b)")
   }
 
-  case class UnknownAggregateFunc() extends AggregateFunc{
+  case class UnknownAggregateFunc() extends AggregateFunc {
     override def describe(): String = "UnknownAggregate"
+
+    override def children(): Array[Expression] = Array()
   }
 
   it should "not push down unknown aggregates" in {

@@ -14,17 +14,19 @@
 package com.vertica.spark.datasource.v2
 
 import com.typesafe.scalalogging.Logger
-import org.apache.spark.sql.connector.read._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.InternalRow
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
+import com.vertica.spark.util.version.SparkVersionUtils
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
+import org.apache.spark.sql.connector.expressions.Expression
+import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.types._
 
 trait PushdownFilter {
   def getFilterString: String
@@ -155,9 +157,7 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
         // short circuit
         case aggregate => ErrorHandling.logAndThrowError(logger, AggregateNotSupported(aggregate.describe()))
       }
-      val groupByColumnsStructFields = aggregation.groupByColumns.map(col => {
-        StructField(col.describe, getColType(col.describe), nullable = false, Metadata.empty)
-      })
+      val groupByColumnsStructFields = getGroupByColumns(aggregation)
       this.requiredSchema = StructType(groupByColumnsStructFields ++ aggregatesStructFields)
       this.groupBy = groupByColumnsStructFields
       this.aggPushedDown = true
@@ -174,6 +174,24 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
     }
     // if false, the read is continued with no push down.
     this.aggPushedDown
+  }
+
+  private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
+    val (major, minor) = SparkVersionUtils.getSparkVersion
+    // The method we want is different in Spark 3.2.x
+    val groupByExpressions: Array[Expression] = if(major == 3 && minor == 2){
+      // $COVERAGE-OFF$
+      classOf[Aggregation]
+        .getDeclaredMethod("groupByColumns")
+        .invoke(aggregation)
+        .asInstanceOf[Array[Expression]]
+      // $COVERAGE-ON$
+    } else {
+      aggregation.groupByExpressions()
+    }
+
+    groupByExpressions
+      .map(expr => StructField(expr.describe, getColType(expr.describe), nullable = false, Metadata.empty))
   }
 }
 
