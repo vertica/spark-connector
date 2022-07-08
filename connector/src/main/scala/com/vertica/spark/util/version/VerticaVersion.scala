@@ -25,16 +25,16 @@ import scala.util.Try
 object VerticaVersionUtils {
 
   private val logger = LogProvider.getLogger(this.getClass)
-  private val version: Option[Version] = None
+  private val version: Option[VerticaVersion] = None
   // Should always be the latest major release.
   // scalastyle:off
-  val VERRTICA_LATEST: Version = Version(11)
+  val VERRTICA_LATEST: VerticaVersion = VerticaVersion(11)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
   /**
    * Query and cache Vertica version. Return the default version on any error.
    * */
-  def getVersion(jdbcLayer: JdbcLayerInterface): Version =
+  def getVersion(jdbcLayer: JdbcLayerInterface): VerticaVersion =
     JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, (rs) => {
       val verticaVersion = extractVersion(rs.getString(1))
       logger.info("VERTICA VERSION: " + verticaVersion)
@@ -44,15 +44,15 @@ object VerticaVersionUtils {
       Left(NoResultError(query))
     }).getOrElse(VERRTICA_LATEST)
 
-  private def extractVersion(str: String): Version = {
+  private def extractVersion(str: String): VerticaVersion = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
     Try{
       val pattern(major, minor, service, hotfix) = str
-      Version(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
+      VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
     }.getOrElse(VERRTICA_LATEST)
   }
 
-  def checkSchemaTypesWriteSupport(schema: StructType, version: Version, toInternalTable: Boolean): ConnectorResult[Unit] = {
+  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion, toInternalTable: Boolean): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val complexTypeFound = complexTypeCols.nonEmpty
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
@@ -78,7 +78,7 @@ object VerticaVersionUtils {
     }
   }
 
-  def checkSchemaTypesReadSupport(schema: StructType, version: Version): ConnectorResult[Unit] = {
+  def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 10) {
@@ -87,7 +87,7 @@ object VerticaVersionUtils {
       else if (nativeArrayCols.nonEmpty)
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
       else Right()
-    } else if (version.lesserOrEqual(Version(11, 1))) {
+    } else if (version.lesserOrEqual(VerticaVersion(11, 1))) {
       if (complexTypeCols.nonEmpty)
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       else
@@ -100,8 +100,8 @@ object VerticaVersionUtils {
   /**
    * Export to Json was added in Vertica 11.1.1
    * */
-  def checkJsonSupport(version: Version): ConnectorResult[Unit] =
-    if(version.lessThan(Version(11,1,1))){
+  def checkJsonSupport(version: VerticaVersion): ConnectorResult[Unit] =
+    if(version.lessThan(VerticaVersion(11,1,1))){
       Left(ExportToJsonNotSupported(version.toString))
     }  else {
       Right()
@@ -109,4 +109,19 @@ object VerticaVersionUtils {
 
 }
 
+case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
 
+  def largerOrEqual(version: VerticaVersion): Boolean = this.compare(version) >= 0
+
+  def largerThan(version: VerticaVersion): Boolean = this.compare(version) > 0
+
+  def lesserOrEqual(version: VerticaVersion): Boolean = this.compare(version) <= 0
+
+  def lessThan(version: VerticaVersion): Boolean = this.compare(version) < 0
+
+  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
+
+  override def compare(that: VerticaVersion): Int =
+    (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
+      (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
+}

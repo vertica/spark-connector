@@ -81,7 +81,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Allow writing primitive" in {
     (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesWriteSupport(primitiveTypeSchema, Version(i), toInternalTable = true) match {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(primitiveTypeSchema, VerticaVersion(i), toInternalTable = true) match {
         case Right(_) =>
         case Left(err) => fail(err.toString)
       }
@@ -90,7 +90,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Error on writing arrays and rows types to Vertica version <= 9" in {
     (1 to 9).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, Version(i), toInternalTable = true) match {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, VerticaVersion(i), toInternalTable = true) match {
         case Right(_) => fail
         case Left(err) =>
           assert(err.isInstanceOf[ComplexTypeWriteNotSupported])
@@ -101,7 +101,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Error on writing native arrays to Vertica version <= 9" in {
     (1 to 9).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, Version(i), toInternalTable = true) match {
+      VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(i), toInternalTable = true) match {
         case Right(_) => fail
         case Left(err) =>
           assert(err.isInstanceOf[NativeArrayWriteNotSupported])
@@ -112,14 +112,14 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Allow writing native array to Vertica 10" in {
     // scalastyle:off
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, Version(10), toInternalTable = true) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(10), toInternalTable = true) match {
       case Right(_) => succeed
       case Left(_) => fail
     }
   }
 
   it should "Error on writing arrays and rows to Vertica 10" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, Version(10), toInternalTable = true) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, VerticaVersion(10), toInternalTable = true) match {
       case Right(_) => fail
       case Left(err) =>
         assert(err.isInstanceOf[ComplexTypeWriteNotSupported])
@@ -128,21 +128,21 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Allow writing arrays and rows to Vertica 11" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, Version(11), toInternalTable = true) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, VerticaVersion(11), toInternalTable = true) match {
       case Right(_) => succeed
       case Left(err) => fail(err.toString)
     }
   }
 
   it should "Allow writing native array to Vertica 11" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, Version(11), toInternalTable = true) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(nativeArraySchema, VerticaVersion(11), toInternalTable = true) match {
       case Right(_) => succeed
       case Left(err) => fail(err.toString)
     }
   }
 
   it should "Error on writing Map to internal tables in Vertica 11" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(mapSchema, Version(11), toInternalTable = true) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(mapSchema, VerticaVersion(11), toInternalTable = true) match {
       case Right(_) => fail()
       case Left(err) =>
         assert(err.isInstanceOf[InternalMapNotSupported])
@@ -150,7 +150,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Allow writing Map to external tables in Vertica 11" in {
-    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, Version(11), toInternalTable = false) match {
+    VerticaVersionUtils.checkSchemaTypesWriteSupport(rowsAndArraysSchema, VerticaVersion(11), toInternalTable = false) match {
       case Right(_) => succeed
       case Left(err) => fail(err.getFullContext)
     }
@@ -158,7 +158,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Allow reading primitive types" in {
     (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesReadSupport(primitiveTypeSchema, Version(i)) match {
+      VerticaVersionUtils.checkSchemaTypesReadSupport(primitiveTypeSchema, VerticaVersion(i)) match {
         case Right(_) =>
         case Left(err) => fail(err.toString)
       }
@@ -167,7 +167,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
 
   it should "Error on reading arrays and rows" in {
     (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
-      VerticaVersionUtils.checkSchemaTypesReadSupport(rowsAndArraysSchema, Version(i)) match {
+      VerticaVersionUtils.checkSchemaTypesReadSupport(rowsAndArraysSchema, VerticaVersion(i)) match {
         case Right(_) => fail
         case Left(err) =>
           assert(err.isInstanceOf[ComplexTypeReadNotSupported])
@@ -177,41 +177,41 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Allow reading native array on Vertica 11" in {
-    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema, Version(11)) match {
+    VerticaVersionUtils.checkSchemaTypesReadSupport(nativeArraySchema, VerticaVersion(11)) match {
       case Right(_) => succeed
       case Left(err) => fail
     }
   }
 
   it should "block version < 11.1.1 when checking for Json export support" in {
-    assert(VerticaVersionUtils.checkJsonSupport(Version(11,1,1)) == Right())
-    assert(VerticaVersionUtils.checkJsonSupport(Version(12)) == Right())
-    assert(VerticaVersionUtils.checkJsonSupport(Version(11,1)) == Left(ExportToJsonNotSupported(Version(11,1).toString)))
-    assert(VerticaVersionUtils.checkJsonSupport(Version(11)) == Left(ExportToJsonNotSupported(Version(11).toString)))
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11,1,1)) == Right())
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(12)) == Right())
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11,1)) == Left(ExportToJsonNotSupported(VerticaVersion(11,1).toString)))
+    assert(VerticaVersionUtils.checkJsonSupport(VerticaVersion(11)) == Left(ExportToJsonNotSupported(VerticaVersion(11).toString)))
   }
 
 }
 
-class VersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
+class VerticaVersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
   it should "compare to bigger version" in {
     //scalastyle:off
-    assert(Version(11,1,5,3).largerThan(Version(10,4,7,5)))
+    assert(VerticaVersion(11,1,5,3).largerThan(VerticaVersion(10,4,7,5)))
   }
 
   it should "compare to smaller version" in {
     //scalastyle:off
-    assert(Version(11,1,5,3).lessThan(Version(12,0,2,1)))
+    assert(VerticaVersion(11,1,5,3).lessThan(VerticaVersion(12,0,2,1)))
   }
 
   it should "compare to smaller or equal versions" in {
-    assert(Version(11,1,5,3).lesserOrEqual(Version(11,1,5,3)))
-    assert(Version(11,1,5,3).lesserOrEqual(Version(11,2,5,3)))
+    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(11,1,5,3)))
+    assert(VerticaVersion(11,1,5,3).lesserOrEqual(VerticaVersion(11,2,5,3)))
   }
 
   it should "compare to bigger or equal versions" in {
-    assert(Version(11,1,5,3).largerOrEqual(Version(11,1,5,3)))
-    assert(Version(11,1,5,3).largerOrEqual(Version(11,1,5,2)))
+    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(11,1,5,3)))
+    assert(VerticaVersion(11,1,5,3).largerOrEqual(VerticaVersion(11,1,5,2)))
   }
 }
 

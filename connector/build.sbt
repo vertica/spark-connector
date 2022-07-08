@@ -68,9 +68,7 @@ scalastyleFailOnWarning := true
 // - Pipe Factory: as the rest of the components rely on abstract interfaces, this is the place
 //   that creates the concrete implementations of those, such as the bottom-layer components mentioned above.
 // - Parquet reader files taken from third part spark library
-// - Reflections: Our reflection classes invokes methods at runtime for ones that are not defined at compile time. Thus
-// unit tests will fail and can't be tested.
-coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*;.*reflections.*"
+coverageExcludedPackages := "<empty>;.*jdbc.*;.*fs.*;.*core.factory.*;.*parquet.*"
 coverageMinimum := 80
 coverageFailOnMinimum := true
 

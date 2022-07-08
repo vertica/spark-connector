@@ -17,13 +17,13 @@ import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
-import com.vertica.spark.util.compatibilities.DSReadCompatibilityTools
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
-import com.vertica.spark.util.version.{SparkVersionUtils, Version}
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
+import org.apache.spark.sql.connector.expressions.Expression
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.types._
@@ -66,8 +66,6 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   protected val logger = LogProvider.getLogger(classOf[VerticaScanBuilder])
 
   protected val ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools()
-
-  protected val compatibility = new DSReadCompatibilityTools
 
 /**
   * Builds the class representing a scan of a Vertica table
@@ -179,8 +177,20 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   }
 
   private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
-    compatibility
-      .getGroupByExpressions(SparkVersionUtils.getVersion.getOrElse(Version(3,3)), aggregation)
+    val (major, minor) = SparkVersionUtils.getSparkVersion
+    // The method we want is different in Spark 3.2.x
+    val groupByExpressions: Array[Expression] = if(major == 3 && minor == 2){
+      // $COVERAGE-OFF$
+      classOf[Aggregation]
+        .getDeclaredMethod("groupByColumns")
+        .invoke(aggregation)
+        .asInstanceOf[Array[Expression]]
+      // $COVERAGE-ON$
+    } else {
+      aggregation.groupByExpressions()
+    }
+
+    groupByExpressions
       .map(expr => StructField(expr.describe, getColType(expr.describe), nullable = false, Metadata.empty))
   }
 }
