@@ -13,21 +13,20 @@
 
 package com.vertica.spark.datasource.v2
 
-import java.util
 import cats.data.Validated.{Invalid, Valid}
-import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
+import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
-import org.apache.spark.sql.SparkSession
-import com.vertica.spark.util.listeners.ApplicationParquetCleaner
+import com.vertica.spark.util.version.SparkVersionUtils
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.util.CaseInsensitiveStringMap
 
-import collection.JavaConverters._
+import java.util
+import scala.collection.JavaConverters._
 
 /**
  * Represents a Vertica table to Spark.
@@ -74,8 +73,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
    *
    * @return [[v2.VerticaScanBuilder]]
    */
-  override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder =
-  {
+  override def newScanBuilder(options: CaseInsensitiveStringMap): ScanBuilder = {
     val logger = LogProvider.getLogger(classOf[VerticaTable])
     this.scanBuilder match {
       case Some(builder) => builder
@@ -90,16 +88,11 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
         // Aggregates push down were added in spark 3.2. We detect spark version here to return the compatible class
         var sparkNewerThan31 = true
         try {
-          val versionList = SparkSession.getActiveSession.get.version.split("\\.")
-          if (versionList.length >= 2) {
-            val major = versionList(0).toInt
-            val minor = versionList(1).toInt
-            if (major == 3 && minor < 2) {
-              sparkNewerThan31 = false
-            }
+          val (major, minor) = SparkVersionUtils.getSparkVersion
+          if (major == 3 && minor < 2) {
+            sparkNewerThan31 = false
           }
-        }
-        catch { // Couldn't recgonize version string, assume newer version
+        } catch { // Couldn't recgonize version string, assume newer version
           case _: java.lang.NumberFormatException => sparkNewerThan31 = true
         }
 

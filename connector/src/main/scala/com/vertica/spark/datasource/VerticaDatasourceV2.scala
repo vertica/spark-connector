@@ -14,16 +14,15 @@
 package com.vertica.spark.datasource
 
 import com.vertica.spark.datasource.v2._
-import org.apache.spark.sql.util.CaseInsensitiveStringMap
-import org.apache.spark.sql.types._
+import com.vertica.spark.util.error.{ConnectorException, MissingSparkSessionError}
 import org.apache.spark.sql.connector.catalog._
 import org.apache.spark.sql.connector.expressions.Transform
-import java.util
-
-import com.vertica.spark.util.error.{ConnectorError, ConnectorException, MissingSparkSessionError}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.apache.spark.sql.SparkSession
 
-import collection.JavaConverters._
+import java.util
+import scala.collection.JavaConverters._
 
 /**
  * Entry-Point for Spark V2 Datasource.
@@ -65,7 +64,7 @@ class VerticaSource extends TableProvider with SupportsCatalogOptions {
     Identifier.of(Array[String](), name)
   }
 
-  private val CATALOG_NAME = "vertica"
+  private val CATALOG_NAME = VerticaDatasourceV2Catalog.NAME
   override def extractCatalog(options: CaseInsensitiveStringMap): String = {
     // Add all passed in options to spark catalog options
     VerticaDatasourceV2Catalog.setOptions(options)

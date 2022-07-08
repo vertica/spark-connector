@@ -49,7 +49,7 @@ class VerticaDatasourceV2Catalog() extends TableCatalog{
     schema.nonEmpty
   }
 
-  override def name: String = "VerticaCatalog"
+  override def name: String = VerticaDatasourceV2Catalog.NAME
 
   @throws[NoSuchNamespaceException]
   override def listTables(namespace: Array[String]): Array[Identifier] = throw new NoCatalogException
@@ -82,7 +82,10 @@ class VerticaDatasourceV2Catalog() extends TableCatalog{
 /**
  * Stores options. Passed in from datasource. Options may also be specified under spark.sql.catalog.vertica.[option]
  */
-object VerticaDatasourceV2Catalog {
+object VerticaDatasourceV2Catalog{
+
+  val NAME = "vertica"
+
   private var catalogOptions: Option[CaseInsensitiveStringMap] = None
   private var operationOptions: Option[CaseInsensitiveStringMap] = None
 

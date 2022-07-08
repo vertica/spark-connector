@@ -30,8 +30,8 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
-  "org.apache.spark" %% "spark-core" % "3.2.0",
-  "org.apache.spark" %% "spark-sql" % "3.2.0",
+  "org.apache.spark" %% "spark-core" % "3.3.0",
+  "org.apache.spark" %% "spark-sql" % "3.3.0",
   "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim",
   "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
 )

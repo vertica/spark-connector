@@ -11,20 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.datasource.partitions.mixin
+package com.vertica.spark.util.version
 
-/**
- * Mixin trait for data portion containing information that identify itself amongst other portions.
- * */
-trait Identifiable {
+import org.apache.spark.sql.SparkSession
 
-  /**
-   * @return the name of the file the portion belongs to
-   * */
-  def filename: String
+object SparkVersionUtils {
 
   /**
-   * @return the portion's index amongst the other portions of a file.
+   * @return a tuple containing Spark version numbers in the format (major, minor, patch)
    * */
-  def index: Long
+  def getSparkVersion: (Int, Int) = SparkSession.getActiveSession match {
+    case Some(sparkSession) =>
+      val parts = sparkSession.version.split("\\.")
+      if (parts.length >= 2) {
+        val major = parts(0).toInt
+        val minor = parts(1).toInt
+        (major, minor)
+      } else {
+        (0, 0)
+      }
+    case None => (0, 0)
+  }
 }
