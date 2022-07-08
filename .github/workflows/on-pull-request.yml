@@ -33,15 +33,10 @@ jobs:
           fail_ci_if_error: true
           verbose: true
   run-integration-tests:
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      VERTICA_VERSION: 11.1.1-2
-    steps:
-      - uses: ./.github/workflows/funtional-tests
-        with:
-          spark-version: 3.3.0
-          vertica-verison: 11.1.1-0
+    uses: vertica/spark-connector/.github/workflows/funtional-tests.yml@main
+    with:
+      spark-version: 3.3.0
+      vertica-verison: 11.1.1-2
 #      - name: Checkout the project
 #        uses: actions/checkout@v2
 #      - name: Run docker compose
