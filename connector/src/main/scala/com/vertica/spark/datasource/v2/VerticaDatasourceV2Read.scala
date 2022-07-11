@@ -22,7 +22,7 @@ import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHa
 import com.vertica.spark.util.pushdown.PushdownUtils
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import com.vertica.spark.util.spark.SparkUtils
-import com.vertica.spark.util.version.{SparkVersionUtils, Version}
+import com.vertica.spark.util.version.Version
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read._
@@ -180,7 +180,7 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   }
 
   private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
-    val sparkVersion = SparkVersionUtils.getVersion(SparkUtils.getVersionString).getOrElse(Version(3,3))
+    val sparkVersion = SparkUtils.getVersion(SparkUtils.getVersionString).getOrElse(Version(3,3))
     compatibility
       .getGroupByExpressions(sparkVersion, aggregation)
       .map(expr => StructField(expr.describe, getColType(expr.describe), nullable = false, Metadata.empty))
