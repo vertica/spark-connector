@@ -9,9 +9,16 @@ on:
       vertica-version:
         required: true
         type: string
+      build:
+        required: false
+        type: boolean
+        default: true
   workflow_dispatch:
 
 jobs:
+  build:
+    if: inputs.build == true
+    uses: vertica/spark-connector/.github/workflows/build.yml@updating_test_pipelines
   run-integration-tests:
     runs-on: ubuntu-latest
     env:
