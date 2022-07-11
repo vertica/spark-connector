@@ -11,19 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.vertica.spark.util.version
+package com.vertica.spark.util.spark
 
-import scala.util.Try
+import org.apache.spark.sql.SparkSession
 
-object SparkVersionUtils {
-
-  def getVersion(versionStr: Option[String]): Option[Version] = versionStr match {
-    case Some(str) =>
-      val regex = "([0-9]+)\\.([0-9]+)\\.([0-9]+)(.*)".r
-      Try{
-        val regex(major, minor, service, _) = str
-        Some(Version(major.toInt, minor.toInt, service.toInt))
-      }.getOrElse(None)
-    case None => None
-  }
+object SparkUtils {
+  def getVersionString: Option[String] = SparkSession.getActiveSession.map(_.version)
 }

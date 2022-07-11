@@ -21,6 +21,7 @@ import com.vertica.spark.util.compatibilities.DSReadCompatibilityTools
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
+import com.vertica.spark.util.spark.SparkUtils
 import com.vertica.spark.util.version.{SparkVersionUtils, Version}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.expressions.aggregate._
@@ -179,8 +180,9 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   }
 
   private def getGroupByColumns(aggregation: Aggregation): Array[StructField] = {
+    val sparkVersion = SparkVersionUtils.getVersion(SparkUtils.getVersionString).getOrElse(Version(3,3))
     compatibility
-      .getGroupByExpressions(SparkVersionUtils.getVersion.getOrElse(Version(3,3)), aggregation)
+      .getGroupByExpressions(sparkVersion, aggregation)
       .map(expr => StructField(expr.describe, getColType(expr.describe), nullable = false, Metadata.empty))
   }
 }

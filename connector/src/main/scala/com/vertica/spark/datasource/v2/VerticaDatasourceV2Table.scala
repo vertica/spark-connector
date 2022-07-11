@@ -19,6 +19,7 @@ import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSe
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.compatibilities.DSTableCompatibilityTools
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
+import com.vertica.spark.util.spark.SparkUtils
 import com.vertica.spark.util.version.{SparkVersionUtils, Version}
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
@@ -87,9 +88,9 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
           case Valid(cfg) => cfg
         }
         logger.debug("Config loaded")
-
+        val sparkVersion = SparkVersionUtils.getVersion(SparkUtils.getVersionString).getOrElse(Version(3,2))
         val scanBuilder = compatibility
-          .makeVerticaScanBuilder(SparkVersionUtils.getVersion.getOrElse(Version(3,2)), config, readSetupInterface)
+          .makeVerticaScanBuilder(sparkVersion, config, readSetupInterface)
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
     }
