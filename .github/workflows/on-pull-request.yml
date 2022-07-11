@@ -37,7 +37,7 @@ jobs:
     needs: [build]
     env:
       VERTICA_VERSION: 11.1.1-2
-      SPARK_VERSION: 3.3.0
+      SPARK_VERSION: 3.2.0
       HADOOP_VERSION: 3.3.0
     steps:
       - name: Checkout the project
