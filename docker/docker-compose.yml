@@ -25,7 +25,6 @@ services:
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1
-    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:
       - "5433:5433"
     volumes:
