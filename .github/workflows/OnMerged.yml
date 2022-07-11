@@ -1,4 +1,4 @@
-name: On Pull Request Merged
+name: On Merged
 
 on:
   push:
