@@ -36,7 +36,7 @@ jobs:
       - name: Run docker compose
         run: cd docker && docker-compose up -d
         env:
-          SPARK_VERSION: ${{matrix.spark})
+          SPARK_VERSION: ${{matrix.spark}}
           VERTICA_VERSION: ${{matrix.vertica}}
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
