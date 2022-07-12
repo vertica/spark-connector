@@ -48,7 +48,6 @@ services:
       - "example"
     hostname: "vertica"
     domainname: "example.com"
-    entrypoint: ["/bin/bash", "-c", "/opt/vertica/bin/docker-entrypoint.sh"]
     ports:
       - "5433:5433"
     volumes:
