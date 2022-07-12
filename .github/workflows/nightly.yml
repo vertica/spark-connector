@@ -20,7 +20,7 @@ jobs:
         with:
           name: build-jar-file
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
-  run-integration-tests:
+  run-spark-functional-tests:
     strategy:
       fail-fast: false
       matrix:
