@@ -36,9 +36,8 @@ jobs:
       - name: Run docker compose
         run: cd docker && docker-compose up -d
         env:
-          VERTICA_VERSION: $VERTICA_DEFAULT
+          VERTICA_VERSION: ${{matrix.vertica}}
           SPARK_VERSION: ${{matrix.spark}}
-          HADOOP_VERSION: ${{matrix.hadoop}}
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
