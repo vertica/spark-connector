@@ -1,13 +1,13 @@
 name: Nightly Testing
 
+env:
+  VERTICA_DEFAULT: 12.0.0-0
+
 on:
-  workflow_dispatch:
   schedule:
     # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Sunday to Thursday
     - cron: '18 9 * * 0-4'
-
-env:
-  VERTICA_DEFAULT: 12.0.0-0
+  workflow_dispatch:
 
 jobs:
   build:
