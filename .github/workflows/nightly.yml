@@ -1,6 +1,5 @@
 name: Nightly Testing
-# Compiles our connector nightly and only report on failure.
-# This allows us to stay on top of breaking change from Spark
+
 on:
   schedule:
     # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Sunday to Thursday
