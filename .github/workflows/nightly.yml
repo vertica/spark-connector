@@ -1,8 +1,5 @@
 name: Nightly Testing
 
-env:
-  VERTICA_DEFAULT: 12.0.0-0
-
 on:
   schedule:
     # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Sunday to Thursday
