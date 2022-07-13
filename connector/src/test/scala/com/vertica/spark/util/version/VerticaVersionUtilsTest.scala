@@ -76,11 +76,11 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     (mockRs.close _).expects()
 
     val version = VerticaVersionUtils.getVersion(jdbcLayer)
-    assert(version.compare(VerticaVersionUtils.VERRTICA_LATEST) == 0)
+    assert(version.compare(VerticaVersionUtils.VERTICA_LATEST) == 0)
   }
 
   it should "Allow writing primitive" in {
-    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+    (1 to VerticaVersionUtils.VERTICA_LATEST.major).foreach(i => {
       VerticaVersionUtils.checkSchemaTypesWriteSupport(primitiveTypeSchema, Version(i), toInternalTable = true) match {
         case Right(_) =>
         case Left(err) => fail(err.toString)
@@ -157,7 +157,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Allow reading primitive types" in {
-    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+    (1 to VerticaVersionUtils.VERTICA_LATEST.major).foreach(i => {
       VerticaVersionUtils.checkSchemaTypesReadSupport(primitiveTypeSchema, Version(i)) match {
         case Right(_) =>
         case Left(err) => fail(err.toString)
@@ -166,7 +166,7 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
   }
 
   it should "Error on reading arrays and rows" in {
-    (1 to VerticaVersionUtils.VERRTICA_LATEST.major).foreach(i => {
+    (1 to VerticaVersionUtils.VERTICA_LATEST.major).foreach(i => {
       VerticaVersionUtils.checkSchemaTypesReadSupport(rowsAndArraysSchema, Version(i)) match {
         case Right(_) => fail
         case Left(err) =>

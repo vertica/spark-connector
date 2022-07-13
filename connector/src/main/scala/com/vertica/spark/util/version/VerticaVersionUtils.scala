@@ -28,7 +28,7 @@ object VerticaVersionUtils {
   private val version: Option[Version] = None
   // Should always be the latest major release.
   // scalastyle:off
-  val VERRTICA_LATEST: Version = Version(11)
+  val VERTICA_LATEST: Version = Version(11)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
   /**
@@ -40,16 +40,16 @@ object VerticaVersionUtils {
       logger.info("VERTICA VERSION: " + verticaVersion)
       Right(verticaVersion)
     }, (query) => {
-      logger.error("Failed to query for version number. Defaults to " + VERRTICA_LATEST)
+      logger.error("Failed to query for version number. Defaults to " + VERTICA_LATEST)
       Left(NoResultError(query))
-    }).getOrElse(VERRTICA_LATEST)
+    }).getOrElse(VERTICA_LATEST)
 
   private def extractVersion(str: String): Version = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
     Try{
       val pattern(major, minor, service, hotfix) = str
       Version(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
-    }.getOrElse(VERRTICA_LATEST)
+    }.getOrElse(VERTICA_LATEST)
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, version: Version, toInternalTable: Boolean): ConnectorResult[Unit] = {
