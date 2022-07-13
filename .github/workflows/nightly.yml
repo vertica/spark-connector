@@ -214,7 +214,7 @@ jobs:
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
-        run: docker exec -w /home/spark-connector/functional-tests docker_client_1 sbt run
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
 #  run-integration-tests-gcs:
