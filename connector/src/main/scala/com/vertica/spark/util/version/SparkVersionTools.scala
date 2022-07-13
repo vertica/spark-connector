@@ -79,6 +79,6 @@ class SparkVersionTools(reflection: ReflectionTools = new ReflectionTools) {
 }
 
 object SparkVersionTools {
-  val SPARK_3_3_0 = Version(3, 3)
-  val SPARK_3_2_0 = Version(3, 2)
+  val SPARK_3_3_0: Version = Version(3, 3)
+  val SPARK_3_2_0: Version = Version(3, 2)
 }
