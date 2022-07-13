@@ -21,7 +21,7 @@ import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 import java.sql.ResultSet
 import scala.util.{Failure, Success, Try}
 
-
+// scalastyle:off magic.number
 object VerticaVersionUtils {
   // Should always be the latest major release.
   val VERTICA_DEFAULT: Version = Version(12)
@@ -54,24 +54,28 @@ object VerticaVersionUtils {
     val complexTypeFound = complexTypeCols.nonEmpty
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 9) {
-        if(complexTypeFound)
+        if(complexTypeFound) {
           Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
-        else if (nativeArrayCols.nonEmpty)
+        } else if (nativeArrayCols.nonEmpty) {
           Left(NativeArrayWriteNotSupported(nativeArrayCols, version.toString))
-        else
+        } else {
           Right()
+        }
     } else if (version.major == 10) {
-      if(complexTypeFound)
+      if(complexTypeFound) {
         // Even though Vertica 10.x supports Complex types in external tables, it seems that
         // the underlying protocol does not support complex type, thus throwing an error
         // regardless of internal or external tables
         Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
-      else Right()
+      } else {
+        Right()
+      }
     } else {
-        if(toInternalTable && complexTypeCols.exists(_.dataType.isInstanceOf[MapType]))
+        if(toInternalTable && complexTypeCols.exists(_.dataType.isInstanceOf[MapType])) {
           Left(InternalMapNotSupported())
-        else
+        } else {
           Right()
+        }
     }
   }
 
@@ -79,16 +83,19 @@ object VerticaVersionUtils {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 10) {
-      if (complexTypeCols.nonEmpty)
+      if (complexTypeCols.nonEmpty) {
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
-      else if (nativeArrayCols.nonEmpty)
+      } else if (nativeArrayCols.nonEmpty) {
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
-      else Right()
-    } else if (version.lesserOrEqual(Version(11, 1))) {
-      if (complexTypeCols.nonEmpty)
-        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
-      else
+      } else {
         Right()
+      }
+    } else if (version.lesserOrEqual(Version(11, 1))) {
+      if (complexTypeCols.nonEmpty) {
+        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
+      } else {
+        Right()
+      }
     } else {
       Right()
     }
@@ -103,6 +110,7 @@ object VerticaVersionUtils {
     }  else {
       Right()
     }
+
 
 }
 
