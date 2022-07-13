@@ -74,7 +74,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
           case Some(session) => Some(session.sparkContext)
         }
 
-        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(readLayerJdbc.get) else Version(0)
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersionOrDefault(readLayerJdbc.get) else Version(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
 
         new VerticaDistributedFilesystemReadPipe(cfg, hadoopFileStoreLayer,
@@ -95,7 +95,7 @@ object VerticaPipeFactory extends VerticaPipeFactoryInterface {
         writeLayerJdbc = checkJdbcLayer(writeLayerJdbc, cfg.jdbcConfig)
         val jdbcLayer = writeLayerJdbc.get
 //        This check is done so that executor won't create a jdbc connection through lazy init.
-        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersion(jdbcLayer) else Version(0)
+        val verticaVersion = if(getVersion) VerticaVersionUtils.getVersionOrDefault(jdbcLayer) else Version(0)
         val schemaTools = if (verticaVersion.major == 10) new SchemaToolsV10 else new SchemaTools
         if(verticaVersion.largerOrEqual(Version(11,1,1))){
           new VerticaDistributedFilesystemWritePipe(cfg,

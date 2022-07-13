@@ -12,44 +12,41 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
-import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 
-import scala.util.Try
+import java.sql.ResultSet
+import scala.util.{Failure, Success, Try}
 
 
 object VerticaVersionUtils {
-
-  private val logger = LogProvider.getLogger(this.getClass)
-  private val version: Option[Version] = None
   // Should always be the latest major release.
-  // scalastyle:off
-  val VERTICA_LATEST: Version = Version(11)
+  val VERTICA_DEFAULT: Version = Version(12)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
-  /**
-   * Query and cache Vertica version. Return the default version on any error.
-   * */
-  def getVersion(jdbcLayer: JdbcLayerInterface): Version =
-    JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, (rs) => {
-      val verticaVersion = extractVersion(rs.getString(1))
-      logger.info("VERTICA VERSION: " + verticaVersion)
-      Right(verticaVersion)
-    }, (query) => {
-      logger.error("Failed to query for version number. Defaults to " + VERTICA_LATEST)
-      Left(NoResultError(query))
-    }).getOrElse(VERTICA_LATEST)
+  /*
+  * Query for a Vertica version. Return the default version on any error.
+  * */
+  def getVersionOrDefault(jdbcLayer: JdbcLayerInterface): Version = getVersion(jdbcLayer).getOrElse(VERTICA_DEFAULT)
 
-  private def extractVersion(str: String): Version = {
+  /**
+   * Query for a Vertica version
+   * */
+  def getVersion(jdbcLayer: JdbcLayerInterface): ConnectorResult[Version] = JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, extractVersion)
+
+  private def extractVersion(rs: ResultSet): ConnectorResult[Version] = {
+    val versionString = rs.getString(1)
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
-    Try{
-      val pattern(major, minor, service, hotfix) = str
+    Try {
+      val pattern(major, minor, service, hotfix) = versionString
       Version(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
-    }.getOrElse(VERTICA_LATEST)
+    } match {
+      case Failure(_) => Left(UnrecognizedVerticaVersionString(versionString))
+      case Success(version) => Right(version)
+    }
   }
 
   def checkSchemaTypesWriteSupport(schema: StructType, version: Version, toInternalTable: Boolean): ConnectorResult[Unit] = {

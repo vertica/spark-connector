@@ -366,7 +366,7 @@ class VerticaDistributedFilesystemReadPipe(
   }
 
   private def checkVersionCompatibility(config: DistributedFilesystemReadConfig): ConnectorResult[Unit] = {
-    val version = VerticaVersionUtils.getVersion(jdbcLayer)
+    val version = VerticaVersionUtils.getVersionOrDefault(jdbcLayer)
     for {
       _ <- VerticaVersionUtils.checkSchemaTypesReadSupport(config.getRequiredSchema, version)
       _ <- if(config.useJson) VerticaVersionUtils.checkJsonSupport(version) else Right()
