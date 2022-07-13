@@ -6,11 +6,6 @@ on:
     - cron: '18 9 * * 0-4'
   workflow_dispatch:
 
-# Global variables applied to all jobs
-env:
-  VERTICA_VERSION: 12.0.0-0
-  SPARK_VERSION: "[3.3.0, 3.4.0)"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -219,7 +214,7 @@ jobs:
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests
-        run: docker exec -w /home/functional-tests docker_client_1 sbt run
+        run: docker exec -w /home/spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
 #  run-integration-tests-gcs:
@@ -244,6 +239,8 @@ jobs:
 #      - name: Run docker compose
 #        run: cd docker && docker-compose up -d
 #        env:
+#          VERTICA_VERSION: 12.0.0-0
+#          SPARK_VERSION: "[3.3.0, 3.4.0)"
 #          GCS_HMAC_KEY_ID: ${{secrets.GCS_HMAC_KEY_ID}}
 #          GCS_HMAC_KEY_SECRET: ${{secrets.GCS_HMAC_KEY_SECRET}}
 #          GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
@@ -272,7 +269,7 @@ jobs:
 #          retry_on: error
 #          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
 #      - name: Run the integration tests against GCS
-#        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run -DsparkVersion="3.2.1" -DhadoopVersion="3.3.1"
+#        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
 #      - name: Remove docker containers
 #        run: cd docker && docker-compose down
 #  run-integration-tests-kerberos:
