@@ -35,6 +35,8 @@ For an easier quick test of the connector using a dockerized environment, see [t
 
 Follow the [Vertica Documenation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm) for steps on installing Vertica.
 
+The connector has been tested against Vertica 10.1.1-0 or higher.
+
 ### Spark
 
 The connector requires Spark 3.0.0 or higher.

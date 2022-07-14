@@ -12,86 +12,93 @@
 // limitations under the License.
 package com.vertica.spark.util.version
 
-import com.vertica.spark.config.LogProvider
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, JdbcUtils}
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import org.apache.spark.sql.types.{ArrayType, MapType, StructType}
 
-import scala.util.Try
+import java.sql.ResultSet
+import scala.util.{Failure, Success, Try}
 
-
+// scalastyle:off magic.number
 object VerticaVersionUtils {
-
-  private val logger = LogProvider.getLogger(this.getClass)
-  private val version: Option[VerticaVersion] = None
+  val VERTICA_11: Version = Version(11)
+  val VERTICA_11_1: Version = Version(11,1)
+  val VERTICA_11_1_1: Version = Version(11,1,1)
   // Should always be the latest major release.
-  // scalastyle:off
-  val VERRTICA_LATEST: VerticaVersion = VerticaVersion(11)
+  val VERTICA_DEFAULT: Version = Version(12)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
-  /**
-   * Query and cache Vertica version. Return the default version on any error.
-   * */
-  def getVersion(jdbcLayer: JdbcLayerInterface): VerticaVersion =
-    JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, (rs) => {
-      val verticaVersion = extractVersion(rs.getString(1))
-      logger.info("VERTICA VERSION: " + verticaVersion)
-      Right(verticaVersion)
-    }, (query) => {
-      logger.error("Failed to query for version number. Defaults to " + VERRTICA_LATEST)
-      Left(NoResultError(query))
-    }).getOrElse(VERRTICA_LATEST)
+  /*
+  * Query for a Vertica version. Return the default version on any error.
+  * */
+  def getVersionOrDefault(jdbcLayer: JdbcLayerInterface): Version = getVersion(jdbcLayer).getOrElse(VERTICA_DEFAULT)
 
-  private def extractVersion(str: String): VerticaVersion = {
+  /**
+   * Query for a Vertica version
+   * */
+  def getVersion(jdbcLayer: JdbcLayerInterface): ConnectorResult[Version] = JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, extractVersion)
+
+  private def extractVersion(rs: ResultSet): ConnectorResult[Version] = {
+    val versionString = rs.getString(1)
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
-    Try{
-      val pattern(major, minor, service, hotfix) = str
-      VerticaVersion(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
-    }.getOrElse(VERRTICA_LATEST)
+    Try {
+      val pattern(major, minor, service, hotfix) = versionString
+      Version(major.toInt, minor.toInt, service.toInt, hotfix.toInt)
+    } match {
+      case Failure(_) => Left(UnrecognizedVerticaVersionString(versionString))
+      case Success(version) => Right(version)
+    }
   }
 
-  def checkSchemaTypesWriteSupport(schema: StructType, version: VerticaVersion, toInternalTable: Boolean): ConnectorResult[Unit] = {
+  def checkSchemaTypesWriteSupport(schema: StructType, version: Version, toInternalTable: Boolean): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val complexTypeFound = complexTypeCols.nonEmpty
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 9) {
-        if(complexTypeFound)
+        if(complexTypeFound) {
           Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
-        else if (nativeArrayCols.nonEmpty)
+        } else if (nativeArrayCols.nonEmpty) {
           Left(NativeArrayWriteNotSupported(nativeArrayCols, version.toString))
-        else
+        } else {
           Right()
+        }
     } else if (version.major == 10) {
-      if(complexTypeFound)
+      if(complexTypeFound) {
         // Even though Vertica 10.x supports Complex types in external tables, it seems that
         // the underlying protocol does not support complex type, thus throwing an error
         // regardless of internal or external tables
         Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
-      else Right()
+      } else {
+        Right()
+      }
     } else {
-        if(toInternalTable && complexTypeCols.exists(_.dataType.isInstanceOf[MapType]))
+        if(toInternalTable && complexTypeCols.exists(_.dataType.isInstanceOf[MapType])) {
           Left(InternalMapNotSupported())
-        else
+        } else {
           Right()
+        }
     }
   }
 
-  def checkSchemaTypesReadSupport(schema: StructType, version: VerticaVersion): ConnectorResult[Unit] = {
+  def checkSchemaTypesReadSupport(schema: StructType, version: Version): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 10) {
-      if (complexTypeCols.nonEmpty)
+      if (complexTypeCols.nonEmpty) {
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
-      else if (nativeArrayCols.nonEmpty)
+      } else if (nativeArrayCols.nonEmpty) {
         Left(NativeArrayReadNotSupported(nativeArrayCols, version.toString))
-      else Right()
-    } else if (version.lesserOrEqual(VerticaVersion(11, 1))) {
-      if (complexTypeCols.nonEmpty)
-        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
-      else
+      } else {
         Right()
+      }
+    } else if (version.lesserOrEqual(VERTICA_11_1)) {
+      if (complexTypeCols.nonEmpty) {
+        Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
+      } else {
+        Right()
+      }
     } else {
       Right()
     }
@@ -100,28 +107,12 @@ object VerticaVersionUtils {
   /**
    * Export to Json was added in Vertica 11.1.1
    * */
-  def checkJsonSupport(version: VerticaVersion): ConnectorResult[Unit] =
-    if(version.lessThan(VerticaVersion(11,1,1))){
+  def checkJsonSupport(version: Version): ConnectorResult[Unit] =
+    if(version.lessThan(VERTICA_11_1_1)){
       Left(ExportToJsonNotSupported(version.toString))
-    }  else {
+    } else {
       Right()
     }
-
 }
 
-case class VerticaVersion(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[VerticaVersion] {
 
-  def largerOrEqual(version: VerticaVersion): Boolean = this.compare(version) >= 0
-
-  def largerThan(version: VerticaVersion): Boolean = this.compare(version) > 0
-
-  def lesserOrEqual(version: VerticaVersion): Boolean = this.compare(version) <= 0
-
-  def lessThan(version: VerticaVersion): Boolean = this.compare(version) < 0
-
-  override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
-
-  override def compare(that: VerticaVersion): Int =
-    (this.major * 1000 + this.minor * 100 + this.servicePack * 10 + this.hotfix) -
-      (that.major * 1000 + that.minor * 100 + that.servicePack * 10 + that.hotfix)
-}

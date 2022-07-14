@@ -18,7 +18,8 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
-import com.vertica.spark.util.version.SparkVersionUtils
+import com.vertica.spark.util.version.SparkVersionTools
+import com.vertica.spark.util.version.SparkVersionTools.SPARK_3_2_0
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -37,6 +38,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
 
   // Cache the scan builder so we don't build it twice
   var scanBuilder : Option[VerticaScanBuilder] = None
+
+  val sparkVersionTools = new SparkVersionTools
 
   /**
    * A name to differentiate this table from other tables
@@ -84,28 +87,8 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
           case Valid(cfg) => cfg
         }
         logger.debug("Config loaded")
-
-        // Aggregates push down were added in spark 3.2. We detect spark version here to return the compatible class
-        var sparkNewerThan31 = true
-        try {
-          val (major, minor) = SparkVersionUtils.getSparkVersion
-          if (major == 3 && minor < 2) {
-            sparkNewerThan31 = false
-          }
-        } catch { // Couldn't recgonize version string, assume newer version
-          case _: java.lang.NumberFormatException => sparkNewerThan31 = true
-        }
-
-        val scanBuilder = if(sparkNewerThan31) {
-          classOf[VerticaScanBuilderWithPushdown]
-            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
-            .newInstance(config, readSetupInterface)
-        }
-        else {
-          classOf[VerticaScanBuilder]
-            .getDeclaredConstructor(classOf[ReadConfig], classOf[DSConfigSetupInterface[ReadConfig]])
-            .newInstance(config, readSetupInterface)
-        }
+        val sparkVersion = sparkVersionTools.getVersion.getOrElse(SPARK_3_2_0)
+        val scanBuilder = sparkVersionTools.makeCompatibleVerticaScanBuilder(sparkVersion, config, readSetupInterface)
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
     }

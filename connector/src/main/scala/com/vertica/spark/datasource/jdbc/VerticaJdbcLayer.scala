@@ -385,7 +385,7 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private def configureAWSParameters(fileStoreLayer: FileStoreLayerInterface): ConnectorResult[Unit] = {
     val awsOptions = fileStoreLayer.getAWSOptions
     for {
-      verticaVersion <- Right(VerticaVersionUtils.getVersion(this))
+      verticaVersion <- Right(VerticaVersionUtils.getVersionOrDefault(this))
       _ <- awsOptions.awsAuth match {
         case Some(awsAuth) =>
           val sql = s"ALTER SESSION SET AWSAuth='${awsAuth.accessKeyId.arg}:${awsAuth.secretAccessKey.arg}'"
