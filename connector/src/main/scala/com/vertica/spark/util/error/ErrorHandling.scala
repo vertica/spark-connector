@@ -644,4 +644,8 @@ case class BlankColumnNamesError() extends SchemaError {
   override def getFullContext: String = "Column names cannot contains only white spaces or be empty"
 }
 
+case class UnrecognizedVerticaVersionString(versionString: String) extends ConnectorError {
+  override def getFullContext: String = s"The Vertica version string $versionString has invalid format. " +
+    "Expected of major.minor.patch-hotfix format"
+}
 
