@@ -23,9 +23,10 @@ import scala.util.{Failure, Success, Try}
 
 // scalastyle:off magic.number
 object VerticaVersionUtils {
-  // Should always be the latest major release.
   val VERTICA_11: Version = Version(11)
+  val VERTICA_11_1: Version = Version(11,1)
   val VERTICA_11_1_1: Version = Version(11,1,1)
+  // Should always be the latest major release.
   val VERTICA_DEFAULT: Version = Version(12)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
@@ -92,7 +93,7 @@ object VerticaVersionUtils {
       } else {
         Right()
       }
-    } else if (version.lesserOrEqual(Version(11, 1))) {
+    } else if (version.lesserOrEqual(VERTICA_11_1)) {
       if (complexTypeCols.nonEmpty) {
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       } else {
