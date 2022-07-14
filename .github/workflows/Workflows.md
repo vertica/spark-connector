@@ -1,10 +1,10 @@
 # GitHub Work Flows
 The following are descriptions of workflows used in the repository.
 
-### OnPullRequest
-Workflow runs on a pull request to `main` is created, or on a push to said pull request's branch. It will start all critical 
-tests on code being merged. These tests would be set as required status checks thus requiring the PR to pass them before 
-being merged. 
+### On Pull Request
+The workflow `on-pull-request.yml` runs on a pull requests to `main` (when the PR is created or has content pushed to it).
+THe purpose is to perform the most critical tests required for merging. These tests should be set as required status checks 
+thus requiring the PR to pass them before being merged. 
 
 Currently, this includes:
 * Compile checks
@@ -12,21 +12,17 @@ Currently, this includes:
 * Scalastyle checks
 * Integration tests against the latest Spark 3 and Vertica
 
-### NightlyActions
-This workflow runs nightly during weekdays, executing `main` branch against non-critical tests. This action is used for
-regression testings, as well as functional testing against different environment.
+### Nightly Testing
+The workflow `nightly.yml` runs nightly during weekdays, executing `main` branch against non-critical tests. The workflow is used for
+to perform regression testings and functional testing against different environments.
 
 Currently, tests include:
 * Integration tests against:
   * GCS
   * S3
-* Regression testing all combinations of:
+* Testing all combinations of:
   * Spark 3.0 to latest
-  * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0\
-  * Appropriate Hadoop version for Spark???
-
-# Re-usable Workflows 
-We provide workflows for manual testings in the form of re-usable workflows. These workflows are used as part of 
+  * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
 
 
 

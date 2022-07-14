@@ -236,11 +236,11 @@ object Main extends App {
       opt[String]('s', "suite")
         .valueName("<suiteName")
         .action((value: String, options: Options) => options.copy(suite = value))
-        .text("Specify a specific test suite to run."),
+        .text("Select a specific test suite to run."),
       opt[String]('t', "test")
         .valueName("<testName>")
         .action((value: String, options: Options) => options.copy(testName = value.trim))
-        .text("Specify a test name in a suite to run. Require -s to be given."),
+        .text("Select a test in a suite to run. Require -s to be specified."),
       opt[Unit]('j', "json")
         .action((_, options: Options) => options.copy(json = true))
         .text("Use json export option"),
