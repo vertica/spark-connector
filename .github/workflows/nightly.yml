@@ -231,8 +231,6 @@ jobs:
         run: cd functional-tests && ./pipeline-gcs-config.sh
         env:
           GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
-      - name: Build the functional-tests project
-        run: cd functional-tests && sbt assembly
       - name: Build client image
         run: docker build -t client ./docker
       - name: Run docker compose
