@@ -24,6 +24,8 @@ import scala.util.{Failure, Success, Try}
 // scalastyle:off magic.number
 object VerticaVersionUtils {
   // Should always be the latest major release.
+  val VERTICA_11: Version = Version(11)
+  val VERTICA_11_1_1: Version = Version(11,1,1)
   val VERTICA_DEFAULT: Version = Version(12)
   val complexTypeUtils = new ComplexTypesSchemaTools()
 
@@ -105,13 +107,11 @@ object VerticaVersionUtils {
    * Export to Json was added in Vertica 11.1.1
    * */
   def checkJsonSupport(version: Version): ConnectorResult[Unit] =
-    if(version.lessThan(Version(11,1,1))){
+    if(version.lessThan(VERTICA_11_1_1)){
       Left(ExportToJsonNotSupported(version.toString))
-    }  else {
+    } else {
       Right()
     }
-
-
 }
 
 

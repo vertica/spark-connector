@@ -18,7 +18,8 @@ import com.vertica.spark.config.{LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReadConfigSetup, DSWriteConfigSetup}
 import com.vertica.spark.datasource.v2
 import com.vertica.spark.util.error.{ErrorHandling, ErrorList}
-import com.vertica.spark.util.version.{SparkVersionTools, Version}
+import com.vertica.spark.util.version.SparkVersionTools
+import com.vertica.spark.util.version.SparkVersionTools.SPARK_3_2_0
 import org.apache.spark.sql.connector.catalog.{SupportsRead, SupportsWrite, Table, TableCapability}
 import org.apache.spark.sql.connector.read.ScanBuilder
 import org.apache.spark.sql.connector.write.{LogicalWriteInfo, WriteBuilder}
@@ -86,7 +87,7 @@ class VerticaTable(caseInsensitiveStringMap: CaseInsensitiveStringMap, readSetup
           case Valid(cfg) => cfg
         }
         logger.debug("Config loaded")
-        val sparkVersion = sparkVersionTools.getVersion.getOrElse(Version(3,2))
+        val sparkVersion = sparkVersionTools.getVersion.getOrElse(SPARK_3_2_0)
         val scanBuilder = sparkVersionTools.makeCompatibleVerticaScanBuilder(sparkVersion, config, readSetupInterface)
         this.scanBuilder = Some(scanBuilder)
         scanBuilder
