@@ -10,8 +10,8 @@ Currently, this includes:
 * Compile checks
 * Unit-tests checks
 * Test coverage checks:
-  * Require at least 80% coverage when the PR is merged
-  * ???
+  * Require at least 80% coverage when the PR is merged.
+  * Patch coverage of at least 80%. Patch coverage only measures the coverage of changes made in the PR. 
 * Scalastyle checks
 * Integration tests against the latest Spark 3 and Vertica
 

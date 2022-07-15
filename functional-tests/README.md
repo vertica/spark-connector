@@ -33,26 +33,27 @@ As an example, to include large data tests into the run, use `run -l`. Using `ru
 
 To run a specific test in a suite, use option `-t` to specify a test name. For example `run -s ComplexTypeTests -t "<test-name-here>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
 
-### Submitting Functional Test
+### Testing against S3:
 
-Assemble the functional test into a fat jar with `sbt assembly`. Assuming you are in the sandbox environment, navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`. This will start a stand-alone cluster and submit our assembled test application to it.
-
-### Using S3:
-
-Set the appropriate S3-credentials in the application.conf file. Refer to the following connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
-* aws_access_key_id
-* aws_secret_access_key
-* aws_region
-* aws_session_token
-* aws_credentials_provider
-* aws_endpoint
-* aws_enable_ssl
-* aws_enable_path_style
-
+Set the appropriate S3-credentials to `application.conf` file or the environment variables. Refer to these connector options on the project's [README](https://github.com/vertica/spark-connector#readme):
+```
+aws_access_key_id
+aws_secret_access_key
+aws_region
+aws_session_token
+aws_credentials_provider
+aws_endpoint
+aws_enable_ssl
+aws_enable_path_style
+```
 Make sure your update the option `filepath` to your S3 bucket as well.
 
+Alternatively, you can use the configuration used in our S3 example if you want to test against our Minio container.
+
+If a different version of Spark is used, make sure to also update `hadoop-aws` to the appropriate version for the hadoop install used.
+
 ### Using GCS:
-Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to the project's configuration file:
+Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to `application.conf`:
 ```
 gcs_hmac_key_id
 gcs_hmac_key_secret
@@ -60,4 +61,9 @@ gcs_service_key_id
 gcs_service_key
 gcs_service_email
 ```
-Make sure your update the option `filepath` to your GCS bucket as well. 
+Make sure your update the option `filepath` to your GCS bucket as well.
+
+### Submitting Functional Test
+
+Assemble the functional test into a fat jar with `sbt assembly`. Assuming you are in the sandbox environment, navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`. This will start a stand-alone cluster and submit our assembled test application to it.
+
