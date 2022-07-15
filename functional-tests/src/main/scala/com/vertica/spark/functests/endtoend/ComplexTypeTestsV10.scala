@@ -3,12 +3,16 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ConnectorException, NativeArrayReadNotSupported}
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
 import scala.util.{Failure, Success, Try}
 
 
+/**
+ * Vertica 10 added support for complex type but has limited support for ingesting and exporting complex data types. This
+ * suite will only test writing native arrays, and negative tests for writing and reading other complex types.
+ * */
 class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
 

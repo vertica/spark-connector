@@ -243,7 +243,7 @@ object Main extends App {
         .text("Select a test in a suite to run. Require -s to be specified."),
       opt[Unit]('j', "json")
         .action((_, options: Options) => options.copy(json = true))
-        .text("Use json export option"),
+        .text("Use json export option for all test suites"),
       opt[Seq[String]]('e', "exclude")
         .action((names, options: Options) => options.copy(excludeList = names))
         .valueName("<suiteName1>,<suiteName2>,<suiteName3>,...")

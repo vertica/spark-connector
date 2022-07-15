@@ -25,6 +25,7 @@ import scala.util.{Failure, Success, Try}
 object VerticaVersionUtils {
   val VERTICA_11: Version = Version(11)
   val VERTICA_11_1: Version = Version(11,1)
+  //  Json export added in Vertica 11.1.1
   val VERTICA_11_1_1: Version = Version(11,1,1)
   // Should always be the latest major release.
   val VERTICA_DEFAULT: Version = Version(12)
@@ -40,8 +41,9 @@ object VerticaVersionUtils {
    * */
   def getVersion(jdbcLayer: JdbcLayerInterface): ConnectorResult[Version] = JdbcUtils.queryAndNext("SELECT version();", jdbcLayer, extractVersion)
 
-  private def extractVersion(rs: ResultSet): ConnectorResult[Version] = {
-    val versionString = rs.getString(1)
+  private def extractVersion(rs: ResultSet): ConnectorResult[Version] = parseVerticaVersionString(rs.getString(1))
+
+  def parseVerticaVersionString(versionString: String): ConnectorResult[Version] = {
     val pattern = ".*v([0-9]+)\\.([0-9]+)\\.([0-9])+-([0-9]+).*".r
     Try {
       val pattern(major, minor, service, hotfix) = versionString
