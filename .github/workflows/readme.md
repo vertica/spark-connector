@@ -19,10 +19,10 @@ Currently, this includes:
 The workflow `nightly.yml` runs nightly during weekdays, executing the `main` branch against non-critical tests. It currently is used for
 to perform regression testings and functional testing against different environments.
 
-Currently, tests include:
-* Integration tests against:
-  * GCS
-  * S3
+Currently, testing includes:
+* Integration tests against: 
+  * S3, against a MINIO container.
+  * GCS, against an actual GCS bucket provided by Vertica. We could not find a mock GCS environment.
 * Testing combinations of:
   * Spark 3.x
   * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0

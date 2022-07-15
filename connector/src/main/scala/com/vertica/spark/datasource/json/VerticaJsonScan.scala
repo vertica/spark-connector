@@ -15,7 +15,9 @@ package com.vertica.spark.datasource.json
 
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.v2.VerticaScan
+import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.error.{ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
@@ -39,6 +41,10 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
     case _ => config
   }
 
+  private val fsLayer = config match {
+    case cfg: DistributedFilesystemReadConfig => HadoopFileStoreLayer.make(cfg)
+  }
+
   private lazy val batch: Batch = {
     // Export JSON before initializing Spark's JSON support.
     readConfigSetup.performInitialSetup(jsonReadConfig) match {
@@ -47,7 +53,16 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) =>
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
+          val batch = batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
+
+          val files = fsLayer.getFileList(partitionInfo.rootPath).getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
+          if(files.isEmpty){
+          //  delete
+            new CleanupUtils().cleanupAll(fsLayer, partitionInfo.rootPath)
+            batch
+          }else{
+            batch
+          }
       }
     }
   }
