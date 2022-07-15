@@ -16,6 +16,7 @@ package com.vertica.spark.datasource.v2
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
+import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
 import com.vertica.spark.util.pushdown.PushdownUtils
@@ -82,7 +83,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     cfg.setGroupBy(this.groupBy)
 
     if(useJson(cfg)) {
-      new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory)
+      new VerticaJsonScan(cfg, readConfigSetup, new JsonBatchFactory, HadoopFileStoreLayer.make(config))
     } else {
       new VerticaScan(cfg, readConfigSetup)
     }

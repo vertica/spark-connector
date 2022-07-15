@@ -182,6 +182,12 @@ object HadoopFileStoreLayer {
 
     new HadoopFileStoreLayer(config.fileStoreConfig, readMetadata)
   }
+
+  def make(config: ReadConfig): HadoopFileStoreLayer = {
+    config match {
+      case cfg: DistributedFilesystemReadConfig => make(cfg)
+    }
+  }
 }
 class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[StructType]) extends FileStoreLayerInterface {
   private val S3_ACCESS_KEY: String = "fs.s3a.access.key"
