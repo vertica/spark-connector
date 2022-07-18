@@ -323,17 +323,17 @@ jobs:
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
-#  slack-workflow-status:
-#    name: Post Workflow Status To Slack
-#    runs-on: ubuntu-latest
-#    needs: [run-integration-tests, run-integration-tests_gcs, run-integration-tests_s3, run-remote-tests]
-#    if: failure()
-#    steps:
-#      - name: Slack Workflow Notification
-#        uses: Gamesight/slack-workflow-status@master
-#        if: always()
-#        with:
-#          repo_token: ${{secrets.GITHUB_TOKEN}}
-#          slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
-#          name: 'Nightly tests failed'
-#          icon_emoji: ':sadge:'
+  slack-workflow-status:
+    name: Post Workflow Status To Slack
+    runs-on: ubuntu-latest
+    needs: [run-integration-tests, run-integration-tests_gcs, run-integration-tests_s3, run-remote-tests]
+    if: failure()
+    steps:
+      - name: Slack Workflow Notification
+        uses: Gamesight/slack-workflow-status@master
+        if: always()
+        with:
+          repo_token: ${{secrets.GITHUB_TOKEN}}
+          slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
+          name: 'Nightly tests failed'
+          icon_emoji: ':sadge:'

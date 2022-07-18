@@ -26,7 +26,7 @@ Currently, testing includes:
 * Testing combinations of:
   * Spark 3.x
   * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
-* Testing JSON read against Spark 3.x
+* Testing JSON option against Spark 3.x
 
 ### Cleanup Artifacts
 `cleanup-artifacts.yml` workflows runs every day at 1AM, removing any artifacts created during a workflow.

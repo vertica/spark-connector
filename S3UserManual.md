@@ -5,15 +5,12 @@ allowing Hadoop file system to access S3, and subsequently allowing the connecto
 
 # Required Dependencies
 What you will need:
-- Spark 3.0
-- An appropriate hadoop-aws for your hadoop install. Note that Spark comes bundled with Hadoop or stand-alone.
+- Spark 3.x
+- An appropriate `hadoop-aws` version for your hadoop install. Note that Spark comes bundled with Hadoop or stand-alone.
   - Importantly, the versions of hadoop-aws must be identical to the hadoop install. 
+  - For example, for a sbt project using Hadoop 3.3.0, add to your `build.sbt`:
+    ```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"```
 - An S3 bucket configured to use either A) access key ID + secret access key or B) IAM roles for authentication
-
-To use the connector with S3, you will need to add the `hadoop-aws` dependency to your project. 
-
-For example, for a sbt project using Hadoop 3.3.0, add to your `build.sbt`:
-```libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"```
 
 Some features may work with older versions of hadoop-aws, but we currently only test against the hadoop-aws version compatible with
 the latest Spark 3.

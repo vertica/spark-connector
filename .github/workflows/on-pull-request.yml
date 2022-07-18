@@ -85,7 +85,7 @@ jobs:
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
-      - name: Run the integration tests on Spark 3.0
+      - name: Run the integration tests
         run: docker exec -w /home/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
