@@ -342,3 +342,4 @@ jobs:
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
           name: 'Nightly tests failed'
           icon_emoji: ':sadge:'
+          include_jobs: false
