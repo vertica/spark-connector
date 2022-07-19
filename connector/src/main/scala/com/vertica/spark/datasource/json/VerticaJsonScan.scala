@@ -52,12 +52,10 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
           val batch = batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
 
           val files = fsLayer.getFileList(partitionInfo.rootPath).getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          if(files.isEmpty){
+          if (files.isEmpty) {
             new CleanupUtils().cleanupAll(fsLayer, partitionInfo.rootPath)
-            batch
-          }else{
-            batch
           }
+          batch
       }
     }
   }
