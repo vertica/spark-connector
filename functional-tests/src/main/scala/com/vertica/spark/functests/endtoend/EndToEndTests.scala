@@ -3614,7 +3614,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir(fsConfig.address, "777")
   }
 
-  ignore should "use schema metadata to override col size when creating an external table with varchar/varbinary type" in {
+  it should "use schema metadata to override col size when creating an external table with varchar/varbinary type" in {
     val tableName = "existingData"
     val filePath = fsConfig.address + "existingData"
 
@@ -3654,7 +3654,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir(fsConfig.address, "777")
   }
 
-  ignore should "always default col size when creating an external table with varchar/varbinary type" in {
+  it should "always default col size when creating an external table with varchar/varbinary type" in {
     val tableName = "existingData"
     val filePath = fsConfig.address + "existingData"
 
@@ -3674,7 +3674,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Export to json cannot export binary types
     // Filter here since json option could be set from above
     val readOptions = readOpts.filter(_._1 == "json")
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOptions + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {
       assert(row.getAs[Array[Byte]](0).length == 100 && row.getAs[String](1).length == 100)
