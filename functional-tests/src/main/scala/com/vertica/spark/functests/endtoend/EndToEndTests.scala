@@ -3634,7 +3634,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     // Export to json cannot export binary types
     // Filter here since json option could be set from above
-    val readOptions = readOpts.filter(_._1 == "json")
+    val readOptions = readOpts.filterNot(_._1 == "json")
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOptions + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {
@@ -3666,7 +3666,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     // Export to json cannot export binary types
     // Filter here since json option could be set from above
-    val readOptions = readOpts.filter(_._1 == "json")
+    val readOptions = readOpts.filterNot(_._1 == "json")
     val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOptions + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {
