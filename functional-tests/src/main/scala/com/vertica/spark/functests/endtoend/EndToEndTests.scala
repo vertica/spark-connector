@@ -17,8 +17,6 @@ import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.fs.{GCSSparkOptions, HadoopFileStoreLayer}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
-import com.vertica.spark.util.version.{Version, VerticaVersionUtils}
-import com.vertica.spark.util.version.VerticaVersionUtils.VERTICA_DEFAULT
 import org.apache.log4j.Logger
 import org.apache.spark.{SparkConf, SparkException}
 import org.apache.spark.sql._
@@ -44,11 +42,6 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions, fileStoreConfig.gcsOptions)
   protected val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
   protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
-  protected lazy val verticaVersion: Version = {
-    val rs = conn.createStatement().executeQuery("select version();")
-    rs.next()
-    VerticaVersionUtils.parseVerticaVersionString(rs.getString(1)).getOrElse(VERTICA_DEFAULT)
-  }
 
   private val sparkConf = new SparkConf()
     .setMaster("local[*]")
