@@ -10,8 +10,8 @@ Currently, this includes:
 * Compile checks
 * Unit-tests checks
 * Test coverage checks:
-  * Require at least 80% coverage when the PR is merged.
-  * Patch coverage of at least 80%. Patch coverage only measures the coverage of changes made in the PR. 
+  * Require at least 80% coverage when the PR is merged
+  * [Patch coverage](https://docs.codecov.com/docs/commit-status#patch-status) of at least 80%. Patch coverage only measures the coverage of changes made in the PR 
 * Scalastyle checks
 * Integration tests against the latest Spark 3 and Vertica
 
@@ -21,8 +21,8 @@ The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (o
 
 Currently, testing includes:
 * Integration tests against: 
-  * S3, using a MINIO object store container to mimic S3.
-  * GCS, against an actual GCS bucket provided by Vertica. We could not find a solution to mock a GCS environment yet.
+  * S3, using a MINIO object store container to mimic S3
+  * GCS, against an actual GCS bucket provided by Vertica. We could not find a solution to mock a GCS environment yet
 * Testing combinations of:
   * Spark 3.x
   * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
