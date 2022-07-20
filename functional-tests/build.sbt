@@ -27,7 +27,7 @@ version := versionProps.value.getProperty("connector-version")
 
 val sparkVersion = Option(System.getProperty("sparkVersion")) match {
   case Some(sparkVersion) => sparkVersion
-  case None => sys.env.getOrElse("SPARK_VERSION", "3.3.0")
+  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0)")
 }
 
 val hadoopAwsVersion = Option(System.getProperty("hadoopAwsVersion")) match {
