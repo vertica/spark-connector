@@ -191,9 +191,6 @@ jobs:
         run: docker build -t client ./docker
       - name: Run docker compose
         run: cd docker && docker-compose up -d
-        env:
-          HADOOP_VERSION: "3.3.0"
-          SPARK_VERSION: "3.2.1"
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
@@ -242,8 +239,6 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-          HADOOP_VERSION: 3.3.2
-          SPARK_VERSION: "[3.3.0, 3.4.0)"
       - name: Create db in Vertica
         run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
       - name: Replace HDFS core-site config with our own
@@ -290,8 +285,6 @@ jobs:
       - name: Run docker compose
         run: cd docker && docker-compose up -d
         env:
-          VERTICA_VERSION: 12.0.0-0
-          SPARK_VERSION: "[3.3.0, 3.4.0)"
           GCS_HMAC_KEY_ID: ${{secrets.GCS_HMAC_KEY_ID}}
           GCS_HMAC_KEY_SECRET: ${{secrets.GCS_HMAC_KEY_SECRET}}
           GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
