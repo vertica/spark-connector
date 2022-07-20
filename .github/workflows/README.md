@@ -24,7 +24,7 @@ Currently, testing includes:
   * S3, using a MINIO object store container to mimic S3
   * GCS, against an actual GCS bucket provided by Vertica. We could not find a solution to mock a GCS environment yet
 * Testing combinations of:
-  * Spark 3.x
+  * Spark 3.x and the appropriate Hadoop HDFS version
   * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
 * Testing JSON option against Spark 3.x
 
