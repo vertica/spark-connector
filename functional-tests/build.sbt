@@ -30,9 +30,9 @@ val sparkVersion = Option(System.getProperty("sparkVersion")) match {
   case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0)")
 }
 
-val hadoopAwsVersion = Option(System.getProperty("hadoopAwsVersion")) match {
+val hadoopVersion = Option(System.getProperty("hadoopVersion")) match {
   case Some(hadoopAws) => hadoopAws
-  case None => sys.env.getOrElse("HADOOP_AWS_VERSION", "3.3.2")
+  case None => sys.env.getOrElse("HADOOP_VERSION", "3.3.2")
 }
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
@@ -50,7 +50,8 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopAwsVersion
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
+libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopVersion
 libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
 libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
 
