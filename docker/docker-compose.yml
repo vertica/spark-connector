@@ -2,7 +2,7 @@ version: "3.9"
 services:
   client:
     build: .
-    container_name: docker_client_1
+    container_name: docker-client-1
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
@@ -22,6 +22,13 @@ services:
       - GCS_SERVICE_EMAIL
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+  docker-worker-1:
+    build: ./worker
+    container_name: docker-worker-1
+    volumes:
+      - ./..:/spark-connector
+      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
+    stdin_open: true
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1

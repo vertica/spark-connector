@@ -21,5 +21,5 @@ if defined KERBEROS (
     docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
 	docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
 	docker exec docker_vertica_1 vsql -c "select version();"
-	docker exec -it docker_client_1 /bin/bash
+	docker exec -it docker-client-1 /bin/bash
 )
