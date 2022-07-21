@@ -23,8 +23,8 @@ import com.vertica.spark.datasource.partitions.parquet.{ParquetFileRange, Vertic
 import com.vertica.spark.datasource.v2.PushdownFilter
 import com.vertica.spark.util.Timer
 import com.vertica.spark.util.cleanup.{CleanupUtilsInterface, DistributedFilesCleaner}
-import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.error._
+import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.version.VerticaVersionUtils

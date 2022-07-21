@@ -15,12 +15,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config._
 import com.vertica.spark.datasource.core.Disable
-import com.vertica.spark.functests._
-import com.vertica.spark.functests.endtoend.{BasicJsonReadTests, ComplexTypeTests, ComplexTypeTestsV10, EndToEndTests, RemoteTests}
 import com.vertica.spark.datasource.fs.GCSEnvVars
+import com.vertica.spark.functests._
+import com.vertica.spark.functests.endtoend._
+import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
 import org.scalatest.events.{Event, TestFailed, TestStarting, TestSucceeded}
 import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.{Args, BeforeAndAfterAll, TestSuite}
 import scopt.OParser
 
 import scala.util.Try
@@ -68,6 +68,8 @@ object Main extends App {
   }
 
   val conf: Config = ConfigFactory.load()
+
+  // Load options expected to be in config file
   var connectorOptions = Map(
     "host" -> conf.getString("functional-tests.host"),
     "user" -> conf.getString("functional-tests.user"),
@@ -102,6 +104,11 @@ object Main extends App {
   setConnectorOption("functional-tests.gcs_service_key_id", "gcs_service_key_id")
   setConnectorOption("functional-tests.gcs_service_key", "gcs_service_key")
   setConnectorOption("functional-tests.gcs_service_email", "gcs_service_email")
+
+  // Load Kerberos options
+  setConnectorOption("functional-tests.kerberos_service_name", "kerberos_service_name")
+  setConnectorOption("functional-tests.kerberos_host_name", "kerberos_host_name")
+  setConnectorOption("functional-tests.jaas_config_name", "jaas_config_name")
 
   val auth = if (Try {conf.getString("functional-tests.password")}.isSuccess) {
     connectorOptions = connectorOptions + (
@@ -203,12 +210,13 @@ object Main extends App {
       new HDFSTests(fileStoreConfig, jdbcConfig),
       new CleanupUtilTests(fileStoreConfig),
       new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
-      new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+      new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
+      new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
     ).mkString("\n")
     result + "\n"
   }
 
-  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "", remote: Boolean = false, json: Boolean = false)
+  case class Options(large: Boolean = false, v10: Boolean = false, suite: String = "", testName: String = "", remote: Boolean = false, json: Boolean = false, excludeList: Seq[String] = List.empty)
   val builder = OParser.builder[Options]
   val optParser = {
     import builder._
@@ -221,19 +229,25 @@ object Main extends App {
         .text("Add LargeDataTests to run."),
       opt[Unit]('v', "v10")
         .action((_, options: Options) => options.copy(v10 = true))
-        .text("Replace ComplexDataTypeTests with ComplexDataTypeTestsV10 for Vertica 10.x."),
+        .text("Use appropriate tests for Vertica 10.x."),
       opt[Unit]('r', "remote")
         .action((_, options: Options) => options.copy(remote = true))
         .text("Add remote tests"),
       opt[String]('s', "suite")
+        .valueName("<suiteName")
         .action((value: String, options: Options) => options.copy(suite = value))
-        .text("Specify a specific test suite name to run."),
+        .text("Select a specific test suite to run."),
       opt[String]('t', "test")
+        .valueName("<testName>")
         .action((value: String, options: Options) => options.copy(testName = value.trim))
-        .text("Specify a test name in a suite to run. Require -s to be given."),
+        .text("Select a test in a suite to run. Require -s to be specified."),
       opt[Unit]('j', "json")
         .action((_, options: Options) => options.copy(json = true))
-        .text("Use json export option"),
+        .text("Use json export option for all test suites"),
+      opt[Seq[String]]('e', "exclude")
+        .action((names, options: Options) => options.copy(excludeList = names))
+        .valueName("<suiteName1>,<suiteName2>,<suiteName3>,...")
+        .text("A list of suite names to exclude from testing. No spaces after commas."),
      help('h', "help")
         .text("Print help"),
     )
@@ -247,7 +261,6 @@ object Main extends App {
   def executeTests(options: Options): Unit = {
     val suitesForExecution = buildTestSuitesForExecution(options)
     val testName = getTestName(options)
-
     val results =  suitesForExecution.map(suite => {runSuite(suite, testName)})
 
     println("SUMMARY:")
@@ -287,6 +300,8 @@ object Main extends App {
     if (options.large) testSuites = testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
     if (options.remote) testSuites = testSuites :+ new RemoteTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
+
+    testSuites = testSuites.filterNot(suite => options.excludeList.contains(suite.suiteName))
 
     if(options.suite.isBlank) {
       testSuites

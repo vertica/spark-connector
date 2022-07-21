@@ -15,7 +15,9 @@ package com.vertica.spark.datasource.json
 
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
 import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.v2.VerticaScan
+import com.vertica.spark.util.cleanup.CleanupUtils
 import com.vertica.spark.util.error.{ErrorHandling, InitialSetupPartitioningError}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
@@ -24,7 +26,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * We support reading JSON files by re-using Spark's JSON support implemented in [[JsonTable]].
  * */
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], batchFactory: JsonBatchFactory) extends Scan with Batch {
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], batchFactory: JsonBatchFactory, fsLayer: FileStoreLayerInterface) extends Scan with Batch {
 
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
@@ -47,7 +49,13 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
         case None => ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError())
         case Some(partitionInfo) =>
           val sparkSession = SparkSession.getActiveSession.getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
-          batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
+          val batch = batchFactory.build(partitionInfo.rootPath, Some(readSchema()), jsonReadConfig, sparkSession)
+
+          val files = fsLayer.getFileList(partitionInfo.rootPath).getOrElse(ErrorHandling.logAndThrowError(logger, InitialSetupPartitioningError()))
+          if (files.isEmpty) {
+            new CleanupUtils().cleanupAll(fsLayer, partitionInfo.rootPath)
+          }
+          batch
       }
     }
   }

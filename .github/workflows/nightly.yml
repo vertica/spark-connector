@@ -1,10 +1,9 @@
-name: Nightly Compilation Testing
-# Compiles our connector nightly and only report on failure.
-# This allows us to stay on top of breaking change from Spark
+name: Nightly Testing
+
 on:
   schedule:
-    # Nightly at 9:18 GMT
-    - cron: '18 9 * * *'
+    # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Sunday to Thursday
+    - cron: '18 9 * * 0-4'
   workflow_dispatch:
 
 jobs:
@@ -20,19 +19,332 @@ jobs:
         with:
           name: build-jar-file
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
+  run-spark-integration-tests:
+    name: Run regression tests against different versions of Vertica
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [ { spark: "[3.0.0, 3.1.0)", hadoop: "2.7.4" },
+                   { spark: "[3.1.0, 3.2.0)", hadoop: "3.2.0" },
+                   { spark: "[3.2.0, 3.3.0)", hadoop: "3.3.1" },
+                   { spark: "[3.3.0, 3.4.0)", hadoop: "3.3.2" } ]
+        vertica: ["11.1.1-2", "12.0.0-0" ]
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+        env:
+          SPARK_VERSION: ${{matrix.runtime.spark}}
+          HADOOP_VERSION: ${{matrix.runtime.hadoop}}
+          VERTICA_VERSION: ${{matrix.vertica}}
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Copy functional tests to home directory of client container
+        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
+      - name: Run the integration tests on Spark 3.0
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  run-spark-integration-tests-json:
+    name: Run regression tests using JSON export
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [ { spark: "[3.0.0, 3.1.0)", hadoop: "2.7.4" },
+                   { spark: "[3.1.0, 3.2.0)", hadoop: "3.2.0" },
+                   { spark: "[3.2.0, 3.3.0)", hadoop: "3.3.1" },
+                   { spark: "[3.3.0, 3.4.0)", hadoop: "3.3.2" } ]
+        vertica: [ "12.0.0-0" ]
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+        env:
+          SPARK_VERSION: ${{matrix.runtime.spark}}
+          HADOOP_VERSION: ${{matrix.runtime.hadoop}}
+          VERTICA_VERSION: ${{matrix.vertica}}
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Copy functional tests to home directory of client container
+        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
+      - name: Run the integration tests on Spark 3.0
+        run: docker exec -w /home/functional-tests docker_client_1 sbt "run -j"
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  run-spark-integration-tests-vertica-10:
+    name: Run integration tests against Vertica 10
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [ { spark: "[3.0.0, 3.1.0)", hadoop: "2.7.4" },
+                   { spark: "[3.1.0, 3.2.0)", hadoop: "3.2.0" },
+                   { spark: "[3.2.0, 3.3.0)", hadoop: "3.3.1" },
+                   { spark: "[3.3.0, 3.4.0)", hadoop: "3.3.2" } ]
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+        env:
+          SPARK_VERSION: ${{matrix.runtime.spark}}
+          HADOOP_VERSION: ${{matrix.runtime.hadoop}}
+          VERTICA_VERSION: 10.1.1-0
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Copy functional tests to home directory of client container
+        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
+      - name: Copy version.properties file from client container
+        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
+      - name: Run the integration tests on Spark 3.0
+        run: docker exec -w /home/functional-tests docker_client_1 sbt "run --v10"
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  run-remote-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Build the functional-tests project
+        run: cd functional-tests && sbt assembly
+      - name: Build client image
+        run: docker build -t client ./docker
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Run the integration tests
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c './submit-functional-tests.sh "-r -s RemoteTests"'
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  run-integration-tests-s3:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Add config options to application.conf
+        run: cd functional-tests && ./pipeline-s3-config.sh
+        env:
+          S3_FILEPATH: ${{secrets.S3_FILEPATH}}
+      - name: Build client image
+        run: docker build -t client ./docker
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+        env:
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Run the integration tests
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
+  run-integration-tests-gcs:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Download the build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-jar-file
+          path: ./functional-tests/lib/
+      - name: Add config options to application.conf
+        run: cd functional-tests && ./pipeline-gcs-config.sh
+        env:
+          GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
+      - name: Build client image
+        run: docker build -t client ./docker
+      - name: Run docker compose
+        run: cd docker && docker-compose up -d
+        env:
+          GCS_HMAC_KEY_ID: ${{secrets.GCS_HMAC_KEY_ID}}
+          GCS_HMAC_KEY_SECRET: ${{secrets.GCS_HMAC_KEY_SECRET}}
+          GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
+          GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
+          GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
+      - name: Create db in Vertica
+        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
+      - name: Replace HDFS core-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
+      - name: Replace HDFS hdfs-site config with our own
+        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
+      - name: Copy partitioned parquet data to HDFS container
+        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
+      - name: Copy partitioned parquet data to hadoop from local
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
+      - name: Increase active sessions in database
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+      - name: Run the integration tests against GCS
+        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
+      - name: Remove docker containers
+        run: cd docker && docker-compose down
   slack-workflow-status:
     name: Post Workflow Status To Slack
-    needs: [build]
-    if: failure()
     runs-on: ubuntu-latest
+    needs: [run-spark-integration-tests,
+            run-spark-integration-tests-json,
+            run-spark-integration-tests-vertica-10,
+            run-integration-tests-gcs,
+            run-integration-tests-s3,
+            run-remote-tests]
+    if: failure()
     steps:
       - name: Slack Workflow Notification
         uses: Gamesight/slack-workflow-status@master
         if: always()
         with:
-          # Required Input
           repo_token: ${{secrets.GITHUB_TOKEN}}
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
-          # Optional Input
-          name: 'Spark Compilation Failed'
+          name: 'Nightly tests failed'
           icon_emoji: ':sadge:'
+          include_jobs: false
