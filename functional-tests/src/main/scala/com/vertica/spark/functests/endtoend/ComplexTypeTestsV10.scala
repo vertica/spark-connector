@@ -8,7 +8,10 @@ import org.apache.spark.sql.types._
 
 import scala.util.{Failure, Success, Try}
 
-
+/**
+ * Vertica 10 added support for complex type but has limited support for ingesting and exporting complex data types. This
+ * suite will only test writing native arrays, and negative tests for writing and reading other complex types.
+ * */
 class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
 

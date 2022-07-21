@@ -1,9 +1,9 @@
-name: Weekly V10 Functional Testing
+# Workflow for running Unit tests and Integration tests
+name: On Pull Request
 
 on:
-  schedule:
-    # Every monday at 11:22 GMT
-    - cron: '20 12 * * 1'
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -19,11 +19,34 @@ jobs:
         with:
           name: build-jar-file
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
-  integration-tests-vertica-10-1-1-0:
+  run-analysis:
     runs-on: ubuntu-latest
     needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Run scalastyle
+        run: cd connector && sbt scalastyle
+  run-unit-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout the project
+        uses: actions/checkout@v2
+      - name: Run unit tests
+        run: cd connector && sbt coverage test coverageReport
+      - name: Upload coverage report to codecov
+        uses: codecov/codecov-action@v2
+        with:
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+          verbose: true
+  run-integration-tests:
+    runs-on: ubuntu-latest
+    needs: [build]
     env:
-      VERTICA_VERSION: 10.1.1-0
+      VERTICA_VERSION: 12.0.0-0
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
@@ -60,23 +83,7 @@ jobs:
         run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
       - name: Copy version.properties file from client container
         run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
-      - name: Run the integration tests on Spark 3.0 with Vertica 10 complex type tests
-        run: docker exec -w /home/functional-tests docker_client_1 sbt "run --v10" -DsparkVersion="[3.2.0, 3.3.0)" -DhadoopVersion="3.1.0"
+      - name: Run the integration tests
+        run: docker exec -w /home/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
-  slack-workflow-status:
-    if: always()
-    name: Post Workflow Status To Slack
-    needs: [integration-tests-vertica-10-1-1-0]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Slack Workflow Notification
-        uses: Gamesight/slack-workflow-status@master
-        if: always()
-        with:
-          # Required Input
-          repo_token: ${{secrets.GITHUB_TOKEN}}
-          slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
-          # Optional Input
-          name: 'Weekly V10 Functional Test'
-          icon_emoji: ':ezy:'

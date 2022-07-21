@@ -3,14 +3,18 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.datasource.jdbc.VerticaJdbcLayer
 import com.vertica.spark.functests.TestUtils
-import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ConnectorException, ErrorList, InternalMapNotSupported, QueryReturnsComplexTypes}
+import com.vertica.spark.util.error._
 import com.vertica.spark.util.schema.{ComplexTypesSchemaTools, MetadataKey}
-import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SaveMode}
+import org.apache.spark.sql.types._
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
+/**
+ * With Vertica 11.1.1 support for exporting data to JSON, we are able to read all complex data types. This test suite will
+ * test both writing and reading complex types.
+ * */
 class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
   extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
 
@@ -49,7 +53,16 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
     Try {
       df.collect
     } match {
-      case Failure(exception) => fail("Expected to succeed", exception)
+      case Failure(exception) =>
+        if (readOpts.contains("json")) {
+          assert(exception.isInstanceOf[ConnectorException])
+          assert(exception.asInstanceOf[ConnectorException]
+            .error.asInstanceOf[ErrorList]
+            .errors.exists(_.isInstanceOf[BinaryTypeNotSupported]))
+        }
+        else {
+          fail("Expected to succeed", exception)
+        }
       case Success(_) =>
         val schema = df.schema.fields
         assert(schema.head.dataType.isInstanceOf[ArrayType])

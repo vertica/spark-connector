@@ -113,13 +113,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
   it should "read nothing from empty table" in {
     val tableName1 = "dftest1"
-    val stmt = conn.createStatement
-    val n = 1
     TestUtils.createTableBySQL(conn, tableName1, "create table " + tableName1 + " (a int)")
 
     val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName1)).load()
 
-    assert(df.count() == 0)
+    df.collect()
     TestUtils.dropTable(conn, tableName1)
   }
 
@@ -535,9 +533,17 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     result match {
       case Success(count) => assert(count == n)
       case Failure(exception) =>
-        if(readOpts.getOrElse("json", "false").toBoolean){
-          succeed
-        } else {fail(exception)}
+        if(readOpts.contains("json")){
+          assert(exception.isInstanceOf[ConnectorException])
+          assert(exception.asInstanceOf[ConnectorException]
+            .error.asInstanceOf[ErrorList]
+            .errors.length == 5)
+          exception.asInstanceOf[ConnectorException]
+            .error.asInstanceOf[ErrorList]
+            .errors.map(e => assert(e.isInstanceOf[BinaryTypeNotSupported]))
+        } else {
+          fail(exception)
+        }
     }
     stmt.execute("drop table " + tableName1)
   }
@@ -599,9 +605,20 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val insert = "insert into "+ tableName1 + " values('abcde', 'fghijk')"
     TestUtils.populateTableBySQL(stmt, insert, n)
 
-    val r = TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
-
-    assert(r == n)
+    Try {
+      TestUtils.doCount(spark, readOpts + ("table" -> tableName1))
+    } match {
+      case Failure(exception) =>
+        if(readOpts.contains("json")){
+          assert(exception.isInstanceOf[ConnectorException])
+          assert(exception.asInstanceOf[ConnectorException]
+            .error.asInstanceOf[ErrorList]
+            .errors.exists(_.isInstanceOf[BinaryTypeNotSupported]))
+        } else {
+          fail(exception)
+        }
+      case Success(count) => assert(count == n)
+    }
 
     stmt.execute("drop table " + tableName1)
   }
@@ -3615,7 +3632,10 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val mode = SaveMode.Overwrite
     df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+    // Export to json cannot export binary types
+    // Filter here since json option could be set from above
+    val readOptions = readOpts.filterNot(_._1 == "json")
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOptions + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {
       assert(row.getAs[Array[Byte]](0).length == 100 && row.getAs[String](1).length == 100)
@@ -3643,7 +3663,11 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     val mode = SaveMode.Overwrite
     df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+
+    // Export to json cannot export binary types
+    // Filter here since json option could be set from above
+    val readOptions = readOpts.filterNot(_._1 == "json")
+    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOptions + ("table" -> tableName)).load()
     println("The dataframe is: " + readDf.rdd)
     readDf.rdd.foreach(row => {
       assert(row.getAs[Array[Byte]](0).length == 100 && row.getAs[String](1).length == 100)
