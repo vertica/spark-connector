@@ -13,7 +13,7 @@ Currently, this includes:
   * Require at least 80% coverage when the PR is merged
   * [Patch coverage](https://docs.codecov.com/docs/commit-status#patch-status) of at least 80%. Patch coverage only measures the coverage of changes made in the PR 
 * Scalastyle checks
-* Integration tests against the latest Spark 3 and Vertica
+* Integration tests against the latest Vertica. Uses the default Spark and Hadoop from the functional test which should be the latest.
 
 ### Nightly Testing
 The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (or 2:18 AM Pacific Time), executing the 
@@ -28,6 +28,7 @@ Currently, testing includes:
   * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
 * Testing JSON option against Spark 3.x
 
+All tests use the latest Vertica docker image. This would notify us of a breaking changes  
 ### Cleanup Artifacts
 `cleanup-artifacts.yml` workflows runs every day at 1AM, removing any artifacts created during a workflow.
 
