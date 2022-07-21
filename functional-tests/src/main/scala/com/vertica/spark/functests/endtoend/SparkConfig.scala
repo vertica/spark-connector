@@ -16,7 +16,7 @@ package com.vertica.spark.functests.endtoend
 import org.apache.spark.SparkConf
 
 /**
- * Mixin for creating a base [[SparkConf]] to create a spark session.
+ * Mixin for creating a base [[SparkConf]] for a spark session.
  * */
 trait SparkConfig {
 

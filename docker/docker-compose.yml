@@ -8,9 +8,12 @@ services:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     stdin_open: true
     ports:
+#      JVM Remote debug port
       - "5005:5005"
+#      Spark Web UI ports
       - "8080:8080"
       - "8081:8081"
+      - "4040:4040"
     environment:
       - HADOOP_VERSION
       - SPARK_VERSION

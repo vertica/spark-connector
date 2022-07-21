@@ -199,8 +199,8 @@ object Main extends App {
 
   private def defaultTestSuitesNames: String = {
     val result = Seq(
-      new JDBCTests(jdbcConfig),
-      new HDFSTests(fileStoreConfig, jdbcConfig),
+      new JDBCTests(jdbcConfig, false),
+      new HDFSTests(fileStoreConfig, jdbcConfig, false),
       new CleanupUtilTests(fileStoreConfig),
       new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig),
       new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
@@ -270,21 +270,21 @@ object Main extends App {
   }
 
   private def buildTestSuitesForExecution(options: Options): Seq[AnyFlatSpec with BeforeAndAfterAll] = {
-
+    val remote = options.remote
     var readOpts = Main.readOpts
     if(options.json) readOpts = readOpts + ("json" -> "true")
 
     var testSuites =  Seq(
-      new JDBCTests(jdbcConfig),
-      new HDFSTests(fileStoreConfig, jdbcConfig),
+      new JDBCTests(jdbcConfig, remote),
+      new HDFSTests(fileStoreConfig, jdbcConfig, remote),
       new CleanupUtilTests(fileStoreConfig),
-      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, options.remote)
+      new EndToEndTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote)
     )
 
-    testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig, options.remote)
-    else testSuites ++ List(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, options.remote), new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, options.remote))
+    testSuites = if (options.v10) testSuites :+ new ComplexTypeTestsV10(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote)
+    else testSuites ++ List(new ComplexTypeTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote), new BasicJsonReadTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote))
 
-    if (options.large) testSuites = testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, options.remote)
+    if (options.large) testSuites = testSuites :+ new LargeDataTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote)
 
     if (options.remote) testSuites = testSuites :+ new RemoteTests(readOpts, writeOpts, jdbcConfig, fileStoreConfig)
 
