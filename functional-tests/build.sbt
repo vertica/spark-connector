@@ -31,7 +31,7 @@ val sparkVersion = Option(System.getProperty("sparkVersion")) match {
 }
 
 val hadoopVersion = Option(System.getProperty("hadoopVersion")) match {
-  case Some(hadoopAws) => hadoopAws
+  case Some(hadoopVersion) => hadoopVersion
   case None => sys.env.getOrElse("HADOOP_VERSION", "3.3.2")
 }
 
