@@ -11,8 +11,10 @@ import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
+
+  override def sparkAppName: String = "Complex Type Tests"
 
   it should "read dataframe with 1D array" in {
     val tableName1 = "dftest_array"

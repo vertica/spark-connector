@@ -3,14 +3,16 @@ package com.vertica.spark.functests.endtoend
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error.{ComplexTypeReadNotSupported, ComplexTypeWriteNotSupported, ConnectorException, NativeArrayReadNotSupported}
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
 import scala.util.{Failure, Success, Try}
 
 
-class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+class ComplexTypeTestsV10(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
+
+  override def sparkAppName: String = "Complex Type Tests V10"
 
   it should "write 1D array to internal table" in {
     val tableName = "dftest"

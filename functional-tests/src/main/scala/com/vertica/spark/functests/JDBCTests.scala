@@ -22,26 +22,32 @@ import com.vertica.spark.datasource.core.Disable
 import com.vertica.spark.util.error.{ConnectionSqlError, DataError, SyntaxError}
 import org.apache.spark.sql.SparkSession
 import buildinfo.BuildInfo
+import com.vertica.spark.functests.endtoend.SparkConfig
 
 /**
   * Tests basic functionality of the VerticaJdbcLayer
   *
   * Should ensure that the component correctly passes on queries / other statements to vertica and correctly returns results. It should also confirm that error handling works as expected.
   */
-class JDBCTests(val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+class JDBCTests(val jdbcCfg: JDBCConfig, remote: Boolean) extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach with SparkConfig {
 
   val tablename = "test_table"
+
+  /**
+   * The name that will be displayed on Spark Master UI
+   * */
+  override def sparkAppName: String = "JDBC Tests"
 
   private var jdbcLayer: JdbcLayerInterface = _
   private var spark: SparkSession = _
   override def beforeAll(): Unit = {
     jdbcLayer = new VerticaJdbcLayer(jdbcCfg)
     spark = SparkSession.builder()
-      .master("local[*]")
-      .appName("Vertica Connector Test Prototype")
-      .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-      .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-      .getOrCreate()
+      .config(
+        baseSparkConf(remote)
+        .set("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+        .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
+      ).getOrCreate()
   }
 
   override def beforeEach(): Unit = {

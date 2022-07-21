@@ -23,8 +23,10 @@ import scala.util.{Failure, Success, Try}
 /**
  * A few minimal tests for the json feature. Not intended to be comprehensive.
  * */
-class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+class BasicJsonReadTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
+
+  override def sparkAppName: String = "Basic JSON Read Tests"
 
   private val jsonReadOpts = readOpts + ("json" -> "true")
 

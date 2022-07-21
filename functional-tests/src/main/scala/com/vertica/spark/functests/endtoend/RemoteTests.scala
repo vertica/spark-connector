@@ -1,22 +1,16 @@
 package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, StructField, StructType}
 
 /**
  * Test suites for submitting to a remote driver. This suite is meant to be configured with a master node when submitting.
  * */
 class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, true) {
 
-  // The super reference set master url to local, which forces them to run against a local instance.
-  // This suite uses a spark session without a master specified, giving control to the submitter.
-  override lazy val spark: SparkSession = SparkSession.builder()
-    .appName("Vertica Connector Test Prototype")
-    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .getOrCreate()
+  override def sparkAppName: String = "Remote Tests"
 
   /**
    * This test checks the case where remote executors have to perform multiple tasks and see if multiple connections are

@@ -20,6 +20,7 @@ import com.vertica.spark.datasource.core.DataBlock
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.jdbc.{JdbcLayerInterface, VerticaJdbcLayer}
 import com.vertica.spark.datasource.partitions.parquet.ParquetFileRange
+import com.vertica.spark.functests.endtoend.SparkConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.FsPermission
@@ -34,13 +35,15 @@ import org.scalatest.BeforeAndAfterAll
  * Should ensure that reading from HDFS works correctly, as well as other operations, such as creating/removing files/directories and listing files.
  */
 
-class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends AnyFlatSpec with BeforeAndAfterAll {
+class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig, remote: Boolean) extends AnyFlatSpec with BeforeAndAfterAll with SparkConfig {
+
+  /**
+   * The name that will be displayed on Spark Master UI
+   * */
+  override def sparkAppName: String = "HDFS Tests"
 
   private lazy val (spark, fsLayer, dirTestCfg, df) = {
-    val spark = SparkSession.builder()
-      .master("local[*]")
-      .appName("Vertica Connector Test Prototype")
-      .getOrCreate()
+    val spark = SparkSession.builder().config(baseSparkConf(remote)).getOrCreate()
     val df = spark.range(100).toDF("number")
     val schema = df.schema
     val dirTestCfg: FileStoreConfig = fsCfg.copy(baseAddress = fsCfg.address + "dirtest/")
@@ -263,6 +266,5 @@ class HDFSTests(val fsCfg: FileStoreConfig, val jdbcCfg: JDBCConfig) extends Any
       case Left(err) => fail(err.getFullContext)
     }
   }
-
 
 }

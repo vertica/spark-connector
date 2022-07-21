@@ -4,5 +4,8 @@ export SPARK_DIST_CLASSPATH=$(/hadoop-3.3.0/bin/hadoop classpath)
 export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 #start-master.sh -h docker-client-1
-start-worker.sh spark://docker-client-1:7077
-#spark-submit --master spark://localhost:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-functional-tests-assembly-$CONNECTOR_VERSION.jar $1
+#start-worker.sh spark://docker-client-1:7077
+#stop-all.sh
+spark-submit --master spark://docker-client-1:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-functional-tests-assembly-$CONNECTOR_VERSION.jar $1
+#spark-submit --master spark://docker-client-1:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-functional-tests-assembly-$CONNECTOR_VERSION.jar -r
+

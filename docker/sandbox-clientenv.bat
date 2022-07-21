@@ -20,6 +20,9 @@ if defined KERBEROS (
 	docker cp ../functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
     docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
 	docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
+    docker exec -w /spark-connector/docker/cluster docker-client-1 /bin/bash -c './start-master.sh'
+    docker exec -w /spark-connector/docker/cluster docker-client-1 /bin/bash -c './start-worker.sh'
+    docker exec -w /spark-connector/docker/cluster docker-worker-1 /bin/bash -c './start-worker.sh'
 	docker exec docker_vertica_1 vsql -c "select version();"
 	docker exec -it docker-client-1 /bin/bash
 )

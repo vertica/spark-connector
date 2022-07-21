@@ -18,7 +18,7 @@ import com.vertica.spark.datasource.fs.{GCSSparkOptions, HadoopFileStoreLayer}
 import com.vertica.spark.functests.TestUtils
 import com.vertica.spark.util.error._
 import org.apache.log4j.Logger
-import org.apache.spark.{SparkConf, SparkException}
+import org.apache.spark.SparkException
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.functions._
@@ -35,17 +35,15 @@ import scala.util.{Failure, Success, Try}
  *
  * After each test, it checks that staging area is cleared and closes connections when suit is finished.
  * */
-abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends AnyFlatSpec with BeforeAndAfterAll with BeforeAndAfterEach with SparkConfig {
 
   protected val conn: Connection = TestUtils.getJDBCConnection(jdbcConfig)
   protected val fsConfig: FileStoreConfig = FileStoreConfig(readOpts("staging_fs_url"), "", false, fileStoreConfig.awsOptions, fileStoreConfig.gcsOptions)
   protected val fsLayer = new HadoopFileStoreLayer(fsConfig, None)
   protected val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
 
-  private val sparkConf = new SparkConf()
-    .setMaster("local[*]")
-    .setAppName("Vertica Connector Functional Test Suites")
+  private val sparkConf = baseSparkConf(remote)
     .set("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
     .set("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
 
@@ -90,8 +88,10 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
   }
 }
 
-class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
+
+  override def sparkAppName: String = "End-To-End Tests"
 
   val numSparkPartitions = 4
 
