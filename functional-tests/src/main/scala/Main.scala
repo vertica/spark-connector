@@ -224,7 +224,9 @@ object Main extends App {
         .text("Replace ComplexDataTypeTests with ComplexDataTypeTestsV10 for Vertica 10.x."),
       opt[Unit]('r', "remote")
         .action((_, options: Options) => options.copy(remote = true))
-        .text("Add remote tests"),
+        .text("If specified, test suites using Spark session will not specify a local master, allowing the application to be submitted to a Spark cluster."
+          + "\n Also adds RemoteTests to the run."
+        ),
       opt[String]('s', "suite")
         .action((value: String, options: Options) => options.copy(suite = value))
         .text("Specify a specific test suite name to run."),
