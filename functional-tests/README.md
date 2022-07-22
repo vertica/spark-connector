@@ -66,17 +66,21 @@ Make sure your update the option `filepath` to your GCS bucket as well.
 
 ### Testing on a standalone cluster
 
-Our docker container also host a standalone cluster of 2 worker nodes.
+Our docker environment also host a standalone cluster of 2 worker nodes, running on Spark 3.1.2 with Hadoop 3.3.0.
 
 To run the functional tests on our cluster, assemble the functional test into a fat jar with `sbt assembly`. 
-Note that you should do this outside of the docker container as it will be extremely slow. 
-Instead, navigate to the `functional-tests` folder on your local machine to build the jar. 
-Since the `spark-connector` folder is mounted onto the containers, the built jar will also be available on the container as well.
+Note that you should do this outside of the docker environment as it will be extremely slow to compile. 
+Instead, navigate to the `functional-tests` folder on your local machine to build the functional test with `sbt assembly`. 
+Since the `spark-connector` folder is mounted onto the containers, the built jar will also be available on `docker_client_1`.
 
-Assuming you are in the sandbox environment, navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`.
+To submit the functional test, navigate to `spark-connector/functional-tests` inside `docker_client_1` and use `submit-functional-test.sh`.
 
 Once submitted, verify through the [web ui](localhost:8080) and the [jobs ui](localhost:4040) that the application was submitted.
 Our functional test, without any arguments, will create multiple spark sessions; You should expect multiple applications executing sequentially.
 
-`submit-functional-test.sh` will always use the functional test option `-r`. You can also pass other functional test options as a string to the script.
-For example, to run a single test suite on our cluster, use `./submit-functional-test.sh "-s EndToEndTests"`. This will equivalent to `sbt "run -r -s EndToEndTests"`
+`submit-functional-test.sh` also excepts a string argument which it will pass onto the cluster as the argument to the submitted Spark application.
+For example, to run a single test suite on our cluster, use `./submit-functional-test.sh "-s EndToEndTests"`.
+
+Note: `submit-functional-test.sh` will always append the functional test option `-r` to the passed in string argument.
+So `./submit-functional-test.sh "-s EndToEndTests"` is equivalent to `sbt "run -r -s EndToEndTests"`
+Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
