@@ -26,7 +26,7 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
   docker-worker-1:
-    build: ./cluster
+    build: .
     container_name: docker-worker-1
     volumes:
       - ./..:/spark-connector
