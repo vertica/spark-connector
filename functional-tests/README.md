@@ -84,3 +84,6 @@ For example, to run a single test suite on our cluster, use `./submit-functional
 Note: `submit-functional-test.sh` will always append the functional test option `-r` to the passed in string argument.
 So `./submit-functional-test.sh "-s EndToEndTests"` is equivalent to `sbt "run -r -s EndToEndTests"`
 Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
+
+#### Configuring the cluster.
+The `submit-functional-test.sh` uses spark's `spark-submit`. You can edit the file with appropriate parameters if needed.
