@@ -2,8 +2,8 @@ name: Nightly Testing
 
 on:
   schedule:
-    # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Sunday to Thursday
-    - cron: '18 9 * * 0-4'
+    # Nightly at 9:18 am GMT, or 2:18 am Pacific Time, from Monday to Friday
+    - cron: '18 9 * * 1-5'
   workflow_dispatch:
 
 jobs:
