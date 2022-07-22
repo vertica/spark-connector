@@ -3,5 +3,5 @@ export SPARK_DIST_CLASSPATH=$(/hadoop-3.3.0/bin/hadoop classpath)
 export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 
-export SPARK_MASTER_HOST=docker-client-1
+export SPARK_MASTER_HOST=spark-driver
 start-master.sh
