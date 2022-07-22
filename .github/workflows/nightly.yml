@@ -186,7 +186,7 @@ jobs:
         run: docker exec -w /home/functional-tests docker_client_1 sbt "run --v10"
       - name: Remove docker containers
         run: cd docker && docker-compose down
-  run-remote-tests:
+  run-intergration-tests-on-standalone-cluster:
     runs-on: ubuntu-latest
     needs: build
     steps:
