@@ -20,7 +20,7 @@ sbt assembly
 Then create a `lib` folder at `/kerberos-example` and put the spark connector that you assembled inside.
 ```
 mkdir /spark-connector/examples/kerberos-example/lib
-cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.3.0.jar /spark-connector/examples/kerberos-example/lib
+cp /spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.3.1.jar /spark-connector/examples/kerberos-example/lib
 ```
 Then in the example's `build.sbt`, comment out the vertica-spark connector dependency.
 
