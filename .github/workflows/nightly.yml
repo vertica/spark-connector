@@ -1,4 +1,4 @@
-name: Nightly Testing
+name: Nightly Tests
 
 on:
   schedule:

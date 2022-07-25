@@ -1,4 +1,4 @@
-name: Weekly Testing
+name: Weekly Tests
 
 on:
   schedule:
