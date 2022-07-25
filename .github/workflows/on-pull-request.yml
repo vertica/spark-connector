@@ -1,5 +1,5 @@
 # Workflow for running Unit tests and Integration tests
-name: On Pull Request
+name: PR Testing
 
 on:
   pull_request:
