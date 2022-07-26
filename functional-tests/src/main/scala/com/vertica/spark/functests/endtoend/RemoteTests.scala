@@ -24,10 +24,10 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
 
     val partitionsCount = 100
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).repartition(partitionsCount)
-    val query = "select count(client_hostname) from v_monitor.user_sessions where client_type='JDBC Driver';"
+    val getJDBCConnectionsCount = "select count(client_hostname) from v_monitor.user_sessions where client_type='JDBC Driver';"
     val stmt = conn.createStatement()
     try {
-      var rs = stmt.executeQuery(query)
+      var rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val initialJdbcSessionCount = rs.getLong(1)
 
@@ -37,27 +37,25 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
         .mode(SaveMode.Overwrite)
         .save()
 
-      rs = stmt.executeQuery(query)
+      rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val sessionCountWrite = rs.getLong(1)
       // We expect only 2 new jdbc connections made on write
       assert(sessionCountWrite == initialJdbcSessionCount + 2)
 
-      spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      spark.read.format(VERTICA_SOURCE)
         .options(readOpts +
           ("table" -> "dftest") +
           ("num_partitions"-> "30") +
           ("max_row_group_size_export_mb" -> "1") +
           ("max_file_size_export_mb" -> "1"))
         .load()
-        .write.format("json").mode(SaveMode.Overwrite).save("./test-output")
 
-      rs = stmt.executeQuery(query)
+      rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val sessionCountRead = rs.getLong(1)
-      // We expect only 2 new jdbc connections made on read.
-      // + 4 since write was done before this.
-      assert(sessionCountRead == initialJdbcSessionCount + 4)
+      // We expect only 1 new jdbc connections made on read.
+      assert(sessionCountRead == initialJdbcSessionCount + 3)
 
     } catch {
       case exception: Exception => fail("Unexpected exception", exception)
