@@ -2,9 +2,7 @@
 The following are descriptions of the workflows used in the repository.
 
 ### Main Tests
-The workflow `main.yml` runs on a pull requests to `main` (when a PR is created or has content pushed to it) or on pushes
-to `main` (like when a PR is merged).
-The purpose is to perform critical tests required for merging. 
+The workflow `main.yml` is a reusable workflow performing the following critical tests: 
 
 Currently, this includes:
 * Compile checks
@@ -14,6 +12,11 @@ Currently, this includes:
   * [Patch coverage](https://docs.codecov.com/docs/commit-status#patch-status) of at least 80%. Patch coverage only measures the coverage of changes made in the PR 
 * Scalastyle checks
 * Integration tests against the latest Vertica. Uses the default Spark and Hadoop from the functional test which should be the latest.
+
+It is being used by `on-main-push.yml`, which execute when there's a push to `main` branch (like when a PR is merged).
+
+### On Pull Request
+Runs `main.yml` a pull requests to `main` (when a PR is created or has content pushed to it).
 
 ### Nightly Tests
 The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (or 2:18 AM Pacific Time), executing the 
