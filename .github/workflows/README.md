@@ -1,10 +1,10 @@
 # GitHub Work Flows
 The following are descriptions of the workflows used in the repository.
 
-### On Pull Request
-The workflow `on-pull-request.yml` runs on a pull requests to `main` (when a PR is created or has content pushed to it).
-The purpose is to perform critical tests required for merging and these tests should be set as required status checks, 
-requiring the PR to pass them before being merged. 
+### Main Tests
+The workflow `main.yml` runs on a pull requests to `main` (when a PR is created or has content pushed to it) or on pushes
+to `main` (like when a PR is merged).
+The purpose is to perform critical tests required for merging. 
 
 Currently, this includes:
 * Compile checks
@@ -15,20 +15,22 @@ Currently, this includes:
 * Scalastyle checks
 * Integration tests against the latest Vertica. Uses the default Spark and Hadoop from the functional test which should be the latest.
 
-### Nightly Testing
+### Nightly Tests
 The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (or 2:18 AM Pacific Time), executing the 
-`main` branch against non-critical tests. It currently performs regression testings and functional testing against different environments.
+`main` branch against non-critical tests. It currently performs regression testing on combinations of Spark 3.x, with 
+the appropriate Hadoop HDFS, against Vertica 11.1.1-2 and 12.0.0-0. We also test against the latest Spark 3.x on a 
+standalone Spark cluster.
 
-Currently, testing includes:
-* Integration tests against: 
+### Weekly Tests
+`weekly.yml` performs weekly tests every Monday at 10:18 AM GMT (or 3:18 AM Pacific Time), executing the following tests:
+* Integration tests against different intermediary file-store:
   * S3, using a MINIO object store container to mimic S3
   * GCS, against an actual GCS bucket provided by Vertica. We could not find a solution to mock a GCS environment yet
-* Testing combinations of:
-  * Spark 3.x and the appropriate Hadoop HDFS version
-  * Vertica 10.1.1-0, 11.1.1-2, and 12.0.0-0
-* Testing JSON option against Spark 3.x
+* Testing the `json` option against Spark 3.x
+* Test against Vertica 10.1.1-0
 
-All tests use the latest Vertica docker image. This would notify us of a breaking changes  
+Unless specified, all tests use the latest Vertica docker image. This would notify us of breaking changes
+
 ### Cleanup Artifacts
 `cleanup-artifacts.yml` workflows runs every day at 1AM, removing any artifacts created during a workflow.
 

@@ -1,7 +1,9 @@
 # Workflow for running Unit tests and Integration tests
-name: Pull Request Tests
+name: Main Tests
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
