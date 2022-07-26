@@ -2,8 +2,7 @@ name: Weekly Testing
 
 on:
   push:
-    branches:
-      - split-ci
+    branches: [split-ci]
   schedule:
     # Weekly on Monday at 10:18 am GMT, or 3:18 am Pacific Time.
     - cron: '18 10 * * 1'
