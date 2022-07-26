@@ -7,6 +7,4 @@ on:
 
 jobs:
   main-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: ./.github/workflows/main.yml
+    uses: ./.github/workflows/main.yml
