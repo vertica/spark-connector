@@ -6,5 +6,5 @@ on:
   workflow_dispatch:
 
 jobs:
-  main-test:
+  functional-tests:
     uses: ./.github/workflows/main.yml
