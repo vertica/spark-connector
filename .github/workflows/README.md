@@ -34,9 +34,6 @@ standalone Spark cluster.
 
 Unless specified, all tests use the latest Vertica docker image. This would notify us of breaking changes
 
-### Cleanup Artifacts
-`cleanup-artifacts.yml` workflows runs every day at 1AM, removing any artifacts created during a workflow.
-
 ### Auto Triage and Remove Issue
 When an issue is labeled with a priority, `auto-triage.yml` workflow move it to the backlog, into the respective 
 priority column.
