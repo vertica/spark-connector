@@ -225,12 +225,12 @@ jobs:
           max_attempts: 10
           retry_on: error
           command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Start Spark driver
-        run: docker exec -w /spark-connector/docker/cluster spark-driver /bin/bash -c './start-master.sh'
-      - name: Start Spark worker 1
-        run: docker exec -w /spark-connector/docker/cluster spark-worker-1 /bin/bash -c './start-worker.sh'
-      - name: Start Spark worker 2
-        run: docker exec -w /spark-connector/docker/cluster spark-worker-2 /bin/bash -c './start-worker.sh'
+#      - name: Start Spark driver
+#        run: docker exec -w /spark-connector/docker/cluster spark-driver /bin/bash -c './start-master.sh'
+#      - name: Start Spark worker 1
+#        run: docker exec -w /spark-connector/docker/cluster spark-worker-1 /bin/bash -c './start-worker.sh'
+#      - name: Start Spark worker 2
+#        run: docker exec -w /spark-connector/docker/cluster spark-worker-2 /bin/bash -c './start-worker.sh'
       - name: Submit integration tests
         run: docker exec -w /spark-connector/functional-tests docker_client_1 /bin/bash -c './submit-functional-tests.sh'
       - name: Remove docker containers

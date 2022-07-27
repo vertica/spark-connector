@@ -1,8 +1,12 @@
 version: "3.9"
 services:
   client:
-    build: .
     container_name: docker_client_1
+    build:
+      context: .
+      args:
+        SPARK: ${SPARK-latest}
+    image: docker_client_1:${SPARK:-latest}
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
@@ -21,34 +25,38 @@ services:
       - GCS_SERVICE_EMAIL
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-  spark-driver:
-    build: .
-    container_name: spark-driver
+  spark:
+    image: bitnami/spark:${SPARK:-latest}
+    container_name: spark
+    hostname: spark
+    volumes:
+      - ./..:/opt/bitnami/spark/spark-connector
+      - ./..:/spark-connector
     ports:
       - "8080:8080"
-      - "4040:4040"
-    volumes:
-      - ./..:/spark-connector
-      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-    stdin_open: true
-  spark-worker-1:
-    build: .
-    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+  spark_worker:
+    image: bitnami/spark:${SPARK:-latest}
     ports:
       - "8081:8081"
     volumes:
+      - ./..:/opt/bitnami/spark/spark-connector
       - ./..:/spark-connector
-      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-    stdin_open: true
-  spark-worker-2:
-    build: .
-    container_name: spark-worker-2
-    ports:
-      - "8082:8081"
-    volumes:
-      - ./..:/spark-connector
-      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-    stdin_open: true
+    hostname: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=16
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1

@@ -31,7 +31,7 @@ object Main {
       "user" -> conf.getString("app.db_user"),
       "password" -> conf.getString("app.db_password"),
       // Loading service account HMAC key. Required for GCS access
-      "gcs_vertica_key_id" -> conf.getString("app.gcs_vertica_key_id"),
+      "gcs_hmac_key_id" -> conf.getString("app.gcs_vertica_key_id"),
       "gcs_hmac_key_secret" -> conf.getString("app.gcs_vertica_key_secret"),
       // Your GCS bucket address
       "staging_fs_url" -> conf.getString("app.gcs_path"),
