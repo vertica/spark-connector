@@ -20,7 +20,7 @@ cd ../docker
 ```
 This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
 
-### Starting Functional Testing
+### Starting Functional Tests
 
 In the sandbox environment, change your working directory to functional-tests
 ```

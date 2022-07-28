@@ -19,7 +19,7 @@ Prior to running the same test again, or switching to another test example, make
 
 ## Prepare test environment
 
-From the docker folder in the project's root directory (`spark-connector/docker`), run:
+In the project's `docker` folder, run:
 
 ```
 ./sandbox-clientenv.sh
@@ -49,7 +49,7 @@ Proceed running tests using one of the following methods:
 
 ### Using 'sbt run'
 
-Change your working directory to one in `spark-connector/examples/[EXAMPLE]`, such as `spark-connector/examples/basic-read`, then enter:
+Change your working directory to one in `/spark-connector/examples/[EXAMPLE]`, such as `/spark-connector/examples/basic-read`, then enter:
 ```
 sbt run
 ```
@@ -95,7 +95,7 @@ sandbox-clientenv.bat
 
 The following steps assume you are in the client sandbox environment.
 
-Change your working directory to `spark-connector/examples`, then run:
+Change your working directory to `/spark-connector/examples`, then run:
 
 ```
 ./run-example.sh [REPLACE WITH EXAMPLE DIR]
