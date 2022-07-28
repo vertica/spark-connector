@@ -5,8 +5,8 @@ services:
     build:
       context: .
       args:
-        SPARK: ${SPARK-latest}
-    image: docker_client_1:${SPARK:-latest}
+        SPARK: ${SPARK_INSTALL:-latest}
+    image: docker_client_1:${SPARK_CLUSTER:-latest}
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
@@ -26,7 +26,7 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
   spark:
-    image: bitnami/spark:${SPARK:-latest}
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
     container_name: spark
     hostname: spark
     volumes:
@@ -42,7 +42,7 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
   spark-worker:
-    image: bitnami/spark:${SPARK:-latest}
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
     volumes:
       - ./..:/opt/bitnami/spark/spark-connector
       - ./..:/spark-connector
@@ -51,7 +51,7 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
       - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=16
+      - SPARK_WORKER_CORES=1
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no

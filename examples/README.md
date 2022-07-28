@@ -39,15 +39,7 @@ This will:
 
 This will put you in the sandbox client (i.e. client container) environment.
 
-By default, the script will pull the [latest](https://hub.docker.com/r/vertica/vertica-k8s) Vertica docker image. To use an older version of Vertica, you can specify a specific tag by appending the option `-v [TAG]`. For example, to use Vertica 10.1.1-0:
-
-```
-./sandbox-clientenv.sh -v 10.1.1-0
-```
-
-```
-./sandbox-clientenv.bat -v 10.1.1-0
-```
+For configurations of the sandbox environment, refer to our [instructions](/docker/README.md). 
 
 ## Run test
 

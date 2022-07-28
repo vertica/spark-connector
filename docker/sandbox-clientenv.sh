@@ -33,18 +33,21 @@ function configure_containers() {
   configure_db
 }
 
-while getopts 'kv:' c
+WORKERS_COUNT=1
+while getopts 'kvsw:' c
 do
   case $c in
     k) KERBEROS=1 ;;
     v) export VERTICA_VERSION=$OPTARG ;;
+    s) export SPARK_INSTALL=$OPTARG ;;
+    w) export WORKERS_COUNT=$OPTARG ;;
   esac
 done
 
 if [ "$KERBEROS" == "1" ]
   then
     echo "running kerberos docker compose"
-    docker compose -f docker-compose-kerberos.yml up -d
+    docker compose -f docker-compose-kerberos.yml up -d --scale docker-worker=$WORKERS_COUNT
     configure_containers
     docker exec -it docker_krbclient_1 /bin/bash
 else

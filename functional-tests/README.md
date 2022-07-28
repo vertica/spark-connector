@@ -88,5 +88,4 @@ Note: `submit-functional-test.sh` will always prepend the functional test option
 So `./submit-functional-test.sh -s EndToEndTests` is equivalent to `sbt "run -r -s EndToEndTests"`
 Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
 
-
 To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/../docker/README.md).
