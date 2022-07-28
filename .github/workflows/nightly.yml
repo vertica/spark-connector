@@ -336,7 +336,7 @@ jobs:
             run-spark-integration-tests-vertica-10,
             run-integration-tests-gcs,
             run-integration-tests-s3,
-            run-remote-tests]
+            run-intergration-tests-on-standalone-cluster]
     if: failure()
     steps:
       - name: Slack Workflow Notification
