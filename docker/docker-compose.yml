@@ -34,16 +34,15 @@ services:
       - ./..:/spark-connector
     ports:
       - "8080:8080"
+      - "4040:4040"
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
-  spark_worker:
+  spark-worker:
     image: bitnami/spark:${SPARK:-latest}
-    ports:
-      - "8081:8081"
     volumes:
       - ./..:/opt/bitnami/spark/spark-connector
       - ./..:/spark-connector
