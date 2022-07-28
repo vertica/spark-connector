@@ -89,3 +89,8 @@ So `./submit-functional-test.sh -s EndToEndTests` is equivalent to `sbt "run -r 
 Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
 
 To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/../docker/README.md).
+
+### Debugging
+Some tips for debugging
+- When your application is submitted to a cluster, you can view a worker's log under `/opt/bitnami/spark/work/[Application-ID]`. This can be useful in cases where a fatal exception caused
+the worker to crash and loses connection to master.

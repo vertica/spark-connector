@@ -16,6 +16,9 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
    * This test checks the case where remote executors have to perform multiple tasks and see if multiple connections are
    * created. Note that if executors have more cores tasks, then they may be able run all tasks in one go and not trigger
    * the needed interactions.
+   *
+   * Note: You may get a java.lang.OutOfMemoryError when running locally. To allocate more memeory, start sbt with
+   * sbt -J-Xmx10G, which will increase heap size to 10gb. More here: https://www.scala-sbt.org/1.x/docs/Troubleshoot-Memory-Issues.html
    * */
   it should "only create constant number of jdbc sessions when write and read" in {
     val rowCount = 50000

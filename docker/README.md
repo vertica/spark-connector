@@ -25,8 +25,8 @@ If running examples on Windows, make sure that all scripts in the repository are
 - `-v`: Setting the version of our Vertica database. By default, we use the [latest](https://hub.docker.com/r/vertica/vertica-k8s) Vertica docker image. 
 To use an older version of Vertica, you can specify a specific tag by appending the option `-v [TAG]`. For example, to use Vertica 10.1.1-0 use `./sandbox-clientenv.sh -v 10.1.1-0`
 Alternatively, you can set the environment variable `VERTICA_VERSION`.
-- `-s`: Setting the version of our Spark install. By default, we use the [latest](https://hub.docker.com/r/bitnami/spark) bitnami Spark image. You use an older
-Spark version, specify a bitnami image tag. For example, to set up for Spark 3.1.3 use `./sandbox-clientenv.sh -s 3.1.3`.
+- `-s`: Setting the version of our Spark install. By default, we use the [latest](https://hub.docker.com/r/bitnami/spark) bitnami Spark image. To use an older
+Spark install, specify a bitnami image tag. For example, to set up for Spark 3.1.3 use `./sandbox-clientenv.sh -s 3.1.3`.
 Alternatively, you can set the environment variable `SPARK_INSTALL`.
 - `-w`: Set the number of Worker nodes for the standalone cluster. Default to 1 worker.
 - `-k`: When specified, start the docker environment in Kerberos mode. **This option is incompatible with the above options**.

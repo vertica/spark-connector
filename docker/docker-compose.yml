@@ -30,7 +30,6 @@ services:
     container_name: spark
     hostname: spark
     volumes:
-      - ./..:/opt/bitnami/spark/spark-connector
       - ./..:/spark-connector
     ports:
       - "8080:8080"
@@ -44,7 +43,6 @@ services:
   spark-worker:
     image: bitnami/spark:${SPARK_INSTALL:-latest}
     volumes:
-      - ./..:/opt/bitnami/spark/spark-connector
       - ./..:/spark-connector
     hostname: spark-worker
     environment:
