@@ -1,6 +1,6 @@
 # Vertica Spark Connector
 
-[![main](https://github.com/vertica/spark-connector/actions/workflows/on-main-push.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/on-main-push.yml)
+[![Main](https://github.com/vertica/spark-connector/actions/workflows/on-main-push.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/on-main-push.yml)
 [![Nightly Tests](https://github.com/vertica/spark-connector/actions/workflows/nightly.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/nightly.yml)
 [![Weekly Tests](https://github.com/vertica/spark-connector/actions/workflows/weekly.yml/badge.svg)](https://github.com/vertica/spark-connector/actions/workflows/weekly.yml)
 [![codecov](https://codecov.io/gh/vertica/spark-connector/branch/main/graph/badge.svg?token=qj8m00uq2H)](https://codecov.io/gh/vertica/spark-connector)
