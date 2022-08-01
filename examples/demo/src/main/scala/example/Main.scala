@@ -573,7 +573,97 @@ class Examples(conf: Config, spark: SparkSession) {
 
       df2.rdd.foreach(x => println("VALUE: " + x))
       printSuccess("Data merged.")
+    } finally {
+      spark.close()
+    }
+  }
 
+
+  /**
+   * Example show write and read using Amazon S3.
+   * */
+  def writeThenReadWithS3(): Unit = {
+
+    printMessage("Writing to Vertica using S3, then reading it back.")
+
+    // Adding S3 auth credentials and settings to connector the our S3 minio container.
+    // Refer to our README for a more available settings.
+    val optionsS3 = options - ("staging_fs_url") +  (
+      "aws_access_key_id" -> conf.getString("examples.aws_access_key_id"),
+      "aws_secret_access_key" -> conf.getString("examples.aws_secret_access_key"),
+      "aws_endpoint" -> conf.getString("examples.aws_endpoint"),
+      "aws_enable_ssl" -> conf.getString("examples.aws_enable_ssl"),
+      "aws_enable_path_style" -> conf.getString("examples.aws_enable_path_style"),
+      "staging_fs_url" -> conf.getString("examples.filepath-s3"),
+    )
+
+    try {
+      val tableName = "dftest"
+      // Define schema of a table with a single integer attribute
+      val schema = new StructType(Array(StructField("col1", IntegerType)))
+      // Create n rows with element '77'
+      val n = 20
+      val data = (0 until n).map(_ => Row(77))
+      // Create a dataframe corresponding to the schema and data specified above
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val mode = SaveMode.Overwrite
+
+      // Write dataframe to Vertica with S3
+      df.write.format(VERTICA_SOURCE)
+        .options(optionsS3 + ("table" -> tableName))
+        .mode(mode)
+        .save()
+
+      // Read dataframe to Vertica with S3
+      val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(optionsS3 + ("table" -> tableName))
+        .load()
+
+      dfRead.show()
+      printSuccess("Data write/read from Vertica using S3.")
+
+    } finally {
+      spark.close()
+      conn.close()
+    }
+  }
+
+  def writeThenReadWithGCS(): Unit = {
+
+    val optionsGCS = Map(
+      "host" -> conf.getString("app.host"),
+      "db" -> conf.getString("app.db"),
+      "user" -> conf.getString("app.db_user"),
+      "password" -> conf.getString("app.db_password"),
+      // Loading service account HMAC key. Required for GCS access
+      "gcs_vertica_key_id" -> conf.getString("app.gcs_vertica_key_id"),
+      "gcs_hmac_key_secret" -> conf.getString("app.gcs_vertica_key_secret"),
+      // Your GCS bucket address
+      "staging_fs_url" -> conf.getString("app.gcs_path"),
+    )
+
+    try {
+      val tableName = "dftest"
+      val rdd = spark.sparkContext.parallelize(Seq(
+        Row(23),
+        Row(35),
+        Row(75),
+        Row(96)
+      )).coalesce(1)
+
+      val schema = StructType(Array(StructField("col1", IntegerType)))
+      val writeOpts = optionsGCS + ("table" -> tableName)
+      spark.createDataFrame(rdd, schema)
+        .write.format(VERTICA_SOURCE)
+        .options(writeOpts)
+        .mode(SaveMode.Overwrite)
+        .save()
+
+      val readOpts = optionsGCS + ("table" -> tableName)
+      spark.read.format(VERTICA_SOURCE)
+        .options(readOpts)
+        .load()
+        .show()
     } finally {
       spark.close()
     }
@@ -601,7 +691,8 @@ object Main {
       "rowExample" -> examples.writeThenReadRow,
       "mapExample" -> examples.writeMap,
       "createExternalTable" -> examples.createExternalTable,
-      "writeDataUsingMergeKey"-> examples.writeDataUsingMergeKey
+      "writeDataUsingMergeKey"-> examples.writeDataUsingMergeKey,
+      "writeThenReadWithS3"-> examples.writeThenReadWithS3
     )
 
     def printAllExamples(): Unit = {
