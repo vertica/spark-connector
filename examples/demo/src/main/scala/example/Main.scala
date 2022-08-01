@@ -23,7 +23,7 @@ import org.apache.spark.sql.types._
 import java.net.URI
 import java.sql.Connection
 
-class Examples(conf: Config) {
+class Examples(conf: Config, spark: SparkSession) {
 
   /**
    * Base options needed to connect to Vertica
@@ -39,11 +39,6 @@ class Examples(conf: Config) {
   val conn: Connection = TestUtils.getJDBCConnection(options("host"), db = options("db"), user = options("user"), password = options("password"))
 
   val VERTICA_SOURCE = "com.vertica.spark.datasource.VerticaSource"
-
-  private val spark = SparkSession.builder()
-    .master("local[*]")
-    .appName("Vertica Connector Test Prototype")
-    .getOrCreate()
 
   private def printMessage(msg: String): Unit = println(s"------------------------------------\n-\n- EXAMPLE: $msg \n-\n------------------------------------")
 
@@ -258,7 +253,7 @@ class Examples(conf: Config) {
    *
    * @see <a href="https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm">here</a>
    * */
-  def nativeArrayExample(): Unit = {
+  def writeThenReadNativeArray(): Unit = {
     printMessage("Write native array into Vertica then read it back")
     // Define schema of a table with a 1D array column
     val schema = new StructType(Array(StructField("1D_array", ArrayType(IntegerType))))
@@ -293,7 +288,7 @@ class Examples(conf: Config) {
   /**
    * Set is a special native array that contains no duplicate values.
    * */
-  def setExample(): Unit = {
+  def writeThenReadSet(): Unit = {
     printMessage("Write then set into Vertica then read it back")
 
     val tableName = "Set"
@@ -335,7 +330,7 @@ class Examples(conf: Config) {
    * @see <a href="https://www.vertica.com/docs/11.0.x/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm">here</a>
    *
    * */
-  def complexArrayExample(): Unit = {
+  def writeThenReadComplexArray(): Unit = {
     printMessage("Write then read complex array")
 
     // First, we need to define the schema of a table with a row type column.
@@ -396,7 +391,7 @@ class Examples(conf: Config) {
     spark.close()
   }
 
-  def rowExample(): Unit = {
+  def writeThenReadRow(): Unit = {
     printMessage("Write row into Vertica then it back.")
 
     // Define schema of a table with a row type column.
@@ -453,7 +448,7 @@ class Examples(conf: Config) {
 
   }
 
-  def mapExample(): Unit = {
+  def writeMap(): Unit = {
     printMessage("Write map to Vertica as an external table, then read it")
     try {
       // Ensure that the external data location is clear
@@ -491,15 +486,63 @@ class Examples(conf: Config) {
     }
     spark.close()
   }
+
+  def createExternalTable(): Unit = {
+
+    printMessage("Create an external table and write data to it, then read it back.")
+
+    try {
+      val tableName = "existingData"
+      val filePath = options("staging_fs_url") + "existingData"
+
+      // Delete the staging folder to ensure that the external data location is clear
+      val fs = FileSystem.get(new URI(options("staging_fs_url")), new Configuration())
+      val externalDataLocation = new Path("/data")
+      fs.delete(externalDataLocation, true)
+
+      val input1 = Array.fill[Byte](100)(0)
+      val input2 = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx8"
+      val data = Seq(Row(input1, input2))
+      // Create "existing data" on disk
+      val schema = new StructType(Array(StructField("col1", BinaryType), StructField("col2", StringType)))
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      df.write.parquet(filePath)
+
+      // Write an empty dataframe using our connector to create an external table out of existing data
+      val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], new StructType())
+      val mode = SaveMode.Overwrite
+      df2.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(
+          options +
+            ("staging_fs_url" -> filePath,
+              "table" -> tableName,
+              "create_external_table" -> "existing-data"))
+        .mode(mode)
+        .save()
+
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+        .options(options + ("table" -> tableName))
+        .load()
+
+      readDf.show()
+      printSuccess("Data written as an external table.")
+
+    } finally {
+      spark.close()
+    }
+  }
 }
 
 object Main {
   def main(args: Array[String]): Unit = {
-    def noCase(): Unit = println("EXAMPLE: No case defined with that name")
-
     val conf: Config = ConfigFactory.load()
 
-    val examples = new Examples(conf)
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test Prototype")
+      .getOrCreate()
+
+    val examples = new Examples(conf, spark)
 
     val m: Map[String, () => Unit] = Map(
       "columnPushdown" -> examples.columnPushdown,
@@ -507,13 +550,26 @@ object Main {
       "writeCustomStatement" -> examples.writeCustomStatement,
       "writeCustomCopyList" -> examples.writeCustomCopyList,
       "writeReadExample" -> examples.writeReadExample,
-      "complexArrayExample" -> examples.complexArrayExample,
-      "rowExample" -> examples.rowExample,
-      "mapExample" -> examples.mapExample
+      "complexArrayExample" -> examples.writeThenReadComplexArray,
+      "rowExample" -> examples.writeThenReadRow,
+      "mapExample" -> examples.writeMap,
+      "createExternalTable" -> examples.createExternalTable
     )
 
+    def printAllExamples(): Unit = {
+      println("Examples available: ")
+      m.keySet.foreach(exampleName => println(s"- $exampleName"))
+    }
+
+    def noCase(): Unit = {
+      println("No example with that name.")
+      printAllExamples()
+    }
+
     if (args.length != 1) {
-      println("EXAMPLE: Please enter name of demo case to run.")
+      println("No example specified!")
+      println("Usage: <example-name>")
+      printAllExamples()
     }
     else {
       val f: () => Unit = m.getOrElse(args.head, noCase)
@@ -524,5 +580,6 @@ object Main {
         case e: Exception => e.printStackTrace()
       }
     }
+    spark.close()
   }
 }
