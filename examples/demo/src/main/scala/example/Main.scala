@@ -22,7 +22,6 @@ import org.apache.spark.sql.types._
 
 import java.net.URI
 import java.sql.Connection
-import scala.util.{Failure, Success, Try}
 
 class Examples(conf: Config) {
 
@@ -30,11 +29,11 @@ class Examples(conf: Config) {
    * Base options needed to connect to Vertica
    * */
   val options = Map(
-    "host" -> conf.getString("functional-tests.host"),
-    "user" -> conf.getString("functional-tests.user"),
-    "db" -> conf.getString("functional-tests.db"),
-    "staging_fs_url" -> conf.getString("functional-tests.filepath"),
-    "password" -> conf.getString("functional-tests.password")
+    "host" -> conf.getString("examples.host"),
+    "user" -> conf.getString("examples.user"),
+    "db" -> conf.getString("examples.db"),
+    "staging_fs_url" -> conf.getString("examples.filepath"),
+    "password" -> conf.getString("examples.password")
   )
 
   val conn: Connection = TestUtils.getJDBCConnection(options("host"), db = options("db"), user = options("user"), password = options("password"))
@@ -47,9 +46,14 @@ class Examples(conf: Config) {
     .getOrCreate()
 
   private def printMessage(msg: String): Unit = println(s"------------------------------------\n-\n- EXAMPLE: $msg \n-\n------------------------------------")
+
   private def printSuccess(msg: String): Unit = println(s"------------------------------------\n-\n- SUCCESS: $msg \n-\n------------------------------------")
+
   private def printFailed(msg: String): Unit = println(s"-------------------------------------\n-\n- FAILED: $msg  \n-\n------------------------------------")
 
+  /**
+   * A simple example demonstrating how to write into Vertica, then read back the data in a dataframe.
+   * */
   def writeReadExample(): Unit = {
 
     printMessage("write data into Vertica then read it back")
@@ -65,8 +69,16 @@ class Examples(conf: Config) {
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       // Outputs dataframe schema
       println(df.toString())
-      // Save mode
+
+      /**
+       * The connector supports different Spark modes to handle writing to existing table:
+       * - Append: Data is appended to the existing table.
+       * - Overwrite: Data will overwrite the existing table.
+       * - ErrorIfExists: Throw an [[TableAlreadyExistsException]] exception if table already exists.
+       * - Ignore: Do nothing if data already exists.
+       * */
       val mode = SaveMode.Overwrite
+
       // Write dataframe to Vertica
       df.write.format(VERTICA_SOURCE)
         .options(options + ("table" -> tableName))
@@ -87,8 +99,12 @@ class Examples(conf: Config) {
 
   }
 
+  /**
+   * This example show how columns are pushed down to queries to Vertica when reading data.
+   * To see this, the log output records the EXPORT statement used should only query for
+   * column "b".
+   * */
   def columnPushdown(): Unit = {
-    // Aim of this case is to read in a table and project a specific column
     printMessage("Reading with column pushdown")
 
     try {
@@ -117,8 +133,11 @@ class Examples(conf: Config) {
     printMessage("SUCCESS")
   }
 
+  /**
+   * This example shows how filters (conditions) are pushed down onto queries to Vertica.
+   * The log output records the 3 EXPORT statements used which should now contains the conditions.
+   * */
   def filterPushdown(): Unit = {
-    // Aim of this case is to read in a table and filter based on value conditions
     printMessage("Reading with filter pushdown.")
 
     try {
@@ -140,15 +159,15 @@ class Examples(conf: Config) {
       val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
 
       // Create dataframes by filtering based on specific conditions
-      printMessage("Showing data a > 4")
+      printMessage("Query for a > 4")
       val dfGreater = df.filter("a > 4")
       dfGreater.rdd.foreach(x => println("Read value " + x))
 
-      printMessage("Showing data b == 1 and a > 8")
+      printMessage("Query for b == 1 and a > 8")
       val dfAnd = df.filter("b == 1 and a > 8")
       dfAnd.rdd.foreach(x => println("Read value " + x))
 
-      printMessage("Showing data a = 2 or a > 8")
+      printMessage("Query for a = 2 or a > 8")
       val dfOr = df.filter("a = 2 or a > 8")
       dfOr.rdd.foreach(x => println("Read value " + x))
 
@@ -158,197 +177,74 @@ class Examples(conf: Config) {
     }
   }
 
-  def writeAppendMode(): Unit = {
-    printMessage("Writing in append mode")
-    // Append mode means that when saving a DataFrame to a data source,
-    // if data/table already exists, contents of the DataFrame are expected
-    // to be appended to existing data.
-
-    try {
-      // Create a table called dftest in Vertica and populate it
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      val n = 10
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (col1 int)")
-
-      val insert = "insert into " + tableName + " values(2)"
-      TestUtils.populateTableBySQL(stmt, insert, n)
-
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-      // Show table contents before the write
-      val dfBefore: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS BEFORE: ")
-      dfBefore.rdd.foreach(x => println("VALUE: " + x))
-
-      val data = Seq(Row(77))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      val mode = SaveMode.Append
-
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).mode(mode).save()
-      // Show table contents after the write
-      val dfAfter: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS AFTER: ")
-      dfAfter.rdd.foreach(x => println("VALUE: " + x))
-
-      printSuccess("Data appended to Vertica")
-
-    } finally {
-      spark.close()
-    }
-  }
-
-  def writeOverwriteMode(): Unit = {
-    printMessage("Writing in overwrite mode")
-    // Overwrite mode means that when saving a DataFrame to a data source, if data/table already exists,
-    // existing data is expected to be overwritten by the contents of the DataFrame.
-
-    try {
-      // Create a table called dftest in Vertica and populate it
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (col1 varchar)")
-
-      val insert = "insert into " + tableName + " values('Hola')"
-      TestUtils.populateTableBySQL(stmt, insert, 1)
-      // Show table contents before the write
-      val dfBefore: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS BEFORE: ")
-      dfBefore.rdd.foreach(x => println("VALUE: " + x))
-
-      val schema = new StructType(Array(StructField("col1", StringType)))
-
-      val data = Seq(Row("hello"), Row("world"))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      val mode = SaveMode.Overwrite
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).mode(mode).save()
-
-      // Show table contents after the write
-      val dfAfter: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS AFTER: ")
-      dfAfter.rdd.foreach(x => println("VALUE: " + x))
-
-      printSuccess("Data overwritten into Vertica")
-    } finally {
-      spark.close()
-    }
-  }
-
-  def writeErrorIfExistsMode(): Unit = {
-    printMessage("Writing in error if exists mode")
-    // ErrorIfExists mode means that when saving a DataFrame to a data source,
-    // if data already exists, an exception is expected to be thrown.
-
-    Try {
-      val tableName = "dftest"
-      val schema = new StructType(Array(StructField("col1", FloatType)))
-
-      val data = (1 to 1000).map(x => Row(x.toFloat + 0.5f))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      println(df.toString())
-      val mode = SaveMode.ErrorIfExists
-
-      // We expect an error to be thrown here.
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).mode(mode).save()
-
-    } match {
-      case Failure(exception) =>
-        exception.printStackTrace()
-        printSuccess("We should expects an error.")
-      case Success(_) => printFailed("We should expects an error.")
-    }
-
-    spark.close()
-  }
-
-  def writeIgnoreMode(): Unit = {
-    printMessage("Writing in ignore mode")
-    // Ignore mode means that when saving a DataFrame to a data source, if data
-    // already exists, the save operation is expected to not save the contents of
-    // the DataFrame and to not change the existing data.
-
-    try {
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      val n = 10
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (col1 int)")
-
-      val insert = "insert into " + tableName + " values(7)"
-      TestUtils.populateTableBySQL(stmt, insert, n)
-
-      // Show table contents before the write
-      val dfBefore: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS BEFORE: ")
-      dfBefore.rdd.foreach(x => println("VALUE: " + x))
-
-      val schema = new StructType(Array(StructField("col1", IntegerType)))
-
-      printMessage("Writing in ignore mode")
-      val data = (1 to 10000).map(x => Row(x))
-      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      println(df.toString())
-      val mode = SaveMode.Ignore
-
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).mode(mode).save()
-
-      // Show table contents after the write
-      val dfAfter: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
-      println("TABLE CONTENTS AFTER: ")
-      dfAfter.rdd.foreach(x => println("VALUE: " + x))
-
-      printSuccess("See above that the data did not change")
-
-    } finally {
-      spark.close()
-    }
-  }
-
+  /**
+   * The connector supports writing to Vertica using a custom create table statement through the
+   * option `target_table_sql`. When the connector needs to create a table, it will use the CREATE
+   * TABLE statement defined in `target_table_sql` instead.
+   * */
   def writeCustomStatement(): Unit = {
-    // Aim of this case is to use a custom statement to create a table, which
-    // then gets written to using a dataframe
 
     printMessage("Writing with custom create table statement and copy list")
 
     try {
       val tableName = "dftest"
-      val customCreate = "CREATE TABLE dftest(col1 integer, col2 varchar(2345), col3 float);"
-      // Schema has a subset of the same col names as our custom statement
-      // When writing to dftest in Vertica, it will match the cols
+      // The schema of our data. The connector will analyze the schema and create an appropriate CREATE TABLE
+      // statement with 2 columns.
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
+
+      // However, using `target_table_sql` we can overwrite the CREATE TABLE statement with our own CREATE TABLE
+      // statement which added a third column.
+      val customCreate = "CREATE TABLE dftest(col1 integer, col2 varchar(2345), col3 float);"
 
       val data = (1 to 1000).map(x => Row(x, "test"))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
+
+      // Using Overwrite mode guarantees we always create a new table.
       val mode = SaveMode.Overwrite
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+        options +
+          ("table" -> tableName,
+            "target_table_sql" -> customCreate)
+      ).mode(mode).save()
 
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options +
-        ("table" -> tableName, "target_table_sql" -> customCreate)).mode(mode).save()
-
-      printSuccess("Data written to Vertica. Check the log for the CREATE TABLE statement.")
+      printSuccess("Data written to Vertica. Check VERTICA for table's schema")
 
     } finally {
       spark.close()
     }
   }
 
+  /**
+   * The `copy_column_list` allows users to specify a list of columns for the COPY statement when writing data to Vertica.
+   * */
   def writeCustomCopyList(): Unit = {
+
     printMessage("Writing with custom create table statement and copy list")
-    // Similar to the case above, this use-case will use a custom statement to create
-    // a target table, where contents of the dataframe will be copied
+
     try {
       val tableName = "dftest"
+      // Creating a table in Vertica using a custom create statement.
       val customCreate = "CREATE TABLE dftest(a integer, b varchar(2345), c integer);"
-      // Use copyList paramater to specify which cols to write to in dftest
-      val copyList = "a, b"
-      // Schema has different col names than the customCreate statement, which is why we need copyList
+
+      // The schema for our Spark dataframe. This will cause an error when the COPY statement is executed since
+      // the column names are different from our custom create statement.
       val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", StringType)))
+
+      // Thus, we need to define the column names for COPY using copy_column_list
+      val copyList = "a, b"
 
       val data = (1 to 1000).map(x => Row(x, "test"))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       println(df.toString())
       val mode = SaveMode.Overwrite
 
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(options +
-        ("table" -> tableName, "target_table_sql" -> customCreate, "copy_column_list" -> copyList)).mode(mode).save()
+      df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+        options +
+        ("table" -> tableName,
+          "target_table_sql" -> customCreate,
+          "copy_column_list" -> copyList))
+        .mode(mode).save()
 
       printSuccess("Data written to Vertica")
 
@@ -359,6 +255,7 @@ class Examples(conf: Config) {
 
   /**
    * Native arrays are defined by Vertica as 1D arrays of primitive types only.
+   *
    * @see <a href="https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm">here</a>
    * */
   def nativeArrayExample(): Unit = {
@@ -493,7 +390,7 @@ class Examples(conf: Config) {
       printSuccess("Data written to Vertica")
 
     } catch {
-      case e:Exception => e.printStackTrace()
+      case e: Exception => e.printStackTrace()
     }
 
     spark.close()
@@ -588,7 +485,7 @@ class Examples(conf: Config) {
         .save()
 
       printSuccess("Map written to external table. Due to Vertica's limitations, we cannot read it from Vertica and can only write them to external tables.\n" +
-       "More information here: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm")
+        "More information here: https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm")
     } catch {
       case e: Exception => e.printStackTrace()
     }
@@ -607,10 +504,6 @@ object Main {
     val m: Map[String, () => Unit] = Map(
       "columnPushdown" -> examples.columnPushdown,
       "filterPushdown" -> examples.filterPushdown,
-      "writeAppendMode" -> examples.writeAppendMode,
-      "writeOverwriteMode" -> examples.writeOverwriteMode,
-      "writeErrorIfExistsMode" -> examples.writeErrorIfExistsMode,
-      "writeIgnoreMode" -> examples.writeIgnoreMode,
       "writeCustomStatement" -> examples.writeCustomStatement,
       "writeCustomCopyList" -> examples.writeCustomCopyList,
       "writeReadExample" -> examples.writeReadExample,
@@ -624,7 +517,7 @@ object Main {
     }
     else {
       val f: () => Unit = m.getOrElse(args.head, noCase)
-      try{
+      try {
         f()
       }
       catch {
