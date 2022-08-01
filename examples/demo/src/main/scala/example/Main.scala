@@ -487,6 +487,9 @@ class Examples(conf: Config, spark: SparkSession) {
     spark.close()
   }
 
+  /**
+   * This example show how to write a dataframe as an external table.
+   * */
   def createExternalTable(): Unit = {
 
     printMessage("Create an external table and write data to it, then read it back.")
@@ -520,12 +523,56 @@ class Examples(conf: Config, spark: SparkSession) {
         .mode(mode)
         .save()
 
-      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      val readDf: DataFrame = spark.read.format(VERTICA_SOURCE)
         .options(options + ("table" -> tableName))
         .load()
 
       readDf.show()
       printSuccess("Data written as an external table.")
+
+    } finally {
+      spark.close()
+    }
+  }
+
+  /**
+   * The connector can also merge dataframes into existing Vertica table using the option `merge_key`.
+   * */
+  def writeDataUsingMergeKey(): Unit = {
+
+    printMessage("Merging data into an existing table in Vertica, then read it back.")
+
+    try {
+      val tableName = "dftest"
+      val stmt = conn.createStatement
+      val n = 5
+      // We first initialize a table inside Vertica.
+      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(\"timestamp\" int, \"check\" int, \"end\" varchar(50), \"true\" varchar(50))")
+      val insert = "insert into " + tableName + " values(2, 3, 'hello', 'world')"
+      TestUtils.populateTableBySQL(stmt, insert, n)
+
+      // The schema of our dataframe to be used for merging
+      val schema = new StructType(Array(StructField("timestamp", IntegerType), StructField("check", IntegerType), StructField("end", StringType), StructField("true", StringType)))
+      val data = (1 to 20).map(x => Row(x, 3, "hola", "Earth"))
+      // Create a dataframe corresponding to the schema and data specified above
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      val mode = SaveMode.Overwrite
+      // Write dataframe to Vertica
+      df.write.format(VERTICA_SOURCE)
+        .options(
+          options +
+            ("table" -> tableName) +
+            // The columns for merging
+            ("merge_key" -> "timestamp, check")
+        ).mode(mode).save()
+
+      val df2: DataFrame = spark.read.format(VERTICA_SOURCE).options(
+        options +
+          ("table" -> tableName))
+        .load()
+
+      df2.rdd.foreach(x => println("VALUE: " + x))
+      printSuccess("Data merged.")
 
     } finally {
       spark.close()
@@ -553,7 +600,8 @@ object Main {
       "complexArrayExample" -> examples.writeThenReadComplexArray,
       "rowExample" -> examples.writeThenReadRow,
       "mapExample" -> examples.writeMap,
-      "createExternalTable" -> examples.createExternalTable
+      "createExternalTable" -> examples.createExternalTable,
+      "writeDataUsingMergeKey"-> examples.writeDataUsingMergeKey
     )
 
     def printAllExamples(): Unit = {
