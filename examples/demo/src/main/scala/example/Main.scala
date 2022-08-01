@@ -628,18 +628,22 @@ class Examples(conf: Config, spark: SparkSession) {
     }
   }
 
+  /**
+   * Example show how to configure for using with GCS. You will need to bring your own GCS credentials.
+   * */
   def writeThenReadWithGCS(): Unit = {
 
-    val optionsGCS = Map(
-      "host" -> conf.getString("app.host"),
-      "db" -> conf.getString("app.db"),
-      "user" -> conf.getString("app.db_user"),
-      "password" -> conf.getString("app.db_password"),
+    printMessage("Write data to Vertica using GCS, then read it back.")
+
+    // Enter your GCS auth options below.
+    val optionsGCS = options - ("staging_fs_url") + (
       // Loading service account HMAC key. Required for GCS access
-      "gcs_vertica_key_id" -> conf.getString("app.gcs_vertica_key_id"),
-      "gcs_hmac_key_secret" -> conf.getString("app.gcs_vertica_key_secret"),
+      "gcs_hmac_key_id" -> conf.getString("examples.gcs_hmac_key_id"),
+      "gcs_hmac_key_secret" -> conf.getString("examples.gcs_hmac_key_secret"),
+      // Path to your keyfile.json
+      "gcs_service_keyfile" -> conf.getString("examples.gcs_service_keyfile"),
       // Your GCS bucket address
-      "staging_fs_url" -> conf.getString("app.gcs_path"),
+      "staging_fs_url" -> conf.getString("examples.filepath-gcs"),
     )
 
     try {
@@ -664,6 +668,8 @@ class Examples(conf: Config, spark: SparkSession) {
         .options(readOpts)
         .load()
         .show()
+
+      printMessage("Data written/read back using GCS.")
     } finally {
       spark.close()
     }
@@ -692,7 +698,8 @@ object Main {
       "mapExample" -> examples.writeMap,
       "createExternalTable" -> examples.createExternalTable,
       "writeDataUsingMergeKey"-> examples.writeDataUsingMergeKey,
-      "writeThenReadWithS3"-> examples.writeThenReadWithS3
+      "writeThenReadWithS3"-> examples.writeThenReadWithS3,
+      "writeThenReadWithGCS" -> examples.writeThenReadWithGCS
     )
 
     def printAllExamples(): Unit = {
