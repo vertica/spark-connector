@@ -9,7 +9,7 @@ The docker environment contains:
 - `docker_vertica_1`: Our Vertica database
 - `docker_minio_1`: A minio file-store container acting as an S3 file-store 
 - `spark`: A Spark driver for our standalone cluster
-- `spark-worker`: Spark workers
+- `spark-worker-*`: Spark workers
 
 Once started, you can visit the Spark Master WebUI at localhost:8080. We also expose the first Spark context UI at 
 localhost:4040. 
