@@ -27,7 +27,9 @@ In the sandbox environment, change your working directory to functional-tests
 cd spark-connector/functional-tests
 ```
 
-Use `sbt` to start the sbt server from the command line. Enter `run` to execute the default test suites. You can specify arguments to modify you test run. For more details, use `run -h`.
+Use `sbt` to start the sbt server from the command line. Enter `run` to execute the default test suites. 
+This will run the tests on a local Spark cluster. 
+You can specify arguments to modify you test run. For more details, use `run -h`.
 
 As an example, to include large data tests into the run, use `run -l`. Using `run -s ComplexTypeTests` will only execute ComplexTypeTests.
 
@@ -68,18 +70,23 @@ Make sure your update the option `filepath` to your GCS bucket as well.
 
 Our docker environment also host a standalone Spark cluster for use.
 
-To run the functional tests on our cluster, assemble the functional test into a fat jar with `sbt assembly`. 
+To run the functional tests on our cluster, assemble the functional test into a fat jar with
+
+```
+sbt assembly
+```
+
 Note that you should do this outside of the docker environment as it will be extremely slow to compile inside docker. 
 Navigate to the `functional-tests` folder on your local machine to build the functional test with `sbt assembly`. 
 Since the `spark-connector` folder is mounted onto the containers, the built jar will also be available on `docker_client_1`.
 
-To submit the functional test, navigate to `spark-connector/functional-tests` inside `docker_client_1` and use `submit-functional-test.sh`.
+To submit the functional test to our standalone cluster, inside `docker_client_1` navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`.
 
 Once submitted, verify through the [web ui](localhost:8080) and the [jobs ui](localhost:4040) that the application was submitted.
-Our functional test, without any arguments, will create multiple spark sessions; You should expect multiple applications executing sequentially.
+Our functional test, without any arguments, will create multiple spark sessions; You should expect multiple applications executing one after another.
 
 #### Configuring the cluster.
-The `submit-functional-test.sh` uses spark's `spark-submit` and thus you can edit any available spark config for the submission.
+The `submit-functional-test.sh` uses `spark-submit` and thus you can edit any available spark config for the submission.
 
 `submit-functional-test.sh` will pass its arguments to `spark-submit`, thus passing the arguments to the submitted spark application.
 For example, to run a single test suite on our cluster, use `./submit-functional-test.sh -s EndToEndTests`.
@@ -89,6 +96,12 @@ So `./submit-functional-test.sh -s EndToEndTests` is equivalent to `sbt "run -r 
 Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
 
 To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/../docker/README.md).
+
+#### Testing on your own cluster
+
+You can use `spark-submit` to manually to submit the assembled functional test to your cluster.
+The jar is located under `functional-tests/target/scala-2.12/spark-vertica-connector-functional-tests-assembly-x.x.x`.
+Make sure to specify option `-r` to the spark application when submitting.
 
 ### Debugging
 Some tips for debugging
