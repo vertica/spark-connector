@@ -109,7 +109,7 @@ class Examples(conf: Config, spark: SparkSession) {
       TestUtils.populateTableBySQL(stmt, insert, n)
 
       // Reads readtest into a dataframe
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
+      val df: DataFrame = spark.read.format(VERTICA_SOURCE).options(options + ("table" -> tableName)).load()
       // Creates a new dataframe using only col b
       val dfCol = df.select("b")
 
@@ -146,7 +146,7 @@ class Examples(conf: Config, spark: SparkSession) {
       val insert4 = "insert into " + tableName + " values(-10, 0)"
       TestUtils.populateTableBySQL(stmt, insert4, n)
       // Read the newly created table into a dataframe
-      val df: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(options + ("table" -> tableName)).load()
+      val df: DataFrame = spark.read.format(VERTICA_SOURCE).options(options + ("table" -> tableName)).load()
 
       // Create dataframes by filtering based on specific conditions
       printMessage("Query for a > 4")
@@ -192,7 +192,7 @@ class Examples(conf: Config, spark: SparkSession) {
 
       // Using Overwrite mode guarantees we always create a new table.
       val mode = SaveMode.Overwrite
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      df.write.format(VERTICA_SOURCE).options(
         options +
           ("table" -> tableName,
             "target_table_sql" -> customCreate)
@@ -229,7 +229,7 @@ class Examples(conf: Config, spark: SparkSession) {
       println(df.toString())
       val mode = SaveMode.Overwrite
 
-      df.write.format("com.vertica.spark.datasource.VerticaSource").options(
+      df.write.format(VERTICA_SOURCE).options(
         options +
           ("table" -> tableName,
             "target_table_sql" -> customCreate,
@@ -509,7 +509,7 @@ class Examples(conf: Config, spark: SparkSession) {
       // Write an empty dataframe using our connector to create an external table out of existing data
       val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], new StructType())
       val mode = SaveMode.Overwrite
-      df2.write.format("com.vertica.spark.datasource.VerticaSource")
+      df2.write.format(VERTICA_SOURCE)
         .options(
           options +
             ("staging_fs_url" -> filePath,
@@ -621,7 +621,7 @@ class Examples(conf: Config, spark: SparkSession) {
         .save()
 
       // Read dataframe to Vertica with S3
-      val dfRead: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      val dfRead: DataFrame = spark.read.format(VERTICA_SOURCE)
         .options(optionsS3 + ("table" -> tableName))
         .load()
 
@@ -704,7 +704,7 @@ class Examples(conf: Config, spark: SparkSession) {
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
       val mode = SaveMode.Overwrite
 
-      df.write.format("com.vertica.spark.datasource.VerticaSource")
+      df.write.format(VERTICA_SOURCE)
         .options(optionsKerberos + ("table" -> tableName))
         .mode(mode).save()
       println("KERBEROS DEMO, WROTE TABLE")
@@ -712,7 +712,7 @@ class Examples(conf: Config, spark: SparkSession) {
       printSuccess("Data written to Vertica")
 
       val dfRead: DataFrame = spark.read
-        .format("com.vertica.spark.datasource.VerticaSource")
+        .format(VERTICA_SOURCE)
         .options(optionsKerberos + ("table" -> tableName))
         .load()
 

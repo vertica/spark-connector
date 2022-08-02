@@ -17,7 +17,7 @@ object PrintUtils {
 
   def printMessage(msg: String): Unit = println(s"------------------------------------\n-\n- EXAMPLE: $msg \n-\n------------------------------------")
 
-  def printNotes(msg: String): Unit = println(s"------------------------------------\n-\n- Notes: $msg \n-\n------------------------------------")
+  def printNotes(msg: String): Unit = println(s"------------------------------------\n-\n- NOTES: $msg \n-\n------------------------------------")
 
   def printSuccess(msg: String): Unit = println(s"------------------------------------\n-\n- SUCCESS: $msg \n-\n------------------------------------")
 
