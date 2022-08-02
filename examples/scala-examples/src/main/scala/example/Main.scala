@@ -16,7 +16,6 @@ package example
 import com.typesafe.config.{Config, ConfigFactory}
 import example.PrintUtils._
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types._
 
 
 
@@ -27,7 +26,6 @@ object Main {
     val conf: Config = ConfigFactory.load()
 
     val spark = SparkSession.builder()
-      .master("local[*]")
       .appName("Vertica Connector Test Prototype")
       .getOrCreate()
 

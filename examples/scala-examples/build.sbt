@@ -21,7 +21,7 @@ props := {
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-complex-type-examples"
+name := "spark-vertica-connector-scala-example"
 organization := "com.vertica"
 version := props.value.getProperty("connector-version")
 
@@ -30,12 +30,10 @@ resolvers += "jitpack" at "https://jitpack.io"
 
 libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.4.1",
+  "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim",
   "org.apache.spark" %% "spark-core" % "3.3.0",
   "org.apache.spark" %% "spark-sql" % "3.3.0",
-  "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"
-)
 
-assembly / assemblyMergeStrategy := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-  case x => MergeStrategy.first
-}
+  // This version needs to match the Hadoop version used by Spark
+  "org.apache.hadoop" % "hadoop-aws" % "3.3.2"
+)
