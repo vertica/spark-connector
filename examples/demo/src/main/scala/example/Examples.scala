@@ -15,7 +15,7 @@ package example
 
 import com.typesafe.config.Config
 import com.vertica.spark.util.schema.MetadataKey
-import example.PrintUtils.{printMessage, printSuccess}
+import example.PrintUtils.{printMessage, printNotes, printSuccess}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{DataFrame, Row, SaveMode, SparkSession}
@@ -493,7 +493,7 @@ class Examples(conf: Config, spark: SparkSession) {
       val tableName = "existingData"
       val filePath = options("staging_fs_url") + "existingData"
 
-      // Delete the staging folder to ensure that the external data location is clear
+      // HDFS preparations: deleting the staging folder to ensure that the external data location is clear
       val fs = FileSystem.get(new URI(options("staging_fs_url")), new Configuration())
       val externalDataLocation = new Path("/data")
       fs.delete(externalDataLocation, true)
@@ -532,42 +532,53 @@ class Examples(conf: Config, spark: SparkSession) {
 
   /**
    * The connector can also merge dataframes into existing Vertica table using the option `merge_key`.
+   * `merge_key` is a comma separated list of column names to be merged.
+   * @see <a href="https://www.vertica.com/docs/latest/HTML/Content/Authoring/AdministratorsGuide/Tables/MergeTables/SynchronizingTableDataWithMerge.htm"> docs <a/>
    * */
-  def writeDataUsingMergeKey(): Unit = {
+  def writeDataUsingMergeKey() : Unit = {
 
     printMessage("Merging data into an existing table in Vertica, then read it back.")
 
     try {
-      val tableName = "dftest"
-      val stmt = conn.createStatement
-      val n = 5
-      // We first initialize a table inside Vertica.
-      TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + "(\"timestamp\" int, \"check\" int, \"end\" varchar(50), \"true\" varchar(50))")
-      val insert = "insert into " + tableName + " values(2, 3, 'hello', 'world')"
-      TestUtils.populateTableBySQL(stmt, insert, n)
-
-      // The schema of our dataframe to be used for merging
-      val schema = new StructType(Array(StructField("timestamp", IntegerType), StructField("check", IntegerType), StructField("end", StringType), StructField("true", StringType)))
-      val data = (1 to 20).map(x => Row(x, 3, "hola", "Earth"))
-      // Create a dataframe corresponding to the schema and data specified above
+      val tableName = "test-data"
+      val schema = new StructType(Array(StructField("col1", IntegerType), StructField("col2", IntegerType), StructField("col3", StringType), StructField("col4", StringType)))
+      val data = (1 to 5).map(x => Row(x, 3, "cat", "shark"))
       val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-      val mode = SaveMode.Overwrite
-      // Write dataframe to Vertica
+
+      // Write the table into Vertica
       df.write.format(VERTICA_SOURCE)
+        .mode(SaveMode.Overwrite)
+        .options(options + ("table" -> tableName))
+        .save()
+
+      val preMergedTable = spark.read.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
+        .load()
+        .cache()
+
+      // Create a new dataframe
+      val data2 = (1 to 5).map(x => Row(3, x, "shark", "cat"))
+      val df2 = spark.createDataFrame(spark.sparkContext.parallelize(data2), schema).coalesce(1)
+
+      // Merge the new dataframe into the previous created table in Vertica on these columns
+      val mergeKeys = "col1, col2"
+      df2.write.format(VERTICA_SOURCE)
         .options(
           options +
             ("table" -> tableName) +
-            // The columns for merging
-            ("merge_key" -> "timestamp, check")
-        ).mode(mode).save()
+            ("merge_key" -> mergeKeys))
+        .mode(SaveMode.Overwrite)
+        .save()
 
-      val df2: DataFrame = spark.read.format(VERTICA_SOURCE).options(
-        options +
-          ("table" -> tableName))
+      val mergedTable = spark.read.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
         .load()
+        .cache()
 
-      df2.rdd.foreach(x => println("VALUE: " + x))
-      printSuccess("Data merged.")
+      preMergedTable.show()
+      printNotes("Pre-Merged Data. Notes col1=3, col2=3")
+      mergedTable.show()
+      printNotes("Merged Data. We expects col1=3, col2=3 to be overwritten with the new data")
     } finally {
       spark.close()
     }
