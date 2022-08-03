@@ -17,16 +17,12 @@ import com.typesafe.config.{Config, ConfigFactory}
 import example.PrintUtils._
 import org.apache.spark.sql.SparkSession
 
-
-
-
-
 object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
 
     val spark = SparkSession.builder()
-      .appName("Vertica Connector Test Prototype")
+      .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 
     val examples = new Examples(conf, spark)

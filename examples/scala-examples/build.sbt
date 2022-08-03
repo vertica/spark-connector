@@ -21,7 +21,7 @@ props := {
 }
 
 scalaVersion := "2.12.12"
-name := "spark-vertica-connector-scala-example"
+name := "spark-vertica-connector-scala-examples"
 organization := "com.vertica"
 version := props.value.getProperty("connector-version")
 
