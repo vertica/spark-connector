@@ -1,16 +1,19 @@
 version: "3.9"
 services:
   client:
-    build: .
     container_name: docker_client_1
+    build:
+      context: .
+      args:
+        SPARK: ${SPARK_INSTALL:-latest}
+    image: docker_client_1:${SPARK_INSTALL:-latest}
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     stdin_open: true
     ports:
+#      JVM Remote debug port
       - "5005:5005"
-      - "8080:8080"
-      - "8081:8081"
     environment:
       - HADOOP_VERSION
       - SPARK_VERSION
@@ -22,6 +25,35 @@ services:
       - GCS_SERVICE_EMAIL
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+  spark:
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    container_name: spark
+    hostname: spark
+    volumes:
+      - ./..:/spark-connector
+    ports:
+      - "8080:8080"
+      - "4040:4040"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+  spark-worker:
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    volumes:
+      - ./..:/spark-connector
+    hostname: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: docker_vertica_1

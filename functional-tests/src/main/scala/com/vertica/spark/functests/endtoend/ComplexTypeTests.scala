@@ -15,8 +15,10 @@ import scala.util.{Failure, Success, Try}
  * With Vertica 11.1.1 support for exporting data to JSON, we are able to read all complex data types. This test suite will
  * test both writing and reading complex types.
  * */
-class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote) {
+
+  override def sparkAppName: String = "Complex Type Tests"
 
   it should "read dataframe with 1D array" in {
     val tableName1 = "dftest_array"
@@ -305,7 +307,6 @@ class ComplexTypeTests(readOpts: Map[String, String], writeOpts: Map[String, Str
   }
 
   it should "read array[row]" in {
-
     val tableName1 = "dftest_array"
     val n = 1
     val stmt = conn.createStatement

@@ -1,20 +1,22 @@
-FROM centos:7
+ARG SPARK=latest
+FROM bitnami/spark:$SPARK
+USER root
 
-ENV SBT_VERSION 1.3.13
-#ENV JAVA_OPTS="$JAVA_OPTS -Djava.security.auth.login.config=/spark-connector/conf/jaas.config"
+RUN apt-get update
+RUN apt-get install -y sudo
 
-RUN yum install -y java-11-openjdk && \
-    yum install -y epel-release && \
-    yum update -y && yum install -y wget && \
-    curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo && \
-    mv sbt-rpm.repo /etc/yum.repos.d/ && \
-    yum -y install sbt && \
-    wget https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-without-hadoop.tgz && \
-    wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz && \
-    tar xvf spark-3.1.2-bin-without-hadoop.tgz && \
-    tar xvf hadoop-3.3.0.tar.gz && \
-    mv spark-3.1.2-bin-without-hadoop/ /opt/spark && \
-    cd /opt/spark/conf && \
-    mv spark-env.sh.template spark-env.sh
+# Install JDK.
+RUN sudo apt-get install -y openjdk-11-jdk
+ENV JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+# Prepending our JAVA_HOME so that it would take precedent over bitnami's java home path.
+ENV PATH=$JAVA_HOME/bin:$PATH
 
-ENTRYPOINT ["/bin/bash"]
+# Install SBT
+RUN sudo apt-get update && \
+    sudo apt-get -y install apt-transport-https curl gnupg -yqq && \
+    echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list && \
+    echo "deb https://repo.scala-sbt.org/scalasbt/debian /" | sudo tee /etc/apt/sources.list.d/sbt_old.list && \
+    curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo -H gpg --no-default-keyring --keyring gnupg-ring:/etc/apt/trusted.gpg.d/scalasbt-release.gpg --import && \
+    sudo chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg && \
+    sudo apt-get update && \
+    sudo apt-get -y install sbt

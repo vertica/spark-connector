@@ -1,27 +1,24 @@
 package com.vertica.spark.functests.endtoend
 
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.types.{ArrayType, IntegerType, StructField, StructType}
 
 /**
  * Test suites for submitting to a remote driver. This suite is meant to be configured with a master node when submitting.
  * */
 class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig) {
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, true) {
 
-  // The super reference set master url to local, which forces them to run against a local instance.
-  // This suite uses a spark session without a master specified, giving control to the submitter.
-  override lazy val spark: SparkSession = SparkSession.builder()
-    .appName("Vertica Connector Test Prototype")
-    .config("spark.executor.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .config("spark.driver.extraJavaOptions", "-Dcom.amazonaws.services.s3.enableV4=true")
-    .getOrCreate()
+  override def sparkAppName: String = "Remote Tests"
 
   /**
    * This test checks the case where remote executors have to perform multiple tasks and see if multiple connections are
    * created. Note that if executors have more cores tasks, then they may be able run all tasks in one go and not trigger
    * the needed interactions.
+   *
+   * Note: You may get a java.lang.OutOfMemoryError when running locally. To allocate more memeory, start sbt with
+   * sbt -J-Xmx10G, which will increase heap size to 10gb. More here: https://www.scala-sbt.org/1.x/docs/Troubleshoot-Memory-Issues.html
    * */
   it should "only create constant number of jdbc sessions when write and read" in {
     val rowCount = 50000
@@ -30,10 +27,10 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
 
     val partitionsCount = 100
     val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).repartition(partitionsCount)
-    val query = "select count(client_hostname) from v_monitor.user_sessions where client_type='JDBC Driver';"
+    val getJDBCConnectionsCount = "select count(client_hostname) from v_monitor.user_sessions where client_type='JDBC Driver';"
     val stmt = conn.createStatement()
     try {
-      var rs = stmt.executeQuery(query)
+      var rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val initialJdbcSessionCount = rs.getLong(1)
 
@@ -43,27 +40,25 @@ class RemoteTests(readOpts: Map[String, String], writeOpts: Map[String, String],
         .mode(SaveMode.Overwrite)
         .save()
 
-      rs = stmt.executeQuery(query)
+      rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val sessionCountWrite = rs.getLong(1)
       // We expect only 2 new jdbc connections made on write
       assert(sessionCountWrite == initialJdbcSessionCount + 2)
 
-      spark.read.format("com.vertica.spark.datasource.VerticaSource")
+      spark.read.format(VERTICA_SOURCE)
         .options(readOpts +
           ("table" -> "dftest") +
           ("num_partitions"-> "30") +
           ("max_row_group_size_export_mb" -> "1") +
           ("max_file_size_export_mb" -> "1"))
         .load()
-        .write.format("json").mode(SaveMode.Overwrite).save("./test-output")
 
-      rs = stmt.executeQuery(query)
+      rs = stmt.executeQuery(getJDBCConnectionsCount)
       assert(rs.next)
       val sessionCountRead = rs.getLong(1)
-      // We expect only 2 new jdbc connections made on read.
-      // + 4 since write was done before this.
-      assert(sessionCountRead == initialJdbcSessionCount + 4)
+      // We expect only 1 new jdbc connections made on read.
+      assert(sessionCountRead == initialJdbcSessionCount + 3)
 
     } catch {
       case exception: Exception => fail("Unexpected exception", exception)
