@@ -97,12 +97,6 @@ Option `-r` tells our functional test application to configure itself for submit
 
 To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/../docker/README.md).
 
-#### Testing on your own cluster
-
-You can use `spark-submit` to manually to submit the assembled functional test to your cluster.
-The jar is located under `functional-tests/target/scala-2.12/spark-vertica-connector-functional-tests-assembly-x.x.x`.
-Make sure to specify option `-r` to the spark application when submitting.
-
 ### Debugging
 Some tips for debugging
 - When your application is submitted to a cluster, you can view a worker's log under `/opt/bitnami/spark/work/[Application-ID]`. This can be useful in cases where a fatal exception caused
