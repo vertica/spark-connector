@@ -19,7 +19,7 @@ Prior to running the same test again, or switching to another test example, make
 
 ## Prepare test environment
 
-From the docker folder in the project's root directory (`spark-connector/docker`), run:
+In the project's `docker` folder, run:
 
 ```
 ./sandbox-clientenv.sh
@@ -39,15 +39,7 @@ This will:
 
 This will put you in the sandbox client (i.e. client container) environment.
 
-By default, the script will pull the [latest](https://hub.docker.com/r/vertica/vertica-k8s) Vertica docker image. To use an older version of Vertica, you can specify a specific tag by appending the option `-v [TAG]`. For example, to use Vertica 10.1.1-0:
-
-```
-./sandbox-clientenv.sh -v 10.1.1-0
-```
-
-```
-./sandbox-clientenv.bat -v 10.1.1-0
-```
+For configurations of the sandbox environment, refer to our [instructions](/docker/README.md). 
 
 ## Run test
 
@@ -57,7 +49,7 @@ Proceed running tests using one of the following methods:
 
 ### Using 'sbt run'
 
-Change your working directory to one in `spark-connector/examples/[EXAMPLE]`, such as `spark-connector/examples/basic-read`, then enter:
+Change your working directory to one in `/spark-connector/examples/[EXAMPLE]`, such as `/spark-connector/examples/basic-read`, then enter:
 ```
 sbt run
 ```
@@ -103,7 +95,7 @@ sandbox-clientenv.bat
 
 The following steps assume you are in the client sandbox environment.
 
-Change your working directory to `spark-connector/examples`, then run:
+Change your working directory to `/spark-connector/examples`, then run:
 
 ```
 ./run-example.sh [REPLACE WITH EXAMPLE DIR]

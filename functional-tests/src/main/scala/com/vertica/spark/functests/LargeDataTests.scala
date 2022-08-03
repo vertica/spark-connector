@@ -1,15 +1,14 @@
 package com.vertica.spark.functests
 
-import java.sql.Connection
 import com.vertica.spark.config.{FileStoreConfig, JDBCConfig}
 import com.vertica.spark.functests.endtoend.EndToEnd
 import com.vertica.spark.util.error.ConnectorException
-import org.apache.spark.sql.{SaveMode, SparkSession}
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.flatspec.AnyFlatSpec
+import org.apache.spark.sql.SaveMode
 
-class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig)
-  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig){
+class LargeDataTests(readOpts: Map[String, String], writeOpts: Map[String, String], jdbcConfig: JDBCConfig, fileStoreConfig: FileStoreConfig, remote: Boolean = false)
+  extends EndToEnd(readOpts, writeOpts, jdbcConfig, fileStoreConfig, remote){
+
+  override def sparkAppName: String = "Large Data Tests"
 
   val numSparkPartitions = 4
 

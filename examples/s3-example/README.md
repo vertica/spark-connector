@@ -7,7 +7,7 @@ First, clone the connector repository as mentioned in [examples](/examples/READM
 Change directory to the example project:
 
 ```
-cd spark-connector/examples/s3-example
+cd /spark-connector/examples/s3-example
 ```
 
 # S3 Configuration
@@ -58,7 +58,7 @@ aws_region="<your region>"
 
 ## Prepare test environment
 
-Change directory to `spark-connector/docker` and run:
+Change directory to `/spark-connector/docker` and run:
 
 ```
 ./sandbox-clientenv.sh
