@@ -101,3 +101,6 @@ To increase the worker count, change spark version, or any other Spark environme
 Some tips for debugging
 - When your application is submitted to a cluster, you can view a worker's log under `/opt/bitnami/spark/work/[Application-ID]`. This can be useful in cases where a fatal exception caused
 the worker to crash and loses connection to master.
+- We provide `submit-functional-test-debug.sh`, which will submit first open and wait on port 5005 for a remote JVM debug
+connection, before proceeding with submitting and running the functional test on our standalone cluster. This allows you to
+debug the submitted Spark application.
