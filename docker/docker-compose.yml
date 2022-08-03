@@ -6,7 +6,7 @@ services:
       context: .
       args:
         SPARK: ${SPARK_INSTALL:-latest}
-    image: docker_client_1:${SPARK_CLUSTER:-latest}
+    image: docker_client_1:${SPARK_INSTALL:-latest}
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
