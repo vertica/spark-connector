@@ -46,9 +46,9 @@ The example `writeThenReadWithGCS` demonstrates how to configure the connector t
 **The example is not configured**, so make sure to edit the code sample with your GCS configurations. For more details on GCS
 configurations, check out our [readme](../../README.md) and our [GCS instructions](../../GCSUserManual.md).
 
-### Submit to a Different Master
+### Configuring `submit-examples.sh`
 
-The `submit-examples.sh` script uses `spark-submit`. Thus, you can configure it with any valid [configurations](https://spark.apache.org/docs/latest/submitting-applications.html).
+The `submit-examples.sh` script uses `spark-submit` underneath. Thus, you can configure it with any valid [configurations](https://spark.apache.org/docs/latest/submitting-applications.html).
 For examples, to run on your own Vertica Spark cluster, change `--master` to your Spark driver URL.
 
 ### Running through SBT
