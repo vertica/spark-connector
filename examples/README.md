@@ -2,13 +2,13 @@
 
 These examples are intended to be run either on our provided docker environment or on your own cluster. 
 
-If you intend on trying these examples on our docker environment, first install sbt on your local machine. 
+If you want to try these examples on our docker environment, first install sbt on your local machine. 
 Then, start by executing the appropriate `sandbox-clientenv` script for your OS located in `spark-connector/docker/`.
 
 Once started, you will be automatically placed inside `docker_client_1`. The project and this folder are mounted onto 
 the container, which you can navigate to using `cd /spark-connector/example/`.
 
-You can find more information about our docker environment [here](../docker/README.md).
+You can find more information about our docker environment [here](/docker/README.md).
 
 ### Trouble Shooting
 
