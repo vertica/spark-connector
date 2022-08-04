@@ -2,8 +2,13 @@
 
 These examples are intended to be run either on our provided docker environment or on your own cluster. 
 
-If you want to try these examples on our docker environment, first install sbt on your local machine. 
-Then, start by executing the appropriate `sandbox-clientenv` script for your OS located in `spark-connector/docker/`.
+If you want to try these examples on our docker environment, then:
+1. Clone the project if you haven't already
+```
+git clone https://github.com/vertica/spark-connector.git
+```
+2. Install sbt on your local machine with JDK 11
+3. Run the appropriate `sandbox-clientenv` script for your OS located in `spark-connector/docker/`.
 
 Once started, you will be automatically placed inside `docker_client_1`. The project and this folder are mounted onto 
 the container, which you can navigate to using `cd /spark-connector/example/`.

@@ -72,7 +72,10 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/scala-2.12/spark-vertica-connector-assembly-3.3.1.jar
+Running this will run all unit tests and build the jar to target/scala-2.12/spark-vertica-connector-assembly-3.3.1.jar.
+
+**Note:** Make sure that you are doing in on your local machine and not inside our docker environment as it will be 
+extremely slow.
 
 ## Step 4: Set up an environment
 The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.](https://github.com/vertica/spark-connector/blob/main/examples/README.md)
