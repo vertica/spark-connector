@@ -1,9 +1,9 @@
-#Scala Examples
+# Scala Examples
 
 This project contains Scala code samples for different capabilities of the connectors. 
 You can run the examples either on our docker environment or on your own Spark-Vertica cluster.
 
-### Running Locally
+## Running Examples
 
 First, ensure that the sandbox docker environment is up and running by following these [instructions](../README.md). 
 
@@ -29,7 +29,8 @@ override them to fit your setup.
 
 ### Using a modified Spark Connector
 The example is using our latest Spark Connector release. Should you need to use a custom build of the connector (e.g. testing 
-some changes), then create a `lib` folder and place either the slim jar or fat jar inside.
+some changes), put into this project's `lib` folder either the slim jar (from `sbt package`) or fat jar (from `sbt assembly`)
+inside. It should override the connector build dependency. 
 
 ### S3 Examples
 
@@ -45,7 +46,7 @@ The example `writeThenReadWithGCS` demonstrates how to configure the connector t
 **The example is not configured**, so make sure to edit the code sample with your GCS configurations. For more details on GCS
 configurations, check out our [readme](../../README.md) and our [GCS instructions](../../GCSUserManual.md).
 
-### Running on a cluster
+### Submit to a Different Master
 
 The `submit-examples.sh` script uses `spark-submit`. Thus, you can configure it with any valid [configurations](https://spark.apache.org/docs/latest/submitting-applications.html).
 For examples, to run on your own Vertica Spark cluster, change `--master` to your Spark driver URL.
