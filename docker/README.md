@@ -27,6 +27,8 @@ If on Windows, make sure that all scripts in the repository are correctly encode
 Once started, you can visit the Spark standalone cluster [Master WebUI](localhost:8080) and the first Spark context UI at 
 localhost:4040 (won't be available until a context is created).
 
+You can exit the container's shell with `exit`, and get into other container's shell using `docker exec -it <container-name> bash`
+
 ### Configurations
 
 The `sandbox-clientenv` scripts has the following arguments:

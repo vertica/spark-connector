@@ -1,2 +1,0 @@
-#spark-submit --master spark://spark:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-scala-examples.jar "$@"
-spark-submit --master spark://spark:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-scala-examples_2.12-3.3.1.jar "$@"
