@@ -33,7 +33,19 @@ libraryDependencies ++= Seq(
   "com.vertica.spark" % "vertica-spark" % s"${version.value}-slim",
   "org.apache.spark" %% "spark-core" % "3.3.0",
   "org.apache.spark" %% "spark-sql" % "3.3.0",
-
-  // This version needs to match the Hadoop version used by Spark
+  "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6",
+// This version needs to match the Hadoop version used by Spark
   "org.apache.hadoop" % "hadoop-aws" % "3.3.2"
+)
+
+//Assembly jar name
+assembly / assemblyJarName := s"vertica-spark-scala-examples"
+
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
+
+assembly / assemblyShadeRules := Seq(
+  ShadeRule.rename("cats.**" -> "shadeCats.@1").inAll
 )

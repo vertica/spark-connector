@@ -1,109 +1,16 @@
-# How to run the examples
+# Examples
 
-Make sure you have Docker and sbt installed, and that Docker client is running. Tested using docker 20.10.0, sbt 1.4.1
+These examples are intended to be run either on our provided docker environment or on your own cluster. 
 
-Clone this repository:
+If you intend on trying these examples on our docker environment, start by executing the appropriate 
+`sandbox-clientenv` script for your OS located in `spark-connector/docker/`. 
 
-```
-git clone https://github.com/vertica/spark-connector.git
-```
+Once started, you will be automatically placed inside `docker_client_1`. The project and this folder are mounted onto 
+the container, which you can navigate to using `cd /spark-connector/example/`.
 
-If running examples on Windows, make sure that all scripts in the repository are correctly encoded:
+You can find more information about our docker environment [here](../docker/README.md).
 
-- `.bat` scripts as `Windows (CR LF)`
-- `.sh` scripts as `Unix (LF)`.
-
-Prior to running the same test again, or switching to another test example, make sure to perform cleanup and containers tear down procedure after each run.
-
-**Note**: _The instructions for running the S3, Sparklyr, Kerberos and PySpark examples are different. If you would like to run those examples, please see their respective READMEs._
-
-## Prepare test environment
-
-In the project's `docker` folder, run:
-
-```
-./sandbox-clientenv.sh
-```
-
-On Windows, you can run the equivalent batch file:
-
-```
-sandbox-clientenv.bat
-```
-
-This will:
-
-1. Create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
-2. Update the HDFS configuration files and restart HDFS
-3. Enter the sandbox client environment (i.e. command prompt of `docker_client` container).
-
-This will put you in the sandbox client (i.e. client container) environment.
-
-For configurations of the sandbox environment, refer to our [instructions](/docker/README.md). 
-
-## Run test
-
-The following steps assume you are in the client sandbox environment. 
-
-Proceed running tests using one of the following methods:
-
-### Using 'sbt run'
-
-Change your working directory to one in `/spark-connector/examples/[EXAMPLE]`, such as `/spark-connector/examples/basic-read`, then enter:
-```
-sbt run
-```
-**Note**: Some examples may throw exceptions on exit. To check that the example executed correctly, the console output should contain a SUCCESS message.
-
-If you decide to run the demo example from the `/spark-connector/examples/demo` directory, run:
-```
-sbt "run [CASE]"
-```
-
-Cases to choose from:
-
-- columnPushdown
-- filterPushdown
-- writeAppendMode
-- writeOverwriteMode
-- writeErrorIfExistsMode
-- writeIgnoreMode
-- writeCustomStatement
-- writeCustomCopyList
-
-### Running Application in Spark Cluster
-
-**Note**: _This method is required for the S3-example._
-
-In the example's root directory (`spark-connector/examples/[EXAMPLE]`) run:
-
-```
-sbt assembly
-```
-
-From the docker directory in `spark-connector/docker`, run:
-
-```
-./sandbox-clientenv.sh
-```
-
-On Windows, you can run the equivalent batch file:
-
-```
-sandbox-clientenv.bat
-```
-
-The following steps assume you are in the client sandbox environment.
-
-Change your working directory to `/spark-connector/examples`, then run:
-
-```
-./run-example.sh [REPLACE WITH EXAMPLE DIR]
-```
-
-Example argument: basic-read-example
-
-### If using Thin Jar
+### Trouble Shooting
 
 If you are using the thin jar and running into an error similar to the following:
 `java.lang.NoSuchMethodError: 'void cats.kernel.CommutativeSemigroup.$init$(cats.kernel.CommutativeSemigroup)'`, you may need to shade the cats dependency in your project.
@@ -119,25 +26,14 @@ assembly / assemblyShadeRules := {
 } 
 ```
 
-## Output file
+### Tear down containers
 
-To only see the example output without sbt logs, you can write the result to a file by appending the following to any run command: 
-```
-[run command] > output.txt
-```
-
-You may then view this file using the command `cat output.txt`.
-
-## Tear down containers
-
-Once you're finished running the example, exit out of the interactive terminal by running `exit`. 
-
-Make sure you are still in the docker directory, then run: 
+To shut down and remove the containers safely, navigate to `spark-connector/docker/` on your local machine. Then run:
 ```
 docker-compose down
 ```
-This will shut down and remove the containers safely.
 
-## Note
-
-There are additional prerequisites to run the S3, Pyspark, Sparklyr, or Kerberos examples. If you want to run these, please take a look at their respective README files.
+If you are running a Kerberos environment, then use 
+```
+docker compose -f docker-compose-kerberos.yml down
+```

@@ -21,7 +21,9 @@ object Main {
   def main(args: Array[String]): Unit = {
     val conf: Config = ConfigFactory.load()
 
+    // Define a Spark master here
     val spark = SparkSession.builder()
+      .master("spark://spark:7077")
       .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 
@@ -32,7 +34,7 @@ object Main {
       "filterPushdown" -> examples.filterPushdown,
       "writeCustomStatement" -> examples.writeCustomStatement,
       "writeCustomCopyList" -> examples.writeCustomCopyList,
-      "writeReadExample" -> examples.writeReadExample,
+      "writeThenReadWithHDFS" -> examples.writeThenReadHDFS,
       "complexArrayExample" -> examples.writeThenReadComplexArray,
       "rowExample" -> examples.writeThenReadRow,
       "mapExample" -> examples.writeMap,

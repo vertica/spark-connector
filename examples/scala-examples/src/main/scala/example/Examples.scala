@@ -44,7 +44,7 @@ class Examples(conf: Config, spark: SparkSession) {
   /**
    * A simple example demonstrating how to write into Vertica, then read back the data in a dataframe.
    * */
-  def writeReadExample(): Unit = {
+  def writeThenReadHDFS(): Unit = {
 
     printMessage("write data into Vertica then read it back")
 
@@ -642,15 +642,12 @@ class Examples(conf: Config, spark: SparkSession) {
 
     printMessage("Write data to Vertica using GCS, then read it back.")
 
-    // Enter your GCS auth options below or into the configuration file.
+    // Enter your GCS auth options below before starting the example.
     val optionsGCS = options - ("staging_fs_url") + (
-      // Loading service account HMAC key. Required for GCS access
-      "gcs_hmac_key_id" -> conf.getString("gcs.gcs_hmac_key_id"),
-      "gcs_hmac_key_secret" -> conf.getString("gcs.gcs_hmac_key_secret"),
-      // Path to your keyfile.json
-      "gcs_service_keyfile" -> conf.getString("gcs.gcs_service_keyfile"),
-      // Your GCS bucket address
-      "staging_fs_url" -> conf.getString("gcs.filepath"),
+      "staging_fs_url" -> "Your GCS bucket path",
+      "gcs_hmac_key_id" -> "Your GCS HMAC key id here",
+      "gcs_hmac_key_secret" -> "Your GCS HMAC key secret here",
+      "gcs_service_keyfile" -> "The path to your GCS service keyfile json here",
     )
 
     try {
