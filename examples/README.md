@@ -42,3 +42,6 @@ If you are running a Kerberos environment, then use
 ```
 docker compose -f docker-compose-kerberos.yml down
 ```
+
+Note that the kerberos environment cannot run alongside our normal docker environment. You will need to shut down either
+environment before starting the other.

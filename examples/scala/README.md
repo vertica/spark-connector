@@ -1,6 +1,7 @@
 # Scala Examples
 
 This project contains Scala code samples demonstrating the different capabilities and how to configure them. 
+
 In general, you will need to include the Vertica-Spark connector to your scala project dependencies as shown in this
 example's `build.sbt`. Then, it is a matter of correctly configuring the connector options.
 
@@ -78,9 +79,10 @@ Then, configure your IDE to connect to the remote debug address above.
 
 # Kerberos Examples
 
-The example `writeThenReadWithKerberos` demonstrates how to configure the connector with Kerberos. 
+The example `writeThenReadWithKerberos` demonstrates how to configure the connector with Kerberos.
 
-First, we will need to shut down any running docker environment. Navigate to `spark-connector/docker/` on your local machine and run
+To test using our kerberos docker environment, first make sure to shut down our docker environment if it is running. 
+Navigate to `spark-connector/docker/` on your local machine and run
 ```
 docker-compose down
 ```
