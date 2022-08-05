@@ -13,35 +13,34 @@
 
 package example
 
-import com.typesafe.config.{Config, ConfigFactory}
 import example.PrintUtils._
+import example.examples.{BasicReadWriteExamples, ComplexTypeExamples, ConnectorOptionsExamples}
 import org.apache.spark.sql.SparkSession
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val conf: Config = ConfigFactory.load()
 
     // Define a Spark master here
     val spark = SparkSession.builder()
       .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 
-    val examples = new Examples(conf, spark)
+    val basicExamples = new BasicReadWriteExamples(spark)
+    val ctExamples = new ComplexTypeExamples(spark)
+    val optExamples = new ConnectorOptionsExamples(spark)
 
     val m: Map[String, () => Unit] = Map(
-      "columnPushdown" -> examples.columnPushdown,
-      "filterPushdown" -> examples.filterPushdown,
-      "writeCustomStatement" -> examples.writeCustomStatement,
-      "writeCustomCopyList" -> examples.writeCustomCopyList,
-      "writeThenReadWithHDFS" -> examples.writeThenReadHDFS,
-      "complexArrayExample" -> examples.writeThenReadComplexArray,
-      "rowExample" -> examples.writeThenReadRow,
-      "mapExample" -> examples.writeMap,
-      "createExternalTable" -> examples.createExternalTable,
-      "writeDataUsingMergeKey" -> examples.writeDataUsingMergeKey,
-      "writeThenReadWithS3" -> examples.writeThenReadWithS3,
-      "writeThenReadWithGCS" -> examples.writeThenReadWithGCS,
-      "writeThenReadWithKerberos" -> examples.writeThenReadWithKerberos
+      "writeCustomStatement" -> optExamples.writeCustomStatement,
+      "writeCustomCopyList" -> optExamples.writeCustomCopyList,
+      "writeThenReadWithHDFS" -> basicExamples.writeThenReadHDFS,
+      "complexArrayExample" -> ctExamples.writeThenReadComplexArray,
+      "rowExample" -> ctExamples.writeThenReadRow,
+      "mapExample" -> ctExamples.writeMap,
+      "createExternalTable" -> basicExamples.createExternalTable,
+      "writeDataUsingMergeKey" -> optExamples.writeDataUsingMergeKey,
+      "writeThenReadWithS3" -> basicExamples.writeThenReadWithS3,
+      "writeThenReadWithGCS" -> basicExamples.writeThenReadWithGCS,
+      "writeThenReadWithKerberos" -> basicExamples.writeThenReadWithKerberos
     )
 
     def printAllExamples(): Unit = {

@@ -177,6 +177,12 @@ Below is a detailed list of connector options that are used in the options map:
 
 Note: If you are using the S3 properties, the connector options has priority over the Spark configuration, which has priority over the environment variables.
 
+## Pushdowns
+
+Since the connector implements Spark's DataSource V2 interfaces, it also supports pushdowns, specifically filter, columns,
+and aggregates. All pushdown are handled automatically by Spark and does not require any configurations. Note that aggregate
+pushdown is only supported for Spark 3.2.0, and not all aggregate are supported.
+
 ## Complex Data Types
 
 The connector supports reading/writing:
