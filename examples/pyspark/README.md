@@ -13,7 +13,7 @@ spark-submit --master local[*] --jars <path-to-connector-fat-jar> example.py
 Make sure you have Docker client installed and running. Tested using Docker 3.3.1. 
 First, set up the docker environment as mentioned in [examples](/examples/README.md), then:
 
-1. Download the spark connector jar file from our [releases](https://github.com/vertica/spark-connector/releases) 
+1. Download the spark connector "all" jar from our [releases](https://github.com/vertica/spark-connector/releases) 
 and place it in to `/connector/target/scala-2.12/`. You can do this on your local machine as this folder is mounted.  
 Alternatively, you could build the jar yourself by following the instructions [here](/CONTRIBUTING.md).
 2. Assuming you are in `docker-client_1`, use `cd /spark-connector/examples/pyspark` then run the `./run-python-example.sh` script.
@@ -22,5 +22,5 @@ This will submit the pyspark example to our [standalone cluster](localhost:8080)
 and tear down containers by running `docker-compose down`.
 
 # Other Connector Options
-For examples of other options, refer to our [scala example](/examples/scala). While it is in a different language, the ideas
-are transferable; set the correct options, include our connector jar, then spark-submit.
+For examples of other options, refer to our [scala example](/examples/scala) which demonstrate how to configure the different
+connector options. While it is in a different language, the ideas are transferable; set the correct options, include our connector jar, then spark-submit.
