@@ -24,6 +24,10 @@ import org.apache.spark.sql.types._
 import java.net.URI
 import java.sql.Connection
 
+
+/**
+ * Contains examples showing how to configure the connector for read/ write
+ * */
 class BasicReadWriteExamples(spark: SparkSession) {
   val conf: Config = ConfigFactory.load()
 
@@ -45,7 +49,7 @@ class BasicReadWriteExamples(spark: SparkSession) {
   /**
    * A simple example demonstrating how to write into Vertica, then read back the data in a dataframe.
    * */
-  def writeThenReadHDFS(): Unit = {
+  def writeThenRead(): Unit = {
 
     printMessage("write data into Vertica then read it back")
 
@@ -91,9 +95,9 @@ class BasicReadWriteExamples(spark: SparkSession) {
   }
 
   /**
-   * This example show how to write a dataframe as an external table.
+   * This example show how to write and read an external table.
    * */
-  def createExternalTable(): Unit = {
+  def writeThenReadExternalTable(): Unit = {
 
     printMessage("Create an external table and write data to it, then read it back.")
 
