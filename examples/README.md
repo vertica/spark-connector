@@ -15,7 +15,7 @@ the container, which you can navigate to using `cd /spark-connector/example/`.
 
 You can find more information about our docker environment [here](/docker/README.md).
 
-### Trouble Shooting
+### Troubleshooting
 
 If you are using the thin jar and running into an error similar to the following:
 `java.lang.NoSuchMethodError: 'void cats.kernel.CommutativeSemigroup.$init$(cats.kernel.CommutativeSemigroup)'`, you may need to shade the cats dependency in your project.

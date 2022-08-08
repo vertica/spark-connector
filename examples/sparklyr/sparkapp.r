@@ -2,9 +2,17 @@ install.packages("curl", repo = "http://cran.us.r-project.org")
 install.packages("sparklyr", repo = "http://cran.us.r-project.org")
 library(sparklyr)
 
+install.packages('properties', repo = "http://cran.us.r-project.org")
+library('properties')
+
+props <- read.properties("../../version.properties")
+version <- props["connector-version"]
+# construct the path to Vertica-Spark connector jar
+connectorJar <- paste("../../connector/target/scala-2.12/spark-vertica-connector-assembly-", version, ".jar", sep = "")
+
 # Create a Spark config and disable Hive support to avoid errors
 config <- spark_config()
-config$sparklyr.jars.default <- "../../connector/target/scala-2.12/spark-vertica-connector-assembly-3.3.1.jar"
+config$sparklyr.jars.default <- connectorJar
 config$sparklyr.connect.enablehivesupport <- FALSE
 config$sparklyr.appName <- "Vertica Spark Connector Sparklyr example"
 
