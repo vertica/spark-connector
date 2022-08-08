@@ -95,7 +95,10 @@ class BasicReadWriteExamples(spark: SparkSession) {
   }
 
   /**
-   * This example show how to write and read an external table.
+   * This example show how to write and read an external table using `create_external_table = existing-data`. In this mode,
+   * the connector will create an external table sourced from `staging_fs_url`, useful if you want to create an external table out of already existing data.
+   * Otherwise, with `create_external_table = new-data (or true)` the connector will first write the data to `create_external_table` as a parquet file
+   * then create an external table in Vertica sourced from the writen data.
    * */
   def writeThenReadExternalTable(): Unit = {
 
