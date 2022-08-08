@@ -1,50 +1,76 @@
 version: "3.9"
 services:
   client:
-    container_name: docker_client_1
     build:
       context: .
       args:
         SPARK: ${SPARK_INSTALL:-latest}
-    image: docker_client_1:${SPARK_INSTALL:-latest}
+    ports:
+      # JVM Remote debug port
+      - "5005:5005"
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-    stdin_open: true
-    ports:
-#      JVM Remote debug port
-      - "5005:5005"
     environment:
       - HADOOP_VERSION
       - SPARK_VERSION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
       - GCS_FILEPATH
       - GCS_HMAC_KEY_ID
       - GCS_HMAC_KEY_SECRET
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
+
+  vertica:
+    image: vertica/vertica-k8s:latest
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./vertica/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
+
+  hdfs:
+    image: mdouchement/hdfs
+    # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
+    command: >
+      sh -c "service ssh start &&
+        cp /hadoop/conf/*.xml /opt/hadoop/etc/hadoop &&
+        start-dfs.sh &&
+        hadoop-daemon.sh start portmap &&
+        hadoop-daemon.sh start nfs3 &&
+        hadoop fs -copyFromLocal /partitioned /3.1.1 &&
+        sleep infinity"
+    ports:
+      - "22022:22"
+      - "8020:8020"
+      - "50010:50010"
+      - "50020:50020"
+      - "50070:50070"
+      - "50075:50075"
+    volumes:
+      - ./vertica-hdfs-config/hadoop:/hadoop/conf
+      - ./../functional-tests/src/main/resources/3.1.1:/partitioned
+
   spark:
     image: bitnami/spark:${SPARK_INSTALL:-latest}
-    container_name: spark
-    hostname: spark
-    volumes:
-      - ./..:/spark-connector
     ports:
       - "8080:8080"
       - "4040:4040"
+    volumes:
+      - ./..:/spark-connector
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+
   spark-worker:
     image: bitnami/spark:${SPARK_INSTALL:-latest}
     volumes:
       - ./..:/spark-connector
-    hostname: spark-worker
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
@@ -54,29 +80,9 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
-  vertica:
-    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
-    container_name: docker_vertica_1
-    ports:
-      - "5433:5433"
-    volumes:
-      - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
-  hdfs:
-    image: mdouchement/hdfs
-    container_name: docker_hdfs_1
-    ports:
-      - "22022:22"
-      - "8020:8020"
-      - "50010:50010"
-      - "50020:50020"
-      - "50070:50070"
-      - "50075:50075"
-    stdin_open: true
-    volumes:
-      - ./vertica-hdfs-config/hadoop:/hadoop/conf
+
   minio:
     image: minio/minio
-    container_name: docker_minio_1
     entrypoint: sh
     command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     ports:
@@ -84,5 +90,6 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
+
 volumes:
   minio-data:
