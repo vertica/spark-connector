@@ -85,6 +85,7 @@ services:
 
   minio:
     image: minio/minio
+    # See original entrypoint/command under https://github.com/minio/minio/blob/master/Dockerfile
     entrypoint: sh
     command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     ports:
