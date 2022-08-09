@@ -645,37 +645,37 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
+    // We assume there's only one parenthesis group in the create statement.
     val indexOfOpeningParantheses = stmt.indexOf("(")
     val indexOfClosingParantheses = stmt.lastIndexOf(")")
-    // We assume there's only one parenthesis group in the create statement.
     val schemaString = stmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
 
     // Split string by comma. Can handle comma inside parenthesis and remove newlines.
     def splitSchemaString: Seq[String] = {
       @tailrec
-      def recursion(char: Char, tail: String, currColDef: String = "", colDefs: List[String] = List(), parenCount: Int = 0): List[String] = {
+      def recursion(char: Char, tail: String, currStr: String = "", splits: List[String] = List(), parenCount: Int = 0): List[String] = {
         char match {
           // Keeping track of parenthesis to know if it should split or not
-          case '(' => recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount + 1)
-          case ')' => recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount - 1)
+          case '(' => recursion(tail.head, tail.tail, currStr + char, splits, parenCount + 1)
+          case ')' => recursion(tail.head, tail.tail, currStr + char, splits, parenCount - 1)
           case ',' =>
             if(parenCount > 0){
-              recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount)
+              recursion(tail.head, tail.tail, currStr + char, splits, parenCount)
             }else{
-              recursion(tail.head, tail.tail, "", colDefs :+ currColDef, parenCount)
+              recursion(tail.head, tail.tail, "", splits :+ currStr, parenCount)
             }
           // Don't include newline
           case '\n' =>
             if(tail.isEmpty) {
-              colDefs :+ currColDef.trim
+              splits :+ currStr.trim
             } else {
-              recursion(tail.head, tail.tail, currColDef, colDefs, parenCount)
+              recursion(tail.head, tail.tail, currStr, splits, parenCount)
             }
           case _ =>
             if(tail.isEmpty){
-              colDefs :+ currColDef.trim
+              splits :+ currStr.trim
             }else{
-              recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount)
+              recursion(tail.head, tail.tail, currStr + char, splits, parenCount)
             }
         }
       }
