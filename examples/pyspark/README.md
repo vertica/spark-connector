@@ -1,19 +1,26 @@
 # Pyspark Example
 
-The connector can be used with pyspark, it must simply be sourced as a JAR file.
+This example show how to configure a PySpark application with our connector.
 
-An example python application is provided alongside a .sh file which shows how to run such an application with the connector. This script will download Python3, Spark, and Hadoop and configure them before running the example.
+In general, you would want to define the appropriate connector options. Then, include the connector's fat jar into
+`spark-submit` argument `--jars`, For example:
+```
+spark-submit --master local[*] --jars <path-to-connector-fat-jar> example.py
+```
 
-# How to run the example
+# How to Run the Example
 
-Make sure you have Docker client installed and running. Tested using Docker 3.3.1.
+Make sure you have Docker client installed and running.
+First, set up the docker environment as mentioned in [examples](/examples/README.md), then:
 
-First, clone the connector repository as mentioned in [examples](/examples/README.md), then run the following steps:
+1. Download the spark connector "all" jar from our [releases](https://github.com/vertica/spark-connector/releases) 
+and place it in to `/connector/target/scala-2.12/`. You can do this on your local machine as this folder is mounted.  
+Alternatively, you could build the jar yourself by following the instructions [here](/CONTRIBUTING.md).
+2. Assuming you are in `docker_client_1`, use `cd /spark-connector/examples/pyspark` then run the `./run-python-example.sh` script.
+This will submit the pyspark example to our [standalone cluster](localhost:8080).
+3. To shut down, exit out of the container with `exit`. Then on your local machine navigate to `/spark-connector/docker`
+and tear down containers by running `docker-compose down`.
 
-1. Download the spark connector jar file from our releases, and place it in `/connector/target/scala-2.12/`
-   (alternatively, you could build it yourself, if you have sbt installed, by running `sbt assembly` from the `/spark-connector/connector`).
-2. Run the `sandbox-clientenv.sh` script in the Docker folder, or `sandbox-clientenv.bat` if running on Windows, which will put you in the sandbox client container.
-3. From the sandbox client container, use `cd /spark-connector/examples/pyspark` then run the `./run-python-example.sh` script.
-4. Exit out of the interactive terminal by running `exit`. 
-5. From the docker folder tear down containers by running `docker-compose down`.
-
+# Other Connector Options
+For examples of other options, refer to our [scala example](/examples/scala) which demonstrate how to configure the different
+connector options. While it is in a different language, the ideas are transferable; set the correct options, include our connector jar, then spark-submit.
