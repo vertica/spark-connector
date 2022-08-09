@@ -667,18 +667,17 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
             }else{
               recursion(tail.head, tail.tail, "", splits :+ currStr, parenCount)
             }
-          // Don't include newline
-          case '\n' =>
-            if(tail.isEmpty) {
-              splits :+ currStr.trim
-            } else {
-              recursion(tail.head, tail.tail, currStr, splits, parenCount)
-            }
           case _ =>
-            if(tail.isEmpty){
-              splits :+ currStr.trim
-            }else{
-              recursion(tail.head, tail.tail, currStr + char, splits, parenCount)
+            val nextStr = char match {
+              // Don't include newline
+              case '\n' => currStr
+              case _ => currStr :+ char
+            }
+
+            if (tail.isEmpty) {
+              splits :+ nextStr.trim
+            } else {
+              recursion(tail.head, tail.tail, nextStr, splits, parenCount)
             }
         }
       }
