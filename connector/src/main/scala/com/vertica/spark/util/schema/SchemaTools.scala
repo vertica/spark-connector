@@ -620,26 +620,25 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def updateFieldDataType(col: String, colName: String, schema: StructType, strlen: Long, arrayLength: Long): String = {
     val fieldType = schema.collect {
-      case field if(addDoubleQuotes(field.name) == colName) =>
-        if (field.metadata.contains(maxlength) && field.dataType.simpleString == "string") {
-          if(field.metadata.getLong(maxlength) > longlength) "long varchar(" + field.metadata.getLong(maxlength).toString + ")"
-          else "varchar(" + field.metadata.getLong(maxlength).toString + ")"
-        }
-        else if(field.metadata.contains(maxlength) && field.dataType.simpleString == "binary"){
-          "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
-        }
-        else {
-          getVerticaTypeFromSparkType(field.dataType, strlen, arrayLength, field.metadata) match {
-            case Right(dataType) => dataType
-            case Left(err) => Left(err)
-          }
-        }
-    }
-    if(fieldType.nonEmpty) {
-      colName + " " + fieldType.head
+      case field: StructField if (addDoubleQuotes(field.name) == colName) =>
+         if (field.metadata.contains(maxlength) && field.dataType.simpleString == "string") {
+           if (field.metadata.getLong(maxlength) > longlength) "long varchar(" + field.metadata.getLong(maxlength).toString + ")"
+           else "varchar(" + field.metadata.getLong(maxlength).toString + ")"
+         }
+         else if (field.metadata.contains(maxlength) && field.dataType.simpleString == "binary") {
+           "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
+         }
+         else {
+           getVerticaTypeFromSparkType(field.dataType, strlen, arrayLength, field.metadata) match {
+             case Right(dataType) => dataType
+             case Left(err) => Left(err)
+           }
+         }
     }
 
-    else {
+    if(fieldType.nonEmpty) {
+      colName + " " + fieldType.head
+    } else {
       col
     }
   }
@@ -647,22 +646,26 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
     val indexOfOpeningParantheses = stmt.indexOf("(")
-    val indexOfClosingParantheses = stmt.indexOf(")")
+    val indexOfClosingParantheses = stmt.lastIndexOf(")")
+    // We assume there's only one parenthesis group in the create statement.
     val schemaString = stmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
-    val schemaList = schemaString.split(",").toList
 
-    val updatedSchema: String = schemaList.map(col => {
-      val indexOfFirstDoubleQuote = col.indexOf("\"")
-      val indexOfSpace = col.indexOf(" ", indexOfFirstDoubleQuote)
-      val colName = col.substring(indexOfFirstDoubleQuote, indexOfSpace)
+    val schemaList = schemaString
+      .replaceAll(",", "")
+      // We assume column defs in the create stmt are split by newlines.
+      .split("\n")
+      .toList.tail
+
+    val updatedSchema: String = schemaList.map(colDef => {
+      val colName = colDef.trim.split(" ").head
 
       if(schema.nonEmpty){
-        updateFieldDataType(col, colName, schema, strlen, arrayLength)
+        updateFieldDataType(colDef, colName, schema, strlen, arrayLength)
       }
-      else if(col.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
-      else if(col.toLowerCase.contains("varbinary")) colName + " varbinary(" + longlength + ")"
-      else col
-    }).mkString(",")
+      else if(colDef.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
+      else if(colDef.toLowerCase.contains("varbinary")) colName + " varbinary(" + longlength + ")"
+      else colDef
+    }).mkString(", ")
 
     if(updatedSchema.contains(unknown)) {
       Left(UnknownColumnTypesError().context(unknown + " partitioned column data type."))
