@@ -35,13 +35,15 @@ services:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
     command: >
-      sh -c "service ssh start &&
+      sh -c 'service ssh start &&
         cp /hadoop/conf/*.xml /opt/hadoop/etc/hadoop &&
+        rm -f /tmp/*.pid &&
         start-dfs.sh &&
         hadoop-daemon.sh start portmap &&
         hadoop-daemon.sh start nfs3 &&
+        while [ "$$(hdfs dfsadmin -safemode get)" = "Safe mode is ON" ]; do sleep 1; done &&
         hadoop fs -copyFromLocal /partitioned /3.1.1 &&
-        sleep infinity"
+        sleep infinity'
     ports:
       - "22022:22"
       - "8020:8020"
