@@ -650,12 +650,40 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     // We assume there's only one parenthesis group in the create statement.
     val schemaString = stmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
 
-    val schemaList = schemaString
-      .replaceAll(",", "")
-      // We assume column defs in the create stmt are split by newlines.
-      .split("\n")
-      .toList.tail
+    // Split string by comma. Can handle comma inside parenthesis and remove newlines.
+    def splitSchemaString: Seq[String] = {
+      @tailrec
+      def recursion(char: Char, tail: String, currColDef: String = "", colDefs: List[String] = List(), parenCount: Int = 0): List[String] = {
+        char match {
+          // Keeping track of parenthesis to know if it should split or not
+          case '(' => recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount + 1)
+          case ')' => recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount - 1)
+          case ',' =>
+            if(parenCount > 0){
+              recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount)
+            }else{
+              recursion(tail.head, tail.tail, "", colDefs :+ currColDef, parenCount)
+            }
+          // Don't include newline
+          case '\n' =>
+            if(tail.isEmpty) {
+              colDefs :+ currColDef.trim
+            } else {
+              recursion(tail.head, tail.tail, currColDef, colDefs, parenCount)
+            }
+          case _ =>
+            if(tail.isEmpty){
+              colDefs :+ currColDef.trim
+            }else{
+              recursion(tail.head, tail.tail, currColDef + char, colDefs, parenCount)
+            }
+        }
+      }
 
+      recursion(schemaString.head, schemaString.tail)
+    }
+
+    val schemaList = splitSchemaString
     val updatedSchema: String = schemaList.map(colDef => {
       val colName = colDef.trim.split(" ").head
 
