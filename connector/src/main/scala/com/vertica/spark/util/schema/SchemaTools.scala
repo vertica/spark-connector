@@ -696,7 +696,7 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
       else if(colDef.toLowerCase.contains("varchar")) colName + " varchar(" + strlen + ")"
       else if(colDef.toLowerCase.contains("varbinary")) colName + " varbinary(" + longlength + ")"
       else colDef
-    }).mkString(", ")
+    }).mkString(",")
 
     if(updatedSchema.contains(unknown)) {
       Left(UnknownColumnTypesError().context(unknown + " partitioned column data type."))

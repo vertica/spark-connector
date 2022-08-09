@@ -1040,17 +1040,17 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
 
   it should "Return an updated create external table statement" in {
     val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", IntegerType, nullable = true)))
-    val createExternalTableStmt = "create external table \"sales\"(\n" +
-      "\"tx_id\" int,\n" +
-      "\"date\" UNKNOWN,\n" +
-      "\"region\" varchar\n" +
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" varchar" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
     schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table sales(\"tx_id\" int, \"date\" DATE, \"region\" INTEGER) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"tx_id\" int,\"date\" DATE,\"region\" INTEGER) as copy from \'/data/\' parquet")
     }
   }
 
@@ -1065,22 +1065,21 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table sales(\"col1\" DECIMAL(10, 4), \"col2\" INTEGER) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"col1\" DECIMAL(10, 4),\"col2\" INTEGER) as copy from \'/data/\' parquet")
     }
   }
 
   it should "Return an error if partial schema doesn't match partitioned columns" in {
     val schema = new StructType(Array(StructField("foo", DateType, nullable = true), StructField("bar", StringType, nullable = true)))
-    val createExternalTableStmt = "create external table \"sales\"(\n" +
-      "\"tx_id\" int,\n" +
-      "\"date\" UNKNOWN,\n" +
-      "\"region\" UNKNOWN\n" +
+    val createExternalTableStmt = "create external table \"sales\"(" +
+      "\"tx_id\" int," +
+      "\"date\" UNKNOWN," +
+      "\"region\" UNKNOWN" +
       ") as copy from \'/data/\' parquet"
     val schemaTools = new SchemaTools
     schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
       case Left(err) => err.isInstanceOf[UnknownColumnTypesError]
-      // case Right(str) => fail
-      case Right(str) => ()
+      case Right(str) => fail
     }
   }
 
