@@ -622,8 +622,11 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
     val fieldType = schema.collect {
       case field: StructField if (addDoubleQuotes(field.name) == colName) =>
          if (field.metadata.contains(maxlength) && field.dataType.simpleString == "string") {
-           if (field.metadata.getLong(maxlength) > longlength) "long varchar(" + field.metadata.getLong(maxlength).toString + ")"
-           else "varchar(" + field.metadata.getLong(maxlength).toString + ")"
+           if (field.metadata.getLong(maxlength) > longlength) {
+             "long varchar(" + field.metadata.getLong(maxlength).toString + ")"
+           } else{
+             "varchar(" + field.metadata.getLong(maxlength).toString + ")"
+           }
          }
          else if (field.metadata.contains(maxlength) && field.dataType.simpleString == "binary") {
            "varbinary(" + field.metadata.getLong(maxlength).toString + ")"
