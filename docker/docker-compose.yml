@@ -24,7 +24,7 @@ services:
       - GCS_SERVICE_EMAIL
 
   vertica:
-    image: vertica/vertica-k8s:latest
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     ports:
       - "5433:5433"
     volumes:
