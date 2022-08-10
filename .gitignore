@@ -18,7 +18,7 @@ connector/.scannerwork/
 functional-tests/lib/
 functional-tests/project/build.properties
 functional-tests/project/project/
-examples/*/lib/
+examples/*/lib/*
 examples/*/project/build.properties
 examples/*/project/project/
 
