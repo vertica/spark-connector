@@ -47,12 +47,12 @@ done
 if [ "$KERBEROS" == "1" ]
   then
     echo "running kerberos docker compose"
-    docker compose -f docker-compose-kerberos.yml up -d --scale docker-worker=$WORKERS_COUNT
+    docker compose -f docker-compose-kerberos.yml up -d
     configure_containers
     docker exec -it docker_krbclient_1 /bin/bash
 else
   echo "running non-kerberized docker compose"
-  docker compose -f docker-compose.yml up -d
+  docker compose -f docker-compose.yml up -d --scale spark-worker=$WORKERS_COUNT
   docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
   docker exec docker_vertica_1 /bin/sh -c "sudo /usr/sbin/sshd -D"
   docker exec docker_client_1 /bin/sh -c "cp /etc/hadoop/conf/* /hadoop-3.3.0/etc/hadoop/"
