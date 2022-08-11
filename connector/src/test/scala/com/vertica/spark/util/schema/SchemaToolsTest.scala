@@ -1059,13 +1059,13 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     val createExternalTableStmt = "create external table \"sales\"(\n" +
       "\"col1\" numeric(10,4),\n" +
       "\"col2\" int" +
-      ") as copy from \'/data/\' parquet"
+      ") as copy from \'/data/\' parquet(path=\"./\")"
     val schemaTools = new SchemaTools
     schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
       case Left(err) =>
         fail(err.getFullContext)
       case Right(str) =>
-        assert(str == "create external table sales(\"col1\" DECIMAL(10, 4),\"col2\" INTEGER) as copy from \'/data/\' parquet")
+        assert(str == "create external table sales(\"col1\" DECIMAL(10, 4),\"col2\" INTEGER) as copy from \'/data/\' parquet(path=\"./\")")
     }
   }
 

@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.{listToEitherSchema, ConnectorResult, SchemaResult}
-import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable}
+import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable, VerticaSQLUtils}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
@@ -648,44 +648,9 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
-    // We assume there's only one parenthesis group in the create statement.
-    val indexOfOpeningParantheses = stmt.indexOf("(")
-    val indexOfClosingParantheses = stmt.lastIndexOf(")")
-    val schemaString = stmt.substring(indexOfOpeningParantheses + 1, indexOfClosingParantheses)
-
-    // Split string by comma. Can handle comma inside parenthesis and remove newlines.
-    def splitSchemaString: Seq[String] = {
-      @tailrec
-      def recursion(char: Char, tail: String, currStr: String = "", splits: List[String] = List(), parenCount: Int = 0): List[String] = {
-        char match {
-          // Keeping track of parenthesis to know if it should split or not
-          case '(' => recursion(tail.head, tail.tail, currStr + char, splits, parenCount + 1)
-          case ')' => recursion(tail.head, tail.tail, currStr + char, splits, parenCount - 1)
-          case ',' =>
-            if(parenCount > 0){
-              recursion(tail.head, tail.tail, currStr + char, splits, parenCount)
-            }else{
-              recursion(tail.head, tail.tail, "", splits :+ currStr, parenCount)
-            }
-          case _ =>
-            val nextStr = char match {
-              // Don't include newline
-              case '\n' => currStr
-              case _ => currStr :+ char
-            }
-
-            if (tail.isEmpty) {
-              splits :+ nextStr.trim
-            } else {
-              recursion(tail.head, tail.tail, nextStr, splits, parenCount)
-            }
-        }
-      }
-
-      recursion(schemaString.head, schemaString.tail)
-    }
-
-    val schemaList = splitSchemaString
+    val (openParen, closingParen) = VerticaSQLUtils.findFirstParenGroupIndices(stmt)
+    val schemaString = stmt.substring(openParen + 1, closingParen)
+    val schemaList = VerticaSQLUtils.splitByComma(schemaString)
     val updatedSchema: String = schemaList.map(colDef => {
       val colName = colDef.trim.split(" ").head
 
