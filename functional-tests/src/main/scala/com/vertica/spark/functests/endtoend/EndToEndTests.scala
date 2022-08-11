@@ -3606,15 +3606,26 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
     val mode = SaveMode.Overwrite
-    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-    assert(readDf.count() == 20)
+    val result = Try{
+      df2.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts +
+          ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")
+        ).mode(mode).save()
+
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+      assert(readDf.count() == 20)
+    }
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
+
+    result match {
+      case Failure(exception) => fail(exception)
+      case Success(_) => ()
+    }
   }
 
   it should "use schema metadata to override col size when creating an external table with varchar/varbinary type" in {
