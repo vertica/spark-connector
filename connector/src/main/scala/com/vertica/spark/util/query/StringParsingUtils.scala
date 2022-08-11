@@ -22,10 +22,11 @@ import scala.annotation.tailrec
  * 2. We did not find an appropriate library for use
  * Should we start handling more SQL parsing, we will need to implement a custom parser.
  * */
-object VerticaSQLUtils {
+object StringParsingUtils {
 
   /**
    * Return the indices of the first open parenthesis and its matching closing parenthesis
+   *
    * @return a tuple of (openParenIndex, closingParenIndex)
    * */
   def findFirstParenGroupIndices(str: String): (Int, Int) = {
@@ -56,6 +57,8 @@ object VerticaSQLUtils {
 
   /**
    * Split a string by comma. Will not split on a comma if it is between parentheses.
+   *
+   * @return a list of separated strings.
    * */
   def splitByComma(str: String): Seq[String] = {
 

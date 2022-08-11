@@ -20,7 +20,7 @@ import com.vertica.spark.datasource.jdbc._
 import com.vertica.spark.util.complex.ComplexTypeUtils
 import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.{listToEitherSchema, ConnectorResult, SchemaResult}
-import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable, VerticaSQLUtils}
+import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable, StringParsingUtils}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
 import org.apache.spark.sql.types._
 
@@ -648,9 +648,9 @@ class SchemaTools(ctTools: ComplexTypesSchemaTools = new ComplexTypesSchemaTools
 
   def inferExternalTableSchema(createExternalTableStmt: String, schema: StructType, tableName: String, strlen: Long, arrayLength: Long): ConnectorResult[String] = {
     val stmt = createExternalTableStmt.replace("\"" + tableName + "\"", tableName)
-    val (openParen, closingParen) = VerticaSQLUtils.findFirstParenGroupIndices(stmt)
+    val (openParen, closingParen) = StringParsingUtils.findFirstParenGroupIndices(stmt)
     val schemaString = stmt.substring(openParen + 1, closingParen)
-    val schemaList = VerticaSQLUtils.splitByComma(schemaString)
+    val schemaList = StringParsingUtils.splitByComma(schemaString)
     val updatedSchema: String = schemaList.map(colDef => {
       val colName = colDef.trim.split(" ").head
 
