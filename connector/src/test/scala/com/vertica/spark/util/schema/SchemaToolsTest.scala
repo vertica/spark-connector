@@ -1016,6 +1016,28 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
     assert(updatedField == "\"age\" INTEGER")
   }
 
+  it should "update field data type to varchar and long varchar" in {
+    val schemaTools= new SchemaTools
+    val maxLength1 = 65001
+    val metadata1 = new MetadataBuilder().putLong("maxlength", maxLength1).build()
+    val maxLength2 = 400
+    val metadata2 = new MetadataBuilder().putLong("maxlength", maxLength2).build()
+    val schema = new StructType(Array(
+      StructField("col1", StringType, metadata = metadata1),
+      StructField("col2", StringType, metadata = metadata2)
+    ))
+
+    val colName = "\"col1\""
+    val col = s"$colName VARCHAR($maxLength1)"
+    val updatedField = schemaTools.updateFieldDataType(col, colName, schema, 1024, 0)
+    assert(updatedField == s"$colName long varchar($maxLength1)")
+
+    val col2Name = "\"col2\""
+    val col2 = s"$col2Name VARCHAR($maxLength2)"
+    val updatedField2 = schemaTools.updateFieldDataType(col2, col2Name, schema, 1024, 0)
+    assert(updatedField2 == s"$col2Name varchar($maxLength2)")
+  }
+
   it should "Return an updated create external table statement" in {
     val schema = new StructType(Array(StructField("date", DateType, nullable = true), StructField("region", IntegerType, nullable = true)))
     val createExternalTableStmt = "create external table \"sales\"(" +
@@ -1029,6 +1051,21 @@ class SchemaToolsTests extends AnyFlatSpec with MockFactory with org.scalatest.O
         fail(err.getFullContext)
       case Right(str) =>
         assert(str == "create external table sales(\"tx_id\" int,\"date\" DATE,\"region\" INTEGER) as copy from \'/data/\' parquet")
+    }
+  }
+
+  it should "infer external table schema with nested parenthesis in create statement" in {
+    val schema = new StructType(Array(StructField("col1", DecimalType(10, 4), nullable = true), StructField("col2", IntegerType, nullable = true)))
+    val createExternalTableStmt = "create external table \"sales\"(\n" +
+      "\"col1\" numeric(10,4),\n" +
+      "\"col2\" int" +
+      ") as copy from \'/data/\' parquet(path=\"./\")"
+    val schemaTools = new SchemaTools
+    schemaTools.inferExternalTableSchema(createExternalTableStmt, schema, "sales", 100, 0) match {
+      case Left(err) =>
+        fail(err.getFullContext)
+      case Right(str) =>
+        assert(str == "create external table sales(\"col1\" DECIMAL(10, 4),\"col2\" INTEGER) as copy from \'/data/\' parquet(path=\"./\")")
     }
   }
 
