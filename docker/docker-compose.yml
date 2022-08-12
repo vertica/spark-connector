@@ -35,8 +35,7 @@ services:
   hdfs:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
-    entrypoint: /usr/local/bin/docker-entrypoint.sh
-    command: sleep infinity
+    entrypoint: /usr/local/bin/docker-entrypoint.sh sleep infinity
     ports:
       - "22022:22"
       - "8020:8020"
@@ -80,8 +79,7 @@ services:
   minio:
     image: minio/minio
     # See original entrypoint/command under https://github.com/minio/minio/blob/master/Dockerfile
-    entrypoint: sh
-    command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
+    entrypoint: sh -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     ports:
       - "9000:9000"
       - "9001:9001"

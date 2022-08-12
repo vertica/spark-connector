@@ -17,4 +17,4 @@ hadoop fs -copyFromLocal /partitioned /3.1.1
 
 echo "HDFS container is now running"
 
-sleep infinity
+exec "$@"
