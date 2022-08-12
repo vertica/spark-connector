@@ -3,7 +3,7 @@ name: spark-connector
 services:
   client:
     build:
-      context: .
+      context: ./client
       args:
         SPARK: ${SPARK_INSTALL:-latest}
     ports:
@@ -35,16 +35,8 @@ services:
   hdfs:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
-    command: >
-      sh -c 'service ssh start &&
-        cp /hadoop/conf/*.xml /opt/hadoop/etc/hadoop &&
-        rm -f /tmp/*.pid &&
-        start-dfs.sh &&
-        hadoop-daemon.sh start portmap &&
-        hadoop-daemon.sh start nfs3 &&
-        while [ "$$(hdfs dfsadmin -safemode get)" = "Safe mode is ON" ]; do sleep 1; done &&
-        hadoop fs -copyFromLocal /partitioned /3.1.1 &&
-        sleep infinity'
+    entrypoint: /usr/local/bin/docker-entrypoint.sh
+    command: sleep infinity
     ports:
       - "22022:22"
       - "8020:8020"
@@ -53,6 +45,7 @@ services:
       - "50070:50070"
       - "50075:50075"
     volumes:
+      - ./hdfs/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
       - ./vertica-hdfs-config/hadoop:/hadoop/conf
       - ./../functional-tests/src/main/resources/3.1.1:/partitioned
 
