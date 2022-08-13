@@ -1,69 +1,61 @@
 version: "3.9"
+name: spark-connector-kerberos
 services:
-  krbclient:
+  client:
     build: ./client-krb
-    container_name: docker_krbclient_1
-    networks:
-      - "example"
-    domainname: "example.com"
-    volumes:
-      - "./..:/spark-connector"
-      - "./client-krb:/client-krb"
-      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
-    stdin_open: true
-    env_file:
-      - "krb.env"
+    entrypoint: /client-krb/docker-entrypoint.sh sleep infinity
+    hostname: client
+    domainname: example.com
     ports:
       - "5005:5005"
-      - "8080:8080"
-      - "8081:8081"
+    volumes:
+      - ./..:/spark-connector
+      - ./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf
+      - ./client-krb:/client-krb
+    env_file:
+      - krb.env
     environment:
       - HADOOP_VERSION
       - SPARK_VERSION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
       - GCS_FILEPATH
       - GCS_HMAC_KEY_ID
       - GCS_HMAC_KEY_SECRET
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
+
   kdc:
     build: ./kdc
-    container_name: "kdc"
-    networks:
-      - "example"
-    hostname: "kdc"
-    domainname: "example.com"
-    env_file:
-      - "krb.env"
+    entrypoint: /kdc/docker-entrypoint.sh /usr/sbin/init
+    hostname: kdc
+    domainname: example.com
     volumes:
-      - "./kdc:/kdc"
-      - "./keytabs:/keytabs"
-    privileged: true
+      - ./kdc:/kdc
+      - ./keytabs:/keytabs
+    env_file:
+      - krb.env
+
   vertica:
-    image: "vertica/vertica-k8s:${VERTICA_VERSION:-latest}"
-    container_name: "vertica"
-    networks:
-      - "example"
-    hostname: "vertica"
-    domainname: "example.com"
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    hostname: vertica
+    domainname: example.com
     ports:
       - "5433:5433"
     volumes:
-      - "./vertica-krb:/vertica-krb"
-      - "./keytabs:/keytabs"
-      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
+      - ./vertica-krb/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf
+      - ./vertica-krb:/vertica-krb
+      - ./keytabs:/keytabs
     env_file:
-      - "krb.env"
-    privileged: true
+      - krb.env
+
   hdfs:
     build: ./hdfs-krb
-    container_name: "hdfs"
-    networks:
-      - "example"
-    hostname: "hdfs"
-    domainname: "example.com"
+    entrypoint: /usr/local/bin/docker-entrypoint.sh sleep infinity
+    hostname: hdfs
+    domainname: example.com
     ports:
       - "22022:22"
       - "8020:8020"
@@ -73,33 +65,61 @@ services:
       - "50071:50071"
       - "50075:50075"
       - "50076:50076"
-    stdin_open: true
-    tty: true
     volumes:
-      - "./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf"
-      - "./hdfs-krb:/hdfs-krb"
-      - "./keytabs:/keytabs"
+      - ./hdfs-krb/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf
+      - ./hdfs-krb:/hdfs-krb
+      - ./keytabs:/keytabs
     env_file:
-      - "krb.env"
-    privileged: true
-    entrypoint: /bin/bash
+      - krb.env
+
+  spark:
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    hostname: spark
+    domainname: example.com
+    ports:
+      - "8080:8080"
+      - "4040:4040"
+    volumes:
+      - ./..:/spark-connector
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+
+  spark-worker:
+    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    hostname: spark-worker
+    domainname: example.com
+    volumes:
+      - ./..:/spark-connector
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+
   minio:
     image: minio/minio
-    container_name: minio
-    networks:
-      - example
+    entrypoint: sh -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     hostname: minio
     domainname: example.com
-    entrypoint: sh
-    command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - minio-data:/data
+
 volumes:
   minio-data:
+
 networks:
-  example:
+  default:
     name: "EXAMPLE.COM"
     driver: bridge
