@@ -287,6 +287,5 @@ After your pull request is merged, you can safely delete your branch and pull th
 
 ## Versioning
 
-We are targeting supports for all Spark 3 releases. Our release numbers is of the `major.minor.patch` format, with the major
-and minor numbers always matches that of the latest Spark 3 release. We should try to match the patch version as well, but
-this may not be realistic in many scenarios. 
+We are targeting support for all Spark releases since 3.0. Our release number format is `major.minor.patch`, with the major
+and minor numbers always trying to match the latest Spark release.
