@@ -50,6 +50,11 @@ The methods for creating a spark cluster are documented [here](https://spark.apa
 
 Once you have a spark cluster, you can run such an application with spark-submit, including the connector jar.
 
+#### Spark compatibility
+
+The connector supports all Spark 3 releases. Our release numbers is of the major.minor.patch format, with the major 
+and minor numbers always matches that of the latest Spark 3 release.
+
 ```shell
 spark-submit --master spark://cluster-url.com:7077 --deploy-mode cluster sparkconnectorprototype-assembly-0.1.jar
 ```

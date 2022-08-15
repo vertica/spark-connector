@@ -284,3 +284,9 @@ Pull requests are usually reviewed within a few days. If there are comments to a
 That's it! Thank you for your code contribution!
 
 After your pull request is merged, you can safely delete your branch and pull the changes from the upstream repository.
+
+## Versioning
+
+We are targeting supports for all Spark 3 releases. Our release numbers is of the `major.minor.patch` format, with the major
+and minor numbers always matches that of the latest Spark 3 release. We should try to match the patch version as well, but
+this may not be realistic in many scenarios. 
