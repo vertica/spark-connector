@@ -10,8 +10,8 @@
 [![contributing](https://img.shields.io/badge/contributing-read-orange)](CONTRIBUTING.md)
 [![license](https://img.shields.io/badge/license-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
-![vertica-tested](https://img.shields.io/badge/Vertica%20Tested-10%20%7C%2011%7C%2012-blue)
-![spark-tested](https://img.shields.io/badge/Spark%20Tested-%3E%3D%203.0.0-blue)
+![vertica-tested](https://img.shields.io/badge/Vertica%20Tested-10%20%7C%2011%20%7C%2012-blue)
+![spark-tested](https://img.shields.io/badge/Spark%20tested-3.0%20%7C%203.1%20%7C%203.2%20%7C%203.3-blue)
 
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
@@ -52,11 +52,6 @@ There are several examples of spark programs that use this connector in the [exa
 The methods for creating a spark cluster are documented [here](https://spark.apache.org/docs/latest/cluster-overview.html).
 
 Once you have a spark cluster, you can run such an application with spark-submit, including the connector jar.
-
-#### Spark compatibility
-
-The connector supports all Spark 3 releases. Our release numbers is of the major.minor.patch format, with the major 
-and minor numbers always matches that of the latest Spark 3 release.
 
 ```shell
 spark-submit --master spark://cluster-url.com:7077 --deploy-mode cluster sparkconnectorprototype-assembly-0.1.jar
