@@ -72,7 +72,7 @@ cd connector
 sbt assembly
 ```
 
-Running this will run all unit tests and build the jar to target/scala-2.12/spark-vertica-connector-assembly-3.3.1.jar.
+Running this will run all unit tests and build the jar to target/scala-2.12/spark-vertica-connector-assembly-3.3.2.jar.
 
 **Note:** Make sure that you are building the jar on your local machine; Building it inside our docker environment 
 will be extremely slow.
