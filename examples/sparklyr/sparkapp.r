@@ -7,7 +7,7 @@ library('properties')
 
 props <- read.properties("../../version.properties")
 version <- props["connector-version"]
-# construct the path to Vertica-Spark connector jar
+# construct the path to Vertica-Spark connector jar. Replace this if the path to the jar is different
 connectorJar <- paste("../../connector/target/scala-2.12/spark-vertica-connector-assembly-", version, ".jar", sep = "")
 
 # Create a Spark config and disable Hive support to avoid errors

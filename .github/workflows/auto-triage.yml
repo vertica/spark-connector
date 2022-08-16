@@ -13,7 +13,7 @@ jobs:
         with:
           project: Backlog
           column: Low Priority
-          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   move-normal-priority:
     if: github.event.label.name == 'Normal Priority'
@@ -23,7 +23,7 @@ jobs:
         with:
           project: Backlog
           column: Normal Priority
-          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   move-high-priority:
     if: github.event.label.name == 'High Priority'
@@ -33,5 +33,5 @@ jobs:
         with:
           project: Backlog
           column: High Priority
-          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
           

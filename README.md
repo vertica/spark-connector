@@ -10,6 +10,9 @@
 [![contributing](https://img.shields.io/badge/contributing-read-orange)](CONTRIBUTING.md)
 [![license](https://img.shields.io/badge/license-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
+![vertica-tested](https://img.shields.io/badge/Vertica%20Tested-10%20%7C%2011%20%7C%2012-blue)
+![spark-tested](https://img.shields.io/badge/Spark%20Tested-3.0%20%7C%203.1%20%7C%203.2%20%7C%203.3-blue)
+
 This component acts as a bridge between Spark and Vertica, allowing the user to either retrieve data from Vertica for processing in Spark, or store processed data from Spark into Vertica.
 
 Why is this connector desired instead of using a more generic JDBC connector? A few reasons:
