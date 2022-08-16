@@ -2,12 +2,6 @@
 
 service ssh start
 
-# Start HDFS services
-rm -f /tmp/*.pid
-start-dfs.sh
-hadoop-daemon.sh start portmap
-hadoop-daemon.sh start nfs3
-
 # Configure Kerberos
 echo "[logging]
   default = FILE:/var/log/krb5libs.log
@@ -18,6 +12,7 @@ echo "[logging]
   dns_lookup_realm = false
   dns_lookup_kdc = false
   ticket_lifetime = 24h
+  renew_lifetime = 7d
   forwardable = true
 [realms]
   $REALM = {
@@ -43,9 +38,11 @@ keytool -genkey -keyalg RSA -alias hdfs -keystore /root/.keystore -validity 500 
 echo "password" | keytool -export -alias hdfs -keystore /root/.keystore -rfc -file hdfs.cert
 cp hdfs.cert /hadoop/conf/
 
-# Restart to get Kerberos changes
-stop-dfs.sh
+# Start HDFS services
+rm -f /tmp/*.pid
 start-dfs.sh
+hadoop-daemon.sh start portmap
+hadoop-daemon.sh start nfs3
 
 # Copy test data to HDFS
 while [ "$(hdfs dfsadmin -safemode get)" = "Safe mode is ON" ]; do sleep 1; done

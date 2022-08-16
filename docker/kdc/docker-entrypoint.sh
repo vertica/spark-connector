@@ -38,13 +38,13 @@ done
 
 $KADMIN -q "addprinc -randkey $V_PRINC"
 $KADMIN -q "ktadd -norandkey -k vertica.keytab $V_PRINC"
-chown 777 vertica.keytab
+chmod 777 vertica.keytab
 cp vertica.keytab /keytabs
 
 $KADMIN -q "addprinc -randkey $HDFS_PRINC"
 $KADMIN	-q "addprinc -randkey $HTTP_HDFS_PRINC"
 $KADMIN -q "ktadd -norandkey -k hdfs.keytab $HDFS_PRINC $HTTP_HDFS_PRINC"
-chown 777 hdfs.keytab
+chmod 777 hdfs.keytab
 cp hdfs.keytab /keytabs
 
 exec "$@"

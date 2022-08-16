@@ -56,6 +56,10 @@ services:
     entrypoint: /usr/local/bin/docker-entrypoint.sh sleep infinity
     hostname: hdfs
     domainname: example.com
+    networks:
+      default:
+        aliases:
+          - hdfs.example.com
     ports:
       - "22022:22"
       - "8020:8020"
