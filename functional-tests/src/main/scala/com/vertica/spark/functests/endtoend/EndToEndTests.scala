@@ -3518,22 +3518,32 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     // Write data to parquet
     val tableName = "existingData"
     val filePath = fsConfig.address + "existingData"
-    val schema = new StructType(Array(StructField("col1", IntegerType)))
-    val data = (1 to 20).map(x => Row(x))
-    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
-    df.write.parquet(filePath)
+    val schema = new StructType(Array(StructField("col1", DecimalType(10, 1)), StructField("col2", IntegerType)))
+    val data = (1 to 20).map(x => Row(scala.math.BigDecimal(3.0), x))
+    val result = Try {
+      val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema).coalesce(1)
+      df.write.parquet(filePath)
 
-    val df2 = spark.emptyDataFrame
-    val mode = SaveMode.Overwrite
-    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
+      val df2 = spark.emptyDataFrame
+      val mode = SaveMode.Overwrite
+      df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-    assert(readDf.head() == data.head)
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+      val dfDecimal = readDf.head.getDecimal(0).floatValue()
+      val dataDecimal = data.head.getAs[scala.math.BigDecimal](0).floatValue()
+      assert(dfDecimal == dataDecimal)
+      assert(readDf.head.getLong(1) == data.head.getInt(1))
+    }
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
+
+    result match {
+      case Failure(exception) => fail(exception)
+      case Success(_) => ()
+    }
   }
 
   it should "create an external table with existing data in FS and multiple data types" in {
@@ -3596,15 +3606,26 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val schema = new StructType(Array(StructField("col1", IntegerType)))
     val df2 = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], schema)
     val mode = SaveMode.Overwrite
-    df2.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")).mode(mode).save()
 
-    val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
-    assert(readDf.count() == 20)
+    val result = Try{
+      df2.write.format("com.vertica.spark.datasource.VerticaSource")
+        .options(writeOpts +
+          ("staging_fs_url" -> filePath, "table" -> tableName, "create_external_table" -> "existing-data")
+        ).mode(mode).save()
+
+      val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
+      assert(readDf.count() == 20)
+    }
 
     TestUtils.dropTable(conn, tableName)
     // Extra cleanup for external table
     fsLayer.removeDir(fsConfig.address)
     fsLayer.createDir(fsConfig.address, "777")
+
+    result match {
+      case Failure(exception) => fail(exception)
+      case Success(_) => ()
+    }
   }
 
   it should "use schema metadata to override col size when creating an external table with varchar/varbinary type" in {
