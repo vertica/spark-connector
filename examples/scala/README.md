@@ -92,4 +92,4 @@ docker-compose down
 Once finished, run the `sandbox-clientenv.sh -k` (or `sandbox-clientenv.bat -k` for windows). This will set up our docker environment 
 in Kerberos mode.
 
-Once finished, you can now run `writeThenReadWithKerberos` example.
+Once finished, use the script `submit-examples-kerberos.sh` to run the example.
