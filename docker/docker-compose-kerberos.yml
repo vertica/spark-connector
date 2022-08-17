@@ -31,6 +31,10 @@ services:
     entrypoint: /kdc/docker-entrypoint.sh /usr/sbin/init
     hostname: kdc
     domainname: example.com
+    networks:
+      default:
+        aliases:
+          - kdc.example.com
     volumes:
       - ./kdc:/kdc
       - ./keytabs:/keytabs
@@ -41,6 +45,10 @@ services:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     hostname: vertica
     domainname: example.com
+    networks:
+      default:
+        aliases:
+          - vertica.example.com
     ports:
       - "5433:5433"
     volumes:

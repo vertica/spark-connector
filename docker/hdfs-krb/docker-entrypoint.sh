@@ -44,10 +44,6 @@ start-dfs.sh
 hadoop-daemon.sh start portmap
 hadoop-daemon.sh start nfs3
 
-# Copy test data to HDFS
-while [ "$(hdfs dfsadmin -safemode get)" = "Safe mode is ON" ]; do sleep 1; done
-hadoop fs -copyFromLocal /partitioned /3.1.1
-
 echo "HDFS container is now running"
 
 exec "$@"
