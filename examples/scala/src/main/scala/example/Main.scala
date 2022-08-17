@@ -22,7 +22,6 @@ object Main {
 
     // Define a Spark master here
     val spark = SparkSession.builder()
-      // .master("local[*]")
       .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 
