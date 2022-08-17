@@ -22,6 +22,7 @@ object Main {
 
     // Define a Spark master here
     val spark = SparkSession.builder()
+      // .master("local[*]")
       .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 
@@ -32,7 +33,7 @@ object Main {
     val m: Map[String, () => Unit] = Map(
       "writeCustomStatement" -> optExamples.writeCustomStatement,
       "writeCustomCopyList" -> optExamples.writeCustomCopyList,
-      "writeThenReadWithHDFS" -> basicExamples.writeThenRead,
+      "writeThenRead" -> basicExamples.writeThenRead,
       "complexArrayExample" -> ctExamples.writeThenReadComplexArray,
       "writeThenReadRow" -> ctExamples.writeThenReadRow,
       "writeMap" -> ctExamples.writeMap,

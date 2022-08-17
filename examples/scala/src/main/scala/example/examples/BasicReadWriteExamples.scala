@@ -49,7 +49,7 @@ class BasicReadWriteExamples(spark: SparkSession) {
   /**
    * A simple example demonstrating how to write into Vertica, then read back the data in a dataframe.
    * */
-  def writeThenReadWithHDFS(): Unit = {
+  def writeThenRead(): Unit = {
 
     printMessage("write data into Vertica then read it back")
 
