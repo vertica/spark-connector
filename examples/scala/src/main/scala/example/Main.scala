@@ -32,7 +32,7 @@ object Main {
     val m: Map[String, () => Unit] = Map(
       "writeCustomStatement" -> optExamples.writeCustomStatement,
       "writeCustomCopyList" -> optExamples.writeCustomCopyList,
-      "writeThenReadWithHDFS" -> basicExamples.writeThenRead,
+      "writeThenRead" -> basicExamples.writeThenRead,
       "complexArrayExample" -> ctExamples.writeThenReadComplexArray,
       "writeThenReadRow" -> ctExamples.writeThenReadRow,
       "writeMap" -> ctExamples.writeMap,

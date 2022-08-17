@@ -34,9 +34,11 @@ The file `src/main/resources/application.conf` contains common connector option 
 override them to fit your setup.
 
 ### Using a modified Spark Connector
-The example is using our latest Spark Connector release. Should you need to use a custom build of the connector (e.g. testing 
-some changes), put into this project's `lib` folder either the slim jar (from `sbt package`) or fat jar (from `sbt assembly`)
-inside. It should override the connector build dependency. 
+The example is using our latest Spark Connector release from Maven. Should you need to use a custom build of the connector (e.g. testing 
+some changes), place the connector fat jar (from `sbt assembly`) inside this project's `lib`. Then, remove 
+the connector dependency `"com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"` from `build.sbt`.
+
+The modified connector should now be applied when you build the example with `sbt assembly`
 
 ### S3 Examples
 
@@ -90,4 +92,4 @@ docker-compose down
 Once finished, run the `sandbox-clientenv.sh -k` (or `sandbox-clientenv.bat -k` for windows). This will set up our docker environment 
 in Kerberos mode.
 
-Once finished, you can now run `writeThenReadWithKerberos` example.
+Once finished, use the script `submit-examples-kerberos.sh` to run the example.
