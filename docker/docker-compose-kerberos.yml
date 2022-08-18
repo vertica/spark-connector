@@ -4,6 +4,7 @@ services:
   client:
     build: ./client-krb
     entrypoint: /client-krb/docker-entrypoint.sh sleep infinity
+    container_name: client
     hostname: client
     domainname: example.com
     networks:
@@ -33,6 +34,7 @@ services:
   kdc:
     build: ./kdc
     entrypoint: /kdc/docker-entrypoint.sh /usr/sbin/init
+    container_name: kdc
     hostname: kdc
     domainname: example.com
     networks:
@@ -47,6 +49,7 @@ services:
 
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    container_name: vertica
     hostname: vertica
     domainname: example.com
     networks:
@@ -66,6 +69,10 @@ services:
   hdfs:
     build: ./hdfs-krb
     entrypoint: /usr/local/bin/docker-entrypoint.sh sleep infinity
+    # Must explicitly set container_name or add entries to /etc/hosts in other containers that
+    # communicate with hdfs (client and vertica), otherwise Kerberos is unable to perform both
+    # forward and reverse lookup
+    container_name: hdfs
     hostname: hdfs
     domainname: example.com
     networks:
