@@ -1,14 +1,14 @@
 # Docker Environment
 
 We provide a docker environment for testing and developing that contains the following containers:
-- `spark-connector-client-1`: The client environment. This is where spark application are submitted/executed from
-- `spark-connector-hdfs-1`: The HDFS node acting as the staging file-store
-- `spark-connector-vertica-1`: Our Vertica database
-- `spark-connector-minio-1`: A minio file-store container acting as an S3 file-store 
-- `spark-connector-spark-1`: A Spark driver for our standalone cluster
-- `spark-connector-spark-worker-*`: Spark workers for our standalone cluster, created in swarm mode
+- `docker-client-1`: The client environment. This is where spark application are submitted/executed from
+- `docker-hdfs-1`: The HDFS node acting as the staging file-store
+- `docker-vertica-1`: Our Vertica database
+- `docker-minio-1`: A minio file-store container acting as an S3 file-store 
+- `docker-spark-1`: A Spark driver for our standalone cluster
+- `docker-spark-worker-*`: Spark workers for our standalone cluster, created in swarm mode
 
-When using the Kerberos configuration the container names are simplified (e.g. `client` instead of `spark-connector-client-1`).  The Spark and MinIO containers are not currently deployed for Kerberos.
+When using the Kerberos configuration the container names are simplified (`client`, `hdfs`, and `vertica`, plus one for the Kerberos key server, `kdc`).  The Spark and MinIO containers are not currently deployed for Kerberos.
 
 ### Starting the Environment
 
@@ -37,7 +37,9 @@ You can access a container shell as follows:
 docker exec -it <container-name> bash
 
 # Client container example:
-docker exec -it spark-connector-client-1 bash
+docker exec -it docker-client-1 bash
+# or
+docker exec -it krb-client bash
 ```
 
 You can exit the container's shell with `exit`.

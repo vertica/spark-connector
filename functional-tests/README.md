@@ -17,7 +17,7 @@ From the project's docker directory:
 ```
 cd ../docker
 docker compose up -d
-docker exec -it spark-connector-client-1 bash
+docker exec -it docker-client-1 bash
 ```
 This will create a docker image for a client container and docker containers for single-node clusters of both Vertica and HDFS.
 

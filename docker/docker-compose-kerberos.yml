@@ -1,7 +1,6 @@
 version: "3.9"
-name: spark-connector-kerberos
 services:
-  client:
+  krb-client:
     build: ./client-krb
     entrypoint: /client-krb/docker-entrypoint.sh sleep infinity
     container_name: client

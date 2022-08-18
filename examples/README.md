@@ -16,7 +16,7 @@ docker-compose -f docker-compose-kerberos.yml up -d
 ```
 4. Get a shell to the client container
 ```
-docker exec -it spark-connector-client-1 bash
+docker exec -it docker-client-1 bash
 # or
 docker exec -it client bash
 ```
