@@ -31,24 +31,24 @@ On CentOS, yum install krb5-server krb5-libs krb5-workstation (These packages wi
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
 [logging]
- default = FILE:/var/logkrb5libs.log
- kdc = FILE:/var/log/krb5kdc.log
- admin_server = FILE:/var/log/kadmind.log
+  default = FILE:/var/logkrb5libs.log
+  kdc = FILE:/var/log/krb5kdc.log
+  admin_server = FILE:/var/log/kadmind.log
 [libdefaults]
- default_realm = EXAMPLE.COM
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- renew_lifetime = 7d
- forwardable = true
+  default_realm = EXAMPLE.COM
+  dns_lookup_realm = false
+  dns_lookup_kdc = false
+  ticket_lifetime = 24h
+  renew_lifetime = 7d
+  forwardable = true
 [realms]
- EXAMPLE.COM = {
-  kdc = localhost
-  admin_server = localhost
- }
- [domain_realm]
- .example.com = EXAMPLE.COM
- example.com = EXAMPLE.COM
+  EXAMPLE.COM = {
+    kdc = localhost
+    admin_server = localhost
+  }
+[domain_realm]
+  .example.com = EXAMPLE.COM
+  example.com = EXAMPLE.COM
 ```
 
 #### Note on ticket lifetimes and expiration
@@ -121,24 +121,24 @@ Before moving on to the next step, copy the newly created vertica.keytab file to
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
 [logging]
- default = FILE:/var/log/krb5libs.log
- kdc = FILE:/var/log/krb5kdc.log
- admin_server = FILE:/var/log/kadmind.log
+  default = FILE:/var/log/krb5libs.log
+  kdc = FILE:/var/log/krb5kdc.log
+  admin_server = FILE:/var/log/kadmind.log
 [libdefaults]
- default_realm = EXAMPLE.COM
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- renew_lifetime = 7d
- forwardable = true
+  default_realm = EXAMPLE.COM
+  dns_lookup_realm = false
+  dns_lookup_kdc = false
+  ticket_lifetime = 24h
+  renew_lifetime = 7d
+  forwardable = true
 [realms]
- EXAMPLE.COM = {
-  kdc = kerberos.example.com
-  admin_server = kerberos.example.com
- }
- [domain_realm]
- .example.com = EXAMPLE.COM
- example.com = EXAMPLE.COM
+  EXAMPLE.COM = {
+    kdc = kerberos.example.com
+    admin_server = kerberos.example.com
+  }
+[domain_realm]
+  .example.com = EXAMPLE.COM
+  example.com = EXAMPLE.COM
 ```
 Note that kerberos.example.com is the hostname of our KDC. Yours may be different, so change this accordingly.
 
@@ -173,24 +173,24 @@ Make sure that the dbadmin user owns the keytab file: `chown dbadmin /vertica.ke
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
 [logging]
- default = FILE:/var/log/krb5libs.log
- kdc = FILE:/var/log/krb5kdc.log
- admin_server = FILE:/var/log/kadmind.log
+  default = FILE:/var/log/krb5libs.log
+  kdc = FILE:/var/log/krb5kdc.log
+  admin_server = FILE:/var/log/kadmind.log
 [libdefaults]
- default_realm = EXAMPLE.COM
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- renew_lifetime = 7d
- forwardable = true
+  default_realm = EXAMPLE.COM
+  dns_lookup_realm = false
+  dns_lookup_kdc = false
+  ticket_lifetime = 24h
+  renew_lifetime = 7d
+  forwardable = true
 [realms]
- EXAMPLE.COM = {
-  kdc = kerberos.example.com
-  admin_server = kerberos.example.com
- }
- [domain_realm]
- .example.com = EXAMPLE.COM
- example.com = EXAMPLE.COM
+  EXAMPLE.COM = {
+    kdc = kerberos.example.com
+    admin_server = kerberos.example.com
+  }
+[domain_realm]
+  .example.com = EXAMPLE.COM
+  example.com = EXAMPLE.COM
 ```
 ### Update HDFS configuration files
 
@@ -503,24 +503,24 @@ cat /hdfs.cert >> /etc/pki/tls/certs/ca-bundle.crt
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
 [logging]
- default = FILE:/var/log/krb5libs.log
- kdc = FILE:/var/log/krb5kdc.log
- admin_server = FILE:/var/log/kadmind.log
+  default = FILE:/var/log/krb5libs.log
+  kdc = FILE:/var/log/krb5kdc.log
+  admin_server = FILE:/var/log/kadmind.log
 [libdefaults]
- default_realm = EXAMPLE.COM
- dns_lookup_realm = false
- dns_lookup_kdc = false
- ticket_lifetime = 24h
- renew_lifetime = 7d
- forwardable = true
+  default_realm = EXAMPLE.COM
+  dns_lookup_realm = false
+  dns_lookup_kdc = false
+  ticket_lifetime = 24h
+  renew_lifetime = 7d
+  forwardable = true
 [realms]
- EXAMPLE.COM = {
-  kdc = kerberos.example.com
-  admin_server = kerberos.example.com
- }
- [domain_realm]
- .example.com = EXAMPLE.COM
- example.com = EXAMPLE.COM
+  EXAMPLE.COM = {
+    kdc = kerberos.example.com
+    admin_server = kerberos.example.com
+  }
+[domain_realm]
+  .example.com = EXAMPLE.COM
+  example.com = EXAMPLE.COM
 ```
 ### Set path to JAAS configuration file
 

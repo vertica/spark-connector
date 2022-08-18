@@ -18,7 +18,6 @@ echo "[logging]
   dns_lookup_realm = false
   dns_lookup_kdc = false
   ticket_lifetime = 24h
-  renew_lifetime = 7d
   forwardable = true
 [realms]
   $REALM = {

@@ -78,7 +78,7 @@ Running this will run all unit tests and build the jar to target/scala-2.12/spar
 will be extremely slow.
 
 ## Step 4: Set up an environment
-The easiest way to set up an environment is to spin up the docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS following [this guide.](https://github.com/vertica/spark-connector/blob/main/examples/README.md)
+The easiest way to set up an environment is to spin up the docker containers that includes single-node clusters of both Vertica and HDFS following [this guide.](https://github.com/vertica/spark-connector/blob/main/examples/README.md)
 
 Alternatively, you may download the requirements below:
 
@@ -144,7 +144,7 @@ If you are using docker as your dev enviroment, you can setup a debug server. Fo
 
 The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
 
-If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, `docker_client_1` container is mapping its port `5005` to the host's `5005`. 
+If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, the client container is mapping its port `5005` to the host's `5005`. 
 
 ### Connector Architecture
 

@@ -11,7 +11,7 @@ You can run the examples either on our docker environment or on your own Spark-V
 
 ## Running Examples
 
-First, ensure that the sandbox docker environment is up and running by following these [instructions](/examples/README.md). 
+First, ensure that the docker environment is up and running by following these [instructions](/examples/README.md). 
 
 Start by assembling this example project into a fat jar with: 
 ```
@@ -19,7 +19,7 @@ sbt assembly
 ```
 Make sure that you do this outside of the docker environment or else the process would be very slow.
 
-Then, inside `docker_client_1`, navigate to `/spark-connector/example/scala` and use `submit-examples.sh <example-name>`
+Then, inside the client container, navigate to `/spark-connector/example/scala` and use `submit-examples.sh <example-name>`
 to submit and run the specified example on our standalone cluster hosted on the docker environment. 
 You can see the list of available examples by submitting it with no argument.
 
@@ -89,7 +89,10 @@ Navigate to `spark-connector/docker/` on your local machine and run
 docker-compose down
 ```
 
-Once finished, run the `sandbox-clientenv.sh -k` (or `sandbox-clientenv.bat -k` for windows). This will set up our docker environment 
-in Kerberos mode.
+Once finished, run the following to setup our docker environment and login to the client container:
+```
+docker-compose -f docker-compose-kerberos.yml up -d
+docker exec -it client bash
+```
 
-Once finished, use the script `submit-examples-kerberos.sh` to run the example.
+Once finished, navigate to and use the script `submit-examples-kerberos.sh` to run the example.

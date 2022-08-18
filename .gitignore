@@ -48,11 +48,10 @@ examples/s3-example/project/build.properties
 !examples/kerberos-example/project
 examples/kerberos-example/project/target/
 
+docker/.env
 docker/keytabs/*.keytab
 !docker/keytabs/.gitkeep
-
 docker/vertica-hdfs-config/hadoop-kerberized/*.cert
-
 
 # Scala .gitignore
 /lib/*.jar

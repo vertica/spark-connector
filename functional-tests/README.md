@@ -16,15 +16,16 @@ This will create a lib folder and then build and copy the connector JAR file to 
 From the project's docker directory:
 ```
 cd ../docker
-./sandbox-clientenv.sh
+docker compose up -d
+docker exec -it spark-connector-client-1 bash
 ```
-This will create a docker image for a client container and docker containers for a sandbox client environment and single-node clusters for both Vertica and HDFS.
+This will create a docker image for a client container and docker containers for single-node clusters of both Vertica and HDFS.
 
 ### Starting Functional Tests
 
-In the sandbox environment, change your working directory to functional-tests
+In the client container, change your working directory to functional-tests
 ```
-cd spark-connector/functional-tests
+cd /spark-connector/functional-tests
 ```
 
 Use `sbt` to start the sbt server from the command line. Enter `run` to execute the default test suites. 
@@ -78,9 +79,9 @@ sbt assembly
 
 Note that you should do this outside of the docker environment as it will be extremely slow to compile inside docker. 
 Navigate to the `functional-tests` folder on your local machine to build the functional test with `sbt assembly`. 
-Since the `spark-connector` folder is mounted onto the containers, the built jar will also be available on `docker_client_1`.
+Since the `spark-connector` folder is mounted onto the containers, the built jar will also be available on the client container.
 
-To submit the functional test to our standalone cluster, inside `docker_client_1` navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`.
+To submit the functional test to our standalone cluster, inside the client container navigate to `spark-connector/functional-tests` and use `submit-functional-test.sh`.
 
 Once submitted, verify through the [web ui](localhost:8080) and the [jobs ui](localhost:4040) that the application was submitted.
 Our functional test, without any arguments, will create multiple spark sessions; You should expect multiple applications executing one after another.
