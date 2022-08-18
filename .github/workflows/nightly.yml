@@ -46,7 +46,7 @@ jobs:
           name: build-jar-file
           path: ./functional-tests/lib/
       - name: Run the integration tests
-        run: docker exec -w cd /spark-connector/functional-tests docker-client-1 sbt run
+        run: docker exec -w /spark-connector/functional-tests docker-client-1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-intergration-tests-on-standalone-cluster:
@@ -67,7 +67,7 @@ jobs:
       - name: Run docker compose
         run: cd docker && docker-compose up -d
       - name: Run the integration tests against a standalone cluster
-        run: docker exec -w cd /spark-connector/functional-tests docker-client-1 bash -c "./submit-functional-tests.sh"
+        run: docker exec -w /spark-connector/functional-tests docker-client-1 bash -c "./submit-functional-tests.sh"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   slack-workflow-status:

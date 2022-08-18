@@ -57,6 +57,6 @@ jobs:
           name: build-jar-file
           path: ./functional-tests/lib/
       - name: Run the integration tests
-        run: docker exec -w cd /spark-connector/functional-tests docker-client-1 sbt run
+        run: docker exec -w /spark-connector/functional-tests docker-client-1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
