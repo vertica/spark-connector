@@ -6,6 +6,10 @@ services:
     entrypoint: /client-krb/docker-entrypoint.sh sleep infinity
     hostname: client
     domainname: example.com
+    networks:
+      default:
+        aliases:
+          - client.example.com
     ports:
       - "5005:5005"
     volumes:
@@ -84,52 +88,6 @@ services:
       - ./keytabs:/keytabs
     env_file:
       - krb.env
-
-  spark:
-    image: bitnami/spark:${SPARK_INSTALL:-latest}
-    hostname: spark
-    domainname: example.com
-    ports:
-      - "8080:8080"
-      - "4040:4040"
-    volumes:
-      - ./..:/spark-connector
-    environment:
-      - SPARK_MODE=master
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-
-  spark-worker:
-    image: bitnami/spark:${SPARK_INSTALL:-latest}
-    hostname: spark-worker
-    domainname: example.com
-    volumes:
-      - ./..:/spark-connector
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_WORKER_CORES=1
-      - SPARK_RPC_AUTHENTICATION_ENABLED=no
-      - SPARK_RPC_ENCRYPTION_ENABLED=no
-      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      - SPARK_SSL_ENABLED=no
-
-  minio:
-    image: minio/minio
-    entrypoint: sh -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
-    hostname: minio
-    domainname: example.com
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
-
-volumes:
-  minio-data:
 
 networks:
   default:

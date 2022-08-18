@@ -2,6 +2,12 @@
 
 service ssh start
 
+# Start HDFS services
+rm -f /tmp/*.pid
+start-dfs.sh
+hadoop-daemon.sh start portmap
+hadoop-daemon.sh start nfs3
+
 # Configure Kerberos
 echo "[logging]
   default = FILE:/var/log/krb5libs.log
@@ -38,11 +44,9 @@ keytool -genkey -keyalg RSA -alias hdfs -keystore /root/.keystore -validity 500 
 echo "password" | keytool -export -alias hdfs -keystore /root/.keystore -rfc -file hdfs.cert
 cp hdfs.cert /hadoop/conf/
 
-# Start HDFS services
-rm -f /tmp/*.pid
+# Restart HDFS service
+stop-dfs.sh
 start-dfs.sh
-hadoop-daemon.sh start portmap
-hadoop-daemon.sh start nfs3
 
 echo "HDFS container is now running"
 
