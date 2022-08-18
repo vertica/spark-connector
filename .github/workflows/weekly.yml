@@ -40,39 +40,13 @@ jobs:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
           VERTICA_VERSION: ${{matrix.vertica}}
-      - name: Create db in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Copy functional tests to home directory of client container
-        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
-      - name: Copy version.properties file from client container
-        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
-      - name: Run the integration tests on Spark 3.0
-        run: docker exec -w /home/functional-tests docker_client_1 sbt "run -j"
+      - name: Run the integration tests with JSON export
+        run: docker exec -w cd /spark-connector/functional-tests spark-connector-client-1 sbt "run -j"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-spark-integration-tests-vertica-10:
@@ -95,39 +69,13 @@ jobs:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
           VERTICA_VERSION: 10.1.1-0
-      - name: Create db in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Copy functional tests to home directory of client container
-        run: docker exec docker_client_1 cp -r /spark-connector/functional-tests /home
-      - name: Copy version.properties file from client container
-        run: docker exec docker_client_1 cp -r /spark-connector/version.properties /home
-      - name: Run the integration tests on Spark 3.0
-        run: docker exec -w /home/functional-tests docker_client_1 sbt "run --v10"
+      - name: Run the integration tests against Vertica 10
+        run: docker exec -w cd /spark-connector/functional-tests spark-connector-client-1 sbt "run --v10"
       - name: Remove docker containers
         run: cd docker && docker-compose down
   run-integration-tests-s3:
@@ -146,37 +94,14 @@ jobs:
         env:
           S3_FILEPATH: ${{secrets.S3_FILEPATH}}
       - name: Build client image
-        run: docker build -t client ./docker
+        run: docker build -t client ./docker/client
       - name: Run docker compose
         run: cd docker && docker-compose up -d
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-      - name: Create db in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
-      - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
-      - name: Remove docker containers
+      - name: Run the integration tests against S3
+        run: docker exec -w cd /spark-connector/functional-tests spark-connector-client-1 sbt run
         run: cd docker && docker-compose down
   run-integration-tests-gcs:
     runs-on: ubuntu-latest
@@ -194,7 +119,7 @@ jobs:
         env:
           GCS_FILEPATH: ${{secrets.GCS_FILEPATH}}
       - name: Build client image
-        run: docker build -t client ./docker
+        run: docker build -t client ./docker/client
       - name: Run docker compose
         run: cd docker && docker-compose up -d
         env:
@@ -203,30 +128,8 @@ jobs:
           GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
           GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
           GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
-      - name: Create db in Vertica
-        run: docker exec docker_vertica_1 /bin/sh -c "opt/vertica/bin/admintools -t create_db --database=docker --password='' --hosts=localhost"
-      - name: Replace HDFS core-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/core-site.xml /opt/hadoop/etc/hadoop/core-site.xml
-      - name: Replace HDFS hdfs-site config with our own
-        run: docker exec docker_hdfs_1 cp /hadoop/conf/hdfs-site.xml /opt/hadoop/etc/hadoop/hdfs-site.xml
-      - name: Copy partitioned parquet data to HDFS container
-        run: docker cp ./functional-tests/src/main/resources/3.1.1 docker_hdfs_1:/partitioned
-      - name: Copy partitioned parquet data to hadoop from local
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_hdfs_1 hadoop fs -copyFromLocal /partitioned /3.1.1
-      - name: Increase active sessions in database
-        uses: nick-invision/retry@v2
-        with:
-          timeout_seconds: 20
-          max_attempts: 10
-          retry_on: error
-          command: docker exec docker_vertica_1 vsql -c "ALTER DATABASE docker SET MaxClientSessions=100;"
       - name: Run the integration tests against GCS
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
+        run: docker exec -w cd /spark-connector/functional-tests spark-connector-client-1 sbt run
       - name: Remove docker containers
         run: cd docker && docker-compose down
   slack-workflow-status:
