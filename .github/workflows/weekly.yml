@@ -45,6 +45,13 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests with JSON export
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt "run -j"
       - name: Remove docker containers
@@ -74,6 +81,13 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests against Vertica 10
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt "run --v10"
       - name: Remove docker containers
@@ -100,6 +114,13 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests against S3
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
         run: cd docker && docker-compose down
@@ -128,6 +149,13 @@ jobs:
           GCS_SERVICE_KEY_ID: ${{secrets.GCS_SERVICE_KEY_ID}}
           GCS_SERVICE_KEY: ${{secrets.GCS_SERVICE_KEY}}
           GCS_SERVICE_EMAIL: ${{secrets.GCS_SERVICE_EMAIL}}
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests against GCS
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers

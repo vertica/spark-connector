@@ -45,6 +45,13 @@ jobs:
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
@@ -66,6 +73,13 @@ jobs:
         run: docker build -t client ./docker/client
       - name: Run docker compose
         run: cd docker && docker-compose up -d
+      - name: Wait for Vertica to be available
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 20
+          max_attempts: 10
+          retry_on: error
+          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests against a standalone cluster
         run: docker exec -w /spark-connector/functional-tests docker_client_1 bash -c "./submit-functional-tests.sh"
       - name: Remove docker containers
