@@ -34,8 +34,10 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
+      - name: Shutdown container first
+        run: cd docker && docker-compose down
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: docker-compose up -d
         env:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
