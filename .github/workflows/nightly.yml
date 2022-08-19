@@ -37,7 +37,7 @@ jobs:
       - name: Shutdown container first
         run: cd docker && docker-compose down
       - name: Run docker compose
-        run: docker-compose up -d
+        run: cd docker && docker-compose up -d
         env:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
