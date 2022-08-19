@@ -25,11 +25,17 @@ services:
 
   vertica:
     image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    # See original entrypoint under https://github.com/vertica/vertica-kubernetes/blob/main/docker-vertica/Dockerfile
+    entrypoint: bash -c "if [[ "$${VERTICA_VERSION:0:2}" == "10" ]]; then /opt/vertica/bin/docker-entrypoint-legacy.sh; else /opt/vertica/bin/docker-entrypoint.sh; fi"
     ports:
       - "5433:5433"
     volumes:
-      - ./vertica/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      # Legacy is for Vertica 10, otherwise Vertica 11+ use the same entrypoint script (Vertica 12 expects it under /usr/local/bin, but overridden by entrypoint above)
+      - ./vertica/docker-entrypoint-legacy.sh:/opt/vertica/bin/docker-entrypoint-legacy.sh
+      - ./vertica/docker-entrypoint.sh:/opt/vertica/bin/docker-entrypoint.sh
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
+    environment:
+      - VERTICA_VERSION
 
   hdfs:
     image: mdouchement/hdfs
