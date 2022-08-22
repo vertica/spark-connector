@@ -44,6 +44,12 @@ docker exec -it krb-client bash
 
 You can exit the container's shell with `exit`.
 
+Note that it can take a few seconds for some of the services, notably Vertica and HDFS, to initialize.  Before running any tests, ensure that the services are up by looking for the "\<service\> container is now running" message at the end of the logs:
+```
+docker logs docker-vertica-1
+docker logs docker-hdfs-1
+```
+
 ### Configurations
 
 The following env vars can be exported or specified in your `.env` file:
