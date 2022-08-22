@@ -1,4 +1,5 @@
 FROM centos:7
+
 ENV SBT_VERSION 1.3.13
 ENV JAVA_OPTS="$JAVA_OPTS -Djava.security.auth.login.config=/spark-connector/docker/client-krb/jaas.config"
 

@@ -1,69 +1,83 @@
 version: "3.9"
 services:
-  krbclient:
+  krb-client:
     build: ./client-krb
-    container_name: docker_krbclient_1
+    entrypoint: /client-krb/docker-entrypoint.sh sleep infinity
+    container_name: client
+    hostname: client
+    domainname: example.com
     networks:
-      - "example"
-    domainname: "example.com"
-    volumes:
-      - "./..:/spark-connector"
-      - "./client-krb:/client-krb"
-      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
-    stdin_open: true
-    env_file:
-      - "krb.env"
+      default:
+        aliases:
+          - client.example.com
     ports:
       - "5005:5005"
-      - "8080:8080"
-      - "8081:8081"
+    volumes:
+      - ./..:/spark-connector
+      - ./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf
+      - ./client-krb:/client-krb
+    env_file:
+      - krb.env
     environment:
       - HADOOP_VERSION
       - SPARK_VERSION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
       - GCS_FILEPATH
       - GCS_HMAC_KEY_ID
       - GCS_HMAC_KEY_SECRET
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
+
   kdc:
     build: ./kdc
-    container_name: "kdc"
+    entrypoint: /kdc/docker-entrypoint.sh /usr/sbin/init
+    container_name: kdc
+    hostname: kdc
+    domainname: example.com
     networks:
-      - "example"
-    hostname: "kdc"
-    domainname: "example.com"
-    env_file:
-      - "krb.env"
+      default:
+        aliases:
+          - kdc.example.com
     volumes:
-      - "./kdc:/kdc"
-      - "./keytabs:/keytabs"
-    privileged: true
+      - ./kdc:/kdc
+      - ./keytabs:/keytabs
+    env_file:
+      - krb.env
+
   vertica:
-    image: "vertica/vertica-k8s:${VERTICA_VERSION:-latest}"
-    container_name: "vertica"
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    container_name: vertica
+    hostname: vertica
+    domainname: example.com
     networks:
-      - "example"
-    hostname: "vertica"
-    domainname: "example.com"
+      default:
+        aliases:
+          - vertica.example.com
     ports:
       - "5433:5433"
     volumes:
-      - "./vertica-krb:/vertica-krb"
-      - "./keytabs:/keytabs"
-      - "./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf"
+      - ./vertica-krb/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./vertica-hdfs-config/hadoop-kerberized:/etc/hadoop/conf
+      - ./vertica-krb:/vertica-krb
+      - ./keytabs:/keytabs
     env_file:
-      - "krb.env"
-    privileged: true
+      - krb.env
+
   hdfs:
     build: ./hdfs-krb
-    container_name: "hdfs"
+    entrypoint: /usr/local/bin/docker-entrypoint.sh sleep infinity
+    # Must explicitly set container_name or add entries to /etc/hosts in other containers that
+    # communicate with hdfs (client and vertica), otherwise Kerberos is unable to perform both
+    # forward and reverse lookup
+    container_name: hdfs
+    hostname: hdfs
+    domainname: example.com
     networks:
-      - "example"
-    hostname: "hdfs"
-    domainname: "example.com"
+      default:
+        aliases:
+          - hdfs.example.com
     ports:
       - "22022:22"
       - "8020:8020"
@@ -73,33 +87,15 @@ services:
       - "50071:50071"
       - "50075:50075"
       - "50076:50076"
-    stdin_open: true
-    tty: true
     volumes:
-      - "./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf"
-      - "./hdfs-krb:/hdfs-krb"
-      - "./keytabs:/keytabs"
+      - ./hdfs-krb/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./vertica-hdfs-config/hadoop-kerberized:/hadoop/conf
+      - ./hdfs-krb:/hdfs-krb
+      - ./keytabs:/keytabs
     env_file:
-      - "krb.env"
-    privileged: true
-    entrypoint: /bin/bash
-  minio:
-    image: minio/minio
-    container_name: minio
-    networks:
-      - example
-    hostname: minio
-    domainname: example.com
-    entrypoint: sh
-    command: -c 'mkdir -p /data/test && minio server /data --console-address ":9001"'
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
-volumes:
-  minio-data:
+      - krb.env
+
 networks:
-  example:
+  default:
     name: "EXAMPLE.COM"
     driver: bridge

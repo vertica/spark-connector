@@ -8,10 +8,20 @@ If you want to try these examples on our docker environment, then:
 git clone https://github.com/vertica/spark-connector.git
 ```
 2. Install sbt on your local machine with JDK 11
-3. Run the appropriate `sandbox-clientenv` script for your OS located in `spark-connector/docker/`.
+3. Start the appropriate configuration from the `spark-connector/docker/` folder
+```
+docker-compose up -d
+# or
+docker-compose -f docker-compose-kerberos.yml up -d
+```
+4. Get a shell to the client container
+```
+docker exec -it docker-client-1 bash
+# or
+docker exec -it client bash
+```
 
-Once started, you will be automatically placed inside `docker_client_1`. The project and this folder are mounted onto 
-the container, which you can navigate to using `cd /spark-connector/example/`.
+Once in the container, navigate to the examples folder using `cd /spark-connector/examples`.
 
 You can find more information about our docker environment [here](/docker/README.md).
 
@@ -42,6 +52,3 @@ If you are running a Kerberos environment, then use
 ```
 docker compose -f docker-compose-kerberos.yml down
 ```
-
-Note that the kerberos environment cannot run alongside our normal docker environment. You will need to shut down either
-environment before starting the other.

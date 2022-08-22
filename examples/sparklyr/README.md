@@ -13,9 +13,9 @@ First, set up the docker environment as mentioned in [examples](/examples/README
 1. Download the spark connector "all" jar from our [releases](https://github.com/vertica/spark-connector/releases)
    and place it in to `/connector/target/scala-2.12/`. You can do this on your local machine as this folder is mounted.  
    Alternatively, you could build the jar yourself by following the instructions [here](/CONTRIBUTING.md).
-2. Assuming you are in `docker_client_1`, use `cd /spark-connector/examples/sparklyr` then run the `./run-r-example.sh` script.
+2. Assuming you are in the client container, use `cd /spark-connector/examples/sparklyr` then run the `./run-r-example.sh` script.
    This will install R and necessary packages before starting the r script. You can see the submitted app on our [standalone cluster](localhost:8080).
-3. To shut down, exit out of the container with `exit`. Then on your local machine navigate to `/spark-connector/docker`
+3. To shut down, exit out of the container with `exit`. Then on your local machine navigate to `spark-connector/docker`
    and tear down containers by running `docker-compose down`.
 
 # Other Connector Options
