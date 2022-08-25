@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 permissions:
   issues: write
+  repository-projects: write
 jobs:
   remove-low-priority:
     if: contains(github.event.issue.labels.*.name, 'Low Priority')
