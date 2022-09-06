@@ -177,6 +177,6 @@ jobs:
         with:
           repo_token: ${{secrets.GITHUB_TOKEN}}
           slack_webhook_url: ${{secrets.SLACK_CHANNEL_WEBHOOK}}
-          name: 'Nightly tests failed'
+          name: 'Weekly tests failed'
           icon_emoji: ':sadge:'
           include_jobs: false
