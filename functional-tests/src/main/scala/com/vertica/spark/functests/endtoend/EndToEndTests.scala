@@ -4102,6 +4102,35 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     fsLayer.createDir(fsConfig.address, "777")
   }
 
+  it should "set the client label on the session" in {
+    val tableName = "clientLabelTest"
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+    val data = Seq(Row(1), Row(2))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    val mode = SaveMode.Overwrite
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName)).mode(mode).save()
+
+    val stmt = conn.createStatement()
+    // v_monitor.sessions is transient, so just check client_label in dc_session_starts
+    val query = "SELECT COUNT(*) FROM dc_session_starts WHERE client_label LIKE 'vspark%';"
+    var count = -1
+    try {
+      val rs = stmt.executeQuery(query)
+      rs.next
+      count = rs.getInt(1)
+    } catch {
+      case err : Exception => fail(err)
+    } finally {
+      stmt.close()
+    }
+
+    try {
+      assert(count > 0)
+    } finally {
+      TestUtils.dropTable(conn, tableName)
+    }
+  }
+
   // Ignore test for now as it sometimes fails on GitHub
   ignore should "close all sessions when the operation completes" in {
     val tableName = "sessionTest"
