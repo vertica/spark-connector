@@ -156,6 +156,8 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val thread = Thread.currentThread().getName + ": "
   private val prop = new util.Properties()
 
+  prop.put("LABEL", this.createClientLabel)
+
   cfg.auth match {
     case BasicJdbcAuth(username, password) =>
       Utils.ignore(prop.put("user", username))
@@ -187,7 +189,6 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
         lazyInitialized = true
         logger.debug(thread + "Connection lazy initialized")
         this.useConnection(conn, c => {
-          c.setClientInfo("APPLICATIONNAME", this.createClientLabel)
           c.setAutoCommit(false)
           logger.info(thread + "Successfully connected to Vertica.")
           c

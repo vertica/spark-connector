@@ -206,7 +206,8 @@ class JDBCTests(val jdbcCfg: JDBCConfig, remote: Boolean) extends AnyFlatSpec wi
       case Right(rs) =>
         assert(rs.next())
         val label = rs.getString(1)
-        assert(label.contains("vspark-vs" + BuildInfo.version + "-p-sp" + SparkSession.active.sparkContext.version))
+        // Ignore the Spark version as it may not be present on remote executors
+        assert(label.startsWith("vspark-vs" + BuildInfo.version + "-p-sp"))
       case Left(err) =>
         fail(err.getFullContext)
     }
