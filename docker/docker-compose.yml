@@ -54,9 +54,15 @@ services:
       - ./../functional-tests/src/main/resources/3.1.1:/partitioned
 
   spark:
-    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    #image: bitnami/spark:${SPARK_INSTALL:-latest}
+    build:
+      context: ./client
+      args:
+        SPARK: ${SPARK_INSTALL:-latest}
+    hostname: spark
     ports:
       - "8080:8080"
+      - "7077:7077"
       - "4040:4040"
     volumes:
       - ./..:/spark-connector
@@ -68,7 +74,11 @@ services:
       - SPARK_SSL_ENABLED=no
 
   spark-worker:
-    image: bitnami/spark:${SPARK_INSTALL:-latest}
+    #image: bitnami/spark:${SPARK_INSTALL:-latest}
+    build:
+      context: ./client
+      args:
+        SPARK: ${SPARK_INSTALL:-latest}
     volumes:
       - ./..:/spark-connector
     environment:
@@ -90,6 +100,16 @@ services:
       - "9001:9001"
     volumes:
       - minio-data:/data
+
+  notebook:
+    image: jupyter/all-spark-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./jupyter-data:/home/jovyan/work
+      - ./..:/spark-connector
+    environment:
+      - JUPYTER_TOKEN=test
 
 volumes:
   minio-data:
