@@ -46,13 +46,13 @@ The example `writeThenReadWithS3` demonstrates how to configure the connector wi
 area. As is, it is configured to run on our Minio containers acting as S3. 
 
 To use your own S3 instance, edit the example's configurations with the appropriate settings. For more details on S3
-configurations, check out our [readme](/README.md) and our [S3 instructions](/S3UserManual.md).
+configurations, check out our [readme](/README.md) and our [S3 instructions](/docs/s3-guide.md).
 
 ### GCS Examples
 
 The example `writeThenReadWithGCS` demonstrates how to configure the connector to use a GCS bucket as the staging area.
 **The example is not configured**, so make sure to edit the code sample with your GCS configurations. For more details on GCS
-configurations, check out our [readme](/README.md) and our [GCS instructions](/GCSUserManual.md).
+configurations, check out our [readme](/README.md) and our [GCS instructions](/docs/gcs-guide.md).
 
 ### Configuring `submit-examples.sh`
 

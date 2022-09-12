@@ -1,8 +1,8 @@
 # Setting up a single-node HDFS and using it with the Vertica Spark Connector
 
-Here, we'll give some instructions for a simple one-node cluster setup on a linux environment.
+Here, we'll give some instructions for a simple one-node cluster setup on a Linux environment.
 
-#### 1. Download Hadoop
+## 1. Download Hadoop
 
 Navigate to the desired install location and download hadoop. You can replace version number with version of your choice:
 
@@ -10,7 +10,7 @@ Navigate to the desired install location and download hadoop. You can replace ve
 wget https://httpd-mirror.sergal.org/apache/hadoop/common/hadoop-2.9.2/hadoop-2.9.2.tar.gz
 ```
 
-#### 2. Unzip and Change Permissions
+## 2. Unzip and Change Permissions
 
 Replace <hadoop_install> with desired hadoop install location.
 
@@ -21,7 +21,7 @@ cd <hadoop_install>/hadoop
 sudo chmod 750 hadoop-2.9.2
 ```
 
-#### 3. Edit Hadoop Configuration
+## 3. Edit Hadoop Configuration
 
 Edit etc/hadoop/hadoop-env.sh with the HADOOP_CONF_DIR variable to your directory. If necessary, you can also set the JAVA_HOME variable here
 
@@ -74,8 +74,7 @@ Finally, set the HADOOP_HOME variable in your .bashrc (of whichever user is runn
 export HADOOP_HOME=<hadoop_install>/hadoop/hadoop-2.9.2
 ```
 
-
-#### 4. Create directories
+## 4. Create directories
 
 Create the directories referenced above:
 
@@ -85,7 +84,7 @@ mkdir hdfs
 mkdir hadooptmpdata
 ```
 
-#### 5. Set up passwordless ssh to localhost:
+## 5. Set up passwordless ssh to localhost:
 
 ```shell
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
@@ -97,20 +96,20 @@ and check that this worked:
 ssh localhost
 ```
 
-#### 6. Format HDFS:
+## 6. Format HDFS:
 
 ```shell
 bin/hdfs namenode -format
 ```
 
-#### 7. Start HDFS
+## 7. Start HDFS
 
 ```shell
 cd /scratch_b/<your username>/hadoop/hadoop-2.9.2
 sbin/start-dfs.sh
 ```
 
-#### 8. Get Vertica to Work with HDFS
+## 8. Get Vertica to Work with HDFS
 
 Each Vertica node needs to have access to a copy of the HDFS configuration. If these are on seperate machines, you can use a command such as rsync to copy the configuration over. This must be done for each Vertica node.
 
@@ -118,5 +117,3 @@ Each Vertica node needs to have access to a copy of the HDFS configuration. If t
 rsync -R --progress <hadoop_install>/hadoop/hadoop-2.9.2/etc/hadoop/hdfs-site.xml arehnby@eng-g9-158:/etc/hadoop/conf/
 rsync -R --progress <hadoop_install>/hadoop/hadoop-2.9.2/etc/hadoop/core-site.xml arehnby@eng-g9-158:/etc/hadoop/conf/
 ```
-
-
