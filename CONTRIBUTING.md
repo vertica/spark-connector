@@ -78,7 +78,7 @@ Running this will run all unit tests and build the jar to target/scala-2.12/spar
 will be extremely slow.
 
 ## Step 4: Set up an environment
-The easiest way to set up an environment is to spin up the docker containers that includes single-node clusters of both Vertica and HDFS following [this guide](/examples/README.md).
+The easiest way to set up an environment is to spin up the docker containers that includes single-node clusters of both Vertica and HDFS following [this guide](examples/README.md).
 
 Alternatively, you may download the requirements below:
 
@@ -130,7 +130,7 @@ Spark Connector requires Java 8 (8u92 or later) or Java 11.
 
 ### AWS S3
 
-Follow our [S3 User Guide](/docs/s3-guide.md) to learn how to use the connector with S3.
+Follow our [S3 user guide](docs/s3-guide.md) to learn how to use the connector with S3.
 
 ## Step 5: Implement your fix or feature
 
