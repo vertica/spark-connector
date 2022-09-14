@@ -56,7 +56,7 @@ Alternatively, you can use the configuration used in our S3 example if you want 
 If a different version of Spark is used, make sure to also update `hadoop-aws` to the appropriate version for the hadoop install used.
 
 ### Using GCS:
-Follow the [GCS manual](../GCSUserManual.md) to obtain the needed credentials. Then, add the following connector options to `application.conf`:
+Follow the [GCS guide](/docs/gcs-guide.md) to obtain the needed credentials. Then, add the following connector options to `application.conf`:
 ```
 gcs_hmac_key_id
 gcs_hmac_key_secret
@@ -96,7 +96,7 @@ Note: `submit-functional-test.sh` will always prepend the functional test option
 So `./submit-functional-test.sh -s EndToEndTests` is equivalent to `sbt "run -r -s EndToEndTests"`
 Option `-r` tells our functional test application to configure itself for submitting to a cluster (by omitting the `master` option).
 
-To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/../docker/README.md).
+To increase the worker count, change spark version, or any other Spark environment settings, refer to our [docker environment instructions](/docker/README.md).
 
 ### Debugging
 Some tips for debugging
