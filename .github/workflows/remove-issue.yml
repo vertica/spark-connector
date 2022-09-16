@@ -4,9 +4,6 @@ on:
     types:
       - closed
   workflow_dispatch:
-permissions:
-  issues: write
-  repository-projects: write
 jobs:
   remove-low-priority:
     if: contains(github.event.issue.labels.*.name, 'Low Priority')
@@ -16,7 +13,7 @@ jobs:
         with:
           project: Backlog
           column: Low Priority
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           action: delete
 
   remove-normal-priority:
@@ -27,7 +24,7 @@ jobs:
         with:
           project: Backlog
           column: Normal Priority
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           action: delete
 
   remove-high-priority:
@@ -38,5 +35,5 @@ jobs:
         with:
           project: Backlog
           column: High Priority
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           action: delete
