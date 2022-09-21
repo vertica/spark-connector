@@ -265,8 +265,13 @@ This is simply an issue with hadoop closing file handles on files that have been
 
 ## Videos
 
-[![Overview of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/MSScaz3Q2Pg/0.jpg)](https://www.youtube.com/watch?v=MSScaz3Q2Pg "Overview of the new Vertica Spark open source connector (v2)")
+[![Overview of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/MSScaz3Q2Pg/0.jpg)](https://www.youtube.com/watch?v=MSScaz3Q2Pg "Overview of the new Vertica Spark open source connector (v2)") \
+_Vertica Spark Connector Overview_
 
-[![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)")
+
+[![Examples and Demo of the new Vertica Spark open source connector (v2)](https://img.youtube.com/vi/lvOk9vOaEcc/0.jpg)](https://www.youtube.com/watch?v=lvOk9vOaEcc "Examples and Demo of the new Vertica Spark open source connector (v2)") \
+_Vertica Spark Connector New Features (August 2021)_
 
 
+[![Vertica Spark Demo 2022](https://img.youtube.com/vi/iATi89Ya-sk/0.jpg)](https://www.youtube.com/watch?v=iATi89Ya-sk "Vertica Spark Demo 2022") \
+_Vertica Spark Connector Demo (September 2022)_
