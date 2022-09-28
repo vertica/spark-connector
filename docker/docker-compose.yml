@@ -22,9 +22,8 @@ services:
       - GCS_SERVICE_KEY_ID
       - GCS_SERVICE_KEY
       - GCS_SERVICE_EMAIL
-
   vertica:
-    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}	
     # See original entrypoint under https://github.com/vertica/vertica-kubernetes/blob/main/docker-vertica/Dockerfile
     entrypoint: bash -c "if [[ "$${VERTICA_VERSION:0:2}" == "10" ]]; then /opt/vertica/bin/docker-entrypoint-legacy.sh; else /opt/vertica/bin/docker-entrypoint.sh; fi"
     ports:
@@ -36,7 +35,7 @@ services:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     environment:
       - VERTICA_VERSION
-
+      - VERTICA_MEMDEBUG=2
   hdfs:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
@@ -58,6 +57,8 @@ services:
     ports:
       - "8080:8080"
       - "4040:4040"
+      - "7070:7070"
+      - "7077:7077"
     volumes:
       - ./..:/spark-connector
     environment:

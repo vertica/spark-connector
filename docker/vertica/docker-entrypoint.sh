@@ -38,11 +38,11 @@ copy_config_files
 
 # Create database
 /opt/vertica/bin/admintools -t list_db --database=docker || \
-    /opt/vertica/bin/admintools -t create_db --database="${VERTICA_DATABASE:-docker}" --password="${VERTICA_PASSWORD}" --hosts=localhost
+    /opt/vertica/bin/admintools -t create_db --database="${VERTICA_DATABASE:-docker}" --password="" --hosts=localhost
 
 # Start database
 if [ "$(/opt/vertica/bin/admintools -t db_status --status=DOWN)" == "${VERTICA_DATABASE:-docker}" ]; then
-    /opt/vertica/bin/admintools -t start_db --database="${VERTICA_DATABASE:-docker}" --password="${VERTICA_PASSWORD}" --hosts=localhost
+    /opt/vertica/bin/admintools -t start_db --database="${VERTICA_DATABASE:-docker}" --password="" --hosts=localhost
 fi
 
 # Configure database
