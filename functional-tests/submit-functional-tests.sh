@@ -4,4 +4,4 @@ CONNECTOR_VERSION=$(cat ../version.properties | grep ${connector-version} | cut 
 args=("-r")
 args+=("$@")
 
-spark-submit --master spark://spark:7077 --driver-memory 2g target/scala-2.12/spark-vertica-connector-functional-tests-assembly-$CONNECTOR_VERSION.jar "${args[@]}"
+spark-submit --master spark://spark:7077 target/scala-2.12/spark-vertica-connector-functional-tests-assembly-$CONNECTOR_VERSION.jar "${args[@]}"

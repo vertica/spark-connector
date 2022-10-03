@@ -1,8 +1,9 @@
 version: "3.9"
 services:
-  client:
+  client-arm:
+    command: sleep infinity
     build:
-      context: ./client
+      context: ./client-arm
       args:
         SPARK: ${SPARK_INSTALL:-latest}
     ports:
@@ -36,7 +37,7 @@ services:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     environment:
       - VERTICA_VERSION
-
+      - VERTICA_MEMDEBUG=2
   hdfs:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile
