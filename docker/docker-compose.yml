@@ -5,7 +5,7 @@ services:
     build:
       context: ./client-arm
       args:
-        SPARK: ${SPARK_INSTALL:-latest}
+        SPARK: ${SPARK_INSTALL:-3.3.0}
     ports:
       # JVM Remote debug port
       - "5005:5005"
@@ -38,6 +38,7 @@ services:
     environment:
       - VERTICA_VERSION
       - VERTICA_MEMDEBUG=2
+
   hdfs:
     image: mdouchement/hdfs
     # See original command under https://github.com/mdouchement/docker-hdfs/blob/master/Dockerfile

@@ -1,6 +1,6 @@
 FROM eclipse-temurin:11.0.16.1_1-jdk-jammy
 
-ARG SPARK=latest
+ARG SPARK=3.3.0
 
 # Install SBT
 RUN apt-get update && \
@@ -13,14 +13,14 @@ RUN apt-get update && \
     apt-get -y install sbt
 
 # Install Spark
-RUN wget https://dlcdn.apache.org/spark/spark-3.3.0/spark-3.3.0-bin-without-hadoop.tgz && \
-    wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.0/hadoop-3.3.0.tar.gz && \
-    tar xvf spark-3.3.0-bin-without-hadoop.tgz && \
-    tar xvf hadoop-3.3.0.tar.gz && \
-    mv spark-3.3.0-bin-without-hadoop/ /opt/spark && \
+RUN wget https://dlcdn.apache.org/spark/spark-${SPARK}/spark-${SPARK}-bin-without-hadoop.tgz && \
+    wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.2/hadoop-3.3.2.tar.gz && \
+    tar xvf spark-${SPARK}-bin-without-hadoop.tgz && \
+    tar xvf hadoop-3.3.2.tar.gz && \
+    mv spark-${SPARK}-bin-without-hadoop/ /opt/spark && \
     cd /opt/spark/conf && \
     mv spark-env.sh.template spark-env.sh
 
 ENV SPARK_HOME="/opt/spark"   
 ENV PATH="$SPARK_HOME/bin:$SPARK_HOME/sbin:$HADOOP_HOME/bin:$PATH"
-RUN echo "export SPARK_DIST_CLASSPATH=$(/hadoop-3.3.0/bin/hadoop classpath)" >> /opt/spark/conf/spark-env.sh
+RUN echo "export SPARK_DIST_CLASSPATH=$(/hadoop-3.3.2/bin/hadoop classpath)" >> /opt/spark/conf/spark-env.sh
