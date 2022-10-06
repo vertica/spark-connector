@@ -51,7 +51,7 @@ docker logs docker-vertica-1
 docker logs docker-hdfs-1
 ```
 
-### Configurations
+### Build Configurations
 
 The following env vars can be exported or specified in your `.env` file:
 - `VERTICA_VERSION`: Setting the version of our Vertica database. By default, we use the [latest](https://hub.docker.com/r/vertica/vertica-k8s) Vertica docker image. For example, to use Vertica 10.1.1-0 use `export VERTICA_VERSION=10.1.1-0`.
@@ -64,6 +64,17 @@ docker-compose up -d --scale spark-worker=3
 
 For other configurations parameters, since we are using bitnami as the base image of our cluster and client, 
 refer to their [available options](https://hub.docker.com/r/bitnami/spark) and set the appropriate environment variables in `docker-compose.yml` or your `.env` file.
+
+### Profiles
+
+By default the Jupyter Notebook container is not started as the image is quite large and it is only needed when testing the Spark Connector in Jupyter Notebook.
+
+To start (or stop) the Jupyter Notebook, specify the "jupyter" profile when managing the containers:
+```
+docker-compose --profile jupyter up -d
+
+docker-compose --profile jupyter down
+```
 
 ### Tear Down the Environment
 

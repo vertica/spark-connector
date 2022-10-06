@@ -101,10 +101,11 @@ services:
 
   jupyter:
     image: jupyter/all-spark-notebook
+    profiles: ["jupyter"]
     ports:
       - "8888:8888"
     volumes:
-      - ./jupyter-data:/home/jovyan/work
+      - ./../examples/jupyter:/home/jovyan/work
       - ./..:/spark-connector
     environment:
       - JUPYTER_TOKEN=test
