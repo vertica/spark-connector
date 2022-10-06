@@ -1,4 +1,4 @@
-# Configuring TLS with the connector
+# Configuring TLS with the Connector
 
 In order to use TLS with the connector, you will need to setup Vertica as a TLS server, and the host containing the application that uses the connector as a TLS client.
 

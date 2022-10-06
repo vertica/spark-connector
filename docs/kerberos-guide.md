@@ -16,17 +16,17 @@ On the client side:
 
 We will start with the service configuration. Click [here](#configuring-the-client) to go to the Client configuration guide. Note that the steps are meant to be followed in order.
 
-# Configuring the KDC
+## Configuring the KDC
 
 Depending on whether you use Linux KDC or Active Directory as your KDC, you should follow one of the two following guides. In both guides, we assume that the Kerberos realm is example.com.
 
-## Using Linux KDC
+### Using Linux KDC
 
-### Install Kerberos packages
+#### Install Kerberos packages
 
 On CentOS, yum install krb5-server krb5-libs krb5-workstation (These packages will be different depending on which Linux distro you use)
 
-### Create the Kerberos configuration file
+#### Create the Kerberos configuration file
 
 In the /etc folder, create a file named krb5.conf with the following contents:
 ```
@@ -51,11 +51,11 @@ In the /etc folder, create a file named krb5.conf with the following contents:
   example.com = EXAMPLE.COM
 ```
 
-#### Note on ticket lifetimes and expiration
+##### Note on ticket lifetimes and expiration
 
 Neither Vertica or the connector will automatically renew Kerberos tickets. You should make sure the ticket lifetime is greater than a given Spark operation will take to complete, or have your own mechanism for renewing such tickets.
 
-### Create principals and keytabs
+#### Create principals and keytabs
 
 Run the following commands:
 ```
@@ -80,9 +80,9 @@ kadmin.local -q "ktadd -norandkey -k hdfs.keytab hdfs/hdfs.example.com@EXAMPLE.C
 ```
 Before moving on to the next step, copy the newly created vertica.keytab file to the / directory on the Vertica host. Copy the hdfs.keytab file to the /root directory on the HDFS host.
 
-## Using Active Directory as KDC
+### Using Active Directory as KDC
 
-### Create principals and keytabs
+#### Create principals and keytabs
 
 Run the following powershell script to create the Vertica and HDFS service users and keytab files:
 ```
@@ -114,7 +114,7 @@ Before moving on to the next step, copy the newly created vertica.keytab file to
 
 `dsadd user "CN=user1,CN=Users,DC=example,DC=com" -pwd $$V3rtic4$$`
 
-# Kerberizing Vertica
+## Kerberizing Vertica
 
 ### Create the Kerberos configuration file
 
@@ -166,7 +166,7 @@ Restart the Vertica database:
 ```
 Make sure that the dbadmin user owns the keytab file: `chown dbadmin /vertica.keytab`
 
-# Kerberizing HDFS
+## Kerberizing HDFS
 
 ### Create the Kerberos configuration file
 
@@ -192,13 +192,14 @@ In the /etc folder, create a file named krb5.conf with the following contents:
   .example.com = EXAMPLE.COM
   example.com = EXAMPLE.COM
 ```
+
 ### Update HDFS configuration files
 
 Update core-site.xml to set the following properties:
 ```
 hadoop.security.authentication = kerberos
 
-hadoop.security.authorization = truehadoop.security.auth_to_local = 
+hadoop.security.authorization = truehadoop.security.auth_to_local =
 
 RULE:[2:$1/$2@$0](.*/.*@EXAMPLE.COM)s/.*/root/
 
@@ -214,6 +215,7 @@ hadoop.proxyuser.superuser.hosts = *
 
 hadoop.proxyuser.superuser.groups = *
 ```
+
 Below is an example core-site.xml file that we have successfully tested Kerberos with:
 ```
 <configuration>
@@ -266,6 +268,7 @@ Below is an example core-site.xml file that we have successfully tested Kerberos
   </property>
 </configuration>
 ```
+
 Update hdfs-site.xml to set the following properties:
 ```
 <configuration>
@@ -460,7 +463,8 @@ Update hdfs-site.xml to set the following properties:
     </property>
 </configuration>
 ```
-# Configuring HDFS as SSL server and Vertica as SSL client
+
+## Configuring HDFS as SSL server and Vertica as SSL client
 
 In order for Vertica to communicate with HDFS, you will need to make HDFS an SSL server and Vertica an SSL client.
 
@@ -483,11 +487,13 @@ On the HDFS host, in the same directory as the other HDFS configuration files, c
     </property>
 </configuration>
 ```
+
 Still on the HDFS host, run the following commands:
 ```
 keytool -genkey -keyalg RSA -alias hdfs -keystore /root/.keystore -validity 500 -keysize 2048
 keytool -export -alias hdfs -keystore /root/.keystore -rfc -file hdfs.cert
 ```
+
 Copy hdfs.cert to the / directory on the Vertica host.
 
 On the Vertica host, run the following commands:
@@ -496,7 +502,8 @@ mkdir -p /etc/pki/tls/certs/
 cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt
 cat /hdfs.cert >> /etc/pki/tls/certs/ca-bundle.crt
 ```
-# Configuring the client
+
+## Configuring the client
 
 ### Create the Kerberos configuration file
 
@@ -522,6 +529,7 @@ In the /etc folder, create a file named krb5.conf with the following contents:
   .example.com = EXAMPLE.COM
   example.com = EXAMPLE.COM
 ```
+
 ### Set path to JAAS configuration file
 
 Add `-Djava.security.auth.login.config=/jaas.config` to your JAVA_OPTS environment variable.
@@ -537,7 +545,8 @@ Client {
   doNotPrompt=true;
 };
 ```
-# Testing the Kerberos configuration
+
+## Testing the Kerberos configuration
 
 ### Getting the TGT
 

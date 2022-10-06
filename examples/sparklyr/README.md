@@ -19,5 +19,5 @@ First, set up the docker environment as mentioned in [examples](/examples/README
    and tear down containers by running `docker-compose down`.
 
 # Other Connector Options
-For examples of other options, refer to our [scala example](/examples/scala) which demonstrate how to configure the different
+For examples of other options, refer to our [Scala example](/examples/scala) which demonstrate how to configure the different
 connector options. While it is in a different language, the ideas are transferable; set the correct options, include our connector jar, then spark-submit.

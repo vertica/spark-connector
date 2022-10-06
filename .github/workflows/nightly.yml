@@ -34,7 +34,7 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
-      - name: Shutdown container first
+      - name: Remove existing docker containers
         run: cd docker && docker-compose down
       - name: Run docker compose
         run: cd docker && docker-compose up -d

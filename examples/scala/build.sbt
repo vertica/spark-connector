@@ -39,7 +39,7 @@ libraryDependencies ++= Seq(
 )
 
 //Assembly jar name
-assembly / assemblyJarName := s"vertica-spark-scala-examples"
+assembly / assemblyJarName := s"vertica-spark-scala-examples.jar"
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
