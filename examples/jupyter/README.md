@@ -2,15 +2,20 @@
 
 ## Creating the Jupyter Notebook Docker Container
 
-In order to run these examples the Jupyter container must be created and started.  See the [Docker README](/docker/README.md) on how to do this by using the correct Docker profile.
+In order to run these examples the Jupyter container must be created and started.  To do that start the Docker containers with the "jupyter" profile:
+```sh
+docker-compose --profile jupyter up -d
+```
+
+For more information see the [Docker README](/docker/README.md).
 
 ## General Notebook Configuration
 
-In order for Jupyter to communicate with Spark, Hadoop, Vertica, etc it must be on the same network.  Our Docker environment does this for you. 
+Jupyter must be able to communicate with Spark, Hadoop, Vertica, etc, so it must be on the same Docker network.  Our Docker environment configures this for you. 
 
-The Spark Connector JAR must also be available in order to load the JAR and send it to Spark.  The entire Spark Connector repo is mounted in the Docker container, including the directory containing the Spark Connector JAR (if you build it yourself).  Otherwise you must download the JAR from [Maven](https://mvnrepository.com/artifact/com.vertica.spark/vertica-spark).
+The Spark Connector JAR must also be available in order to load the JAR and send it to Spark.  The entire Spark Connector repo is mounted in the Docker container, including the directory containing the Spark Connector JAR (if you build it yourself).  Otherwise you must download the JAR from [Maven](https://mvnrepository.com/artifact/com.vertica.spark/vertica-spark) and reference the location in your environment.
 
-To start a new Spark session must be created, pointing to the Spark master as well as loading the Spark Connector JAR.  For example:
+A new Spark session must be created, pointing to the Spark master as well as loading the Spark Connector JAR.  For example:
 ```py
 from pyspark.sql import SparkSession
 
@@ -23,9 +28,9 @@ spark = (SparkSession.builder
 sc = spark.sparkContext
 ```
 
-Once that is complete the Spark context may be used to read and write data using the Vertica Spark Connector data source ("com.vertica.spark.datasource.VerticaSource").
+Once that is complete the Spark context may be used to read and write data using the Vertica Spark Connector data source ("com.vertica.spark.datasource.VerticaSource").  See the example Jupyter Notebooks in this folder.
 
-Note that Jupyter Notebook previously bundled the Spylon kernel so that Scala could be used, but that kernel has not been maintained and is no longer included in Jupyter Notebook by default.
+Note that Jupyter Notebook previously bundled the Spylon kernel so that Scala could be used, but that kernel has not been maintained and is no longer included in Jupyter Notebook by default.  As a result it is recommended to use the Python kernel in Jupyter Notebook.
 
 ## Running a Notebook
 
