@@ -3,10 +3,11 @@
 We provide a docker environment for testing and developing that contains the following containers:
 - `docker-client-1`: The client environment. This is where spark application are submitted/executed from
 - `docker-hdfs-1`: The HDFS node acting as the staging file-store
-- `docker-vertica-1`: Our Vertica database
-- `docker-minio-1`: A minio file-store container acting as an S3 file-store 
+- `docker-jupyter-1`: A Jupyter Notebook that can be used to test the Spark Connector
+- `docker-minio-1`: A minio file-store container acting as an S3 file-store
 - `docker-spark-1`: A Spark driver for our standalone cluster
 - `docker-spark-worker-*`: Spark workers for our standalone cluster, created in swarm mode
+- `docker-vertica-1`: Our Vertica database
 
 When using the Kerberos configuration the container names are simplified (`client`, `hdfs`, and `vertica`, plus one for the Kerberos key server, `kdc`).  The Spark and MinIO containers are not currently deployed for Kerberos.
 
