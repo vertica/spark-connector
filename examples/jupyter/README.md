@@ -7,6 +7,8 @@ In order to run these examples the Jupyter container must be created and started
 docker-compose --profile jupyter up -d
 ```
 
+An important thing to note is that the Spark and Python versions for Spark (master and worker nodes) and Jupyter Notebook must match, otherwise it will not work.  Our Docker environment ensures the Python and Spark versions between these images are in-sync.
+
 For more information see the [Docker README](/docker/README.md).
 
 ## General Notebook Configuration
