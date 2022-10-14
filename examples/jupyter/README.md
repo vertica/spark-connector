@@ -25,7 +25,7 @@ spark = (SparkSession.builder
     .config("spark.master", "spark://spark:7077")
     .config("spark.driver.memory", "2G")
     .config("spark.executor.memory", "1G")
-    .config("spark.jars", "/spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-3.3.3.jar")
+    .config("spark.jars", "/spark-connector/connector/target/scala-2.12/spark-vertica-connector-assembly-<VERSION>.jar")
     .getOrCreate())
 sc = spark.sparkContext
 ```
