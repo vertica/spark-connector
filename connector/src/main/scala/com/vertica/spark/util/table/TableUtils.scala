@@ -77,6 +77,11 @@ trait TableUtilsInterface {
   def dropTable(tablename: TableName): ConnectorResult[Unit]
 
   /**
+   * Truncates a given table if it exists.
+   */
+  def truncateTable(tablename: TableName): ConnectorResult[Unit]
+
+  /**
    * Creates a temporary table.
    *
    * @param tablename Name of table
@@ -258,6 +263,11 @@ class TableUtils(schemaTools: SchemaToolsInterface, jdbcLayer: JdbcLayerInterfac
   def dropTable(tablename: TableName): ConnectorResult[Unit] = {
     jdbcLayer.execute("DROP TABLE IF EXISTS " + tablename.getFullTableName)
       .left.map(err => err.context("JDBC Error dropping table"))
+  }
+
+  def truncateTable(tablename: TableName): ConnectorResult[Unit] = {
+    jdbcLayer.execute("TRUNCATE TABLE " + tablename.getFullTableName)
+      .left.map(err => err.context("JDBC Error truncating table"))
   }
 
   override def createTempTable(tablename: TableName, schema: StructType, strlen: Long, arrayLength: Long): ConnectorResult[Unit] = {
