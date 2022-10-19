@@ -100,7 +100,9 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   def doPreWriteSteps(): ConnectorResult[Unit] = {
     // Log a warning if the user wants to perform a merge, but also wants to overwrite data
     if(config.mergeKey.isDefined && config.isOverwrite) logger.warn("Save mode is specified as Overwrite during a merge.")
+
     logger.info("Writing data to Parquet file.")
+
     for {
       // Check if schema is valid
       _ <- checkSchemaForDuplicates(config.schema)
@@ -112,16 +114,19 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
       _ = setSparkCalendarConf()
 
       // If overwrite mode, remove table and force creation of new one before writing
-      _ <- if (config.isOverwrite && config.mergeKey.isEmpty) tableUtils.dropTable(config.tablename) else Right(())
+      _ <- if (config.isOverwrite && config.mergeKey.isEmpty && !config.truncate) tableUtils.dropTable(config.tablename) else Right(())
+
+      // Option for truncation over simple drop
+      _ <- if (config.isOverwrite && config.mergeKey.isEmpty && config.truncate) tableUtils.truncateTable(config.tablename) else Right(())
 
       // Creating external table and merging at the same time not supported
       _ <- if (config.createExternalTable.isDefined && config.mergeKey.isDefined) Left(CreateExternalTableMergeKey()) else Right(())
 
-      // Create the table if it doesn't exist
+      // Check if the table exists
       tableExistsPre <- tableUtils.tableExists(config.tablename)
 
       // Overwrite safety check
-      _ <- if (config.isOverwrite && config.mergeKey.isEmpty && tableExistsPre) Left(DropTableError()) else Right(())
+      _ <- if (config.isOverwrite && config.mergeKey.isEmpty && tableExistsPre && !config.truncate) Left(DropTableError()) else Right(())
 
       // External table mode doesn't work if table exists
       _ <- if (config.createExternalTable.isDefined && tableExistsPre) Left(CreateExternalTableAlreadyExistsError()) else Right()

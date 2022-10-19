@@ -169,4 +169,5 @@ class ConnectorOptionsExamples(spark: SparkSession) {
       spark.close()
     }
   }
+
 }

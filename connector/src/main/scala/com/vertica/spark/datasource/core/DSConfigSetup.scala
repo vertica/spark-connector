@@ -462,6 +462,17 @@ object DSConfigSetupUtils {
     config.get("target_table_sql").validNec
   }
 
+  def getTruncate(config: Map[String, String]): ValidationResult[Boolean] = {
+    config.get("truncate") match {
+      case Some(str) =>
+        str match {
+          case "true" => true.validNec
+          case "false" => false.validNec
+        }
+      case None => false.validNec
+    }
+  }
+
   def getCopyColumnList(config: Map[String, String]): ValidationResult[Option[ValidColumnList]] = {
     config.get("copy_column_list") match {
       case None => None.validNec
@@ -728,7 +739,8 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
           DSConfigSetupUtils.getSaveJobStatusTable(config),
           DSConfigSetupUtils.getMergeKey(config),
           DSConfigSetupUtils.getTimeOperations(config),
-          DSConfigSetupUtils.getArrayLength(config)
+          DSConfigSetupUtils.getArrayLength(config),
+          DSConfigSetupUtils.getTruncate(config)
           ).mapN(DistributedFilesystemWriteConfig)
       case None =>
         MissingSchemaError().invalidNec
