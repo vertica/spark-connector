@@ -18,3 +18,7 @@ RUN apt-get update && \
     chmod 644 /etc/apt/trusted.gpg.d/scalasbt-release.gpg && \
     apt-get update && \
     apt-get -y install sbt
+
+# Sync Python version
+RUN curl https://raw.githubusercontent.com/bitnami/bitnami-docker-spark/master/3.3/debian-11/prebuildfs/opt/bitnami/scripts/libcomponent.sh -o /opt/bitnami/scripts/libcomponent.sh && \
+    . /opt/bitnami/scripts/libcomponent.sh && component_unpack "python" "3.10.6-8" --checksum 84801ae4aee44f17012410d30a7d45e7e30ff842469fea2e5196050142713efc
