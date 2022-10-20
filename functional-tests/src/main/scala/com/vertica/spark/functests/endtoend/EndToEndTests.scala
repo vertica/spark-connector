@@ -1123,12 +1123,14 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
 
     val query = "SELECT grantee, privileges_description FROM grants WHERE object_name='"+ tableName + "'"
+    val rs = stmt.executeQuery(query)
+    rs.next()
+    rs.next()
+    val res = rs.getString(1)
     stmt.execute("DROP USER ALEX")
 
     try {
-      val rs = stmt.executeQuery(query)
-
-      assert (rs.getString(1) ==  "ALEX")
+      assert (res ==  "ALEX")
     }
     catch{
       case err : Exception => fail(err)
