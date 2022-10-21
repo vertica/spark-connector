@@ -1109,6 +1109,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (col1 INTEGER)")
     stmt.execute("INSERT INTO \"" + tableName + "\" VALUES(1)")
+    // Create a user and assign it full privileges to our table
     stmt.execute("CREATE USER ALEX")
     stmt.execute("GRANT ALL PRIVILEGES ON TABLE " + tableName + " TO ALEX")
 
@@ -1121,21 +1122,22 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "truncate" -> "true")).mode(mode).save()
 
-
+    // Our query should have ALEX listed as we truncated our table rather than dropping it
     val query = "SELECT grantee, privileges_description FROM grants WHERE object_name='"+ tableName + "'"
-    val rs = stmt.executeQuery(query)
-    rs.next()
-    rs.next()
-    val res = rs.getString(1)
-    stmt.execute("DROP USER ALEX")
+    
+
 
     try {
-      assert (res ==  "ALEX")
+      val rs = stmt.executeQuery(query)
+      assert(rs.next())
+      assert(rs.next())
+      assert (rs.getString(1) ==  "ALEX")
     }
     catch{
       case err : Exception => fail(err)
     }
     finally {
+      stmt.execute("DROP USER ALEX")
       stmt.close()
     }
 
