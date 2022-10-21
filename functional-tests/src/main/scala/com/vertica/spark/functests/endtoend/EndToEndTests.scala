@@ -1124,9 +1124,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
     // Our query should have ALEX listed as we truncated our table rather than dropping it
     val query = "SELECT grantee, privileges_description FROM grants WHERE object_name='"+ tableName + "'"
-    
-
-
     try {
       val rs = stmt.executeQuery(query)
       assert(rs.next())
@@ -1142,7 +1139,6 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     }
 
     TestUtils.dropTable(conn, tableName)
-    
   }
 
   it should "write data to Vertica and record job to status table" in {

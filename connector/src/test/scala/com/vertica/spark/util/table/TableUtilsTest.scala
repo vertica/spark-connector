@@ -383,7 +383,7 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     checkResult(utils.dropTable(TableName(tablename, None)))
   }
 
-    it should "Truncate a table" in {
+  it should "Truncate a table" in {
     val tablename = "dummy"
 
     val jdbcLayerInterface = mock[JdbcLayerInterface]
