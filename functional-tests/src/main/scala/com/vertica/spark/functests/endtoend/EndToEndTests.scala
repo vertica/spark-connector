@@ -1103,6 +1103,44 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     TestUtils.dropTable(conn, tableName)
   }
 
+  it should "truncate table in overwrite mode" in {
+    val tableName = "truncTable"
+    val stmt = conn.createStatement()
+
+    TestUtils.createTableBySQL(conn, tableName, "create table " + tableName + " (col1 INTEGER)")
+    stmt.execute("INSERT INTO \"" + tableName + "\" VALUES(1)")
+    // Create a user and assign it full privileges to our table
+    stmt.execute("CREATE USER ALEX")
+    stmt.execute("GRANT ALL PRIVILEGES ON TABLE " + tableName + " TO ALEX")
+
+    val schema = new StructType(Array(StructField("col1", IntegerType)))
+
+    val data = Seq(Row(77))
+    val df = spark.createDataFrame(spark.sparkContext.parallelize(data), schema)
+    println(df.toString())
+    val mode = SaveMode.Overwrite
+
+    df.write.format("com.vertica.spark.datasource.VerticaSource").options(writeOpts + ("table" -> tableName, "truncate" -> "true")).mode(mode).save()
+
+    // Our query should have ALEX listed as we truncated our table rather than dropping it
+    val query = "SELECT grantee, privileges_description FROM grants WHERE object_name='"+ tableName + "'"
+    try {
+      val rs = stmt.executeQuery(query)
+      assert(rs.next())
+      assert(rs.next())
+      assert (rs.getString(1) ==  "ALEX")
+    }
+    catch{
+      case err : Exception => fail(err)
+    }
+    finally {
+      stmt.execute("DROP USER ALEX")
+      stmt.close()
+    }
+
+    TestUtils.dropTable(conn, tableName)
+  }
+
   it should "write data to Vertica and record job to status table" in {
     TestUtils.dropTable(conn, "S2V_JOB_STATUS_USER_" + readOpts.get("user").getOrElse("").toUpperCase())
 

@@ -74,6 +74,7 @@ object ValidColumnList {
  * @param sessionId Unqiue identifier for this write operation.
  * @param failedRowPercentTolerance Value between 0 and 1, percent of rows that are allowed to fail before the operation fails.
  * @param mergeKey Attributes that two data sets are joined on in order to execute a merge statement
+ * @param truncate When set to true truncates table rather than dropping it
  */
 final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   fileStoreConfig: FileStoreConfig,
@@ -89,7 +90,8 @@ final case class DistributedFilesystemWriteConfig(jdbcConfig: JDBCConfig,
                                                   saveJobStatusTable: Boolean,
                                                   mergeKey: Option[ValidColumnList] = None,
                                                   timeOperations : Boolean = true,
-                                                  arrayLength: Long = 0
+                                                  arrayLength: Long = 0,
+                                                  truncate: Boolean
                                                  ) extends WriteConfig {
   private var overwrite: Boolean = false
 

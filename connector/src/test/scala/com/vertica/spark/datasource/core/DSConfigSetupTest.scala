@@ -200,7 +200,8 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         "user" -> "user",
         "password" -> "password",
         "table" -> "tbl",
-        "staging_fs_url" -> "hdfs://test:8020/tmp/test"
+        "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+        "truncate" -> "true"
       )
 
       // Set mock pipe
@@ -214,6 +215,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
           assert(config.jdbcConfig.port == 1234)
           assert(config.jdbcConfig.db == "testdb")
           assert(config.tablename.getFullTableName == "\"tbl\"")
+          assert(config.truncate == true)
       }
     } finally {
       spark.close()

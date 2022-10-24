@@ -52,7 +52,8 @@ class VerticaDistributedFilesystemWritePipeTest extends AnyFlatSpec with BeforeA
       0.0f,
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       None,
-      saveJobStatusTable = false
+      saveJobStatusTable = false,
+      truncate = false
     )
   }
 

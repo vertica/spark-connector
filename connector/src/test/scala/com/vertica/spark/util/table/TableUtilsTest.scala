@@ -383,6 +383,19 @@ class TableUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory
     checkResult(utils.dropTable(TableName(tablename, None)))
   }
 
+  it should "Truncate a table" in {
+    val tablename = "dummy"
+
+    val jdbcLayerInterface = mock[JdbcLayerInterface]
+    (jdbcLayerInterface.execute _).expects("TRUNCATE TABLE \"dummy\"", *).returning(Right())
+
+    val schemaToolsInterface = mock[SchemaToolsInterface]
+
+    val utils = new TableUtils(schemaToolsInterface, jdbcLayerInterface)
+
+    checkResult(utils.truncateTable(TableName(tablename, None)))
+  }
+
   it should "validate external table with a single Map column" in {
     val tableName = TableName("dftest", None)
     val schema = StructType(Array(
