@@ -28,6 +28,7 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.{ApplicationParquetCleaner, SparkContextWrapper}
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.version.VerticaVersionUtils
+import com.vertica.spark.util.version.Version
 import org.apache.spark.sql.connector.read.InputPartition
 import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, StructType}
 
@@ -61,7 +62,7 @@ class VerticaDistributedFilesystemReadPipe(
 
   private def retrieveMetadata(): ConnectorResult[VerticaMetadata] = {
     schemaTools.readSchema(this.jdbcLayer, this.config.tableSource) match {
-      case Right(schema) => Right(VerticaReadMetadata(schema))
+      case Right(schema) => Right(VerticaReadMetadata(schema, VerticaVersionUtils.getVersionOrDefault(this.jdbcLayer)))
       case Left(err) => Left(err)
     }
   }

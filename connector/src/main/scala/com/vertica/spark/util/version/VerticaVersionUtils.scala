@@ -25,8 +25,10 @@ import scala.util.{Failure, Success, Try}
 object VerticaVersionUtils {
   val VERTICA_11: Version = Version(11)
   val VERTICA_11_1: Version = Version(11,1)
-  //  Json export added in Vertica 11.1.1
+  // Json export added in Vertica 11.1.1
   val VERTICA_11_1_1: Version = Version(11,1,1)
+  // Export of complex types to Parquet added in 12.0.2
+  val VERTICA_12_0_2: Version = Version(12,0,2)
   // Should always be the latest major release.
   val VERTICA_DEFAULT: Version = Version(12)
   val complexTypeUtils = new ComplexTypesSchemaTools()
@@ -95,7 +97,7 @@ object VerticaVersionUtils {
       } else {
         Right()
       }
-    } else if (version.lesserOrEqual(VERTICA_11_1)) {
+    } else if (version.lessThan(VERTICA_12_0_2)) {
       if (complexTypeCols.nonEmpty) {
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       } else {

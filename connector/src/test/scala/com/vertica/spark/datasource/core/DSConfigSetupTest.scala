@@ -25,6 +25,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.datasource.v2.DummyReadPipe
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import com.vertica.spark.util.version.VerticaVersionUtils
 
 class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
   override def beforeAll(): Unit = {
@@ -103,7 +104,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       // Set mock pipe
       val mockPipe = mock[DummyReadPipe]
-      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
+      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType, VerticaVersionUtils.VERTICA_DEFAULT))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
       (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
@@ -338,7 +339,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       // Set mock pipe
       val mockPipe = mock[DummyReadPipe]
-      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType))).once()
+      (mockPipe.getMetadata _).expects().returning(Right(VerticaReadMetadata(new StructType, VerticaVersionUtils.VERTICA_DEFAULT))).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
       (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 

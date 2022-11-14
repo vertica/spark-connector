@@ -24,6 +24,8 @@ import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import com.vertica.spark.util.version.SparkVersionTools
 import com.vertica.spark.util.version.SparkVersionTools.SPARK_3_3_0
 import org.apache.spark.sql.catalyst.InternalRow
+import com.vertica.spark.util.version.VerticaVersionUtils
+import com.vertica.spark.util.version.Version
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.sources.Filter
@@ -92,14 +94,19 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   private def useJson(cfg: ReadConfig): Boolean = {
     cfg match {
       case config: DistributedFilesystemReadConfig =>
-        (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-          case (Right(metadataSchema), requiredSchema) =>
+        (readConfigSetup.getTableMeta(config), config.getRequiredSchema) match {
+          case (Right(metadata), requiredSchema) =>
             val schema: StructType = if (requiredSchema.nonEmpty) {
               requiredSchema
             } else {
-              metadataSchema
+              metadata.schema
             }
-            config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
+            if(config.useJson) true
+
+            if(metadata.version < VerticaVersionUtils.VERTICA_12_0_2) {
+              ctTools.filterComplexTypeColumns(schema).nonEmpty
+            }
+            else false
           case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
         }
       case _=> false

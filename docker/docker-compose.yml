@@ -24,7 +24,7 @@ services:
       - GCS_SERVICE_EMAIL
 
   vertica:
-    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    image: vertica-k8s:${VERTICA_VERSION}
     # See original entrypoint under https://github.com/vertica/vertica-kubernetes/blob/main/docker-vertica/Dockerfile
     entrypoint: bash -c "if [[ "$${VERTICA_VERSION:0:2}" == "10" ]]; then /opt/vertica/bin/docker-entrypoint-legacy.sh; else /opt/vertica/bin/docker-entrypoint.sh; fi"
     ports:
@@ -35,7 +35,7 @@ services:
       - ./vertica/docker-entrypoint.sh:/opt/vertica/bin/docker-entrypoint.sh
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     environment:
-      - VERTICA_VERSION
+      - ${VERTICA_VERSION}
 
   hdfs:
     image: mdouchement/hdfs

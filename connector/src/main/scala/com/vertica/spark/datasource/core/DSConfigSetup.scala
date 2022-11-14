@@ -28,7 +28,8 @@ import com.vertica.spark.datasource.core.factory.{VerticaPipeFactory, VerticaPip
 import com.vertica.spark.datasource.fs.{GCSConnectorOptions, GCSSparkOptions, GCSEnvVars}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import org.apache.spark.sql.SparkSession
-
+import com.vertica.spark.util.version.VerticaVersionUtils
+import com.vertica.spark.util.version.Version
 
 /**
  * Interface for taking input of user selected options, performing any setup steps required, and returning the proper configuration structure for the operation.
@@ -52,6 +53,8 @@ trait DSConfigSetupInterface[T] {
    * Returns the schema for the table as required by Spark.
    */
   def getTableSchema(config: T): ConnectorResult[StructType]
+
+  def getTableMeta(config: T): ConnectorResult[VerticaReadMetadata]
 }
 
 sealed trait TLSMode
@@ -671,6 +674,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
           case _ => MissingMetadata().invalidNec
         }
       }
+
     }
 
     // Check for options left over from old connector
@@ -702,6 +706,16 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
         verticaMetadata match {
           case None => Left(SchemaDiscoveryError())
           case Some(metadata) => Right(metadata.schema)
+        }
+    }
+  }
+
+  override def getTableMeta(config: ReadConfig): ConnectorResult[VerticaReadMetadata] =  {
+    config match {
+      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _, _) =>
+        verticaMetadata match {
+          case None => Left(SchemaDiscoveryError())
+          case Some(metadata) => Right(metadata)
         }
     }
   }
@@ -770,4 +784,6 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     case Some(schema) => Right(schema)
     case None => Left(SchemaDiscoveryError())
   }
+
+  override def getTableMeta(config: WriteConfig): ConnectorResult[VerticaReadMetadata] = Right(VerticaReadMetadata(new StructType(), VerticaVersionUtils.VERTICA_DEFAULT))
 }
