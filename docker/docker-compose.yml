@@ -36,6 +36,8 @@ services:
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     environment:
       - VERTICA_VERSION
+      # Must set VERTICA_MEMDEBUG=2 in order for Vertica x86_64 image to run on Apple M1 machine
+      - VERTICA_MEMDEBUG=2
 
   hdfs:
     image: mdouchement/hdfs
