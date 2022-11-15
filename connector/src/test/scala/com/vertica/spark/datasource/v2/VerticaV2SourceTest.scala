@@ -35,6 +35,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.util.version.VerticaVersionUtils
 
 import java.util
 import scala.collection.JavaConversions._
@@ -92,6 +93,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   )
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))
+  val intMeta = new VerticaReadMetadata(intSchema, VerticaVersionUtils.VERTICA_DEFAULT)
 
   private val partition = VerticaDistributedFilesystemPartition(Seq(), Map().empty)
 
@@ -162,15 +164,17 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       TableCapability.TRUNCATE, TableCapability.ACCEPT_ANY_SCHEMA).asJava
   }
 
-  // it should "table returns schema" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
+  it should "table returns schema" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
-  //   val table = new VerticaTable(options, readSetup)
+    val table = new VerticaTable(options, readSetup)
+    val tableSchema = table.schema()
 
-  //   assert(table.schema() == intSchema)
-  // }
+    assert(tableSchema == intSchema && tableSchema == intMeta.schema)
+  }
 
   it should "table returns empty table schema if no valid read of schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
@@ -201,38 +205,40 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     override def describe(): String = name
   }
 
-  // it should "push aggregates on read" in {
-  //   val cols = Array(
-  //     StructField("a",IntegerType, false, Metadata.empty),
-  //     StructField("b",IntegerType, false, Metadata.empty),
-  //     StructField("c",IntegerType, false, Metadata.empty)
-  //   )
-  //   val schema = StructType(cols)
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(schema))
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(schema))
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+  it should "push aggregates on read" in {
+    val cols = Array(
+      StructField("a",IntegerType, false, Metadata.empty),
+      StructField("b",IntegerType, false, Metadata.empty),
+      StructField("c",IntegerType, false, Metadata.empty)
+    )
+    val schema = StructType(cols)
+    val meta = VerticaReadMetadata(schema, VerticaVersionUtils.VERTICA_DEFAULT)
 
-  //   val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
+    (readSetup.getTableMeta _).expects(*).returning(Right(meta))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
 
-  //   val columnA: NamedReference = ColumnReference("a")
-  //   val columnB: NamedReference = ColumnReference("b")
-  //   val columnC: NamedReference = ColumnReference("c")
-  //   val aggregatesFuncs: Array[AggregateFunc] = Array(
-  //     new Count(columnA,false),
-  //     new Max(columnB)
-  //   )
-  //   val groupBy: Array[Expression] = Array(columnC)
-  //   val aggregates: Aggregation = new Aggregation(aggregatesFuncs, groupBy)
-  //   val countPushed = scanBuilder.pushAggregation(aggregates)
-  //   assert(countPushed)
-  //   val requiredSchema = scanBuilder.build().readSchema()
-  //   assert(requiredSchema.fields.length == 3)
-  //   assert(requiredSchema.fields(0).name == "c")
-  //   assert(requiredSchema.fields(1).name == "COUNT(a)")
-  //   assert(requiredSchema.fields(2).name == "MAX(b)")
-  // }
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+
+    val columnA: NamedReference = ColumnReference("a")
+    val columnB: NamedReference = ColumnReference("b")
+    val columnC: NamedReference = ColumnReference("c")
+    val aggregatesFuncs: Array[AggregateFunc] = Array(
+      new Count(columnA,false),
+      new Max(columnB)
+    )
+    val groupBy: Array[Expression] = Array(columnC)
+    val aggregates: Aggregation = new Aggregation(aggregatesFuncs, groupBy)
+    val countPushed = scanBuilder.pushAggregation(aggregates)
+    assert(countPushed)
+    val requiredSchema = scanBuilder.build().readSchema()
+    assert(requiredSchema.fields.length == 3)
+    assert(requiredSchema.fields(0).name == "c")
+    assert(requiredSchema.fields(1).name == "COUNT(a)")
+    assert(requiredSchema.fields(2).name == "MAX(b)")
+  }
 
   case class UnknownAggregateFunc() extends AggregateFunc {
     override def describe(): String = "UnknownAggregate"
@@ -254,18 +260,18 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(!pushed)
   }
 
-  // it should "prune columns on read" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+  it should "prune columns on read" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
 
-  //   val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
 
-  //   scanBuilder.pruneColumns(intSchema)
+    scanBuilder.pruneColumns(intMeta.schema)
 
-  //   val scan = scanBuilder.build()
+    val scan = scanBuilder.build()
 
-  //   assert(scan.asInstanceOf[VerticaScan].getConfig.getRequiredSchema == intSchema)
-  // }
+    assert(scan.asInstanceOf[VerticaScan].getConfig.getRequiredSchema == intMeta.schema)
+  }
 
   it should "scan return input partitions" in {
     val partitions: Array[InputPartition] = Array(partition)
@@ -571,19 +577,20 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     }
   }
 
-  // it should "catalog tests if table exists" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
+  it should "catalog tests if table exists" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
+    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
 
-  //   val catalog = new VerticaDatasourceV2Catalog()
-  //   catalog.readSetupInterface = readSetup
+    val catalog = new VerticaDatasourceV2Catalog()
+    catalog.readSetupInterface = readSetup
 
-  //   catalog.initialize("VerticaTable", options)
+    catalog.initialize("VerticaTable", options)
 
-  //   // Implementation currently based on config, not identifier
-  //   assert(catalog.tableExists(mock[Identifier]))
-  // }
+    // Implementation currently based on config, not identifier
+    assert(catalog.tableExists(mock[Identifier]))
+  }
 
   it should "catalog loads table on load or create" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
@@ -637,13 +644,13 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(VerticaDatasourceV2Catalog.getOptions.get.containsKey("thing"))
   }
 
-  // it should "build VerticaJsonScan" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
-  //   val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
-  //     .build()
-  //   assert(scan.isInstanceOf[VerticaJsonScan])
-  // }
+  it should "build VerticaJsonScan" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
+    val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
+      .build()
+    assert(scan.isInstanceOf[VerticaJsonScan])
+  }
 
   it should "fail to extract catalog name without spark session" in {
     SparkSession.clearActiveSession()
@@ -657,25 +664,25 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     }
   }
 
-  // it should "automatically build a Json scan" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+  it should "automatically build a Json scan" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
 
-  //   val config = readConfig.copy()
-  //   val builder = new VerticaScanBuilder(config, readSetup)
-  //   builder.pruneColumns(StructType(Array(
-  //     StructField("", ArrayType(ArrayType(IntegerType))))
-  //   ))
+    val config = readConfig.copy()
+    val builder = new VerticaScanBuilder(config, readSetup)
+    builder.pruneColumns(StructType(Array(
+      StructField("", ArrayType(ArrayType(IntegerType))))
+    ))
 
-  //   assert(builder.build().isInstanceOf[VerticaJsonScan])
-  // }
+    assert(builder.build().isInstanceOf[VerticaJsonScan])
+  }
 
-  // it should "use json when option is set" in {
-  //   val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-  //   (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+  it should "use json when option is set" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
 
-  //   val config = readConfig.copy(useJson = true)
-  //   val builder = new VerticaScanBuilder(config, readSetup)
-  //   assert(builder.build().isInstanceOf[VerticaJsonScan])
-  // }
+    val config = readConfig.copy(useJson = true)
+    val builder = new VerticaScanBuilder(config, readSetup)
+    assert(builder.build().isInstanceOf[VerticaJsonScan])
+  }
 }

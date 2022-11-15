@@ -102,8 +102,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
               metadata.schema
             }
             if(config.useJson) true
-
-            if(metadata.version < VerticaVersionUtils.VERTICA_12_0_2) {
+            else if(metadata.version < VerticaVersionUtils.VERTICA_12_0_2) {
               ctTools.filterComplexTypeColumns(schema).nonEmpty
             }
             else false

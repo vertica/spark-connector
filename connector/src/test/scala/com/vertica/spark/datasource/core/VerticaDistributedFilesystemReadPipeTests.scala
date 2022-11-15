@@ -32,6 +32,7 @@ import org.apache.spark.sql.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.util.version.Version
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -109,31 +110,36 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  // it should "retrieve metadata when not provided" in {
-  //   val config = makeReadConfig.copy(metadata = None)
+  it should "retrieve metadata when not provided" in {
+    val config = makeReadConfig.copy(metadata = None)
 
-  //   val mockSchemaTools = mock[SchemaToolsInterface]
-  //   (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
+    val mockJdbcLayer = mock[JdbcLayerInterface]
+    val mockSchemaTools = mock[SchemaToolsInterface]
 
-  //   val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    (mockSchemaTools.readSchema _).expects(mockJdbcLayer,tablename).returning(Right(new StructType()))
+    VerticaVersionUtilsTest.mockGetVersion(mockJdbcLayer)
 
-  //   pipe.getMetadata match {
-  //     case Left(_) => fail
-  //     case Right(metadata) => assert(metadata.asInstanceOf[VerticaReadMetadata].schema == new StructType())
-  //   }
-  // }
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mockJdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
-  // it should "use full schema" in {
-  //   val fullTablename = TableName("table", Some("schema"))
-  //   val config = makeReadConfig.copy(tableSource = fullTablename, metadata = None)
+    pipe.getMetadata match {
+      case Left(_) => fail
+      case Right(metadata) => assert(metadata.asInstanceOf[VerticaReadMetadata].schema == new StructType())
+    }
+  }
 
-  //   val mockSchemaTools = mock[SchemaToolsInterface]
-  //   (mockSchemaTools.readSchema _).expects(*,fullTablename).returning(Right(new StructType()))
+  it should "use full schema" in {
+    val fullTablename = TableName("table", Some("schema"))
+    val config = makeReadConfig.copy(tableSource = fullTablename, metadata = None)
 
-  //   val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    val mockJdbcLayer = mock[JdbcLayerInterface]
+    val mockSchemaTools = mock[SchemaToolsInterface]
+    (mockSchemaTools.readSchema _).expects(mockJdbcLayer,fullTablename).returning(Right(new StructType()))
+    VerticaVersionUtilsTest.mockGetVersion(mockJdbcLayer)
 
-  //   pipe.getMetadata
-  // }
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mockJdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+
+    pipe.getMetadata
+  }
 
   it should "return cached metadata" in {
     val config = makeReadConfig

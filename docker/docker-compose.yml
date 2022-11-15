@@ -24,7 +24,7 @@ services:
       - GCS_SERVICE_EMAIL
 
   vertica:
-    image: vertica-k8s:${VERTICA_VERSION}
+    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
     # See original entrypoint under https://github.com/vertica/vertica-kubernetes/blob/main/docker-vertica/Dockerfile
     entrypoint: bash -c "if [[ "$${VERTICA_VERSION:0:2}" == "10" ]]; then /opt/vertica/bin/docker-entrypoint-legacy.sh; else /opt/vertica/bin/docker-entrypoint.sh; fi"
     ports:
@@ -35,7 +35,9 @@ services:
       - ./vertica/docker-entrypoint.sh:/opt/vertica/bin/docker-entrypoint.sh
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
     environment:
-      - ${VERTICA_VERSION}
+      - VERTICA_VERSION
+      # Must set VERTICA_MEMDEBUG=2 in order for Vertica x86_64 image to run on Apple M1 machine
+      - VERTICA_MEMDEBUG=2
 
   hdfs:
     image: mdouchement/hdfs

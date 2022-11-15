@@ -21,6 +21,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.schema.SchemaToolsInterface
 import com.vertica.spark.util.table.TableUtilsInterface
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.StructType
 
