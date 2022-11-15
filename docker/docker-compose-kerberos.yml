@@ -64,6 +64,8 @@ services:
       - ./keytabs:/keytabs
     env_file:
       - krb.env
+    environment:
+      - VERTICA_MEMDEBUG=2
 
   hdfs:
     build: ./hdfs-krb
