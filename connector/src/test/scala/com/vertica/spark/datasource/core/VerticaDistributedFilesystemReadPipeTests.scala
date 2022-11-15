@@ -1016,32 +1016,32 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     }
   }
 
-  // it should "prevent exporting binary types when using json" in {
-  //   val config = makeReadConfig.copy(useJson = true)
-  //   config.setRequiredSchema(StructType(Array(
-  //     StructField("f1", BinaryType),
-  //     StructField("f2", ArrayType(ArrayType(BinaryType))),
-  //     StructField("f3", StructType(StructType(Array(
-  //       StructField("f2", ArrayType(ArrayType(BinaryType))),
-  //     ))))
-  //   )))
+  it should "prevent exporting binary types when using json" in {
+    val config = makeReadConfig.copy(useJson = true)
+    config.setRequiredSchema(StructType(Array(
+      StructField("f1", BinaryType),
+      StructField("f2", ArrayType(ArrayType(BinaryType))),
+      StructField("f3", StructType(StructType(Array(
+        StructField("f2", ArrayType(ArrayType(BinaryType))),
+      ))))
+    )))
 
-  //   val jdbcLayer = mock[JdbcLayerInterface]
-  //   (jdbcLayer.configureSession _).expects(*).returning(Right(()))
-  //   (jdbcLayer.close _).expects().returning(Right(()))
+    val jdbcLayer = mock[JdbcLayerInterface]
+    (jdbcLayer.configureSession _).expects(*).returning(Right(()))
+    (jdbcLayer.close _).expects().returning(Right(()))
 
-  //   VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
+    VerticaVersionUtilsTest.mockGetVersion(jdbcLayer)
 
-  //   val cleanupUtils = mock[CleanupUtilsInterface]
-  //   (cleanupUtils.cleanupAll _).expects(*, *).returning(Right())
+    val cleanupUtils = mock[CleanupUtilsInterface]
+    (cleanupUtils.cleanupAll _).expects(*, *).returning(Right())
 
-  //   val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], jdbcLayer, mock[SchemaToolsInterface], cleanupUtils, mock[SparkContextWrapper])
 
-  //   pipe.doPreReadSteps() match {
-  //     case Right(_) => fail("Expected to fail")
-  //     case Left(err) => err match {
-  //       case ErrorList(errors) => assert(errors.length == 3)
-  //     }
-  //   }
-  // }
+    pipe.doPreReadSteps() match {
+      case Right(_) => fail("Expected to fail")
+      case Left(err) => err match {
+        case ErrorList(errors) => assert(errors.length == 3)
+      }
+    }
+  }
 }
