@@ -173,7 +173,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       // Set mock pipe
       val mockPipe = mock[DummyReadPipe]
-      (mockPipe.getMetadata _).expects().returning(Left(SchemaDiscoveryError())).once()
+      (mockPipe.getMetadata _).expects().returning(Left(MetadataDiscoveryError())).once()
       val mockPipeFactory = mock[VerticaPipeFactoryInterface]
       (mockPipeFactory.getReadPipe _).expects(*, true).returning(mockPipe)
 
@@ -181,7 +181,7 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
 
       val errSeq = parseErrorInitConfig(opts, dsReadConfigSetup)
       assert(errSeq.size == 1)
-      assert(errSeq.map(_.getUnderlyingError).contains(SchemaDiscoveryError()))
+      assert(errSeq.map(_.getUnderlyingError).contains(MetadataDiscoveryError()))
     } finally {
       spark.close()
     }

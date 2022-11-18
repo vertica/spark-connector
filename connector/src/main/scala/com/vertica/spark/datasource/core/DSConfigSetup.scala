@@ -50,10 +50,8 @@ trait DSConfigSetupInterface[T] {
   def performInitialSetup(config: T): ConnectorResult[Option[PartitionInfo]]
 
   /**
-   * Returns the schema for the table as required by Spark.
+   * Returns the metadata for the table as required by Spark.
    */
-  def getTableSchema(config: T): ConnectorResult[StructType]
-
   def getTableMeta(config: T): ConnectorResult[VerticaReadMetadata]
 }
 
@@ -695,26 +693,17 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
   }
 
   /**
-   * Returns the schema of the table being read
+   * Returns the metadata of the table being read
    *
-   * @param config Configuration data for the read operation. Contains the metadata required for returning the table schema.
-   * @return The table schema or an error that occured trying to retrieve it
+   * @param config Configuration data for the read operation.
+   * @param version Contains the version number for Vertica.
+   * @return The metadata object or an error that occured trying to retrieve it.
    */
-  override def getTableSchema(config: ReadConfig): ConnectorResult[StructType] =  {
-    config match {
-      case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _, _) =>
-        verticaMetadata match {
-          case None => Left(SchemaDiscoveryError())
-          case Some(metadata) => Right(metadata.schema)
-        }
-    }
-  }
-
   override def getTableMeta(config: ReadConfig): ConnectorResult[VerticaReadMetadata] =  {
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _, _) =>
         verticaMetadata match {
-          case None => Left(SchemaDiscoveryError())
+          case None => Left(MetadataDiscoveryError())
           case Some(metadata) => Right(metadata)
         }
     }
@@ -775,14 +764,6 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
       case Left(err) => Left(err)
       case Right(_) => Right(None)
     }
-  }
-
-  /**
-   * Returns the same schema that was passed in to this class.
-   */
-  override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
-    case Some(schema) => Right(schema)
-    case None => Left(SchemaDiscoveryError())
   }
 
   override def getTableMeta(config: WriteConfig): ConnectorResult[VerticaReadMetadata] = Right(VerticaReadMetadata(new StructType(), VerticaVersionUtils.VERTICA_DEFAULT))

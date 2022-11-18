@@ -204,7 +204,7 @@ class ErrorHandlingTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
       checkErrReturnsMessages(IntermediaryStoreReaderNotInitializedError())
       checkErrReturnsMessages(ConnectionDownError())
       checkErrReturnsMessages(TableNotEnoughRowsError())
-      checkErrReturnsMessages(SchemaDiscoveryError())
+      checkErrReturnsMessages(MetadataDiscoveryError())
       checkErrReturnsMessages(MissingAWSSecretAccessKey())
       checkErrReturnsMessages(MissingAWSAccessKeyId())
       checkErrReturnsMessages(LoadConfigMissingSparkSessionError())

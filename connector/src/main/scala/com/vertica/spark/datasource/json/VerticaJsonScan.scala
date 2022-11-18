@@ -61,8 +61,8 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
   }
 
   override def readSchema(): StructType = {
-    (readConfigSetup.getTableSchema(config), jsonReadConfig.getRequiredSchema) match {
-      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+    (readConfigSetup.getTableMeta(config), jsonReadConfig.getRequiredSchema) match {
+      case (Right(metadata), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { metadata.schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
   }

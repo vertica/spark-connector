@@ -167,18 +167,17 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "table returns schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta)).twice()
+
 
     val table = new VerticaTable(options, readSetup)
-    val tableSchema = table.schema()
 
-    assert(tableSchema == intSchema && tableSchema == intMeta.schema)
+    assert(table.schema() == intMeta.schema)
   }
 
   it should "table returns empty table schema if no valid read of schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(SchemaDiscoveryError().invalidNec)
+    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(MetadataDiscoveryError().invalidNec)
 
     val table = new VerticaTable(options, readSetup)
 
@@ -215,10 +214,10 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val meta = VerticaReadMetadata(schema, VerticaVersionUtils.VERTICA_DEFAULT)
 
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
+    (readSetup.getTableMeta _).expects(readConfig).returning(Right(meta))
     (readSetup.getTableMeta _).expects(*).returning(Right(meta))
-    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
-    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    (readSetup.getTableMeta _).expects(*).returning(Right(meta))
+    (readSetup.getTableMeta _).expects(*).returning(Right(meta))
 
     val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
 
@@ -298,13 +297,13 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "throw error on bad schema read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(readConfig).returning(Left(SchemaDiscoveryError()))
+    (readSetup.getTableMeta _).expects(readConfig).returning(Left(MetadataDiscoveryError()))
 
     val scan = new VerticaScan(readConfig, readSetup)
 
     Try { scan.readSchema() } match {
       case Success(_) => fail
-      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[SchemaDiscoveryError]
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[MetadataDiscoveryError]
     }
   }
 
@@ -580,8 +579,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "catalog tests if table exists" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    (readSetup.getTableMeta _).expects(*).returning(Right(intMeta)).twice()
 
     val catalog = new VerticaDatasourceV2Catalog()
     catalog.readSetupInterface = readSetup

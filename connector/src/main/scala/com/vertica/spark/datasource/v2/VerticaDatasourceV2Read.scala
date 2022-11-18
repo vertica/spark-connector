@@ -101,7 +101,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
             } else {
               metadata.schema
             }
-            if(config.useJson) true
+            if(config.useJson) { true }
             else if(metadata.version < VerticaVersionUtils.VERTICA_12_0_2) {
               ctTools.filterComplexTypeColumns(schema).nonEmpty
             }
@@ -147,8 +147,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     }
   }
 
-  protected def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
-    case Right(schema) => schema
+  protected def tableSchema: StructType = readConfigSetup.getTableMeta(config) match {
+    case Right(metadata) => metadata.schema
     case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
   }
 }
@@ -208,8 +208,8 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+    (readConfigSetup.getTableMeta(config), config.getRequiredSchema) match {
+      case (Right(metadata), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { metadata.schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
   }
