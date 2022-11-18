@@ -675,12 +675,23 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(builder.build().isInstanceOf[VerticaJsonScan])
   }
 
-  it should "use json when option is set" in {
+  it should "use Json when option is set" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.getTableMeta _).expects(*).returning(Right(intMeta))
 
     val config = readConfig.copy(useJson = true)
     val builder = new VerticaScanBuilder(config, readSetup)
     assert(builder.build().isInstanceOf[VerticaJsonScan])
+  }
+
+  it should "ignore the complex type check" in {
+    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val meta = new VerticaReadMetadata(intSchema, VerticaVersionUtils.VERTICA_12_0_2)
+    (readSetup.getTableMeta _).expects(*).returning(Right(meta))
+
+    val config = readConfig.copy()
+    val builder = new VerticaScanBuilder(config, readSetup)
+
+    assert(builder.build().isInstanceOf[VerticaScan])
   }
 }
