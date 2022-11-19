@@ -101,7 +101,7 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
             } else {
               metadata.schema
             }
-            config.useJson || ((VerticaVersionUtils.checkComplexTypesParquetExport(schema, VerticaVersionUtils.VERTICA_12_0_2)) match {
+            config.useJson || ((VerticaVersionUtils.checkComplexTypesParquetExport(schema, metadata.version)) match {
                 case Left(_) => ctTools.filterComplexTypeColumns(schema).nonEmpty
                 case Right(_) => false
               })
