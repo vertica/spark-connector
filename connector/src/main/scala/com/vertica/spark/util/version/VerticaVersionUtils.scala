@@ -86,7 +86,19 @@ object VerticaVersionUtils {
     }
   }
 
-def checkSchemaTypesReadSupport(schema: StructType, version: Version): ConnectorResult[Unit] = {
+  def checkComplexTypesParquetExport(schema: StructType, version: Version): ConnectorResult[Unit] = {
+    val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
+    val complexTypeFound = complexTypeCols.nonEmpty
+    if (version.lessThan(VERTICA_12_0_2)) {
+      Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
+    }
+    else {
+      Right()
+    }
+
+  }
+
+  def checkSchemaTypesReadSupport(schema: StructType, version: Version): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
     val nativeArrayCols = nativeCols.filter(_.dataType.isInstanceOf[ArrayType])
     if (version.major <= 10) {
