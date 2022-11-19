@@ -204,12 +204,19 @@ class VerticaVersionUtilsTest extends AnyFlatSpec with BeforeAndAfterAll with Mo
     assert(VerticaVersionUtils.checkJsonSupport(Version(11)) == Left(ExportToJsonNotSupported(Version(11).toString)))
   }
 
-  // it should "pass Parquet complex types check for >=12.0.2" in {
-  //   VerticaVersionUtils.checkComplexTypesParquetExport(_, Version(12,0,2)) match {
-  //     case Right(_) => succeed
-  //     case Left(err) => fail(err.getFullContext)
-  //   }
-  // }
+  it should "pass Parquet complex types check for >=12.0.2" in {
+    VerticaVersionUtils.checkComplexTypesParquetExport(nativeArraySchema, Version(12,0,2)) match {
+      case Right(_) => succeed
+      case Left(err) => fail(err.getFullContext)
+    }
+  }
+
+  it should "fail Parquet complex types check for <12.0.2" in {
+    VerticaVersionUtils.checkComplexTypesParquetExport(nativeArraySchema, Version(12,0,1)) match {
+      case Right(_) => fail
+      case Left(err) => succeed
+    }
+  }
 
 }
 
