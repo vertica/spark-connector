@@ -174,7 +174,6 @@ class VerticaDistributedFilesystemWritePipe(val config: DistributedFilesystemWri
   val timer = new Timer(config.timeOperations, logger, "Writing Partition.")
 
   def startPartitionWrite(uniqueId: String): ConnectorResult[Unit] = {
-
     val address = getAddress()
     val delimiter = if(address.takeRight(1) == "/" || address.takeRight(1) == "\\") "" else "/"
     val filename = address + delimiter + uniqueId + ".snappy.parquet"

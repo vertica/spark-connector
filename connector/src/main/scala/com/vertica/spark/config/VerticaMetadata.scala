@@ -24,6 +24,7 @@ trait VerticaMetadata
 /**
  * Metadata for read operation.
  * @param schema Schema of the table being read in Vertica.
+ * @param version Version of Vertica being used.
  */
 final case class VerticaReadMetadata(schema: StructType, version: Version) extends VerticaMetadata
 

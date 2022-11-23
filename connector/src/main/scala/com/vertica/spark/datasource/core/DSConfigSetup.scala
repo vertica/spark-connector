@@ -48,11 +48,20 @@ trait DSConfigSetupInterface[T] {
    * @return Optionally returns partitioning information for the operation when needed
    */
   def performInitialSetup(config: T): ConnectorResult[Option[PartitionInfo]]
+}
 
+trait TableSchemaInterface[T] {
+  /**
+   * Returns the schema for the table as required by Spark.
+   */
+  def getTableSchema(config: T): ConnectorResult[StructType]
+}
+
+trait TableMetaInterface[T] {
   /**
    * Returns the metadata for the table as required by Spark.
    */
-  def getTableMeta(config: T): ConnectorResult[VerticaReadMetadata]
+  def getTableMetadata(config: T): ConnectorResult[VerticaReadMetadata]
 }
 
 sealed trait TLSMode
@@ -638,7 +647,7 @@ object DSConfigSetupUtils {
 /**
  * Implementation for parsing user option map and getting read config
  */
-class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] {
+class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, val sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig] {
   private val logger: Logger = LogProvider.getLogger(classOf[DSReadConfigSetup])
 
   /**
@@ -672,7 +681,6 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
           case _ => MissingMetadata().invalidNec
         }
       }
-
     }
 
     // Check for options left over from old connector
@@ -696,10 +704,9 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
    * Returns the metadata of the table being read
    *
    * @param config Configuration data for the read operation.
-   * @param version Contains the version number for Vertica.
    * @return The metadata object or an error that occured trying to retrieve it.
    */
-  override def getTableMeta(config: ReadConfig): ConnectorResult[VerticaReadMetadata] =  {
+  override def getTableMetadata(config: ReadConfig): ConnectorResult[VerticaReadMetadata] =  {
     config match {
       case DistributedFilesystemReadConfig(_, _, _, _, verticaMetadata, _, _, _, _, _) =>
         verticaMetadata match {
@@ -713,7 +720,7 @@ class DSReadConfigSetup(val pipeFactory: VerticaPipeFactoryInterface = VerticaPi
 /**
  * Implementation for parsing user option map and getting write config
  */
-class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] {
+class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: VerticaPipeFactoryInterface = VerticaPipeFactory, sessionIdInterface: SessionIdInterface = SessionId) extends DSConfigSetupInterface[WriteConfig] with TableSchemaInterface[WriteConfig] {
   private val logger: Logger = LogProvider.getLogger(classOf[DSWriteConfigSetup])
 
   /**
@@ -766,5 +773,11 @@ class DSWriteConfigSetup(val schema: Option[StructType], val pipeFactory: Vertic
     }
   }
 
-  override def getTableMeta(config: WriteConfig): ConnectorResult[VerticaReadMetadata] = Right(VerticaReadMetadata(new StructType(), VerticaVersionUtils.VERTICA_DEFAULT))
+  /**
+   * Returns the same schema that was passed in to this class.
+   */
+  override def getTableSchema(config: WriteConfig): ConnectorResult[StructType] = this.schema match {
+    case Some(schema) => Right(schema)
+    case None => Left(SchemaDiscoveryError())
+  }
 }

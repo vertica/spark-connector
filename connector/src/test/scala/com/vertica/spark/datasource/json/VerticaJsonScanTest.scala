@@ -3,7 +3,7 @@ package com.vertica.spark.datasource.json
 import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config.ReadConfig
 import com.vertica.spark.config.VerticaReadMetadata
-import com.vertica.spark.datasource.core.{DSConfigSetupInterface, PartitionInfo}
+import com.vertica.spark.datasource.core._
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.wrappers.VerticaScanWrapper
 import com.vertica.spark.util.error.{ConnectorException, MetadataDiscoveryError}
@@ -25,11 +25,11 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
 
 
   it should "read schema" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val readSetup = mock[DSReadConfigSetup]     
 
-    (readSetup.getTableMeta _).expects(jsonReadConfig).returning(Right(intMeta))
+    (readSetup.getTableMetadata _).expects(jsonReadConfig).returning(Right(intMeta))
 
-    val scan = new VerticaJsonScan(jsonReadConfig, readSetup, new JsonBatchFactory, mock[FileStoreLayerInterface])
+    val scan = new VerticaJsonScan(jsonReadConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]], new JsonBatchFactory, mock[FileStoreLayerInterface])
 
     Try { scan.readSchema() } match {
       case Success(_) => ()
@@ -38,10 +38,10 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
   }
 
   it should "throw error on read schema fail" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableMeta _).expects(jsonReadConfig).returning(Left(MetadataDiscoveryError()))
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(jsonReadConfig).returning(Left(MetadataDiscoveryError()))
 
-    val scan = new VerticaJsonScan(jsonReadConfig, readSetup, new JsonBatchFactory, mock[FileStoreLayerInterface])
+    val scan = new VerticaJsonScan(jsonReadConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]], new JsonBatchFactory, mock[FileStoreLayerInterface])
 
     Try { scan.readSchema() } match {
       case Success(_) => fail
@@ -57,9 +57,9 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
 
     val schema = StructType(List())
     val partitionInfo = PartitionInfo(Array(), "path")
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val readSetup = mock[DSReadConfigSetup]
     (readSetup.performInitialSetup _).expects(jsonReadConfig).returning(Right(Some(partitionInfo)))
-    (readSetup.getTableMeta _).expects(jsonReadConfig).returning(Right(intMeta))
+    (readSetup.getTableMetadata _).expects(jsonReadConfig).returning(Right(intMeta))
 
     val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
@@ -68,7 +68,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val fsLayer = mock[FileStoreLayerInterface]
     (fsLayer.getFileList _).expects("path").returning(Right(Seq("file1.json", "file2.json")))
 
-    val scan = new VerticaJsonScan(jsonReadConfig, readSetup, jsonSupport, fsLayer)
+    val scan = new VerticaJsonScan(jsonReadConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]], jsonSupport, fsLayer)
     Try { scan.planInputPartitions() } match {
       case Success(_) => ()
       case Failure(e) => fail(e)
@@ -84,9 +84,9 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
 
     val schema = StructType(List())
     val partitionInfo = PartitionInfo(Array(), "path")
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val readSetup = mock[DSReadConfigSetup]
     (readSetup.performInitialSetup _).expects(jsonReadConfig).returning(Right(Some(partitionInfo)))
-    (readSetup.getTableMeta _).expects(jsonReadConfig).returning(Right(intMeta))
+    (readSetup.getTableMetadata _).expects(jsonReadConfig).returning(Right(intMeta))
 
     val jsonSupport = mock[JsonBatchFactory]
     val verticaScanWrapper = mock[VerticaScanWrapper]
@@ -97,7 +97,7 @@ class VerticaJsonScanTest extends AnyFlatSpec with BeforeAndAfterAll with MockFa
     val fsLayer = mock[FileStoreLayerInterface]
     (fsLayer.getFileList _).expects("path").returning(Right(Seq("file1.json", "file2.json")))
 
-    val scan = new VerticaJsonScan(jsonReadConfig, readSetup, jsonSupport, fsLayer)
+    val scan = new VerticaJsonScan(jsonReadConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]], jsonSupport, fsLayer)
     Try { scan.createReaderFactory() } match {
       case Success(_) => ()
       case Failure(e) => fail(e)

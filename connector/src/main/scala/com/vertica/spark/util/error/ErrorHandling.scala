@@ -98,6 +98,11 @@ object ErrorHandling {
   }
 }
 
+case class SchemaDiscoveryError() extends ConnectorError {
+  def getFullContext: String = "Failed to discover the schema of the table. " +
+    "There may be an issue with connectivity to the database."
+
+}
 case class MetadataDiscoveryError() extends ConnectorError {
   def getFullContext: String = "Failed to discover the metadata of the table. " +
     "There may be an issue with connectivity to the database."

@@ -16,7 +16,6 @@ package com.vertica.spark.common
 import com.vertica.spark.config.{AWSOptions, BasicJdbcAuth, DistributedFilesystemReadConfig, DistributedFilesystemWriteConfig, FileStoreConfig, GCSOptions, JDBCConfig, JDBCTLSConfig, TableName, ValidFilePermissions, VerticaMetadata}
 import com.vertica.spark.datasource.core.{DataBlock, PartitionInfo, Require, VerticaPartition, VerticaPipeInterface, VerticaPipeReadInterface, VerticaPipeWriteInterface}
 import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
-import com.vertica.spark.util.version.Version
 import org.apache.spark.sql.types.StructType
 
 object TestObjects {

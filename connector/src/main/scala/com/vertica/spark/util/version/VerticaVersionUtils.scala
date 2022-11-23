@@ -88,7 +88,6 @@ object VerticaVersionUtils {
 
   def checkComplexTypesParquetExport(schema: StructType, version: Version): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
-    val complexTypeFound = complexTypeCols.nonEmpty
     if (version.lessThan(VERTICA_12_0_2)) {
       Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
     }
