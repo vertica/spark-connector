@@ -102,7 +102,8 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
               metadata.schema
             }
             config.useJson || ((VerticaVersionUtils.checkComplexTypesParquetExport(schema, metadata.version)) match {
-                case Left(_) => ctTools.filterComplexTypeColumns(schema).nonEmpty
+                case Left(err) => logger.info(err.getFullContext + ". Export will be written to JSON instead.")
+                                ctTools.filterComplexTypeColumns(schema).nonEmpty
                 case Right(_) => false
               })
           case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
