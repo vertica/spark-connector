@@ -103,6 +103,11 @@ case class SchemaDiscoveryError() extends ConnectorError {
     "There may be an issue with connectivity to the database."
 
 }
+case class MetadataDiscoveryError() extends ConnectorError {
+  def getFullContext: String = "Failed to discover the metadata of the table. " +
+    "There may be an issue with connectivity to the database."
+
+}
 case class NoResultError(query: String) extends ConnectorError{
   def getFullContext: String = s"Query result is empty \n QUERY:[$query] "
 }

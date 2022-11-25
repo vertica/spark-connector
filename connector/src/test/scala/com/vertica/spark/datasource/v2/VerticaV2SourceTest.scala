@@ -19,6 +19,7 @@ import com.vertica.spark.common.TestObjects
 import com.vertica.spark.config._
 import com.vertica.spark.datasource._
 import com.vertica.spark.datasource.core._
+import com.vertica.spark.datasource.core.TableMetaInterface
 import com.vertica.spark.datasource.json.VerticaJsonScan
 import com.vertica.spark.datasource.partitions.parquet.VerticaDistributedFilesystemPartition
 import com.vertica.spark.util.error._
@@ -35,6 +36,7 @@ import org.apache.spark.sql.util.CaseInsensitiveStringMap
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.util.version.VerticaVersionUtils
 
 import java.util
 import scala.collection.JavaConversions._
@@ -92,6 +94,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   )
 
   val intSchema = new StructType(Array(StructField("col1", IntegerType)))
+  val intMeta = new VerticaReadMetadata(intSchema, VerticaVersionUtils.VERTICA_DEFAULT)
 
   private val partition = VerticaDistributedFilesystemPartition(Seq(), Map().empty)
 
@@ -163,18 +166,18 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "table returns schema" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val readSetup = mock[DSReadConfigSetup]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta)).twice()
 
     val table = new VerticaTable(options, readSetup)
 
-    assert(table.schema() == intSchema)
+    assert(table.schema() == intMeta.schema)
   }
 
   it should "table returns empty table schema if no valid read of schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(SchemaDiscoveryError().invalidNec)
+    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(MetadataDiscoveryError().invalidNec)
 
     val table = new VerticaTable(options, readSetup)
 
@@ -184,7 +187,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "push filters on read" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
-    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
     val filters: Array[Filter] = Array(GreaterThan("col1", 5), LessThan("col2", 20))
 
     val nonPushed = scanBuilder.pushFilters(filters)
@@ -208,13 +211,15 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
       StructField("c",IntegerType, false, Metadata.empty)
     )
     val schema = StructType(cols)
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(readConfig).returning(Right(schema))
-    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
-    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
-    (readSetup.getTableSchema _).expects(*).returning(Right(schema))
+    val meta = VerticaReadMetadata(schema, VerticaVersionUtils.VERTICA_DEFAULT)
 
-    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(readConfig).returning(Right(meta))
+    (readSetup.getTableMetadata _).expects(*).returning(Right(meta))
+    (readSetup.getTableMetadata _).expects(*).returning(Right(meta))
+    (readSetup.getTableMetadata _).expects(*).returning(Right(meta))
+
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     val columnA: NamedReference = ColumnReference("a")
     val columnB: NamedReference = ColumnReference("b")
@@ -247,7 +252,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val schema = StructType(cols)
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
-    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilderWithPushdown(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
     val aggregatesFuncs: Array[AggregateFunc] = Array(UnknownAggregateFunc())
     val aggregates: Aggregation = new Aggregation(aggregatesFuncs,Array())
     val pushed = scanBuilder.pushAggregation(aggregates)
@@ -255,25 +260,25 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "prune columns on read" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta))
 
-    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup)
+    val scanBuilder = new VerticaScanBuilder(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
-    scanBuilder.pruneColumns(intSchema)
+    scanBuilder.pruneColumns(intMeta.schema)
 
     val scan = scanBuilder.build()
 
-    assert(scan.asInstanceOf[VerticaScan].getConfig.getRequiredSchema == intSchema)
+    assert(scan.asInstanceOf[VerticaScan].getConfig.getRequiredSchema == intMeta.schema)
   }
 
   it should "scan return input partitions" in {
     val partitions: Array[InputPartition] = Array(partition)
-
+    
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.performInitialSetup _).expects(readConfig).returning(Right(Some(PartitionInfo(partitions))))
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     assert(scan.planInputPartitions().sameElements(partitions))
   }
@@ -282,7 +287,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.performInitialSetup _).expects(readConfig).returning(Left(InitialSetupPartitioningError()))
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     Try { scan.planInputPartitions() } match {
       case Success(_) => fail
@@ -291,14 +296,14 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "throw error on bad schema read" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(readConfig).returning(Left(SchemaDiscoveryError()))
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(readConfig).returning(Left(MetadataDiscoveryError()))
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     Try { scan.readSchema() } match {
       case Success(_) => fail
-      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[SchemaDiscoveryError]
+      case Failure(e) => e.asInstanceOf[ConnectorException].error.isInstanceOf[MetadataDiscoveryError]
     }
   }
 
@@ -306,7 +311,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.performInitialSetup _).expects(readConfig).returning(Left(InitialSetupPartitioningError()))
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     Try {
       scan.planInputPartitions()
@@ -323,7 +328,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
     (readSetup.performInitialSetup _).expects(readConfig).returning(Right(None))
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     Try { scan.planInputPartitions() } match {
       case Success(_) => fail
@@ -334,7 +339,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "scan return reader factory" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
 
-    val scan = new VerticaScan(readConfig, readSetup)
+    val scan = new VerticaScan(readConfig, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
 
     assert(scan.createReaderFactory().isInstanceOf[VerticaReaderFactory])
   }
@@ -572,9 +577,9 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "catalog tests if table exists" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
+    val readSetup = mock[DSReadConfigSetup]
     (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema)).twice()
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta)).twice()
 
     val catalog = new VerticaDatasourceV2Catalog()
     catalog.readSetupInterface = readSetup
@@ -638,9 +643,9 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "build VerticaJsonScan" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
-    val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup)
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta))
+    val scan = new VerticaScanBuilder(readConfig.copy(useJson = true), readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
       .build()
     assert(scan.isInstanceOf[VerticaJsonScan])
   }
@@ -658,11 +663,11 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   }
 
   it should "automatically build a Json scan" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta))
 
     val config = readConfig.copy()
-    val builder = new VerticaScanBuilder(config, readSetup)
+    val builder = new VerticaScanBuilder(config, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
     builder.pruneColumns(StructType(Array(
       StructField("", ArrayType(ArrayType(IntegerType))))
     ))
@@ -670,12 +675,23 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     assert(builder.build().isInstanceOf[VerticaJsonScan])
   }
 
-  it should "use json when option is set" in {
-    val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.getTableSchema _).expects(*).returning(Right(intSchema))
+  it should "use Json when option is set" in {
+    val readSetup = mock[DSReadConfigSetup]
+    (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta))
 
     val config = readConfig.copy(useJson = true)
-    val builder = new VerticaScanBuilder(config, readSetup)
+    val builder = new VerticaScanBuilder(config, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
     assert(builder.build().isInstanceOf[VerticaJsonScan])
+  }
+
+  it should "ignore the complex type check" in {
+    val readSetup = mock[DSReadConfigSetup]
+    val meta = new VerticaReadMetadata(intSchema, VerticaVersionUtils.VERTICA_12_0_2)
+    (readSetup.getTableMetadata _).expects(*).returning(Right(meta))
+
+    val config = readConfig.copy()
+    val builder = new VerticaScanBuilder(config, readSetup.asInstanceOf[DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]])
+
+    assert(builder.build().isInstanceOf[VerticaScan])
   }
 }

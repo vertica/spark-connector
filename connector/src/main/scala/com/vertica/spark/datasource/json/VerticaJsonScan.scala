@@ -14,7 +14,7 @@
 package com.vertica.spark.datasource.json
 
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
-import com.vertica.spark.datasource.core.DSConfigSetupInterface
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, TableMetaInterface}
 import com.vertica.spark.datasource.fs.FileStoreLayerInterface
 import com.vertica.spark.datasource.v2.VerticaScan
 import com.vertica.spark.util.cleanup.CleanupUtils
@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * We support reading JSON files by re-using Spark's JSON support implemented in [[JsonTable]].
  * */
-class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig], batchFactory: JsonBatchFactory, fsLayer: FileStoreLayerInterface) extends Scan with Batch {
+class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig], batchFactory: JsonBatchFactory, fsLayer: FileStoreLayerInterface) extends Scan with Batch {
 
   private val logger = LogProvider.getLogger(classOf[VerticaScan])
 
@@ -61,8 +61,8 @@ class VerticaJsonScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterfac
   }
 
   override def readSchema(): StructType = {
-    (readConfigSetup.getTableSchema(config), jsonReadConfig.getRequiredSchema) match {
-      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+    (readConfigSetup.getTableMetadata(config), jsonReadConfig.getRequiredSchema) match {
+      case (Right(metadata), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { metadata.schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
   }

@@ -25,12 +25,14 @@ import com.vertica.spark.util.error.ErrorHandling.ConnectorResult
 import com.vertica.spark.util.listeners.SparkContextWrapper
 import com.vertica.spark.util.schema._
 import com.vertica.spark.util.version.VerticaVersionUtilsTest
+import com.vertica.spark.util.version.VerticaVersionUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{EqualTo, GreaterThan, LessThan}
 import org.apache.spark.sql.types._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import com.vertica.spark.util.version.Version
 
 class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest{
 
@@ -54,7 +56,7 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
       fileStoreConfig = fileStoreConfig,
       tableSource = tablename,
       partitionCount = None,
-      metadata = Some(VerticaReadMetadata(new StructType())),
+      metadata = Some(VerticaReadMetadata(new StructType(), VerticaVersionUtils.VERTICA_DEFAULT)),
       ValidFilePermissions("777").getOrElse(throw new Exception("File perm error")),
       maxRowGroupSize = 64,
       maxFileSize = 512)
@@ -111,10 +113,13 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
   it should "retrieve metadata when not provided" in {
     val config = makeReadConfig.copy(metadata = None)
 
+    val mockJdbcLayer = mock[JdbcLayerInterface]
     val mockSchemaTools = mock[SchemaToolsInterface]
-    (mockSchemaTools.readSchema _).expects(*,tablename).returning(Right(new StructType()))
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    (mockSchemaTools.readSchema _).expects(mockJdbcLayer,tablename).returning(Right(new StructType()))
+    VerticaVersionUtilsTest.mockGetVersion(mockJdbcLayer)
+
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mockJdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata match {
       case Left(_) => fail
@@ -126,10 +131,12 @@ class VerticaDistributedFilesystemReadPipeTests extends AnyFlatSpec with BeforeA
     val fullTablename = TableName("table", Some("schema"))
     val config = makeReadConfig.copy(tableSource = fullTablename, metadata = None)
 
+    val mockJdbcLayer = mock[JdbcLayerInterface]
     val mockSchemaTools = mock[SchemaToolsInterface]
-    (mockSchemaTools.readSchema _).expects(*,fullTablename).returning(Right(new StructType()))
+    (mockSchemaTools.readSchema _).expects(mockJdbcLayer,fullTablename).returning(Right(new StructType()))
+    VerticaVersionUtilsTest.mockGetVersion(mockJdbcLayer)
 
-    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mock[JdbcLayerInterface], mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
+    val pipe = new VerticaDistributedFilesystemReadPipe(config, mock[FileStoreLayerInterface], mockJdbcLayer, mockSchemaTools, mock[CleanupUtilsInterface], mock[SparkContextWrapper])
 
     pipe.getMetadata
   }

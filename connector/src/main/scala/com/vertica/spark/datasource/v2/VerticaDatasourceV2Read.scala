@@ -15,7 +15,7 @@ package com.vertica.spark.datasource.v2
 
 import com.typesafe.scalalogging.Logger
 import com.vertica.spark.config.{DistributedFilesystemReadConfig, LogProvider, ReadConfig}
-import com.vertica.spark.datasource.core.{DSConfigSetupInterface, DSReader, DSReaderInterface}
+import com.vertica.spark.datasource.core.{DSConfigSetupInterface, TableMetaInterface, DSReader, DSReaderInterface}
 import com.vertica.spark.datasource.fs.HadoopFileStoreLayer
 import com.vertica.spark.datasource.json.{JsonBatchFactory, VerticaJsonScan}
 import com.vertica.spark.util.error.{ConnectorError, ConnectorException, ErrorHandling, InitialSetupPartitioningError}
@@ -24,6 +24,8 @@ import com.vertica.spark.util.schema.ComplexTypesSchemaTools
 import com.vertica.spark.util.version.SparkVersionTools
 import com.vertica.spark.util.version.SparkVersionTools.SPARK_3_3_0
 import org.apache.spark.sql.catalyst.InternalRow
+import com.vertica.spark.util.version.VerticaVersionUtils
+import com.vertica.spark.util.version.Version
 import org.apache.spark.sql.connector.expressions.aggregate._
 import org.apache.spark.sql.connector.read._
 import org.apache.spark.sql.sources.Filter
@@ -54,7 +56,7 @@ case class UnknownColumnName(colName: String) extends ConnectorError {
 /**
   * Builds the scan class for use in reading of Vertica
   */
-class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends ScanBuilder with
+class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]) extends ScanBuilder with
   SupportsPushDownFilters  with SupportsPushDownRequiredColumns {
   protected var pushFilters: List[PushFilter] = Nil
 
@@ -92,14 +94,18 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
   private def useJson(cfg: ReadConfig): Boolean = {
     cfg match {
       case config: DistributedFilesystemReadConfig =>
-        (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-          case (Right(metadataSchema), requiredSchema) =>
+        (readConfigSetup.getTableMetadata(config), config.getRequiredSchema) match {
+          case (Right(metadata), requiredSchema) =>
             val schema: StructType = if (requiredSchema.nonEmpty) {
               requiredSchema
             } else {
-              metadataSchema
+              metadata.schema
             }
-            config.useJson || ctTools.filterComplexTypeColumns(schema).nonEmpty
+            config.useJson || ((VerticaVersionUtils.checkComplexTypesParquetExport(schema, metadata.version)) match {
+                case Left(err) => logger.info(err.getFullContext + ". Export will be written to JSON instead.")
+                                ctTools.filterComplexTypeColumns(schema).nonEmpty
+                case Right(_) => false
+              })
           case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
         }
       case _=> false
@@ -141,13 +147,13 @@ class VerticaScanBuilder(config: ReadConfig, readConfigSetup: DSConfigSetupInter
     }
   }
 
-  protected def tableSchema: StructType = readConfigSetup.getTableSchema(config) match {
-    case Right(schema) => schema
+  protected def tableSchema: StructType = readConfigSetup.getTableMetadata(config) match {
+    case Right(metadata) => metadata.schema
     case Left(err) => ErrorHandling.logAndThrowError(logger, err.context("Scan builder failed to get table schema"))
   }
 }
 
-class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends VerticaScanBuilder(config, readConfigSetup) with SupportsPushDownAggregates {
+class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]) extends VerticaScanBuilder(config, readConfigSetup) with SupportsPushDownAggregates {
 
   override def pushAggregation(aggregation: Aggregation): Boolean = {
     try{
@@ -192,7 +198,7 @@ class VerticaScanBuilderWithPushdown(config: ReadConfig, readConfigSetup: DSConf
   *
   * Extends mixin class to represent type of read. Options are Batch or Stream, we are doing a batch read.
   */
-class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig]) extends Scan with Batch {
+class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[ReadConfig] with TableMetaInterface[ReadConfig]) extends Scan with Batch {
 
   private val logger: Logger = LogProvider.getLogger(classOf[VerticaScan])
 
@@ -202,8 +208,8 @@ class VerticaScan(config: ReadConfig, readConfigSetup: DSConfigSetupInterface[Re
   * Schema of scan (can be different than full table schema)
   */
   override def readSchema(): StructType = {
-    (readConfigSetup.getTableSchema(config), config.getRequiredSchema) match {
-      case (Right(schema), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { schema }
+    (readConfigSetup.getTableMetadata(config), config.getRequiredSchema) match {
+      case (Right(metadata), requiredSchema) => if (requiredSchema.nonEmpty) { requiredSchema } else { metadata.schema }
       case (Left(err), _) => ErrorHandling.logAndThrowError(logger, err)
     }
   }
