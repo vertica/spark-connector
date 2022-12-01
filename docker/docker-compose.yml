@@ -8,6 +8,8 @@ services:
     ports:
       # JVM Remote debug port
       - "5005:5005"
+      # UI access port
+      - "4041:4040"
     volumes:
       - ./..:/spark-connector
       - ./vertica-hdfs-config/hadoop:/etc/hadoop/conf
@@ -73,6 +75,7 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+      - SPARK_PUBLIC_DNS=localhost
 
   spark-worker:
     build:
@@ -90,6 +93,7 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+      - SPARK_PUBLIC_DNS=localhost
 
   minio:
     image: minio/minio
