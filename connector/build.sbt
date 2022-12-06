@@ -39,6 +39,7 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.1"
 
+excludeDependencies += ExclusionRule("com.sun.jersey", "jersey-server")
 Test / parallelExecution := false
 
 assembly / assemblyMergeStrategy := {
