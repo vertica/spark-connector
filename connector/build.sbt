@@ -38,7 +38,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.1"
-
+// Hadoop's jersey-server conflicts with Spark's and can cause a Spark UI issue
 excludeDependencies += ExclusionRule("com.sun.jersey", "jersey-server")
 Test / parallelExecution := false
 
