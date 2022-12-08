@@ -30,7 +30,6 @@ jobs:
                    { spark: "[3.1.0, 3.2.0)", hadoop: "3.2.0" },
                    { spark: "[3.2.0, 3.3.0)", hadoop: "3.3.1" },
                    { spark: "[3.3.0, 3.4.0)", hadoop: "3.3.2" } ]
-        vertica: [ "12.0.0-0" ]
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
