@@ -17,13 +17,13 @@ class SparkVersionToolsTests extends AnyFlatSpec with MockFactory{
   it should "correctly parses Spark version string" in {
     val version = (new SparkVersionTools).getVersion(Some("3.2.1"))
     assert(version.isDefined)
-    assert(version.get.isEquals(Version(3,2,1)))
+    assert(version == Some(Version(3,2,1)))
   }
 
   it should "correctly parses major-minor-patch numbers" in {
     val version = (new SparkVersionTools).getVersion(Some("3.2.1-0-vertica-1"))
     assert(version.isDefined)
-    assert(version.get.isEquals(Version(3,2,1)))
+    assert(version == Some(Version(3,2,1)))
   }
 
   it should "return a Spark version string" in {

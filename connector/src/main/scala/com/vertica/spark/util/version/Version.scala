@@ -19,16 +19,6 @@ package com.vertica.spark.util.version
  * */
 case class Version(major: Int, minor: Int = 0, servicePack: Int = 0, hotfix: Int = 0) extends Ordered[Version] {
 
-  def largerOrEqual(version: Version): Boolean = this.compare(version) >= 0
-
-  def largerThan(version: Version): Boolean = this.compare(version) > 0
-
-  def lesserOrEqual(version: Version): Boolean = this.compare(version) <= 0
-
-  def lessThan(version: Version): Boolean = this.compare(version) < 0
-
-  def isEquals(version: Version): Boolean =  this.compare(version) == 0
-
   override def toString: String = s"${major}.${minor}.${servicePack}-${hotfix}"
 
   override def compare(that: Version): Int =

@@ -88,7 +88,7 @@ object VerticaVersionUtils {
 
   def checkComplexTypesParquetExport(schema: StructType, version: Version): ConnectorResult[Unit] = {
     val (nativeCols, complexTypeCols) = complexTypeUtils.filterColumnTypes(schema)
-    if (version.lessThan(VERTICA_12_0_2)) {
+    if (version < VERTICA_12_0_2) {
       Left(ComplexTypeWriteNotSupported(complexTypeCols, version.toString))
     }
     else {
@@ -108,7 +108,7 @@ object VerticaVersionUtils {
       } else {
         Right()
       }
-    } else if (version.lesserOrEqual(VERTICA_11_1)) {
+    } else if (version <= VERTICA_11_1) {
       if (complexTypeCols.nonEmpty) {
         Left(ComplexTypeReadNotSupported(complexTypeCols, version.toString))
       } else {
@@ -123,7 +123,7 @@ object VerticaVersionUtils {
    * Export to Json was added in Vertica 11.1.1
    * */
   def checkJsonSupport(version: Version): ConnectorResult[Unit] =
-    if(version.lessThan(VERTICA_11_1_1)){
+    if(version < VERTICA_11_1_1){
       Left(ExportToJsonNotSupported(version.toString))
     } else {
       Right()

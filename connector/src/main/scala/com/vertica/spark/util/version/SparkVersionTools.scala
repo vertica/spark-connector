@@ -53,7 +53,7 @@ class SparkVersionTools(reflection: ReflectionTools = new ReflectionTools) {
    * @return a compatible [[VerticaScanBuilder]] for the given spark version.
    * */
   def makeCompatibleVerticaScanBuilder(sparkVersion: Version, config: ReadConfig, readSetupInterface: DSConfigSetupInterface[ReadConfig]): VerticaScanBuilder = {
-    val sparkSupportsAggregatePushDown = sparkVersion.largerOrEqual(SPARK_3_2_0)
+    val sparkSupportsAggregatePushDown = sparkVersion >= SPARK_3_2_0
     if (sparkSupportsAggregatePushDown) {
       reflection.makeScanBuilderWithPushDown(config, readSetupInterface)
     } else {
@@ -68,7 +68,7 @@ class SparkVersionTools(reflection: ReflectionTools = new ReflectionTools) {
    * @return an array of [[Expression]] reprsenting the group-by columns.
    * */
   def getCompatibleGroupByExpressions(sparkVersion: Version, aggObj: Aggregation): Array[Expression] = {
-    if(sparkVersion.lessThan(SPARK_3_3_0)){
+    if(sparkVersion < SPARK_3_3_0){
       // $COVERAGE-OFF$
       reflection.aggregationInvokeMethod[Array[Expression]](aggObj, "groupByColumns")
       // $COVERAGE-ON$
