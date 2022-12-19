@@ -1,26 +1,49 @@
-# Timed Operations
+# Troubleshooting Guide
 
-We have the option of passing a parameter to our write job that times certain operations. For instance, if we look at the Spark-Connector examples in ```/spark-connector/examples/scala/src/main/scala/example/examples/BasicReadWriteExamples.scala``` we have a basic job that writes to Vertica then reads it.
+- [Debug Logs](#debug-logs)
+   * [Log Levels](#log-levels)
+   * [Spark Logs](#spark-logs)
+   * [Vertica Logs](#vertica-logs)
+- [Timed Operations](#timed-operations)
 
-This job falls under the writeThenRead function, and contains the following code to start the write:
+## Debug Logs
 
-```    
-  df.write.format(VERTICA_SOURCE)
-        .options(options + ("table" -> tableName))
-        .mode(mode)
-        .save()
+The Spark Connector outputs various logging information during a Spark job. The intention of this document is to break down some of these logs as well as describe how to increase the logging level or switch on certain metrics. 
+
+### Log Levels
+
+The Spark Connector uses the Scala-Logging library which wraps SLF4J. As such the logging levels are the same as Java's LOG4J and each tier includes the levels before it, as shown below.
+
+| Property Value | Log Levels |
+|--------|-------------|
+| `FATAL` | FATAL |
+| `ERROR` | FATAL, ERROR |
+| `WARNING` | WARNING, ERROR, FATAL |
+| `INFO` | INFO, WARNING, ERROR, FATAL|
+| `DEBUG` | DEBUG, INFO, WARNING, ERROR, FATAL|
+| `TRACE` | TRACE, DEBUG, INFO, WARNING, ERROR, FATAL|
+| `ALL` | TRACE, DEBUG, INFO, WARNING, ERROR, FATAL|
+| `OFF` | None |
+
+These log levels are written into the connector in various places and we have the option of adjusting the property value in order to obtain more information about what the connector is doing.
+
+### Spark Logs
+
+As shown below, when building a new SparkSession we can also adjust the logging level by using one of the methods that belongs to the SparkSession class.
+
+```
+ val spark = SparkSession.builder()
+      .appName("Vertica-Spark Connector Scala Example")
+      .getOrCreate()
+ spark.sparkContext.setLogLevel("DEBUG") // this line sets our logging level to DEBUG 
 ```
 
-If we add ```timed_operations``` as a parameter along with the string "true," this will tell the connector it needs to time some operations.
+The following is an an example of what the logging output during a simple write then read job would look like.
 
-```
-      df.write.format(VERTICA_SOURCE)
-        .options(options + ("table" -> tableName, "time_operations" -> "true"))
-        .mode(mode)
-        .save()
-```
-
-This should consequently produce the following output:
+<details>
+  <summary>
+    Log Output
+  </summary>
 
 ```
 root@fcd239af6c6b:/spark-connector/examples/scala# ./submit-examples.sh writeThenRead
@@ -274,7 +297,42 @@ EXPORT TO PARQUET(directory = 'webhdfs://hdfs:50070/data/d4791632_3c9a_45bd_87ff
 22/12/13 17:45:36 INFO ShutdownHookManager: Deleting directory /tmp/spark-17ebde17-89bf-447f-a30a-be750c8b9d52
 ```
 
-We should have the following checkpoints timed:
+</details>
+
+### Vertica Logs
+
+To find the Vertica logs it's best to follow the [Vertica documentation](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/AdministratorsGuide/Monitoring/Vertica/MonitoringLogFiles.htm) in order to correctly identify the log files for monitoring.
+
+If you are running the Spark-Connector's Vertica Docker container, the log files can be found at
+```
+/home/dbadmin/docker/v_docker_node0001_catalog/vertica.log
+```
+
+</details>
+
+## Timed Operations
+
+We have the option of passing a parameter to our write job that times certain operations. For instance, if we look at the Spark-Connector examples in ```/spark-connector/examples/scala/src/main/scala/example/examples/BasicReadWriteExamples.scala``` we have a basic job that writes to Vertica then reads it.
+
+This job falls under the writeThenRead function, and contains the following code to start the write:
+
+```    
+  df.write.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName))
+        .mode(mode)
+        .save()
+```
+
+If we add ```timed_operations``` as a parameter along with the string "true," this will tell the connector it needs to time some operations.
+
+```
+      df.write.format(VERTICA_SOURCE)
+        .options(options + ("table" -> tableName, "time_operations" -> "true"))
+        .mode(mode)
+        .save()
+```
+
+Some things to look for are:
 
 ```
 22/12/13 17:45:35 INFO VerticaDistributedFilesystemWritePipe: Timed operation: Copy and commit data into Vertica -- took 326 ms.
@@ -289,11 +347,7 @@ Where the Connector is writing data into Vertica through the pipe.
 Where the Connector is exporting data from Vertica into our intermediary storage in Parquet format.
 
 ```
-22/12/13 17:45:35 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Reading Parquet Files Metadata and creating partitions -- took 343 ms.
-```
-
-```
 22/12/13 17:45:36 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Reading Parquet Files Metadata and creating partitions -- took 26 ms.
 ```
 
-The last two are similar but the former is reading the metadata while the latter performs the read.
+The operation that reads the metadata on the intermediary Parquet files and prepares for Spark's extraction of the data.
