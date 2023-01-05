@@ -1,5 +1,7 @@
 # Troubleshooting Guide
 
+The Spark Connector outputs various logging information during a Spark job. The intention of this document is to break down some of these logs as well as describe how to increase the logging level or switch on certain metrics. 
+
 - [Debug Logs](#debug-logs)
    * [Log Levels](#log-levels)
    * [Spark Logs](#spark-logs)
@@ -7,8 +9,6 @@
 - [Timed Operations](#timed-operations)
 
 ## Debug Logs
-
-The Spark Connector outputs various logging information during a Spark job. The intention of this document is to break down some of these logs as well as describe how to increase the logging level or switch on certain metrics. 
 
 ### Log Levels
 
@@ -25,9 +25,18 @@ The Spark Connector uses the Scala-Logging library which wraps SLF4J. As such th
 | `ALL` | TRACE, DEBUG, INFO, WARNING, ERROR, FATAL|
 | `OFF` | None |
 
-These log levels are written into the connector in various places and we have the option of adjusting the property value in order to obtain more information about what the connector is doing.
+These log levels are written into the connector in various places and have the option of adjusting the property value in order to obtain more information about what the connector is doing.
 
 ### Spark Logs
+
+The chosen Spark job mode will determine where the logs are displayed.
+
+| Mode | Logs |
+|--------|-------------|
+| Client |  The driver logs will be shown locally while the executor logs will be shown on the Spark UI.|
+| Cluster | Both the driver and executor logs will be saved on the Spark UI. |
+
+#### Configuring Logs
 
 Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
 
@@ -311,7 +320,7 @@ For example, the Spark-Connector's Vertica Docker container's log files can be f
 
 ## Timed Operations
 
-We have the option of passing a parameter to our write job that times certain operations. For instance, if we look at the Spark-Connector examples in ```/spark-connector/examples/scala/src/main/scala/example/examples/BasicReadWriteExamples.scala``` we have a basic job that writes to Vertica then reads it.
+The connector has the option of passing a parameter to the write job that times certain operations. For instance, if we look at the Spark-Connector examples in ```/spark-connector/examples/scala/src/main/scala/example/examples/BasicReadWriteExamples.scala``` there is a basic job that writes to Vertica then reads it.
 
 This job falls under the writeThenRead function, and contains the following code to start the write:
 
