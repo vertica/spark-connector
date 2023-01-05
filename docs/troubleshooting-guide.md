@@ -29,14 +29,13 @@ These log levels are written into the connector in various places and we have th
 
 ### Spark Logs
 
-As shown below, when building a new SparkSession we can also adjust the logging level by using one of the methods that belongs to the SparkSession class.
+Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
 
-```
- val spark = SparkSession.builder()
-      .appName("Vertica-Spark Connector Scala Example")
-      .getOrCreate()
- spark.sparkContext.setLogLevel("DEBUG") // this line sets our logging level to DEBUG 
-```
+Here is an example spark-submit command showing how to add Spark's default configuration folder to the classpath:
+`spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
+where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
+
+Our connector logs major events when reading and writing, such as when it is copying a table from the intermediary file store into Vertica or exporting from Vertica into the intermediary file store. We also log errors and caveats around usage of the connector and connector options. Along with errors, the connector logs warnings when the usage of the connector is not as expected. In addition, we log info such as SQL statements, schemas, and filters that are used when manipulating relations or the data in those relations. In order to get a lower level view of our connector operations, a user may change the log level to ‘Debug’. The debug log level will give more details around specific components, such as partition information, impersonation tokens, and cleanup information.
 
 The following is an an example of what the logging output during a simple write then read job would look like.
 
@@ -303,7 +302,7 @@ EXPORT TO PARQUET(directory = 'webhdfs://hdfs:50070/data/d4791632_3c9a_45bd_87ff
 
 To find the Vertica logs it's best to follow the [Vertica documentation](https://www.vertica.com/docs/12.0.x/HTML/Content/Authoring/AdministratorsGuide/Monitoring/Vertica/MonitoringLogFiles.htm) in order to correctly identify the log files for monitoring.
 
-If you are running the Spark-Connector's Vertica Docker container, the log files can be found at
+For example, the Spark-Connector's Vertica Docker container's log files can be found at
 ```
 /home/dbadmin/docker/v_docker_node0001_catalog/vertica.log
 ```
@@ -335,19 +334,26 @@ If we add ```timed_operations``` as a parameter along with the string "true," th
 Some things to look for are:
 
 ```
+22/12/13 17:45:35 INFO VerticaDistributedFilesystemWritePipe: Timed operation: Writing Partition -- took 125 ms.
+```
+Connector writes to Parquet on the intermediary storage.
+
+```
 22/12/13 17:45:35 INFO VerticaDistributedFilesystemWritePipe: Timed operation: Copy and commit data into Vertica -- took 326 ms.
 ```
-
-Where the Connector is writing data into Vertica through the pipe.
+Connector copies the data from intermediary to Vertica.
 
 ```
 22/12/13 17:45:35 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Export To Parquet From Vertica -- took 122 ms.
 ```
-
-Where the Connector is exporting data from Vertica into our intermediary storage in Parquet format.
+Connector exports data from Vertica into the intermediary storage.
 
 ```
 22/12/13 17:45:36 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Reading Parquet Files Metadata and creating partitions -- took 26 ms.
 ```
+Connector reads the metadata on the intermediary files and prepares for Spark's extraction of the data.
 
-The operation that reads the metadata on the intermediary Parquet files and prepares for Spark's extraction of the data.
+```
+22/12/13 17:45:36 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Partition Read -- took 43 ms.
+```
+Connector reads the data.
