@@ -7,6 +7,7 @@ The Spark Connector outputs various logging information during a Spark job. The 
    * [Spark Logs](#spark-logs)
    * [Vertica Logs](#vertica-logs)
 - [Timed Operations](#timed-operations)
+- [Common Errors](#common-errors)
 
 ## Debug Logs
 
@@ -366,3 +367,12 @@ Connector reads the metadata on the intermediary files and prepares for Spark's 
 22/12/13 17:45:36 INFO VerticaDistributedFilesystemReadPipe: Timed operation: Partition Read -- took 43 ms.
 ```
 Connector reads the data.
+
+## Common Errors
+
+You may see an error such as:
+```
+21/05/31 17:35:21 ERROR DFSClient: Failed to close inode 16447
+```
+
+This is simply an issue with hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.

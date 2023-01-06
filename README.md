@@ -239,30 +239,17 @@ For Vertica 10, only writing native arrays (1D arrays of primitive) is supported
 
 If you would like to try out the connector, we have several example applications you can run [in the examples folder](https://github.com/vertica/spark-connector/tree/main/examples).
 
-## Configuring Logging
-
-The connector uses Spark's log4j configuration for logging. Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
-
-Here is an example spark-submit command showing how to add Spark's default configuration folder to the classpath:
-`spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
-where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
-
-Our connector logs major events when reading and writing, such as when it is copying a table from the intermediary file store into Vertica or exporting from Vertica into the intermediary file store. We also log errors and caveats around usage of the connector and connector options. Along with errors, the connector logs warnings when the usage of the connector is not as expected. In addition, we log info such as SQL statements, schemas, and filters that are used when manipulating relations or the data in those relations. In order to get a lower level view of our connector operations, a user may change the log level to ‘Debug’. The debug log level will give more details around specific components, such as partition information, impersonation tokens, and cleanup information.
-
 ## Additional Guides
 
 For information on how to configure Kerberos and TLS with the connector, see the [Kerberos user guide](docs/kerberos-guide.md) and [TLS user guide](docs/tls-guide.md) files in the root of this repository.
 
 For information on tuning performance, see [here in our performance-tests section](performance-tests/README.md).
 
+For information on troubleshooting, see the [troubleshooting guide](docs/troubleshooting-guide.md).
+
 ## Limitations
 
 If using S3 rather than HDFS, the spark cluster must be running with hadoop 3.3. Our [S3 user guide](docs/s3-guide.md) goes over how to configure this.
-
-You may see an error such as:
-21/05/31 17:35:21 ERROR DFSClient: Failed to close inode 16447
-
-This is simply an issue with hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.
 
 ## Videos
 
