@@ -20,5 +20,21 @@ RUN apt-get update && \
     apt-get -y install sbt
 
 # Sync Python version
-RUN curl https://raw.githubusercontent.com/bitnami/bitnami-docker-spark/master/3.3/debian-11/prebuildfs/opt/bitnami/scripts/libcomponent.sh -o /opt/bitnami/scripts/libcomponent.sh && \
-    . /opt/bitnami/scripts/libcomponent.sh && component_unpack "python" "3.10.6-8" --checksum 84801ae4aee44f17012410d30a7d45e7e30ff842469fea2e5196050142713efc
+RUN install_packages curl
+RUN mkdir -p /tmp/bitnami/pkg/cache/ && cd /tmp/bitnami/pkg/cache/ && \
+    COMPONENTS=( \
+      "python-3.10.6-8-linux-${OS_ARCH}-debian-11" \
+    ) && \
+    for COMPONENT in "${COMPONENTS[@]}"; do \
+      if [ ! -f "${COMPONENT}.tar.gz" ]; then \
+        curl -SsLf "https://downloads.bitnami.com/files/stacksmith/${COMPONENT}.tar.gz" -O ; \
+        curl -SsLf "https://downloads.bitnami.com/files/stacksmith/${COMPONENT}.tar.gz.sha256" -O ; \
+      fi && \
+      sha256sum -c "${COMPONENT}.tar.gz.sha256" && \
+      tar -zxf "${COMPONENT}.tar.gz" -C /opt/bitnami --strip-components=2 --no-same-owner --wildcards '*/files' && \
+      rm -rf "${COMPONENT}".tar.gz{,.sha256} ; \
+    done
+RUN apt-get autoremove --purge -y curl && \
+    apt-get update && apt-get upgrade -y && \
+    apt-get clean && rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
