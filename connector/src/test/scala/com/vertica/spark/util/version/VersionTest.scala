@@ -21,20 +21,20 @@ import org.scalatest.BeforeAndAfterAll
 class VersionTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory with org.scalatest.OneInstancePerTest {
 
   it should "compare to bigger version" in {
-    assert(Version(11, 1, 5, 3).largerThan(Version(10, 4, 7, 5)))
+    assert(Version(11, 1, 5, 3) > (Version(10, 4, 7, 5)))
   }
 
   it should "compare to smaller version" in {
-    assert(Version(11, 1, 5, 3).lessThan(Version(12, 0, 2, 1)))
+    assert(Version(11, 1, 5, 3) < (Version(12, 0, 2, 1)))
   }
 
   it should "compare to smaller or equal versions" in {
-    assert(Version(11, 1, 5, 3).lesserOrEqual(Version(11, 1, 5, 3)))
-    assert(Version(11, 1, 5, 3).lesserOrEqual(Version(11, 2, 5, 3)))
+    assert(Version(11, 1, 5, 3) <= (Version(11, 1, 5, 3)))
+    assert(Version(11, 1, 5, 3) <= (Version(11, 2, 5, 3)))
   }
 
   it should "compare to bigger or equal versions" in {
-    assert(Version(11, 1, 5, 3).largerOrEqual(Version(11, 1, 5, 3)))
-    assert(Version(11, 1, 5, 3).largerOrEqual(Version(11, 1, 5, 2)))
+    assert(Version(11, 1, 5, 3) >= (Version(11, 1, 5, 3)))
+    assert(Version(11, 1, 5, 3) >= (Version(11, 1, 5, 2)))
   }
 }
