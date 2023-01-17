@@ -82,6 +82,9 @@ services:
       context: ./client
       args:
         SPARK: ${SPARK_INSTALL:-latest}
+    # Uncomment these ports to access the Spark Worker logs in the UI (not possible when scaling beyond a single worker node)
+    #ports:
+      #- "8081:8081"
     volumes:
       - ./..:/spark-connector
     environment:
