@@ -2725,6 +2725,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       stmt.close()
     }
     assert (count == numDfRows)
+    TestUtils.fsCleanup(fsLayer, fsConfig.externalTableAddress)
   }
 
   it should "Fail if schema doesn't match table data type" in {
