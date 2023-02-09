@@ -109,6 +109,8 @@ jobs:
     strategy:
       matrix:
         jdk: ['11', '8']
+        fail-fast: true
+        max-parallel: 1
     needs: build
     steps:
       - name: Checkout the project
@@ -145,6 +147,8 @@ jobs:
     strategy:
       matrix:
         jdk: ['11', '8']
+        fail-fast: true
+        max-parallel: 1
     needs: build
     steps:
       - name: Checkout the project
