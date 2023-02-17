@@ -2,8 +2,9 @@
 
 ## Creating the Jupyter Notebook Docker Container
 
-In order to run these examples the Jupyter container must be created and started.  In order to do this, you will first need to navigate to the ```spark-connector/docker``` directory. From there you can start the Docker containers with the "jupyter" profile:
+In order to run these examples the Jupyter container must be created and started.  To do that start the Docker containers with the "jupyter" profile:
 ```sh
+cd /spark-connector/docker
 docker-compose --profile jupyter up -d
 ```
 
@@ -15,7 +16,7 @@ For more information see the [Docker README](/docker/README.md).
 
 1. Go to http://localhost:8888/ and login with the token "test"
 2. Under the File Browser on the left, navigate to the work folder and open the desired example Jupyter Notebook
-3. Execute the cells, in order, using the Run button or by pressing ```Shift-Enter``` 
+3. Execute the cells, in order, using the Run button or by pressing `Shift+Enter`
 
 ## Examples
 
@@ -36,7 +37,7 @@ Each Notebook Example is annotated and written in a way to walk the user step-by
 
 ## ARM Limitations
 
-Due to limited compatability with Docker, if you are running these examples on an ARM-based machine do note that there may be performance issues or failure of connection between containers.
+Due to limited availability of aarch64 images in Docker at this time, if you are running these examples on an ARM-based machine note that there may be performance issues or connection failures between containers.
 
 ## General Notebook Configuration
 
