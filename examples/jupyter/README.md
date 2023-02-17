@@ -4,12 +4,40 @@
 
 In order to run these examples the Jupyter container must be created and started.  To do that start the Docker containers with the "jupyter" profile:
 ```sh
+cd /spark-connector/docker
 docker-compose --profile jupyter up -d
 ```
 
 An important thing to note is that the Spark and Python versions for Spark (master and worker nodes) and Jupyter Notebook must match, otherwise it will not work.  Our Docker environment ensures the Python and Spark versions between these images are in-sync.
 
 For more information see the [Docker README](/docker/README.md).
+
+## Running a Notebook
+
+1. Go to http://localhost:8888/ and login with the token "test"
+2. Under the File Browser on the left, navigate to the work folder and open the desired example Jupyter Notebook
+3. Execute the cells, in order, using the Run button or by pressing `Shift+Enter`
+
+## Examples
+
+### Basic Read & Write
+
+A simple read and write that uses a two column schema of a string and an integer.
+
+### Complex Array
+
+A Spark job that writes a regular array, nested array, and an array representative of a hash map.
+
+### Linear Regression
+
+A Machine Learning example that utilizes Spark's Linear Regression algorithm. This job also contains reading and importing a .csv into Vertica.
+
+
+Each Notebook Example is annotated and written in a way to walk the user step-by-step through a Spark job to Vertica.
+
+## ARM Limitations
+
+Due to limited availability of aarch64 images in Docker at this time, if you are running these examples on an ARM-based machine note that there may be performance issues or connection failures between containers.
 
 ## General Notebook Configuration
 
@@ -33,9 +61,3 @@ sc = spark.sparkContext
 Once that is complete the Spark context may be used to read and write data using the Vertica Spark Connector data source ("com.vertica.spark.datasource.VerticaSource").  See the example Jupyter Notebooks in this folder.
 
 Note that Jupyter Notebook previously bundled the Spylon kernel so that Scala could be used, but that kernel has not been maintained and is no longer included in Jupyter Notebook by default.  As a result it is recommended to use the Python kernel in Jupyter Notebook.
-
-## Running a Notebook
-
-1. Go to http://localhost:8888/ and login with the token "test"
-2. Under the File Browser on the left, navigate to the work folder and open the desired example Jupyter Notebook
-3. Execute the cells, in order, using the Run button
