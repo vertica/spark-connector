@@ -50,4 +50,5 @@ fi
 
 echo "Vertica container is now running"
 
+sudo ssh-keygen -q -A
 sudo /usr/sbin/sshd -D
