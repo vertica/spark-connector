@@ -21,7 +21,7 @@ Runs `main.yml` a pull requests to `main` (when a PR is created or has content p
 ### Nightly Tests
 The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (or 2:18 AM Pacific Time), executing the 
 `main` branch against non-critical tests. It currently performs regression testing on combinations of Spark 3.x, with 
-the appropriate Hadoop HDFS, against Vertica 11.1.1-2 and 12.0.3-0. We also test against the latest Spark 3.x on a 
+the appropriate Hadoop HDFS, against Vertica 11.1.1-2 and 12.0.4-0. We also test against the latest Spark 3.x on a 
 standalone Spark cluster.
 
 ### Weekly Tests
