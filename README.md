@@ -29,14 +29,14 @@ The connector relies on a distributed filesystem, such as HDFS, to act as a brid
 
 The connector creates a JDBC connection to Vertica in order to manage the process of importing or exporting data (the data does not pass over this connection).
 
-![Overview](img/Overview.png?raw=true "")
+![Overview](img/Overview.png?raw=true "Overview Architecture")
 
 ## Getting Started
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - Vertica (10.1.1-0 or higher)
 - Spark (3.0.0 or higher)
-- An HDFS cluster or HDFS-compatible filesystem (S3, Google Cloud Storage, etc.), for use as an intermediary between Spark and Vertica
+- An HDFS cluster or HDFS-compatible filesystem (S3, Google Cloud Storage, etc), for use as an intermediary between Spark and Vertica
 - A Spark application, either running locally for quick testing, or running on a Spark cluster. If using S3, Spark must be using hadoop 3.3
 
 For an easier quick test of the connector using a Docker environment, see [this guide](examples/README.md) for running our examples.
