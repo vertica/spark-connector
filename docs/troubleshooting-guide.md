@@ -377,4 +377,4 @@ You may see an error such as:
 21/05/31 17:35:21 ERROR DFSClient: Failed to close inode 16447
 ```
 
-This is simply an issue with hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.
+This is simply an issue with Hadoop closing file handles on files that have been cleaned up by the connector. It does not cause any functional issues.

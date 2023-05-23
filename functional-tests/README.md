@@ -34,7 +34,7 @@ cd /spark-connector/functional-tests
 
 Use `sbt` to start the sbt server from the command line. Enter `run` to execute the default test suites. This will run the tests on a local Spark cluster. You can specify arguments to modify you test run. For more details, use `run -h`.
 
-As an example, to include large data tests into the run, use `run -l`. Whereas `run -s ComplexTypeTests` will only execute ComplexTypeTests.
+As an example, to include large data tests into the run, use `run -l`. On the other had, using `run -s ComplexTypeTests` will only execute ComplexTypeTests.
 
 To run a specific test in a suite, use option `-t` to specify a test name. For example, `run -s ComplexTypeTests -t "<TEST_NAME>"` will execute the specified tests in the suite. Note that option `-t` has to be used with option `-s`.
 
@@ -56,7 +56,7 @@ Make sure your update the option `filepath` to your S3 bucket as well.
 
 Alternatively, you can use the configuration used in our S3 example if you want to test against our Minio container.
 
-If a different version of Spark is used, make sure to also update `hadoop-aws` to the appropriate version for the hadoop install used.
+If a different version of Spark is used, make sure to also update `hadoop-aws` to the appropriate version for the Hadoop install used.
 
 ### Using GCS:
 
@@ -84,7 +84,7 @@ Note that you should do this outside of the Docker container as it will be extre
 
 To submit the functional test to our standalone cluster, inside the client container navigate to `spark-connector/functional-tests` and use `submit-functional-tests.sh`.
 
-Once submitted, verify through the [web ui](localhost:8080) and the [jobs ui](localhost:4040) that the application was submitted. Our functional test, without any arguments, will create multiple spark sessions. You should expect multiple applications executing one after another.
+Once submitted, verify through the [web ui](localhost:8080) and the [jobs ui](localhost:4040) that the application was submitted. Our functional test, without any arguments, will create multiple Spark sessions. You should expect multiple applications executing one after another.
 
 #### Configuring the cluster
 
