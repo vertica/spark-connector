@@ -13,7 +13,7 @@ You can run the examples either on our docker environment or on your own Spark-V
 
 First, ensure that the docker environment is up and running by following these [instructions](/examples/README.md). 
 
-Start by assembling this example project into a fat jar with: 
+Start by assembling this example project into a fat JAR with: 
 ```sh
 sbt assembly
 ```
@@ -36,7 +36,7 @@ override them to fit your setup.
 ### Using a modified Spark Connector
 
 The example is using our latest Spark Connector release from Maven. Should you need to use a custom build of the connector (e.g. testing 
-some changes), place the connector fat jar (from `sbt assembly`) inside this project's `lib`. Then, remove 
+some changes), place the connector fat JAR (from `sbt assembly`) inside this project's `lib`. Then, remove 
 the connector dependency `"com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"` from `build.sbt`.
 
 The modified connector should now be applied when you build the example with `sbt assembly`
@@ -61,7 +61,7 @@ The `submit-examples.sh` script uses `spark-submit` underneath. Thus, you can co
 
 ### Running through SBT
 
-Sometimes, you may find it more convenient to work inside SBT as you do not need to assemble a fat jar each time a change
+Sometimes, you may find it more convenient to work inside SBT as you do not need to assemble a fat JAR each time a change
 was made. To do this, edit the Spark context inside `src/main/scala/example/Main.scala` to specify a local master
 ```
     val spark = SparkSession.builder()

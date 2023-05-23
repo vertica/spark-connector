@@ -55,7 +55,7 @@ There are several examples of Spark programs that use this connector in the [exa
 
 The methods for creating a Spark cluster are documented [here](https://spark.apache.org/docs/latest/cluster-overview.html).
 
-Once you have a Spark cluster, you can run such an application with spark-submit, including the connector jar.
+Once you have a Spark cluster, you can run such an application with spark-submit, including the connector JAR.
 
 ```shell
 spark-submit --master spark://cluster-url.com:7077 --deploy-mode cluster sparkconnectorprototype-assembly-0.1.jar
@@ -254,7 +254,7 @@ For information on troubleshooting, see the [troubleshooting guide](docs/trouble
 
 ## Limitations
 
-If using S3 rather than HDFS, the spark cluster must be running with hadoop 3.3. Our [S3 user guide](docs/s3-guide.md) goes over how to configure this.
+If using S3 rather than HDFS, the Spark cluster must be running with hadoop 3.3. Our [S3 user guide](docs/s3-guide.md) goes over how to configure this.
 
 ## Videos
 

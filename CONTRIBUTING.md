@@ -84,7 +84,7 @@ The first requirement for a test environment is [Installing Vertica](https://www
 
 #### Spark
 
-The next requirement is a Spark application that uses the connector jar. Example projects can be found under the examples directory. To use the JAR built above, copy it into a subdirectory called "lib" at the root of the project.
+The next requirement is a Spark application that uses the connector JAR. Example projects can be found under the examples directory. To use the JAR built above, copy it into a subdirectory called "lib" at the root of the project.
 
 ```shell
 cd examples/basic-read
