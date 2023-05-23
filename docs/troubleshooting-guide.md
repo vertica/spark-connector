@@ -2,12 +2,14 @@
 
 The Spark Connector outputs various logging information during a Spark job. The intention of this document is to break down some of these logs as well as describe how to increase the logging level or switch on certain metrics. 
 
-- [Debug Logs](#debug-logs)
-   * [Log Levels](#log-levels)
-   * [Spark Logs](#spark-logs)
-   * [Vertica Logs](#vertica-logs)
-- [Timed Operations](#timed-operations)
-- [Common Errors](#common-errors)
+- [Troubleshooting Guide](#troubleshooting-guide)
+  - [Debug Logs](#debug-logs)
+    - [Log Levels](#log-levels)
+    - [Spark Logs](#spark-logs)
+      - [Configuring Logs](#configuring-logs)
+    - [Vertica Logs](#vertica-logs)
+  - [Timed Operations](#timed-operations)
+  - [Common Errors](#common-errors)
 
 ## Debug Logs
 

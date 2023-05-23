@@ -26,12 +26,12 @@ If you would like to implement the feature yourself, open an issue to ask before
 Fork the project from the [GitHub repo](https://github.com/vertica/spark-connector) and checkout your local environment.
 
 ```shell
-git clone git@github.com:YOURUSERNAME/spark-connector.git
+git clone git@github.com:<USERNAME>/spark-connector.git
 cd spark-connector
 ```
 
-Your GitHub repository **YOURUSERNAME/spark-connector** will be called `origin` in
-Git. You should also setup **vertica/spark-connector** as an `upstream` remote.
+Your GitHub repository `<USERNAME>/spark-connector` will be called `origin` in
+Git. You should also setup `vertica/spark-connector` as an `upstream` remote.
 
 ```shell
 git remote add upstream git@github.com:vertica/spark-connector.git
@@ -70,14 +70,13 @@ sbt assembly
 
 Running this will run all unit tests and build the JAR to `target/scala-2.12/spark-vertica-connector-assembly-<VERSION>.jar`.
 
-**Note:** Make sure that you are building the JAR on your local machine; building it inside our docker environment 
-will be extremely slow due to shared volumes being slow.
+**Note:** Make sure that you are building the JAR on your local machine; building it inside our docker environment will be extremely slow due to Docker shared volumes being slow.
 
 ### Step 4: Setup an environment
 
-The easiest way to setup an environment is to spin up the Docker containers that includes single-node clusters of both Vertica and HDFS following [this guide](examples/README.md).
+The easiest way to setup an environment is to spin up the Docker containers that includes single-node clusters of both Vertica and HDFS, among other services, following [this guide](docker/README.md).
 
-Alternatively, you may download the requirements below:
+Alternatively, you may download and install the requirements below:
 
 #### Vertica
 
@@ -118,7 +117,7 @@ hadoop fs -mkdir data
 A final step may be required for the networking between Vertica and the HDFS Docker container to function. Use `docker ps` to find the container ID, and add an entry to `/etc/hosts` resolving that ID as a hostname for localhost
 
 ```shell
-127.0.0.1 <docker-id>
+127.0.0.1 <DOCKER_ID>
 ```
 
 This is assuming a single-node Vertica installation on the same machine as the HDFS container.
@@ -212,7 +211,7 @@ To see if tests are working, you may run:
 sbt test
 ```
 
-The tests may also be run from an IDE such as IntelliJ.
+Note that `sbt assembly` also calls `sbt test`. The tests may also be run from an IDE, such as IntelliJ.
 
 We try to keep overall unit test coverage above a certain threshold. To see if the connector is meeting that threshold, run:
 
@@ -233,6 +232,8 @@ If you set the `sparkVersion` in `build.sbt` to `3.0.0`, you will also need to u
 Similarly, if you set the `sparkVersion` in `build.sbt` to `3.2.0`, you will also need to use `hadoop-hdfs` version `3.3.0`.
 
 If a change is made to one of those bottom-layer components (e.g. VerticaJdbcLayer, FileStoreLayer), integration tests should be included. Additionally, if a change is large and touches many components of the connector, integration tests should be included.
+
+These integration tests are run automatically via GitHub Actions when a PR is created or updated (and again when the PR is merged to `main`).
 
 ### Step 6: Push and Rebase
 
@@ -276,7 +277,17 @@ That's it! Thank you for your code contribution!
 
 After your pull request is merged, you can safely delete your branch and pull the changes from the upstream repository.
 
-### Versioning
+### Step 8: Publish a Release
 
-We are targeting support for all Spark releases since 3.0. Our release number format is `major.minor.patch`, with the major
-and minor numbers always trying to match the latest Spark release.
+Once all of the features and bugs for a given release are complete, follow this release checklist:
+1. Tag issues with a milestone to make listing the changes in a release easier, otherwise look at list of closed PRs since last release
+2. Branch and create a PR for next release by changing the version number under `CONTRIBUTING.md`, `version.properties`, and other files (search for the previous release version in the codebase)
+3. Create a new draft release, listing the features added and bugs fixed (create a new tag for `vx.y.z` when publishing the release, such as `v3.2.1`)
+4. Merge the version update PR
+5. Ensure local code is up-to-date, then build the JARs (`sbt clean package` named `spark-vertica-connector-slim-x.y.z.jar`, and `sbt clean assembly` named `spark-vertica-connector-all-x.y.z.jar`), and attach to the release
+6. If the GitHub Actions tests pass, publish the release
+7. Ask [Vertica open source team](mailto:vertica-opensrc@microfocus.com) to upload the JARs to Maven (takes a few hours for the JARs to show up on [Maven Central](https://mvnrepository.com/artifact/com.vertica.spark/vertica-spark))
+
+#### Versioning
+
+We are targeting support for all Spark releases since 3.0. Our release number format is `major.minor.patch`, with the major and minor numbers always trying to match the latest Spark release.

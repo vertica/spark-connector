@@ -24,7 +24,7 @@ You can [download Hadoop 3.3 here](https://hadoop.apache.org/releases.html). Mak
 Note: All instructions here are for MacOS or Linux users.
 
 First, you will need to decompress the Spark tar file and Hadoop tar file:
-```
+```sh
 tar xvf spark-3.0.2-bin-without-hadoop.tgz
 tar xvf hadoop-3.3.0.tar.gz
 ```
@@ -47,7 +47,7 @@ Now, edit spark-env.sh and point SPARK_DIST_CLASSPATH to the Hadoop folder you e
 See [Spark's documentation](http://spark.apache.org/docs/latest/hadoop-provided.html) for more information.
 
 Finally, set the SPARK_HOME environment variable:
-```
+```sh
 export SPARK_HOME=/opt/spark
 export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 ```

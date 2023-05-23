@@ -14,7 +14,7 @@ You can run the examples either on our docker environment or on your own Spark-V
 First, ensure that the docker environment is up and running by following these [instructions](/examples/README.md). 
 
 Start by assembling this example project into a fat jar with: 
-```
+```sh
 sbt assembly
 ```
 Make sure that you do this outside of the docker environment or else the process would be very slow.
@@ -34,6 +34,7 @@ The file `src/main/resources/application.conf` contains common connector option 
 override them to fit your setup.
 
 ### Using a modified Spark Connector
+
 The example is using our latest Spark Connector release from Maven. Should you need to use a custom build of the connector (e.g. testing 
 some changes), place the connector fat jar (from `sbt assembly`) inside this project's `lib`. Then, remove 
 the connector dependency `"com.vertica.spark" % "vertica-spark" % s"${version.value}-slim"` from `build.sbt`.
@@ -56,8 +57,7 @@ configurations, check out our [readme](/README.md) and our [GCS instructions](/d
 
 ### Configuring `submit-examples.sh`
 
-The `submit-examples.sh` script uses `spark-submit` underneath. Thus, you can configure it with any valid [configurations](https://spark.apache.org/docs/latest/submitting-applications.html).
-For examples, to run on your own Vertica Spark cluster, change `--master` to your Spark driver URL.
+The `submit-examples.sh` script uses `spark-submit` underneath. Thus, you can configure it with any valid [configurations](https://spark.apache.org/docs/latest/submitting-applications.html). For example, to run on your own Vertica Spark cluster, change `--master` to your Spark driver URL.
 
 ### Running through SBT
 
@@ -69,13 +69,12 @@ was made. To do this, edit the Spark context inside `src/main/scala/example/Main
       .appName("Vertica-Spark Connector Scala Example")
       .getOrCreate()
 ```
-Then, to start the example use `sbt` to start the sbt server. To run the example, use `run <example-name>`
+
+Then, to start the example use `sbt` to start the sbt server. To run the example, use `run <EXAMPLE_NAME>`
 
 ### Debugging
-You can debug the examples through JVM remote debugging.
-If using sbt, start with sbt server with `sbt -jvm-debug localhost:5005`.
-If submitting to our standalone cluster, use `submit-examples-debug.sh` which will also open a remote debug port on `localhost:5005`.
-The process will wait for a connection before continuing.
+
+You can debug the examples through JVM remote debugging. If using sbt, start with sbt server with `sbt -jvm-debug localhost:5005`. If submitting to our standalone cluster, use `submit-examples-debug.sh` which will also open a remote debug port on `localhost:5005`. The process will wait for a connection before continuing.
 
 Then, configure your IDE to connect to the remote debug address above.
 
@@ -85,12 +84,12 @@ The example `writeThenReadWithKerberos` demonstrates how to configure the connec
 
 To test using our kerberos docker environment, first make sure to shut down our docker environment if it is running. 
 Navigate to `spark-connector/docker/` on your local machine and run
-```
+```sh
 docker-compose down
 ```
 
 Once finished, run the following to setup our docker environment and login to the client container:
-```
+```sh
 docker-compose -f docker-compose-kerberos.yml up -d
 docker exec -it client bash
 ```

@@ -32,7 +32,6 @@ A Spark job that writes a regular array, nested array, and an array representati
 
 A Machine Learning example that utilizes Spark's Linear Regression algorithm. This job also contains reading and importing a .csv into Vertica.
 
-
 Each Notebook Example is annotated and written in a way to walk the user step-by-step through a Spark job to Vertica.
 
 ## ARM Limitations
