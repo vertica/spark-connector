@@ -21,7 +21,19 @@ If you would like to implement the feature yourself, open an issue to ask before
 
 ## Code Contributions
 
-### Step 1: Fork the project
+### Step 1: Install the prerequisites
+
+Install the following prerequisites on your machine:
+- Docker Desktop
+- IDE (such as VS Code or IntelliJ)
+- JDK 8 or 11
+- sbt (will manage Scala automatically)
+
+Technically the JDK and sbt do not need to be installed since they will be available in the client Docker container, but since sbt builds run very slow on shared volumes it is recommended to do the actual building on your host machine.
+
+Note the use of JDK 8 or 11 as the version of Scala we currently use (2.12.12) does not work with newer versions of the JDK (see [here](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html)).
+
+### Step 2: Fork the project
 
 Fork the project from the [GitHub repo](https://github.com/vertica/spark-connector) and checkout your local environment.
 
@@ -49,14 +61,14 @@ git config --global user.name "John Smith"
 git config --global user.email "email@example.com"
 ```
 
-### Step 2: Branch
+### Step 3: Branch
 
 Create a new branch for the work with a descriptive name:
 ```shell
 git checkout -b my-fix-branch
 ```
 
-### Step 3: Build the connector
+### Step 4: Build the connector
 
 Our standard way of distributing the connector is an assembly JAR. This JAR contains all the dependencies of the connector. To build this JAR, we use the build tool SBT.
 
@@ -72,71 +84,32 @@ Running this will run all unit tests and build the JAR to `target/scala-2.12/spa
 
 **Note:** Make sure that you are building the JAR on your local machine; building it inside our docker environment will be extremely slow due to Docker shared volumes being slow.
 
-### Step 4: Setup an environment
+### Step 5: Setup an environment
 
-The easiest way to setup an environment is to spin up the Docker containers that includes single-node clusters of both Vertica and HDFS, among other services, following [this guide](docker/README.md).
+The following services are required:
+- Vertica
+- HDFS (or another intermediary filestore, like S3 or GCS)
+- Spark (either run locally or a Spark cluster)
 
-Alternatively, you may download and install the requirements below:
+Follow our [Docker guide](docker/README.md) to create all of the necessary Docker containers, including a single-node cluster of Vertica, HDFS, and Spark.  Additional containers used for development are also created, such as a client container with all of the necessary prerequisites for building and running the Spark Connector.
+
+Once the containers are running you can run a Spark application that makes use of the Spark Connector.  See the [examples](/examples) or [functional-tests](/functional-tests) folders for example applications that can be run.
 
 #### Vertica
 
-The first requirement for a test environment is [Installing Vertica](https://www.vertica.com/docs/latest/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm). Our integration tests run on a single-node Vertica server and that should be all that's required for development unless you are working on a feature specifically relating to multi-node functionality, or are testing performance.
-
-#### Spark
-
-The next requirement is a Spark application that uses the connector JAR. Example projects can be found under the examples directory. To use the JAR built above, copy it into a subdirectory called "lib" at the root of the project.
-
-```shell
-cd examples/basic-read
-mkdir lib
-cp ../../connector/target/scala-2.12/spark-vertica-connector-assembly-<VERSION>.jar lib
-sbt run
-```
-
-#### HDFS
-
-The next requirement is an intermediary distributed filesystem such as HDFS. This acts as an intermediary transport method between Spark and Vertica.
-
-The easiest setup for this in a development environment is to use a Docker container with HDFS. We recommend [docker-hdfs](https://github.com/mdouchement/docker-hdfs). You can clone it and then set it up as follows:
-
-```shell
-cd docker-hdfs
-sudo cp etc/hadoop/* /etc/hadoop/conf
-docker build -t mdouchement/docker-hdfs .
-docker run -p 22022:22 -p 8020:8020 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -it mdouchement/hdfs
-```
-
-The `cp` step above copies the hadoop configuration to a location where Vertica can pick it up. If Vertica was on a different machine, the configuration files would have to be copied to that machine.
-
-After spinning up the Docker container, it will put you in a shell, where you can manage the HDFS filesystem with commands like
-
-```shell
-hadoop fs -mkdir data
-```
-
-A final step may be required for the networking between Vertica and the HDFS Docker container to function. Use `docker ps` to find the container ID, and add an entry to `/etc/hosts` resolving that ID as a hostname for localhost
-
-```shell
-127.0.0.1 <DOCKER_ID>
-```
-
-This is assuming a single-node Vertica installation on the same machine as the HDFS container.
-
-#### Java 
-
-Spark Connector requires Java 8 (8u92 or later) or Java 11.
+If using your own Vertica instance, refer to the [Vertica Installation Guide](https://www.vertica.com/docs/latest/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm). Our integration tests run on a single-node Vertica server and that should be all that's required for development unless you are working on a feature specifically relating to multi-node functionality, or are testing performance.
 
 #### AWS S3 or Google GCS
 
-Follow our [S3 user guide](docs/s3-guide.md) to learn how to use the connector with S3.  Or the [GCS user guide](docs/gcs-guide.md) to learn how to use the connector with GCS.
+As an alternative to using HDFS, follow our [S3 user guide](docs/s3-guide.md) or the [GCS user guide](docs/gcs-guide.md) to use one of those filesystems instead.
 
-### Step 5: Implement your fix or feature
+### Step 6: Implement your fix or feature
 
 At this point, you're ready to make your changes. Feel free to reach out over GitHub for help navigating the code and implementing the fix or feature.
 
 #### Debugging in Docker
 
-If you are using Docker as your dev enviroment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, login to the client container and navigate to the `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will accept connections from any host. 
+If you are using Docker as your dev environment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, login to the client container and navigate to the `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will accept connections from any host. 
 
 The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
 
@@ -235,7 +208,7 @@ If a change is made to one of those bottom-layer components (e.g. VerticaJdbcLay
 
 These integration tests are run automatically via GitHub Actions when a PR is created or updated (and again when the PR is merged to `main`).
 
-### Step 6: Push and Rebase
+### Step 7: Push and Rebase
 
 You can publish your work on GitHub just by doing:
 ```shell
@@ -254,7 +227,7 @@ git rebase upstream/master
 git push -f origin my-fix-branch
 ```
 
-### Step 7: Make a Pull Request
+### Step 8: Make a Pull Request
 
 When you think your work is ready to be pulled into the Spark Connector, you should create a pull request (PR) at GitHub.
 
@@ -277,7 +250,7 @@ That's it! Thank you for your code contribution!
 
 After your pull request is merged, you can safely delete your branch and pull the changes from the upstream repository.
 
-### Step 8: Publish a Release
+### Step 9: Publish a Release
 
 Once all of the features and bugs for a given release are complete, follow this release checklist:
 1. Tag issues with a milestone to make listing the changes in a release easier, otherwise look at list of closed PRs since last release

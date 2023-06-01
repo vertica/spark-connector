@@ -242,7 +242,7 @@ For Vertica 10, only writing native arrays (1D arrays of primitive) is supported
 
 ## Examples
 
-If you would like to try out the connector, we have several example applications you can run in the [examples](https://github.com/vertica/spark-connector/tree/main/examples) folder.
+If you would like to try out the connector, we have several example applications you can run in the [examples](/examples) folder.
 
 ## Additional Guides
 
