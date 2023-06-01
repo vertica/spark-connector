@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 echo -e 'functional-tests {
   host="'"vertica"'"
   port=5433

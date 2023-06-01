@@ -109,11 +109,37 @@ At this point, you're ready to make your changes. Feel free to reach out over Gi
 
 #### Debugging in Docker
 
-If you are using Docker as your dev environment, you can setup a debug server. For example, to debug `basic-read-example` running on docker, login to the client container and navigate to the `basic-read-example` root folder. Then, run `sbt -jvm-debug *:5005` to start an sbt debug server at port `5005`. The `*` means that it will accept connections from any host. 
+The following example shows how to debug the functional-tests.
 
-The sbt server is now up and waiting for commands. Connect your debugger to port `5005`, then type `run` into sbt to start compilation and execution.
+First configure your IDE to connect to the application.  These steps may differ depending on the IDE, in VS Code do the following:
+1. Click `Run` -> `Add Configuration...`
+2. Add the following under the `configurations` array:
+```json
+{
+   "type": "java",
+   "name": "Attach to Spark",
+   "request": "attach",
+   "hostName": "localhost",
+   "port": 5005,
+   "projectName": "functional-tests",
+   "sourcePaths": [
+         "${workspaceFolder}/src/main/scala"
+   ]
+}
+```
 
-If you would like to change the port number, edit `docker-compose.yml` located under the `docker` folder. Currently, the client container is mapping port `5005` to the host port `5005`. 
+Then run the functional-tests in debug mode:
+```shell
+docker exec -it docker-client-1 bash
+cd /spark-connector/functional-tests
+# This will start listening on port 5005 and will not continue until a connection from the debugger is made
+# Specify the suite and test parameters to run a single test
+./submit-functional-tests-debug.sh --suite EndToEndTests --test "read data from Vertica"
+```
+
+The application will now wait for the IDE to connect.  In VS Code this is done by navigating to the `Run and Debug` tab, selecting the `Attach to Spark` configuration, then click Start Debugging (play button).
+
+Note that this can also be done through sbt instead of Spark.  In that case run `sbt -jvm-debug localhost:5005`, then connect with your debugger before executing your `run` command.
 
 #### Connector Architecture
 
