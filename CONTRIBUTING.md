@@ -111,24 +111,7 @@ At this point, you're ready to make your changes. Feel free to reach out over Gi
 
 The following example shows how to debug the functional-tests.
 
-First configure your IDE to connect to the application.  These steps may differ depending on the IDE, in VS Code do the following:
-1. Click `Run` -> `Add Configuration...`
-2. Add the following under the `configurations` array:
-```json
-{
-   "type": "java",
-   "name": "Attach to Spark",
-   "request": "attach",
-   "hostName": "localhost",
-   "port": 5005,
-   "projectName": "functional-tests",
-   "sourcePaths": [
-         "${workspaceFolder}/src/main/scala"
-   ]
-}
-```
-
-Then run the functional-tests in debug mode:
+First submit the functional-tests in debug mode:
 ```shell
 docker exec -it docker-client-1 bash
 cd /spark-connector/functional-tests
@@ -137,9 +120,9 @@ cd /spark-connector/functional-tests
 ./submit-functional-tests-debug.sh --suite EndToEndTests --test "read data from Vertica"
 ```
 
-The application will now wait for the IDE to connect.  In VS Code this is done by navigating to the `Run and Debug` tab, selecting the `Attach to Spark` configuration, then click Start Debugging (play button).
+The application will now wait for the IDE debugger to connect.  Follow the instructions for your particular IDE and connect the debugger to `localhost:5005`.  For example, see remote debugging of Java applications for [IntelliJ](https://www.jetbrains.com/help/idea/tutorial-remote-debug.html) or [VS Code](https://code.visualstudio.com/docs/java/java-debugging).
 
-Note that this can also be done through sbt instead of Spark.  In that case run `sbt -jvm-debug localhost:5005`, then connect with your debugger before executing your `run` command.
+Note that this can also be done through sbt.  In that case run `sbt -jvm-debug localhost:5005`, then connect with your debugger before executing your `run` command in sbt.
 
 #### Connector Architecture
 
