@@ -55,6 +55,8 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopVersion
 libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
 libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
 
+assembly / assemblyJarName := s"vertica-spark-functional-tests.jar"
+
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case x => MergeStrategy.first
@@ -65,4 +67,3 @@ assembly / assemblyShadeRules := Seq(
 )
 
 //unmanagedClasspath in Runtime += new File("/etc/hadoop/conf/")
-

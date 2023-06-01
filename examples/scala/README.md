@@ -74,7 +74,7 @@ Then, to start the example use `sbt` to start the sbt server. To run the example
 
 ### Debugging
 
-You can debug the examples through JVM remote debugging. If using sbt, start with sbt server with `sbt -jvm-debug localhost:5005`. If submitting to our standalone cluster, use `submit-examples-debug.sh` which will also open a remote debug port on `localhost:5005`. The process will wait for a connection before continuing.
+You can debug the examples through JVM remote debugging. If using sbt, start the sbt server with `sbt -jvm-debug localhost:5005`. If submitting to our standalone cluster, use `submit-examples-debug.sh` which will also open a remote debug port on `localhost:5005`. The process will wait for a connection before continuing.
 
 Then, configure your IDE to connect to the remote debug address above.
 

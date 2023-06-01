@@ -34,11 +34,10 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "3.3.0",
   "org.apache.spark" %% "spark-sql" % "3.3.0",
   "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6",
-// This version needs to match the Hadoop version used by Spark
+  // This version needs to match the Hadoop version used by Spark
   "org.apache.hadoop" % "hadoop-aws" % "3.3.2"
 )
 
-//Assembly jar name
 assembly / assemblyJarName := s"vertica-spark-scala-examples.jar"
 
 assembly / assemblyMergeStrategy := {
