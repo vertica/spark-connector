@@ -17,6 +17,12 @@ Note that the container names listed here may not be exactly the same in all env
 
 The most convenient method of using Docker (and Docker Compose) is to install [Docker Desktop](https://www.docker.com/products/docker-desktop/).  It is recommended to install a recent version, with Docker Engine version 20.10.0+ and Docker Compose version 1.29.0+.
 
+To check the installed versions:
+```sh
+docker version
+docker-compose version
+```
+
 In most cases, the `docker-compose` commands can be substituted with `docker compose` commands.  `docker-compose` is the standalone CLI, while Compose is also part of Docker now (e.g. `docker compose`).
 
 For some Linux distros, if you get an error about `docker-credential-secretservice` not installed, install that package with the package manager on your system.  For example, on Ubuntu:
