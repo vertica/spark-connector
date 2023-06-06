@@ -11,6 +11,19 @@ We provide a docker environment for testing and developing that contains the fol
 
 When using the Kerberos configuration the container names are simplified (`client`, `hdfs`, and `vertica`, plus one for the Kerberos key server, `kdc`).  The Spark and MinIO containers are not currently deployed for Kerberos.
 
+Note that the container names listed here may not be exactly the same in all environments.  For example, under Docker Compose V1 the container might be named `docker_client_1`, and under V2 `docker-client-1`.
+
+### Installing Docker
+
+The most convenient method of using Docker (and Docker Compose) is to install [Docker Desktop](https://www.docker.com/products/docker-desktop/).  It is recommended to install a recent version, with Docker Engine version 20.10.0+ and Docker Compose version 1.29.0+.
+
+In most cases, the `docker-compose` commands can be substituted with `docker compose` commands.  `docker-compose` is the standalone CLI, while Compose is also part of Docker now (e.g. `docker compose`).
+
+For some Linux distros, if you get an error about `docker-credential-secretservice` not installed, install that package with the package manager on your system.  For example, on Ubuntu:
+```sh
+sudo apt install golang-docker-credential-helpers
+```
+
 ### Starting the Environment
 
 To start, make sure you have Docker and sbt installed, and that Docker client is running.
@@ -18,6 +31,11 @@ To start, make sure you have Docker and sbt installed, and that Docker client is
 Then, clone the repository if you haven't already:
 ```sh
 git clone https://github.com/vertica/spark-connector.git
+```
+
+Navigate to the `docker` folder:
+```sh
+cd spark-connector/docker
 ```
 
 Then use Docker Compose to start the containers:

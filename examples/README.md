@@ -3,18 +3,23 @@
 These examples are intended to be run either on our provided Docker environment or on your own cluster. 
 
 If you want to try these examples on our Docker environment, then:
-1. Clone the project if you haven't already:
+1. Install sbt on your local machine with JDK 11
+2. Clone the project if you haven't already:
 ```sh
 git clone https://github.com/vertica/spark-connector.git
 ```
-2. Install sbt on your local machine with JDK 11
-3. Start the appropriate configuration from the `spark-connector/docker/` folder:
+3. Navigate to the `docker` folder:
 ```sh
+cd spark-connector/docker
+```
+4. Start the appropriate configuration:
+```sh
+cd spark-connector/docker
 docker-compose up -d
 # or
 docker-compose -f docker-compose-kerberos.yml up -d
 ```
-4. Get a shell to the client container:
+5. Get a shell to the client container:
 ```sh
 docker exec -it docker-client-1 bash
 # or
@@ -48,7 +53,7 @@ To shut down and remove the containers safely, navigate to `spark-connector/dock
 docker-compose down
 ```
 
-If you are running a Kerberos environment, then use 
+If you are running a Kerberos environment, then use:
 ```sh
-docker compose -f docker-compose-kerberos.yml down
+docker-compose -f docker-compose-kerberos.yml down
 ```
