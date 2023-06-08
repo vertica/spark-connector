@@ -56,7 +56,7 @@ Note that only running applications will show the logs (stdout and stderr).  Onc
 
 #### Configuring Logs
 
-The easiest way to configure the logging or change the logging level is to create a local `log4j.properties` file and submit it with the Spark job.
+The easiest way to configure the logging or change the logging level is to create a local `log4j.properties` file and submit it with the Spark job.  This requires using the `--files` option to pass the logging file and passing the log4j configuration `spark.[driver|executor].extraJavaOptions` option.
 
 For example, assuming the Docker environment is already running, run an example and log to both the console and a file, while setting the log level for the Spark Connector to `DEBUG`:
 ```shell
@@ -84,7 +84,10 @@ log4j.logger.com.vertica.spark=DEBUG
 EOF
 
 # Submit a job with the logging file
-spark-submit --master spark://spark:7077 --driver-memory 2g --files log4j.properties --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" target/scala-2.12/vertica-spark-scala-examples.jar writeThenRead
+spark-submit --master spark://spark:7077 --driver-memory 2g --files log4j.properties \
+  --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" \
+  --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" \
+  target/scala-2.12/vertica-spark-scala-examples.jar writeThenRead
 
 # View the log
 tail /opt/bitnami/spark/logs/bitnami.log
