@@ -45,9 +45,11 @@ The chosen Spark job mode will determine where the logs are displayed.
 The [Docker environment](/docker/README.md) makes the Spark master UI available on port `8080`.  The Spark worker UI is not enabled by default as the number of nodes could be scaled beyond one, which would cause a port conflict.  Uncomment the commented-out Spark worker port (`8081`) in the `docker-compose.yml` file then restart the Spark worker container (`docker restart docker-spark-worker-1`).
 
 You can then see the logs for running applications by seeing the Spark master UI:
+
 http://localhost:8080/
 
 Or Spark worker UI:
+
 http://localhost:8081/
 
 Note that only running applications will show the logs (stdout and stderr).  Once a job finishes running the logs are not available through the Spark UI.
