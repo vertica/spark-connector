@@ -6,6 +6,7 @@ The Spark Connector outputs various logging information during a Spark job. The 
   - [Debug Logs](#debug-logs)
     - [Log Levels](#log-levels)
     - [Spark Logs](#spark-logs)
+      - [Viewing Logs in the Browser](#viewing-logs-in-the-browser)
       - [Configuring Logs](#configuring-logs)
     - [Vertica Logs](#vertica-logs)
   - [Timed Operations](#timed-operations)
@@ -39,17 +40,57 @@ The chosen Spark job mode will determine where the logs are displayed.
 | Client |  The driver logs will be shown locally while the executor logs will be shown on the Spark UI.|
 | Cluster | Both the driver and executor logs will be saved on the Spark UI. |
 
+#### Viewing Logs in the Browser
+
+The [Docker environment](/docker/README.md) makes the Spark master UI available on port `8080`.  The Spark worker UI is not enabled by default as the number of nodes could be scaled beyond one, which would cause a port conflict.  Uncomment the commented-out Spark worker port (`8081`) in the `docker-compose.yml` file then restart the Spark worker container (`docker restart docker-spark-worker-1`).
+
+You can then see the logs for running applications by seeing the Spark master UI:
+http://localhost:8080/
+
+Or Spark worker UI:
+http://localhost:8081/
+
+Note that only running applications will show the logs (stdout and stderr).  Once a job finishes running the logs are not available through the Spark UI.
+
 #### Configuring Logs
 
-Logging is configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The log4j.properties file needs to be in the classpath as well.
+The easiest way to configure the logging or change the logging level is to create a local `log4j.properties` file and submit it with the Spark job.
 
-Here is an example spark-submit command showing how to add Spark's default configuration folder to the classpath:
-`spark-submit --master spark://spark:7077 --conf "spark.driver.extraClassPath={$SPARK_HOME}/conf/" --deploy-mode cluster app-assembly.jar --class Main`
-where `{$SPARK_HOME}` is the `$SPARK_HOME` directory on the worker node.
+For example, assuming the Docker environment is already running, run an example and log to both the console and a file, while setting the log level for the Spark Connector to `DEBUG`:
+```shell
+# Connect to the client container
+docker exec -it docker-client-1 bash
+cd /spark-connector/examples/scala
 
-Our connector logs major events when reading and writing, such as when it is copying a table from the intermediary file store into Vertica or exporting from Vertica into the intermediary file store. We also log errors and caveats around usage of the connector and connector options. Along with errors, the connector logs warnings when the usage of the connector is not as expected. In addition, we log info such as SQL statements, schemas, and filters that are used when manipulating relations or the data in those relations. In order to get a lower level view of our connector operations, a user may change the log level to ‘Debug’. The debug log level will give more details around specific components, such as partition information, impersonation tokens, and cleanup information.
+# Create a local logging file
+cat << EOF > log4j.properties
+log4j.rootCategory=INFO,CONSOLE,FILE
 
-The following is an an example of what the logging output during a simple write then read job would look like.
+log4j.appender.CONSOLE=org.apache.log4j.ConsoleAppender
+log4j.appender.CONSOLE.target=System.err
+log4j.appender.CONSOLE.layout=org.apache.log4j.PatternLayout
+log4j.appender.CONSOLE.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c:%L - %m%n
+
+log4j.appender.FILE=org.apache.log4j.FileAppender
+log4j.appender.FILE.File=/opt/bitnami/spark/logs/bitnami.log
+log4j.appender.FILE.MaxFileSize=10MB
+log4j.appender.FILE.MaxBackupIndex=10
+log4j.appender.FILE.layout=org.apache.log4j.PatternLayout
+log4j.appender.FILE.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss} %-5p %c:%L - %m%n
+
+log4j.logger.com.vertica.spark=DEBUG
+EOF
+
+# Submit a job with the logging file
+spark-submit --master spark://spark:7077 --driver-memory 2g --files log4j.properties --conf "spark.driver.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j.properties" target/scala-2.12/vertica-spark-scala-examples.jar writeThenRead
+
+# View the log
+tail /opt/bitnami/spark/logs/bitnami.log
+```
+
+Note that logging can also be configured by updating the `$SPARK_HOME/log4j.properties` file on the worker nodes. The `log4j.properties` file needs to be in the classpath as well.
+
+The following is an an example of what the logging output during a simple write then read job would look like:
 
 <details>
   <summary>
