@@ -56,7 +56,7 @@ Note that only running applications will show the logs (stdout and stderr).  Onc
 
 #### Configuring Logs
 
-The easiest way to configure the logging or change the logging level is to create a local `log4j.properties` file and submit it with the Spark job.  This requires using the `--files` option to pass the logging file and passing the log4j configuration `spark.[driver|executor].extraJavaOptions` option.
+The easiest way to configure the logging or change the logging level is to create a local `log4j.properties` file and submit it with the Spark job.  This requires using the `--files` option to pass the logging file, and setting the log4j configuration `spark.[driver|executor].extraJavaOptions` option to point to the logging file.
 
 For example, assuming the Docker environment is already running, run an example and log to both the console and a file, while setting the log level for the Spark Connector to `DEBUG`:
 ```shell
