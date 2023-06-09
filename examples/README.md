@@ -8,21 +8,17 @@ If you want to try these examples on our Docker environment, then:
 ```sh
 git clone https://github.com/vertica/spark-connector.git
 ```
-3. Navigate to the `docker` folder:
-```sh
-cd spark-connector/docker
-```
-4. Start the appropriate configuration:
+3. Start the appropriate configuration:
 ```sh
 cd spark-connector/docker
 docker-compose up -d
-# or
+# or, for Kerberos
 docker-compose -f docker-compose-kerberos.yml up -d
 ```
-5. Get a shell to the client container:
+4. Get a shell to the client container:
 ```sh
 docker exec -it docker-client-1 bash
-# or
+# or, for Kerberos
 docker exec -it client bash
 ```
 
@@ -48,12 +44,10 @@ assembly / assemblyShadeRules := {
 
 ### Tear down containers
 
-To shut down and remove the containers safely, navigate to `spark-connector/docker/` on your local machine. Then run:
+To shut down and remove the containers safely:
 ```sh
+cd spark-connector/docker
 docker-compose down
-```
-
-If you are running a Kerberos environment, then use:
-```sh
+# or, for Kerberos
 docker-compose -f docker-compose-kerberos.yml down
 ```
