@@ -19,7 +19,7 @@ This will create a lib folder and then build and copy the connector JAR file to 
 From the project's docker directory:
 ```sh
 cd ../docker
-docker compose up -d
+docker-compose up -d
 docker exec -it docker-client-1 bash
 ```
 

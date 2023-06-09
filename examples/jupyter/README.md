@@ -4,7 +4,7 @@
 
 In order to run these examples the Jupyter container must be created and started.  To do that start the Docker containers with the "jupyter" profile:
 ```sh
-cd /spark-connector/docker
+cd spark-connector/docker
 docker-compose --profile jupyter up -d
 ```
 

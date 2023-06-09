@@ -217,6 +217,10 @@ If a change is made to one of those bottom-layer components (e.g. VerticaJdbcLay
 
 These integration tests are run automatically via GitHub Actions when a PR is created or updated (and again when the PR is merged to `main`).
 
+#### Logging
+
+By default Spark will log information to the console when running a job (examples, integration tests, etc).  For information on how to configure logging further, see the [troubleshooting guide](/docs/troubleshooting-guide.md).
+
 ### Step 7: Push and Rebase
 
 You can publish your work on GitHub just by doing:
