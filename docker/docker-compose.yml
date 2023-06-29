@@ -4,7 +4,7 @@ services:
     build:
       context: ./client
       args:
-        SPARK: ${SPARK_INSTALL:-latest}
+        SPARK: ${SPARK_INSTALL:-3.3.2}
     ports:
       # JVM Remote debug port
       - "5005:5005"
@@ -62,7 +62,7 @@ services:
     build:
       context: ./client
       args:
-        SPARK: ${SPARK_INSTALL:-latest}
+        SPARK: ${SPARK_INSTALL:-3.3.2}
     ports:
       - "8080:8080"
       - "7077:7077"
@@ -81,7 +81,7 @@ services:
     build:
       context: ./client
       args:
-        SPARK: ${SPARK_INSTALL:-latest}
+        SPARK: ${SPARK_INSTALL:-3.3.2}
     # Uncomment these ports to access the Spark Worker logs in the UI (not possible when scaling beyond a single worker node)
     #ports:
       #- "8081:8081"
