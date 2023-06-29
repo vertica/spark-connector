@@ -79,7 +79,7 @@ docker logs docker-hdfs-1
 
 To use a specific version set the following environment variables in your environment, such as in your Docker `.env` file:
 - `VERTICA_VERSION`: By default, we use the latest [Vertica](https://hub.docker.com/r/vertica/vertica-k8s) image. For example, to use Vertica 10.1.1-0 set `VERTICA_VERSION=10.1.1-0`.
-- `SPARK_INSTALL`: By default, we use the latest [Bitnami Spark](https://hub.docker.com/r/bitnami/spark) image. For example, to use Spark 3.1.3 set `SPARK_INSTALL=3.1.3`.
+- `SPARK_INSTALL`: By default, we use the 3.3.2 [Bitnami Spark](https://hub.docker.com/r/bitnami/spark) image. For example, to use Spark 3.1.3 set `SPARK_INSTALL=3.1.3`.
 
 By default we start a single Spark worker.  To start multiple Spark workers, such as 3 workers:
 ```sh
