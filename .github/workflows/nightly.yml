@@ -43,7 +43,7 @@ jobs:
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
           VERTICA_VERSION: ${{matrix.vertica}}
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
@@ -65,7 +65,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v2
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: build-jar-file
           path: ./functional-tests/lib/
