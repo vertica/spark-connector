@@ -22,7 +22,7 @@ import com.vertica.spark.util.error._
 import com.vertica.spark.util.error.ErrorHandling.{listToEitherSchema, ConnectorResult, SchemaResult}
 import com.vertica.spark.util.query.{ColumnInfo, ColumnsTable, ComplexTypesTable, StringParsingUtils}
 import com.vertica.spark.util.schema.ComplexTypesSchemaTools.{VERTICA_NATIVE_ARRAY_BASE_ID, VERTICA_SET_MAX_ID}
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.types._
 
 import java.sql.ResultSetMetaData

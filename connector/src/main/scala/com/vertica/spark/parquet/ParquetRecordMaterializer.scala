@@ -24,7 +24,7 @@ import org.apache.parquet.io.api.{GroupConverter, RecordMaterializer}
 import org.apache.parquet.schema.MessageType
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
+import org.apache.spark.sql.internal.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
 
 /**

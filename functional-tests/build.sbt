@@ -20,14 +20,14 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.13.16"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
 
 val sparkVersion = Option(System.getProperty("sparkVersion")) match {
   case Some(sparkVersion) => sparkVersion
-  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0)")
+  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0, 3.5.5)")
 }
 
 val hadoopVersion = Option(System.getProperty("hadoopVersion")) match {

@@ -36,8 +36,8 @@ import org.apache.parquet.io.api.RecordMaterializer
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.parquet.ParquetWriteSupport
 import org.apache.spark.sql.execution.datasources.parquet.vertica.ParquetReadSupport
+import org.apache.spark.sql.internal.LegacyBehaviorPolicy
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 import org.apache.spark.sql.types.StructType
 
 import java.util

@@ -15,7 +15,7 @@ package org.apache.spark.sql.execution.datasources.parquet.vertica
 
 import org.apache.spark.sql.catalyst.util.RebaseDateTime
 import org.apache.spark.sql.execution.datasources.DataSourceUtils
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
+import org.apache.spark.sql.internal.LegacyBehaviorPolicy
 
 /**
  * Copied from Spark 3.2.0 DataSourceUtils implementation.

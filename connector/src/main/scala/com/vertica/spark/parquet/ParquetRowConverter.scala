@@ -33,7 +33,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.util.{ArrayBasedMapData, CaseInsensitiveMap, DateTimeUtils, GenericArrayData}
 import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
+import org.apache.spark.sql.internal.LegacyBehaviorPolicy
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -255,13 +255,13 @@ private[parquet] class ParquetRowConverter(
       case ByteType =>
         new ParquetPrimitiveConverter(updater) {
           override def addInt(value: Int): Unit =
-            updater.setByte(value.asInstanceOf[ByteType#InternalType])
+            updater.setByte(value.asInstanceOf[Byte])
         }
 
       case ShortType =>
         new ParquetPrimitiveConverter(updater) {
           override def addInt(value: Int): Unit =
-            updater.setShort(value.asInstanceOf[ShortType#InternalType])
+            updater.setShort(value.asInstanceOf[Short])
         }
 
       // For INT32 backed decimals
