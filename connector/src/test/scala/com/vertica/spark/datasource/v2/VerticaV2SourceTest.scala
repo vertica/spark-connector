@@ -39,7 +39,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import com.vertica.spark.util.version.VerticaVersionUtils
 
 import java.util
-import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
@@ -122,7 +121,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "table returns scan builder" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig))
+    val scalaMap = options.asScala.toMap
+    (readSetup.validateAndGetConfig _).expects(scalaMap).returning(Valid(readConfig))
 
     val table = new VerticaTable(options, readSetup)
 
@@ -141,7 +141,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "throws error getting scan builder" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(UserMissingError().invalidNec)
+    val scalaMap = options.asScala.toMap
+    (readSetup.validateAndGetConfig _).expects(scalaMap).returning(UserMissingError().invalidNec)
 
     val table = new VerticaTable(options, readSetup)
 
@@ -167,7 +168,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "table returns schema" in {
     val readSetup = mock[DSReadConfigSetup]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
+    val scalaMap = options.asScala.toMap
+    (readSetup.validateAndGetConfig _).expects(scalaMap).returning(Valid(readConfig)).twice()
     (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta)).twice()
 
     val table = new VerticaTable(options, readSetup)
@@ -177,7 +179,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "table returns empty table schema if no valid read of schema" in {
     val readSetup = mock[DSConfigSetupInterface[ReadConfig]]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(MetadataDiscoveryError().invalidNec)
+    val scalaMap = options.asScala.toMap
+    (readSetup.validateAndGetConfig _).expects(scalaMap).returning(MetadataDiscoveryError().invalidNec)
 
     val table = new VerticaTable(options, readSetup)
 
@@ -416,7 +419,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     (info.options _).expects().returning(options)
 
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
-    (writeSetupInterface.validateAndGetConfig _).expects(options.toMap).returning(writeConfig.validNec)
+    val scalaMap = options.asScala.toMap
+    (writeSetupInterface.validateAndGetConfig _).expects(scalaMap).returning(writeConfig.validNec)
     (writeSetupInterface.performInitialSetup _).expects(writeConfig).returning(Right(None))
 
     val builder = new VerticaWriteBuilder(info, writeSetupInterface)
@@ -427,9 +431,10 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
   it should "throw error on creating write builder" in {
     val info = mock[LogicalWriteInfo]
     (info.options _).expects().returning(options)
+    val scalaMap = options.asScala.toMap
 
     val writeSetupInterface = mock[DSConfigSetupInterface[WriteConfig]]
-    (writeSetupInterface.validateAndGetConfig _).expects(options.toMap).returning(UserMissingError().invalidNec)
+    (writeSetupInterface.validateAndGetConfig _).expects(scalaMap).returning(UserMissingError().invalidNec)
 
     Try { new VerticaWriteBuilder(info, writeSetupInterface) } match {
       case Success(_) => fail
@@ -578,7 +583,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "catalog tests if table exists" in {
     val readSetup = mock[DSReadConfigSetup]
-    (readSetup.validateAndGetConfig _).expects(options.toMap).returning(Valid(readConfig)).twice()
+    val scalaMap = options.asScala.toMap
+    (readSetup.validateAndGetConfig _).expects(scalaMap).returning(Valid(readConfig)).twice()
     (readSetup.getTableMetadata _).expects(*).returning(Right(intMeta)).twice()
 
     val catalog = new VerticaDatasourceV2Catalog()
@@ -635,7 +641,8 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
 
   it should "get/set catalog options" in {
     val operationM = Map("thing" -> "thing")
-    val opOpts = new CaseInsensitiveStringMap(operationM)
+    val javaMap: java.util.Map[String, String] = operationM.asJava
+    val opOpts = new CaseInsensitiveStringMap(javaMap)
 
     VerticaDatasourceV2Catalog.setOptions(opOpts)
 
