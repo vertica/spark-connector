@@ -71,7 +71,7 @@ jobs:
       - name: Run unit tests
         run: cd connector && sbt coverage test coverageReport
       - name: Upload coverage report to codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: unittests
           name: codecov-umbrella
