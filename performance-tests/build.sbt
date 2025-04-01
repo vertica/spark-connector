@@ -19,7 +19,7 @@ version := "1.0"
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16"
 libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
@@ -33,6 +33,7 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 libraryDependencies += "org.scalamock" %% "scalamock" % "5.2.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
+Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-3.3.6.jar")
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard

@@ -23,6 +23,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.Row
 import org.scalatest.{Assertion, BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -2892,7 +2893,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("hiredate", DateType, nullable=false),
       StructField("region", StringType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fullname1", 35, null, Date.valueOf("2009-09-09"), "south"),
       Row("fullname2", null, null, Date.valueOf("2019-09-09"), "north")
     ))
@@ -2937,7 +2938,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("age", IntegerType, nullable=true),
       StructField("region", StringType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fullname1", 35, null, "south")
     ))
 
@@ -2979,7 +2980,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("age", IntegerType, nullable=true),
       StructField("age", IntegerType, nullable=true)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row(1, 2, 3, 4, 5)
     ))
 
@@ -3018,7 +3019,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("hire_date", DateType, nullable=false),
       StructField("region", StringType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fn","mn","ln", Date.valueOf("2015-03-18"), "west")
     ))
 
@@ -3062,7 +3063,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("region", StringType, nullable=false),
       StructField("hiredate", DateType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fn", 1, "south", Date.valueOf("2015-03-18"))
     ))
 
@@ -3113,7 +3114,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("hire_date", DateType, nullable=false),
       StructField("location", StringType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fn", 1, Date.valueOf("2015-03-18"), "south")
     ))
 
@@ -3161,7 +3162,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       StructField("age", IntegerType, nullable=true),
       StructField("hiredate", DateType, nullable=false)
     ))
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("fn", "north", 30, Date.valueOf("2018-05-22"))
     ))
 
@@ -3204,7 +3205,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "target_table_sql" -> target_table_ddl
       )
 
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("name1", 30)
     ))
     val schema = StructType(Array(
@@ -3243,7 +3244,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "target_table_sql" -> target_table_ddl
     )
 
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("name1", 30)
     ))
     val schema = StructType(Array(
@@ -3279,7 +3280,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
       "copy_column_list" -> copy_column_list
       )
 
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("name1", 30)
     ))
     val schema = StructType(Array(
@@ -3315,7 +3316,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
     val options = writeOpts + ("table" -> tableName,
     "target_table_sql" -> target_table_ddl)
 
-    val rows = spark.sparkContext.parallelize(Array(
+    val rows = spark.sparkContext.parallelize(Array[Row](
       Row("name1", 30, "west")
     ))
     val schema = StructType(Array(
@@ -3568,7 +3569,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
       val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
       val dfDecimal = readDf.head.getDecimal(0).floatValue()
-      val dataDecimal = data.head.getAs[scala.math.BigDecimal](0).floatValue()
+      val dataDecimal: Float = df.head.getAs[BigDecimal](0).toFloat
       assert(dfDecimal == dataDecimal)
       assert(readDf.head.getLong(1) == data.head.getInt(1))
     }
