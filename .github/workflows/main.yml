@@ -91,6 +91,10 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
+      - name: Install Docker Compose
+        uses: docker/setup-docker-buildx-action@v1
+        with:
+          docker-compose-version: '1.29.2'
       - name: Install sbt
         run: |
           echo "Installing sbt..."
