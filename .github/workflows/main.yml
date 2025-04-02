@@ -72,11 +72,6 @@ jobs:
         run: cd connector && sbt coverage test coverageReport
       - name: Print environment variables
         run: env
-      - name: Debug Token
-        run:
-          echo "Token starts with: ${CODECOV_TOKEN:0:4}****"
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Upload coverage report to codecov
         uses: codecov/codecov-action@v4
         with:
