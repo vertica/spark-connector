@@ -65,10 +65,33 @@ abstract class EndToEnd(readOpts: Map[String, String], writeOpts: Map[String, St
     .getOrCreate()
 
   override def afterEach(): Unit = {
+    try {
+      val anyFiles= fsLayer.getFileList(fsConfig.address)
+      anyFiles match {
+        case Right(files) =>
+          if (files.nonEmpty) {
+            files.foreach { file =>
+              try {
+                fsLayer.removeFile(file)
+              } catch {
+                case e: Exception =>
+                  // Handle the exception here, for example:
+                  println(s"An exception occurred while deleting file: ${file}, ${e.getMessage}")
+                  e.printStackTrace()
+              }
+            }
+          }
+      }
+    } catch {
+      case e: Exception =>
+        // Handle the exception here, for example:
+        println(s"An exception occurred while removing or creating the directory: ${e.getMessage}")
+        e.printStackTrace()
+    }
     val anyFiles= fsLayer.getFileList(fsConfig.address)
     anyFiles match {
       case Right(files) =>
-        if(files.nonEmpty) assert(files.isEmpty, ". After each test, staging directory should be cleaned.")
+        if(files.nonEmpty) assert(files.isEmpty, ". After each test, staging directory should be cleaned. fsConfig.address" + fsConfig.address)
       case Left(_) => fail("Error getting file list from " + fsConfig.address)
     }
   }
