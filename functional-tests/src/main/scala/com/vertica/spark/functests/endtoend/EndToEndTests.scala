@@ -3592,7 +3592,7 @@ class EndToEndTests(readOpts: Map[String, String], writeOpts: Map[String, String
 
       val readDf: DataFrame = spark.read.format("com.vertica.spark.datasource.VerticaSource").options(readOpts + ("table" -> tableName)).load()
       val dfDecimal = readDf.head.getDecimal(0).floatValue()
-      val dataDecimal: Float = df.head.getAs[BigDecimal](0).toFloat
+      val dataDecimal: Float = df.head.getDecimal(0).floatValue()
       assert(dfDecimal == dataDecimal)
       assert(readDf.head.getLong(1) == data.head.getInt(1))
     }
