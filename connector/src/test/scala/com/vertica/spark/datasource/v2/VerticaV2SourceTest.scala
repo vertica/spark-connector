@@ -238,6 +238,7 @@ class VerticaV2SourceTests extends AnyFlatSpec with BeforeAndAfterAll with MockF
     val requiredSchema = scanBuilder.build().readSchema()
     assert(requiredSchema.fields.length == 3)
     assert(requiredSchema.fields(0).name == "c")
+    // Commenting the assertion below as these are not supported in the latest Vertica
     //assert(requiredSchema.fields(1).name == "COUNT(a)")
     //assert(requiredSchema.fields(2).name == "MAX(b)")
   }
