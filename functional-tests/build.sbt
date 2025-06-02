@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import java.util.Properties
+import java.io.File
 
 // Retrieving the connector version number from a common file.
 val versionProps = settingKey[Properties]("Connector version properties")
@@ -20,40 +21,44 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.13.16"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
 
 val sparkVersion = Option(System.getProperty("sparkVersion")) match {
   case Some(sparkVersion) => sparkVersion
-  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0)")
+  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0, 3.5.5)")
 }
 
 val hadoopVersion = Option(System.getProperty("hadoopVersion")) match {
   case Some(hadoopVersion) => hadoopVersion
-  case None => sys.env.getOrElse("HADOOP_VERSION", "3.3.2")
+  case None => sys.env.getOrElse("HADOOP_VERSION", "3.3.4")
 }
 
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16"
 libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "11.0.2-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
-libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
-libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
+libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
+libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.5"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.5"
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.16"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % "test"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
+libraryDependencies += "org.scalamock" %% "scalamock" % "5.2.0" % Test
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.10.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopVersion
 libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
 libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
+//libraryDependencies += file("C:\\Users\\chaitanp\\SourceCode\\spark\\spark-connector\\connector\\target\\scala-2.13\\spark-vertica-connector-assembly-3.3.6.jar")
+
+Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-3.3.6.jar")
+
 
 assembly / assemblyJarName := s"vertica-spark-functional-tests.jar"
 

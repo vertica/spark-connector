@@ -20,7 +20,7 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.13.16"
 name := "spark-vertica-connector"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
@@ -28,16 +28,17 @@ version := versionProps.value.getProperty("connector-version")
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
-libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "11.0.2-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.3.0"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.3.0"
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.2"
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2" % Test
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2"
-libraryDependencies += "org.scalamock" %% "scalamock" % "4.4.0" % Test
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.1.1"
+libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
+libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.5"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.5"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.4"
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.16" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % "test"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
+libraryDependencies += "org.scalamock" %% "scalamock" % "5.2.0" % Test
+libraryDependencies += "org.typelevel" %% "cats-core" % "2.10.0"
 // Hadoop's jersey-server conflicts with Spark's and can cause a Spark UI issue
 excludeDependencies += ExclusionRule("com.sun.jersey", "jersey-server")
 Test / parallelExecution := false
@@ -54,10 +55,10 @@ sonarProperties ++= Map(
   "sonar.host.url" -> "http://localhost:80",
 )
 
-ThisBuild / scapegoatVersion := "1.3.3"
+ThisBuild / scapegoatVersion := "3.1.4"
 scapegoatReports := Seq("xml")
 Scapegoat / scalacOptions += "-P:scapegoat:overrideLevels:all=Warning"
-scalacOptions += "-Ypartial-unification"
+//scalacOptions += "-Ypartial-unification"
 scalacOptions += "-Ywarn-value-discard"
 
 scalastyleFailOnError := true

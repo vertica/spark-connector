@@ -9,6 +9,7 @@ import org.apache.spark.sql.types.StructType
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
+import org.apache.spark.paths.SparkPath
 
 class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with MockFactory {
 
@@ -24,17 +25,17 @@ class VerticaScanWrapperTest extends AnyFlatSpec with BeforeAndAfterAll with Moc
   it should "correctly record partitioning information" in {
     val inputPartitions = Array(
       FilePartition(1, Array(
-        PartitionedFile(InternalRow(), "path1", 0, 1, Array.empty),
-        PartitionedFile(InternalRow(), "path2", 0, 1, Array.empty)
+        PartitionedFile(InternalRow(), SparkPath("path1"), 0, 1, Array.empty),
+        PartitionedFile(InternalRow(), SparkPath("path2"), 0, 1, Array.empty)
       )),
       FilePartition(2, Array(
-        PartitionedFile(InternalRow(), "path2", 0, 1, Array.empty),
-        PartitionedFile(InternalRow(), "path1", 0, 1, Array.empty),
-        PartitionedFile(InternalRow(), "path3", 0, 1, Array.empty)
+        PartitionedFile(InternalRow(), SparkPath("path2"), 0, 1, Array.empty),
+        PartitionedFile(InternalRow(), SparkPath("path1"), 0, 1, Array.empty),
+        PartitionedFile(InternalRow(), SparkPath("path3"), 0, 1, Array.empty)
       )),
       FilePartition(3, Array(
-        PartitionedFile(InternalRow(), "path3", 0, 1, Array.empty),
-        PartitionedFile(InternalRow(), "path4", 0, 1, Array.empty)
+        PartitionedFile(InternalRow(), SparkPath("path3"), 0, 1, Array.empty),
+        PartitionedFile(InternalRow(), SparkPath("path4"), 0, 1, Array.empty)
       )),
     )
 

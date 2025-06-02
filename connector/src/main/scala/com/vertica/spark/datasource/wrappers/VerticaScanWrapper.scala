@@ -18,6 +18,7 @@ import com.vertica.spark.datasource.partitions.file.{PartitionedFileIdentity, Ve
 import org.apache.spark.sql.connector.read.{Batch, InputPartition, PartitionReaderFactory, Scan}
 import org.apache.spark.sql.execution.datasources.{FilePartition, PartitionedFile}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.util.SerializableConfiguration
 
 /**
  * Wraps a [[Scan]] so that it will create a [[PartitionReaderWrapperFactory]]
@@ -37,10 +38,10 @@ class VerticaScanWrapper(val scan: Scan, val config: ReadConfig) extends Scan wi
     def makeFilesIdentity(files: Array[PartitionedFile]): Array[PartitionedFileIdentity] = {
       // Record each files to the count and create each an identity
       files.map(file => {
-        val key = file.filePath
+        val key = file.filePath.toString
         val count = partitioningCounts.getOrElse(key, 0)
         partitioningCounts.put(key, count + 1)
-        PartitionedFileIdentity(file.filePath, file.start)
+        PartitionedFileIdentity(key, file.start)
       })
     }
 

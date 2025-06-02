@@ -8,9 +8,9 @@ Configuration is specified with `application.conf` (HOCON format).
 
 1. Set up Vertica, HDFS and Spark
 2. From the performance-tests directory, run `mkdir lib` to create the folder for the connector JAR
-3. From the performance-tests directory, run `cd ../connector && sbt assembly && cp target/scala-2.12/spark-vertica-connector-assembly-<VERSION>.jar ../performance-tests/lib && cd ../performance-tests` to build and copy the connector JAR
+3. From the performance-tests directory, run `cd ../connector && sbt assembly && cp target/scala-2.13/spark-vertica-connector-assembly-<VERSION>.jar ../performance-tests/lib && cd ../performance-tests` to build and copy the connector JAR
 4. From the performance-tests directory, run `sbt assembly` to assemble the test JAR
-5. Use spark-submit on the test JAR, such as `spark-submit --master spark://hdfs.example.com:7077 --deploy-mode cluster target/scala-2.12/spark-vertica-connector-performance-tests-assembly-<VERSION>.jar`
+5. Use spark-submit on the test JAR, such as `spark-submit --master spark://hdfs.example.com:7077 --deploy-mode cluster target/scala-2.13/spark-vertica-connector-performance-tests-assembly-<VERSION>.jar`
 
 ## Tuning read performance
 

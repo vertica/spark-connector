@@ -10,8 +10,8 @@
 [![contributing](https://img.shields.io/badge/contributing-read-orange)](CONTRIBUTING.md)
 [![license](https://img.shields.io/badge/license-Apache%202.0-orange.svg)](https://opensource.org/licenses/Apache-2.0)
 
-![vertica-tested](https://img.shields.io/badge/Vertica%20Tested-10%20%7C%2011%20%7C%2012-blue)
-![spark-tested](https://img.shields.io/badge/Spark%20Tested-3.0%20%7C%203.1%20%7C%203.2%20%7C%203.3-blue)
+![vertica-tested](https://img.shields.io/badge/Vertica%20Tested-10%20%7C%2011%20%7C%2012%20%7C%2024-blue)
+![spark-tested](https://img.shields.io/badge/Spark%20Tested-3.0%20%7C%203.1%20%7C%203.2%20%7C%203.3%20%7C%203.5-blue)
 
 ## Overview
 
@@ -35,7 +35,7 @@ The connector creates a JDBC connection to Vertica in order to manage the proces
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - Vertica (10.1.1-0 or higher)
-- Spark (3.0.0 or higher)
+- Spark (3.5.5 or higher)
 - An HDFS cluster or HDFS-compatible filesystem (S3, Google Cloud Storage, etc), for use as an intermediary between Spark and Vertica
 - A Spark application, either running locally for quick testing, or running on a Spark cluster. If using S3, Spark must be using hadoop 3.3
 
@@ -49,7 +49,7 @@ The connector has been tested against Vertica 10.1.1-0 and higher.
 
 ### Spark
 
-The connector requires Spark 3.0.0 or higher.
+The connector requires Spark 3.5.5 or higher.
 
 There are several examples of Spark programs that use this connector in the [examples](/examples) directory. 
 
@@ -79,7 +79,7 @@ The connector requires Java 8 (8u92 or later) or Java 11.
 
 ### Scala
 
-For the Spark Connector, Spark 3.0.0 and above use Scala 2.12. You will need to use a compatible Scala version (2.12.x).
+For the Spark Connector, Spark 3.5.5 and above use Scala 2.13. You will need to use a compatible Scala version (2.13.x).
 
 ### Intermediary Storage
 
