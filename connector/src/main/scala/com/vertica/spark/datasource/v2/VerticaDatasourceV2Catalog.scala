@@ -63,7 +63,7 @@ class VerticaDatasourceV2Catalog() extends TableCatalog{
 
   @throws[TableAlreadyExistsException]
   @throws[NoSuchNamespaceException]
-  def createTable(ident: Identifier, schema: StructType, partitions: Array[Transform], properties: java.util.Map[String, String]): Table = {
+  override def createTable(ident: Identifier, schema: StructType, partitions: Array[Transform], properties: java.util.Map[String, String]): Table = {
     loadTable(ident)
   }
 
