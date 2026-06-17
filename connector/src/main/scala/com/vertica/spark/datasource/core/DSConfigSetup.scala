@@ -428,7 +428,7 @@ object DSConfigSetupUtils {
           case Some(token) => Some(SensitiveArg(visibility, SparkConf, token)).validNec
           case None => next(())
         }
-      case None => LoadConfigMissingSparkSessionError().invalidNec
+      case None => next(())
     }
   }
 
