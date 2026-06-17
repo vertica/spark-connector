@@ -21,7 +21,7 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.18"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
