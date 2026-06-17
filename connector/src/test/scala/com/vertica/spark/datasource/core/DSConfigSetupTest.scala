@@ -757,4 +757,43 @@ class DSConfigSetupTest extends AnyFlatSpec with BeforeAndAfterAll with MockFact
         assert(result.nonEmpty)
     }
   }
+
+  it should "handle configuration when no Spark session is active and no Spark config is provided" in {
+    val opts = Map(
+      "host" -> "1.1.1.1",
+      "port" -> "1234",
+      "db" -> "testdb",
+      "user" -> "user",
+      "password" -> "password",
+      "table" -> "tbl",
+      "staging_fs_url" -> "hdfs://test:8020/tmp/test",
+      "aws_access_key_id" -> "testkey",
+      "aws_secret_access_key" -> "testsecret"
+    )
+
+    // Create a new Spark session to ensure a clean state
+    val spark = SparkSession.builder()
+      .master("local[*]")
+      .appName("Vertica Connector Test")
+      .getOrCreate()
+
+    try {
+      val mockPipeFactory = mock[VerticaPipeFactoryInterface]
+      val dsWriteConfigSetup = new DSWriteConfigSetup(Some(new StructType), mockPipeFactory)
+
+      // This exercises the code path where Spark session exists but optional Spark config
+      // parameters are not set, so the configuration falls back gracefully to None
+      parseCorrectInitConfig(opts, dsWriteConfigSetup) match {
+        case config: DistributedFilesystemWriteConfig =>
+          // Verify AWS credentials from connector options are parsed correctly
+          assert(config.fileStoreConfig.awsOptions.awsAuth.isDefined)
+          assert(config.fileStoreConfig.awsOptions.awsAuth.get.accessKeyId.arg == "testkey")
+          assert(config.fileStoreConfig.awsOptions.awsAuth.get.secretAccessKey.arg == "testsecret")
+          // Verify that AWS credentials provider is None since Spark config was not provided
+          assert(config.fileStoreConfig.awsOptions.awsCredentialsProvider == None)
+      }
+    } finally {
+      spark.close()
+    }
+  }
 }
