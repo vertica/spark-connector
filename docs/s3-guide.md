@@ -5,14 +5,14 @@ Apache Hadoop provides an [AWS connector](https://hadoop.apache.org/docs/stable/
 ## Required Dependencies
 
 What you will need:
-- Spark 3.x
+- Spark 4.1.1
 - An appropriate `hadoop-aws` version for your hadoop install. Note that Spark comes bundled with Hadoop or stand-alone.
   - Importantly, the versions of hadoop-aws must be identical to the hadoop install.
-  - For example, for a sbt project using Hadoop 3.3.0, add to your `build.sbt`:
-    `libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.0"`
+  - For example, for a sbt project using Hadoop 3.3.4, add to your `build.sbt`:
+    `libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % "3.3.4"`
 - An S3 bucket configured to use either A) access key ID + secret access key or B) IAM roles for authentication
 
-Some features may work with older versions of hadoop-aws, but we currently only test against the hadoop-aws version compatible with the latest Spark 3.
+Some features may work with older versions of hadoop-aws, but we currently only test against the hadoop-aws version compatible with Spark 4.1.1.
 
 ## Spark with User-Provided Hadoop
 
@@ -25,12 +25,12 @@ Note: All instructions here are for MacOS or Linux users.
 
 First, you will need to decompress the Spark tar file and Hadoop tar file:
 ```sh
-tar xvf spark-3.0.2-bin-without-hadoop.tgz
-tar xvf hadoop-3.3.0.tar.gz
+tar xvf spark-4.1.1-bin-without-hadoop.tgz
+tar xvf hadoop-3.3.4.tar.gz
 ```
 
 Move the resulting folder to /opt/spark/:
-`mv spark-3.0.2-bin-without-hadoop/ /opt/spark`
+`mv spark-4.1.1-bin-without-hadoop/ /opt/spark`
 
 Go to the Spark configuration directory:
 `cd /opt/spark/conf`
@@ -42,7 +42,7 @@ Next, set the JAVA_HOME environment variable:
 `export JAVA_HOME=/usr/lib/jvm/jre-11-openjdk`
 
 Now, edit spark-env.sh and point SPARK_DIST_CLASSPATH to the Hadoop folder you extracted earlier. For example, if you extracted it to /myhadoop, you should add the following line:
-`export SPARK_DIST_CLASSPATH=$(/myhadoop/hadoop-3.3.0/bin/hadoop classpath)`
+`export SPARK_DIST_CLASSPATH=$(/myhadoop/hadoop-3.3.4/bin/hadoop classpath)`
 
 See [Spark's documentation](http://spark.apache.org/docs/latest/hadoop-provided.html) for more information.
 
@@ -60,4 +60,4 @@ See [here](https://github.com/vertica/spark-connector/tree/main/examples) for an
 
 If you see this error:
 `java.lang.NoClassDefFoundError: org/apache/hadoop/fs/StreamCapabilities`
-it is likely because you are not using Spark with Hadoop 3.3.0 and hadoop-aws 3.3.0.
+it is likely because you are not using Spark with Hadoop 3.3.4 and hadoop-aws 3.3.4.

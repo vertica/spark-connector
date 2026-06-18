@@ -24,8 +24,8 @@ Runs `main.yml` a pull requests to `main` (when a PR is created or has content p
 ## Nightly Tests
 
 The workflow `nightly.yml` runs nightly, from Monday to Friday at 9:18 AM GMT (or 2:18 AM Pacific Time), executing the 
-`main` branch against non-critical tests. It currently performs regression testing on combinations of Spark 3.x, with 
-the appropriate Hadoop HDFS, against Vertica 11.1.1-2 and 12.0.4-0. We also test against the latest Spark 3.x on a 
+`main` branch against non-critical tests. It currently performs regression testing on Spark 4.1.1, with 
+the appropriate Hadoop HDFS, against Vertica 11.1.1-2 and 12.0.4-0. We also test against Spark 4.1.1 on a 
 standalone Spark cluster.
 
 ## Weekly Tests
@@ -34,7 +34,7 @@ standalone Spark cluster.
 * Integration tests against different intermediary file-store:
   * S3, using a MINIO object store container to mimic S3
   * GCS, against an actual GCS bucket provided by Vertica. We could not find a solution to mock a GCS environment yet
-* Testing the `json` option against Spark 3.x
+* Testing the `json` option against Spark 4.1.1
 * Test against Vertica 10.1.1-0
 
 Unless specified, all tests use the latest Vertica docker image. This would notify us of breaking changes
