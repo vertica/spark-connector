@@ -28,8 +28,26 @@ version := versionProps.value.getProperty("connector-version")
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
+lazy val localVerticaJdbcJarPath = settingKey[File]("Local Vertica JDBC jar path")
+
+localVerticaJdbcJarPath := file(
+  sys.props.getOrElse(
+    "verticaJdbcJarPath",
+    (baseDirectory.value / "lib" / "vertica-jdbc-26.2.0-0.jar").getPath
+  )
+)
+
+Compile / unmanagedJars ++= {
+  val jdbcJar = localVerticaJdbcJarPath.value
+  if (jdbcJar.exists) Seq(Attributed.blank(jdbcJar))
+  else Seq.empty
+}
+
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
+libraryDependencies ++= {
+  if (localVerticaJdbcJarPath.value.exists) Seq.empty
+  else Seq("com.vertica.jdbc" % "vertica-jdbc" % "25.3.0-0")
+}
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
 libraryDependencies += "org.apache.spark" %% "spark-core" % "4.1.1"
 libraryDependencies += "org.apache.spark" %% "spark-sql" % "4.1.1"
