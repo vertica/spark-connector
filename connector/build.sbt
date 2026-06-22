@@ -20,7 +20,7 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.18"
 name := "spark-vertica-connector"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
@@ -28,11 +28,29 @@ version := versionProps.value.getProperty("connector-version")
 resolvers += "Artima Maven Repository" at "https://repo.artima.com/releases"
 resolvers += "jitpack" at "https://jitpack.io"
 
+lazy val localVerticaJdbcJarPath = settingKey[File]("Local Vertica JDBC jar path")
+
+localVerticaJdbcJarPath := file(
+  sys.props.getOrElse(
+    "verticaJdbcJarPath",
+    (baseDirectory.value / "lib" / "vertica-jdbc-26.2.0-0.jar").getPath
+  )
+)
+
+Compile / unmanagedJars ++= {
+  val jdbcJar = localVerticaJdbcJarPath.value
+  if (jdbcJar.exists) Seq(Attributed.blank(jdbcJar))
+  else Seq.empty
+}
+
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
-libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
+libraryDependencies ++= {
+  if (localVerticaJdbcJarPath.value.exists) Seq.empty
+  else Seq("com.vertica.jdbc" % "vertica-jdbc" % "25.3.0-0")
+}
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.5"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.5"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "4.1.1"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "4.1.1"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.4"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.16" % Test
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % "test"
@@ -55,7 +73,7 @@ sonarProperties ++= Map(
   "sonar.host.url" -> "http://localhost:80",
 )
 
-ThisBuild / scapegoatVersion := "3.1.4"
+ThisBuild / scapegoatVersion := "3.3.4"
 scapegoatReports := Seq("xml")
 Scapegoat / scalacOptions += "-P:scapegoat:overrideLevels:all=Warning"
 //scalacOptions += "-Ypartial-unification"

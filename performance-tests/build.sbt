@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.18"
 name := "spark-vertica-connector-performance-tests"
 organization := "com.vertica"
 version := "1.0"
@@ -24,8 +24,8 @@ libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.5"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.5"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "4.1.1"
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "4.1.1"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "3.3.2"
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.16"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % "test"
@@ -33,7 +33,7 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 libraryDependencies += "org.scalamock" %% "scalamock" % "5.2.0" % Test
 libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.0"
-Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-3.3.6.jar")
+Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-4.1.1.jar")
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard

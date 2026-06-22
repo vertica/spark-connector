@@ -35,7 +35,7 @@ The connector creates a JDBC connection to Vertica in order to manage the proces
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
 - Vertica (10.1.1-0 or higher)
-- Spark (3.5.5 or higher)
+- Spark (4.1.1)
 - An HDFS cluster or HDFS-compatible filesystem (S3, Google Cloud Storage, etc), for use as an intermediary between Spark and Vertica
 - A Spark application, either running locally for quick testing, or running on a Spark cluster. If using S3, Spark must be using hadoop 3.3
 
@@ -49,7 +49,7 @@ The connector has been tested against Vertica 10.1.1-0 and higher.
 
 ### Spark
 
-The connector requires Spark 3.5.5 or higher.
+The connector requires Spark 4.1.1.
 
 There are several examples of Spark programs that use this connector in the [examples](/examples) directory. 
 
@@ -79,7 +79,7 @@ The connector requires Java 8 (8u92 or later) or Java 11.
 
 ### Scala
 
-For the Spark Connector, Spark 3.5.5 and above use Scala 2.13. You will need to use a compatible Scala version (2.13.x).
+For the Spark Connector, Spark 4.1.1 uses Scala 2.13. You will need to use a compatible Scala version (2.13.x).
 
 ### Intermediary Storage
 

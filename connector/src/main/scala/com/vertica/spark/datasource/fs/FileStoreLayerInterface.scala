@@ -208,6 +208,7 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   private val LEGACY_PARQUET_INT96_REBASE_MODE_IN_WRITE = "spark.sql.legacy.parquet.int96RebaseModeInWrite"
   // Added to SQLConf in Spark 3.3.0 thus not backward compatible if using SQLConf.PARQUET_FIELD_ID_WRITE_ENABLED.
   private val PARQUET_FIELD_ID_WRITE_ENABLED = "spark.sql.parquet.fieldId.write.enabled"
+  private val PARQUET_FIELD_ID_READ_ENABLED = "spark.sql.parquet.fieldId.read.enabled"
 
   private var writer: Option[ParquetWriter[InternalRow]] = None
   private var reader: Option[HadoopFileStoreReader] = None
@@ -285,10 +286,13 @@ class HadoopFileStoreLayer(fileStoreConfig : FileStoreConfig, schema: Option[Str
   hdfsConfig.set(SQLConf.PARQUET_BINARY_AS_STRING.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_INT96_AS_TIMESTAMP.key, "true")
   hdfsConfig.set(SQLConf.PARQUET_WRITE_LEGACY_FORMAT.key, "false")
+  // Spark 4.x Parquet schema conversion also reads this boolean flag.
+  hdfsConfig.set(SQLConf.PARQUET_ANNOTATE_VARIANT_LOGICAL_TYPE.key, "false")
   hdfsConfig.set(SQLConf.PARQUET_OUTPUT_TIMESTAMP_TYPE.key, "INT96")
 
   // Compatibility with Spark 3.3.x as it checks for this configuration
   hdfsConfig.set(PARQUET_FIELD_ID_WRITE_ENABLED, "false")
+  hdfsConfig.set(PARQUET_FIELD_ID_READ_ENABLED, "false")
   // Don't use SQLConf because that breaks things for users on Spark 3.2
   hdfsConfig.set(LEGACY_PARQUET_REBASE_MODE_IN_WRITE, "CORRECTED")
   hdfsConfig.set(LEGACY_PARQUET_REBASE_MODE_IN_READ, "CORRECTED")

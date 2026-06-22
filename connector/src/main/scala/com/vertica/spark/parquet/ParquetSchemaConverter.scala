@@ -100,13 +100,37 @@ class ParquetToSparkSchemaConverter(
       if (originalType == null) s"$typeName" else s"$typeName ($originalType)"
 
     def typeNotSupported() =
-      throw new AnalysisException(s"Parquet type not supported: $typeString")
+      throw new AnalysisException(
+        message = s"Parquet type not supported: $typeString",
+        line = None,
+        startPosition = None,
+        cause = None,
+        errorClass = None,
+        messageParameters = Map.empty,
+        context = Array.empty
+      )
 
     def typeNotImplemented() =
-      throw new AnalysisException(s"Parquet type not yet supported: $typeString")
+      throw new AnalysisException(
+        message = s"Parquet type not yet implemented: $typeString",
+        line = None,
+        startPosition = None,
+        cause = None,
+        errorClass = None,
+        messageParameters = Map.empty,
+        context = Array.empty
+      )
 
     def illegalType() =
-      throw new AnalysisException(s"Illegal Parquet type: $typeString")
+      throw new AnalysisException(
+        message = s"Illegal Parquet type: $typeString",
+        line = None,
+        startPosition = None,
+        cause = None,
+        errorClass = None,
+        messageParameters = Map.empty,
+        context = Array.empty
+      )
 
     // When maxPrecision = -1, we skip precision range check, and always respect the precision
     // specified in field.getDecimalMetadata.  This is useful when interpreting decimal types stored
@@ -235,7 +259,15 @@ class ParquetToSparkSchemaConverter(
           valueContainsNull = valueOptional)
 
       case _ =>
-        throw new AnalysisException(s"Unrecognized Parquet type: $field")
+        throw new AnalysisException(
+          message = s"Unrecognized Parquet type: $field",
+          line = None,
+          startPosition = None,
+          cause = None,
+          errorClass = None,
+          messageParameters = Map.empty,
+          context = Array.empty
+        )
     }
   }
 
@@ -552,7 +584,15 @@ class SparkToParquetSchemaConverter(
         convertField(field.copy(dataType = udt.sqlType))
 
       case _ =>
-        throw new AnalysisException(s"Unsupported data type ${field.dataType.catalogString}")
+        throw new AnalysisException(
+          message = s"Unsupported data type ${field.dataType.catalogString}",
+          line = None,
+          startPosition = None,
+          cause = None,
+          errorClass = None,
+          messageParameters = Map.empty,
+          context = Array.empty
+        )
     }
   }
 }
@@ -578,7 +618,15 @@ private[sql] object ParquetSchemaConverter {
 
   def checkConversionRequirement(f: => Boolean, message: String): Unit = {
     if (!f) {
-      throw new AnalysisException(message)
+      throw new AnalysisException(
+        message = message,
+        line = None,
+        startPosition = None,
+        cause = None,
+        errorClass = None,
+        messageParameters = Map.empty,
+        context = Array.empty
+      )
     }
   }
 }

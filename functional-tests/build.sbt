@@ -21,14 +21,14 @@ versionProps := {
   prop
 }
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.18"
 name := "spark-vertica-connector-functional-tests"
 organization := "com.vertica"
 version := versionProps.value.getProperty("connector-version")
 
 val sparkVersion = Option(System.getProperty("sparkVersion")) match {
   case Some(sparkVersion) => sparkVersion
-  case None => sys.env.getOrElse("SPARK_VERSION", "[3.3.0, 3.4.0, 3.5.5)")
+  case None => sys.env.getOrElse("SPARK_VERSION", "4.1.1")
 }
 
 val hadoopVersion = Option(System.getProperty("hadoopVersion")) match {
@@ -44,8 +44,8 @@ libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
 libraryDependencies += "com.vertica.jdbc" % "vertica-jdbc" % "24.4.0-0"
-libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.5"
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.5"
+libraryDependencies += "org.apache.spark" %% "spark-core" % sparkVersion
+libraryDependencies += "org.apache.spark" %% "spark-sql" % sparkVersion
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.16"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.16" % "test"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
@@ -57,7 +57,7 @@ libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
 libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
 //libraryDependencies += file("C:\\Users\\chaitanp\\SourceCode\\spark\\spark-connector\\connector\\target\\scala-2.13\\spark-vertica-connector-assembly-3.3.6.jar")
 
-Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-3.3.6.jar")
+Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-4.1.1.jar")
 
 
 assembly / assemblyJarName := s"vertica-spark-functional-tests.jar"
