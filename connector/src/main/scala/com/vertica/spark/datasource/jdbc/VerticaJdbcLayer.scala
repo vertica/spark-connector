@@ -181,6 +181,11 @@ class VerticaJdbcLayer(cfg: JDBCConfig) extends JdbcLayerInterface {
   private val jdbcURI = "jdbc:vertica://" + cfg.host + ":" + cfg.port + "/" + cfg.db
   logger.info("Connecting to Vertica with URI: " + jdbcURI)
 
+  /**
+   * Returns true when this JDBC layer was created for the same JDBC configuration.
+   */
+  def matchesConfig(other: JDBCConfig): Boolean = this.cfg == other
+
   private var lazyInitialized = false
   private lazy val connection: ConnectorResult[Connection] = {
     Try { DriverManager.getConnection(jdbcURI, prop) }
