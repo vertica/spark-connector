@@ -8,3 +8,4 @@ on:
 jobs:
   functional-tests:
     uses: ./.github/workflows/main.yml
+    secrets: inherit
