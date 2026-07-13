@@ -39,7 +39,7 @@ There should be a spark-env.sh.template file. You will want a real spark-env.sh 
 `mv spark-env.sh.template spark-env.sh`
 
 Next, set the JAVA_HOME environment variable:
-`export JAVA_HOME=/usr/lib/jvm/jre-11-openjdk`
+`export JAVA_HOME=/usr/lib/jvm/java-21-openjdk`
 
 Now, edit spark-env.sh and point SPARK_DIST_CLASSPATH to the Hadoop folder you extracted earlier. For example, if you extracted it to /myhadoop, you should add the following line:
 `export SPARK_DIST_CLASSPATH=$(/myhadoop/hadoop-3.3.4/bin/hadoop classpath)`

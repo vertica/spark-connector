@@ -34,22 +34,22 @@ The connector creates a JDBC connection to Vertica in order to manage the proces
 ## Getting Started
 
 To get started with using the connector, we'll need to make sure all the prerequisites are in place. These are:
-- Vertica (10.1.1-0 or higher)
+- Vertica Server
 - Spark (4.1.1)
 - An HDFS cluster or HDFS-compatible filesystem (S3, Google Cloud Storage, etc), for use as an intermediary between Spark and Vertica
-- A Spark application, either running locally for quick testing, or running on a Spark cluster. If using S3, Spark must be using hadoop 3.3
+- A Spark application, either running locally for quick testing, or running on a Spark cluster. If using S3, Spark must be using hadoop 3.3.4
 
 For an easier quick test of the connector using a Docker environment, see [this guide](examples/README.md) for running our examples.
 
 ### Vertica 
 
-Follow the [Vertica Documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/InstallationGuide/Other/InstallationGuide.htm) for steps on installing Vertica.
+Follow the [Vertica Documentation](https://docs.vertica.com/latest/en/setup/) for steps on installing Vertica.
 
-The connector has been tested against Vertica 10.1.1-0 and higher.
+The connector has been tested against Vertica 26.2.0
 
 ### Spark
 
-The connector requires Spark 4.1.1.
+The connector requires Spark 4.1.1
 
 There are several examples of Spark programs that use this connector in the [examples](/examples) directory. 
 
@@ -58,12 +58,12 @@ The methods for creating a Spark cluster are documented [here](https://spark.apa
 Once you have a Spark cluster, you can run such an application with spark-submit, including the connector JAR.
 
 ```shell
-spark-submit --master spark://cluster-url.com:7077 --deploy-mode cluster sparkconnectorprototype-assembly-0.1.jar
+spark-submit --master spark://cluster-url.com:7077 --deploy-mode cluster /path/to/your-app-assembly.jar
 ```
 
 ### HDFS
 
-An HDFS setup can have various configurations, for details of what might best fit your infrastructure the [HDFS Architecture Guide](https://hadoop.apache.org/docs/r1.2.1/hdfs_design.html) is recommended.
+An HDFS setup can have various configurations, for details of what might best fit your infrastructure the [HDFS Architecture Guide](https://hadoop.apache.org/docs/r3.3.4/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html) is recommended.
 
 For a quick start, you can either check out our [guide on setting up a single-node HDFS](docs/hdfs-guide.md) or if you are just wanting a quick test run, you can use an HDFS container in Docker as documented in our [contributing guide](CONTRIBUTING.md#hdfs).
 
@@ -75,7 +75,7 @@ ALTER DATABASE <database name> SET HadoopConfDir = '/hadoop/conf/location/';
 
 ### Java
 
-The connector requires Java 8 (8u92 or later) or Java 11.
+The connector requires Java 21 or Java 17.
 
 ### Scala
 
@@ -83,14 +83,14 @@ For the Spark Connector, Spark 4.1.1 uses Scala 2.13. You will need to use a com
 
 ### Intermediary Storage
 
-The connector requires HDFS, or any file systems that implements [Hadoop File Systems API](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/filesystem/filesystem.html), for use when accessing Vertica tables.
+The connector requires HDFS, or any file systems that implements [Hadoop File Systems API](https://hadoop.apache.org/docs/r3.3.4/hadoop-project-dist/hadoop-common/filesystem/filesystem.html), for use when accessing Vertica tables.
 
  * [Amazon S3 instructions](docs/s3-guide.md)
  * [Google Cloud Storage instructions](docs/gcs-guide.md)
 
 ## Connector Usage
 
-Using the connector in Spark is straightforward. It requires the data source name, an options map, and, if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/3.0.0/api/java/index.html?org/apache/spark/sql/SaveMode.html).
+Using the connector in Spark is straightforward. It requires the data source name, an options map, and, if writing to Vertica, a [Spark Save Mode](https://spark.apache.org/docs/4.1.1/api/java/index.html?org/apache/spark/sql/SaveMode.html).
 
 Example read and write using the connector:
 ```scala
@@ -147,7 +147,7 @@ Below is a detailed list of connector options that are used in the options map:
 | `port` | Int | The Vertica port. | No | `5433` |
 | `failed_rows_percent_tolerance` | Number | The tolerance level for failed rows, as a percentage. For example, to specify that the job fails if greater than 10% of the rows are rejected, specify this value as `0.10` for 10% tolerance. | No | `0.00` |
 | `strlen` | Int | The string length. Use this option to increase (or decrease) the default length when saving Spark StringType to Vertica VARCHAR type. Used to determine whether to use VARCHAR or LONG VARCHAR. This option could also be used to override the default size (`1024`) of VARCHAR columns when creating an external table from existing data. | No | `1024` |
-| `array_length` | Int | The default number of array elements. When specified, sets the default number of elements when saving Spark ArrayType to Vertica Array type. This is applied to all nested arrays. By default, this option is set to `0` and will use Vertica's default array length. Refer to the [Vertica documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/ARRAY.htm) for more details. | No | `0` |
+| `array_length` | Int | The default number of array elements. When specified, sets the default number of elements when saving Spark ArrayType to Vertica Array type. This is applied to all nested arrays. By default, this option is set to `0` and will use Vertica's default array length. Refer to the [Vertica documentation](https://docs.vertica.com/latest/en/sql-reference/statements/copy/) for more details. | No | `0` |
 | `target_table_sql` (previously `target_table_ddl`) | String | An SQL statement to be used in place of the connector's when a table is to be created when writing to Vertica. Useful when you wants the data to be written into a table with a different schema than that of the source dataframe. Note that the table name should matches with that of the `table` option. | No | |
 | `copy_column_list` | String | A comma-separated list of columns for use in the COPY statement when writing data to Vertica. Useful in situations where the Vertica table and Spark dataframe **do not have to have a valid schema for a COPY statement** (e.g. different column names). See [documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/Statements/COPY/COPY.htm). | No | |
 | `num_partitions` (previously `numpartitions`) | Int | The number of Spark partitions used when reading from Vertica. Each of these will correspond to a task with its own JDBC connection. Performance testing has indicated that the ideal number of partitions is 4*N where N is the number nodes in the Vertica cluster for the direct read method. Most efficient partition count for intermediate method may vary, will require testing and may be a tradeoff of memory vs time. | No | 1 per exported parquet file |
@@ -162,7 +162,7 @@ Below is a detailed list of connector options that are used in the options map:
 | `kerberos_service_name` | String | The Kerberos service name, as specified when creating the service principal. | No (Yes, if using Kerberos) | |
 | `kerberos_host_name` | String | The Kerberos host name, as specified when creating the service principal. | No (Yes, if using Kerberos) | |
 | `jaas_config_name` | String | The name of the JAAS configuration used for Kerberos authentication. | No | `verticajdbc` |
-| `tls_mode` | `disable` / `require` / `verify-ca` / `verify-full` (String) | When not set to `disable`, connections with Vertica are encrypted. See the [Vertica documentation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/ConnectingToVertica/ClientJDBC/JDBCConnectionProperties.htm) for more details on what each mode does. | No | `disable` |
+| `tls_mode` | `disable` / `require` / `verify-ca` / `verify-full` (String) | When not set to `disable`, connections with Vertica are encrypted. See the [Vertica documentation](https://docs.vertica.com/latest/en/connecting-to/client-libraries/accessing/java/creating-and-configuring-connection/jdbc-connection-properties/) for more details on what each mode does. | No | `disable` |
 | `key_store_path` | Filepath (String) | The local path to a .JKS file containing your private keys and their corresponding certificate chains. | No | |
 | `key_store_password` | String | The password protecting the keystore file. If individual keys are also encrypted, the keystore file password must match the password for a key within the keystore. | No | |
 | `trust_store_path` | String | The local path to a .JKS truststore file containing certificates from authorities you trust. | No | |
@@ -191,7 +191,7 @@ Note: If you are using the S3 properties, the connector options have priority ov
 
 Since the connector implements Spark's DataSource V2 interfaces, it also supports pushdowns, specifically filter, columns,
 and aggregates. All pushdowns are handled automatically by Spark and does not require any configurations. Note that aggregate
-pushdown is only supported for Spark 3.2.0, and not all aggregates are supported.
+pushdown is only supported for Spark 4.1.1, and not all aggregates are supported.
 
 ## Complex Data Types
 
@@ -201,13 +201,13 @@ The connector supports reading/writing:
 
 When reading complex types, *all of the data* will be exported as JSON files instead of Parquet files.
 
-For map type, the connector can only write to an external table but cannot read them. Vertica [suggests](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/MAP.htm) using `Array[Row(key, value)]` instead for use in internal tables.
+For map type, the connector can only write to an external table but cannot read them. Vertica [suggests](https://docs.vertica.com/latest/en/sql-reference/data-types/complex-types/map/) using `Array[Row(key, value)]` instead for use in internal tables.
 
 ### Requirements
 
-**Writing** complex data types requires at least Vertica 11.x and Vertica JDBC Driver 11.
+**Writing** complex data types are supported on all supported versions of Vertica and Vertica JDBC Driver
 
-**Reading** complex data types requires at least Vertica 11.1.1-0.
+**Reading** complex data types are supported on all supported versions of Vertica.
 
 Refer to the examples for usage demonstration.
 
@@ -226,11 +226,11 @@ Note: If the connector option `query` is used, the specified query cannot return
 
 Be aware that Vertica has a number of restrictions on the use of these complex types (this list is not exhaustive):
 - Arrays and Sets do not support Long types
-- When reading complex types, binary types cannot be present in the data. This is due to Vertica's [JSON export limitation](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/BinaryDataTypes.htm?zoom_highlight=Binary)
+- When reading complex types, binary types cannot be present in the data. This is due to Vertica's [JSON export limitation](https://docs.vertica.com/latest/en/sql-reference/data-types/binary-data-types-binary-and-varbinary/)
 
 ### Set
 
-JDBC does not define a data type similar to [Vertica SET](https://www.vertica.com/docs/latest/HTML/Content/Authoring/SQLReferenceManual/DataTypes/SET.htm). 
+JDBC does not define a data type similar to [Vertica SET](https://docs.vertica.com/latest/en/sql-reference/data-types/complex-types/set/). 
 Thus, the exported data will be of array type, with Spark's column metadata containing `is_vertica_set = true` if it is a set.
 - When writing to Vertica using overwrite mode, the recreated table will have the column as a set type. Unique elements are only checked once Vertica start loading data from staging area
 - When writing without overwrite mode, the connector will not recreate the table and the column type is unchanged
@@ -254,7 +254,7 @@ For information on troubleshooting, see the [troubleshooting guide](docs/trouble
 
 ## Limitations
 
-If using S3 rather than HDFS, the Spark cluster must be running with hadoop 3.3. Our [S3 user guide](docs/s3-guide.md) goes over how to configure this.
+If using S3 rather than HDFS, the Spark cluster must be running with hadoop 3.3.4. Our [S3 user guide](docs/s3-guide.md) goes over how to configure this.
 
 ## Videos
 
@@ -268,3 +268,10 @@ _Vertica Spark Connector New Features (August 2021)_
 
 [![Vertica Spark Demo 2022](https://img.youtube.com/vi/iATi89Ya-sk/0.jpg)](https://www.youtube.com/watch?v=iATi89Ya-sk "Vertica Spark Demo 2022") \
 _Vertica Spark Connector Demo (September 2022)_
+
+## Recent Changes
+
+- Improved JDBC connection-layer reuse safety in the pipe factory.
+  - Cached JDBC layers are now reused only when the JDBC configuration is unchanged.
+  - If connection settings change (for example host, port, database, auth, or TLS options), the old layer is closed and a new one is created.
+- This prevents stale connection reuse when running multiple connector operations with different JDBC settings in the same Spark application.

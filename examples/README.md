@@ -3,7 +3,7 @@
 These examples are intended to be run either on our provided Docker environment or on your own cluster. 
 
 If you want to try these examples on our Docker environment, then:
-1. Install sbt on your local machine with JDK 11
+1. Install sbt on your local machine with JDK 21
 2. Clone the project if you haven't already:
 ```sh
 git clone https://github.com/vertica/spark-connector.git

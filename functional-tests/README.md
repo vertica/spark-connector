@@ -9,7 +9,7 @@ Configuration is specified with `application.conf` (HOCON format).
 From the functional-tests directory, run the following commands:
 ```sh
 mkdir lib
-cd ../connector && sbt assembly && cp target/scala-2.13/spark-vertica-connector-assembly-3.3.6.jar ../functional-tests/lib && cd ../functional-tests
+cd ../connector && sbt assembly && cp target/scala-2.13/spark-vertica-connector-assembly-4.1.1.jar ../functional-tests/lib && cd ../functional-tests
 ```
 
 This will create a lib folder and then build and copy the connector JAR file to it.
