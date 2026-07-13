@@ -26,12 +26,12 @@ If you would like to implement the feature yourself, open an issue to ask before
 Install the following prerequisites on your machine:
 - Docker Desktop
 - IDE (such as VS Code or IntelliJ)
-- JDK 8 or 11
+- JDK 21 or 17
 - sbt (will manage Scala automatically)
 
 Technically the JDK and sbt do not need to be installed since they will be available in the client Docker container, but since sbt builds run very slow on shared volumes it is recommended to do the actual building on your host machine.
 
-Note the use of JDK 8 or 11 as the version of Scala we currently use (2.12.12) does not work with newer versions of the JDK (see [here](https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html)).
+Use JDK 21 or 17 for local development and builds.
 
 ### Step 2: Fork the project
 

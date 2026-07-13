@@ -20,7 +20,7 @@ props := {
   prop
 }
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.18"
 name := "spark-vertica-connector-scala-examples"
 organization := "com.vertica"
 version := props.value.getProperty("connector-version")
@@ -35,7 +35,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-sql" % "4.1.1",
   "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6",
   // This version needs to match the Hadoop version used by Spark
-  "org.apache.hadoop" % "hadoop-aws" % "3.3.2"
+  "org.apache.hadoop" % "hadoop-aws" % "3.3.4"
 )
 
 assembly / assemblyJarName := s"vertica-spark-scala-examples.jar"

@@ -55,7 +55,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
 libraryDependencies += "org.apache.hadoop" % "hadoop-aws" % hadoopVersion
 libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1"
 libraryDependencies += "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.6"
-//libraryDependencies += file("C:\\Users\\chaitanp\\SourceCode\\spark\\spark-connector\\connector\\target\\scala-2.13\\spark-vertica-connector-assembly-3.3.6.jar")
 
 Compile / unmanagedJars += file("../connector/target/scala-2.13/spark-vertica-connector-assembly-4.1.1.jar")
 

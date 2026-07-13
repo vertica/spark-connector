@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        jdk: ['11', '8']
+        jdk: ['21', '17']
     steps:
       - name: Checkout the project
         uses: actions/checkout@v2
@@ -26,7 +26,7 @@ jobs:
         with:
           name: build-jar-file-${{ matrix.jdk }}
           path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
-  run-spark-integration-tests-jdk8:
+  run-spark-integration-tests-jdk21:
     name: Run regression tests against different versions of Vertica
     runs-on: ubuntu-latest
     needs: build
@@ -49,7 +49,7 @@ jobs:
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
-          name: build-jar-file-8
+          name: build-jar-file-21
           path: ./functional-tests/lib/
       - name: Wait for Vertica to be available
         uses: nick-invision/retry@v2
@@ -83,7 +83,7 @@ jobs:
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
-          name: build-jar-file-11
+          name: build-jar-file-21
           path: ./functional-tests/lib/
       - name: Wait for Vertica to be available
         uses: nick-invision/retry@v2
@@ -118,7 +118,7 @@ jobs:
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
-          name: build-jar-file-11
+          name: build-jar-file-21
           path: ./functional-tests/lib/
       - name: Wait for Vertica to be available
         uses: nick-invision/retry@v2
@@ -140,7 +140,7 @@ jobs:
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
-          name: build-jar-file-11
+          name: build-jar-file-21
           path: ./functional-tests/lib/
       - name: Add config options to application.conf
         run: cd functional-tests && ./pipeline-s3-config.sh
@@ -173,7 +173,7 @@ jobs:
       - name: Download the build artifact
         uses: actions/download-artifact@v2
         with:
-          name: build-jar-file-11
+          name: build-jar-file-21
           path: ./functional-tests/lib/
       - name: Add config options to application.conf
         run: cd functional-tests && ./pipeline-gcs-config.sh
@@ -204,7 +204,7 @@ jobs:
     name: Post Workflow Status To Slack
     runs-on: ubuntu-latest
     needs: [build,
-            run-spark-integration-tests-jdk8,
+            run-spark-integration-tests-jdk21,
             run-spark-integration-tests-json,
             run-spark-integration-tests-vertica-10,
             run-integration-tests-gcs,
@@ -220,3 +220,4 @@ jobs:
           name: 'Weekly tests failed'
           icon_emoji: ':sadge:'
           include_jobs: false
+
