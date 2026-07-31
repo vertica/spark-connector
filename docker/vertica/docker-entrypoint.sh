@@ -26,7 +26,7 @@ copy_config_files() {
 # start with restrictive ownership.
 ensure_path_is_owned_by_dbadmin() {
     # -z is to needed in case input arg is empty
-    [ -z "$1" ] || [ "$(stat -c "%U" "$1")" == "dbadmin" ] || chown -R dbadmin:verticadba "$1"
+    [ -z "$1" ] || [ "$(stat -c "%U" "$1")" == "dbadmin" ] || chown -R dbadmin:verticadba "$1" 2>/dev/null || true
 }
 
 start_cron
@@ -50,5 +50,10 @@ fi
 
 echo "Vertica container is now running"
 
-ssh-keygen -q -A
-/usr/sbin/sshd -D
+# Keep container alive; prefer sshd but fall back if not installed
+if command -v sshd &>/dev/null; then
+    ssh-keygen -q -A 2>/dev/null || true
+    /usr/sbin/sshd -D
+else
+    sleep infinity
+fi
