@@ -6,8 +6,8 @@
 set -e
 
 start_cron(){
-    # daemonizes, no need for &
-    /usr/sbin/cron
+    # skip silently if cron is not installed in the image
+    /usr/sbin/cron 2>/dev/null || true
 }
 
 # We copy back the files normally stored in /opt/vertica/config/.  We do this
