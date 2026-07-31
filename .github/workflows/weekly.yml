@@ -15,17 +15,24 @@ jobs:
     steps:
       - name: Checkout the project
         uses: actions/checkout@v4
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.jdk }}
+      - name: Install sbt
+        run: |
+          echo "Installing sbt..."
+          echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get install -y sbt
       - name: Build the project
         run: cd connector && sbt package
       - name: Upload the build artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-jar-file-${{ matrix.jdk }}
-          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.12/spark-vertica-connector_2.12-*.jar
+          path: /home/runner/work/spark-connector/spark-connector/connector/target/scala-2.13/spark-vertica-connector*.jar
   run-spark-integration-tests-jdk21:
     name: Run regression tests against different versions of Vertica
     runs-on: ubuntu-latest
@@ -39,15 +46,15 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v4
       - name: Remove existing docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: cd docker && docker compose up -d
         env:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
           VERTICA_VERSION: ${{matrix.vertica}}
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: build-jar-file-21
           path: ./functional-tests/lib/
@@ -61,7 +68,7 @@ jobs:
       - name: Run the integration tests
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
   run-spark-integration-tests-json:
     name: Run regression tests using JSON export
     runs-on: ubuntu-latest
@@ -74,14 +81,14 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v4
       - name: Remove existing docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: cd docker && docker compose up -d
         env:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: build-jar-file-21
           path: ./functional-tests/lib/
@@ -95,7 +102,7 @@ jobs:
       - name: Run the integration tests with JSON export
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt "run -j"
       - name: Remove docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
   run-spark-integration-tests-vertica-10:
     name: Run integration tests against Vertica 10
     runs-on: ubuntu-latest
@@ -108,15 +115,15 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v4
       - name: Remove existing docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: cd docker && docker compose up -d
         env:
           SPARK_VERSION: ${{matrix.runtime.spark}}
           HADOOP_VERSION: ${{matrix.runtime.hadoop}}
           VERTICA_VERSION: 10.1.1-0
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: build-jar-file-21
           path: ./functional-tests/lib/
@@ -130,7 +137,7 @@ jobs:
       - name: Run the integration tests against Vertica 10
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt "run --v10"
       - name: Remove docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
   run-integration-tests-s3:
     runs-on: ubuntu-latest
     needs: build
@@ -138,7 +145,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v4
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: build-jar-file-21
           path: ./functional-tests/lib/
@@ -149,7 +156,7 @@ jobs:
       - name: Build client image
         run: docker build -t client ./docker/client
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: cd docker && docker compose up -d
         env:
           AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
           AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
@@ -163,7 +170,7 @@ jobs:
       - name: Run the integration tests against S3
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
   run-integration-tests-gcs:
     runs-on: ubuntu-latest
     needs: build
@@ -171,7 +178,7 @@ jobs:
       - name: Checkout the project
         uses: actions/checkout@v4
       - name: Download the build artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: build-jar-file-21
           path: ./functional-tests/lib/
@@ -182,7 +189,7 @@ jobs:
       - name: Build client image
         run: docker build -t client ./docker/client
       - name: Run docker compose
-        run: cd docker && docker-compose up -d
+        run: cd docker && docker compose up -d
         env:
           GCS_HMAC_KEY_ID: ${{secrets.GCS_HMAC_KEY_ID}}
           GCS_HMAC_KEY_SECRET: ${{secrets.GCS_HMAC_KEY_SECRET}}
@@ -199,7 +206,7 @@ jobs:
       - name: Run the integration tests against GCS
         run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
       - name: Remove docker containers
-        run: cd docker && docker-compose down
+        run: cd docker && docker compose down
   slack-workflow-status:
     name: Post Workflow Status To Slack
     runs-on: ubuntu-latest
