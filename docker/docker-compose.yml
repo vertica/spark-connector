@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   client:
     build:
@@ -26,7 +25,7 @@ services:
       - GCS_SERVICE_EMAIL
 
   vertica:
-    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    image: opentext/vertica-k8s:${VERTICA_VERSION:-latest}
     # See original entrypoint under https://github.com/vertica/vertica-kubernetes/blob/main/docker-vertica/Dockerfile
     entrypoint: bash -c "if [[ "$${VERTICA_VERSION:0:2}" == "10" ]]; then /opt/vertica/bin/docker-entrypoint-legacy.sh; else /opt/vertica/bin/docker-entrypoint.sh; fi"
     ports:
