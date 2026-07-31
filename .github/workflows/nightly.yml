@@ -62,9 +62,9 @@ jobs:
           timeout_seconds: 20
           max_attempts: 10
           retry_on: error
-          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
+          command: docker logs docker-vertica-1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 sbt run
+        run: docker exec -w /spark-connector/functional-tests docker-client-1 sbt run
       - name: Remove docker containers
         run: cd docker && docker compose down
   run-integration-tests-on-standalone-cluster:
@@ -102,9 +102,9 @@ jobs:
           timeout_seconds: 20
           max_attempts: 10
           retry_on: error
-          command: docker logs docker_vertica_1 | grep "Vertica container is now running" >/dev/null
+          command: docker logs docker-vertica-1 | grep "Vertica container is now running" >/dev/null
       - name: Run the integration tests against a standalone cluster
-        run: docker exec -w /spark-connector/functional-tests docker_client_1 bash -c "./submit-functional-tests.sh"
+        run: docker exec -w /spark-connector/functional-tests docker-client-1 bash -c "./submit-functional-tests.sh"
       - name: Remove docker containers
         run: cd docker && docker compose down
   slack-workflow-status:
