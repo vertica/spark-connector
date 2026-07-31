@@ -7,7 +7,7 @@ set -e
 
 start_cron(){
     # daemonizes, no need for &
-    sudo /usr/sbin/cron
+    /usr/sbin/cron
 }
 
 # We copy back the files normally stored in /opt/vertica/config/.  We do this
@@ -26,7 +26,7 @@ copy_config_files() {
 # start with restrictive ownership.
 ensure_path_is_owned_by_dbadmin() {
     # -z is to needed in case input arg is empty
-    [ -z "$1" ] || [ "$(stat -c "%U" "$1")" == "dbadmin" ] || sudo chown -R dbadmin:verticadba "$1"
+    [ -z "$1" ] || [ "$(stat -c "%U" "$1")" == "dbadmin" ] || chown -R dbadmin:verticadba "$1"
 }
 
 start_cron
@@ -50,5 +50,5 @@ fi
 
 echo "Vertica container is now running"
 
-sudo ssh-keygen -q -A
-sudo /usr/sbin/sshd -D
+ssh-keygen -q -A
+/usr/sbin/sshd -D
