@@ -47,7 +47,7 @@ services:
       - krb.env
 
   vertica:
-    image: vertica/vertica-k8s:${VERTICA_VERSION:-latest}
+    image: opentext/vertica-k8s:${VERTICA_VERSION:-latest}
     container_name: vertica
     hostname: vertica
     domainname: example.com
